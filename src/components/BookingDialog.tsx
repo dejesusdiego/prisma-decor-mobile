@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Calendar as CalendarIcon, Clock, CheckCircle2, ArrowRight, ArrowLeft } from "lucide-react";
@@ -29,6 +30,7 @@ const BookingDialog = ({
     name: "",
     email: "",
     phone: "",
+    city: "",
     address: "",
     message: ""
   });
@@ -40,6 +42,7 @@ const BookingDialog = ({
       name: "",
       email: "",
       phone: "",
+      city: "",
       address: "",
       message: ""
     });
@@ -146,8 +149,84 @@ const BookingDialog = ({
               </div>
 
               <div>
+                <Label htmlFor="city">Cidade</Label>
+                <Select value={formData.city} onValueChange={(value) => setFormData({ ...formData, city: value })} required>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Selecione sua cidade" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[300px]">
+                    <SelectItem value="Balneário Camboriú">Balneário Camboriú</SelectItem>
+                    <SelectItem value="Camboriú">Camboriú</SelectItem>
+                    <SelectItem value="Itajaí">Itajaí</SelectItem>
+                    <SelectItem value="Itapema">Itapema</SelectItem>
+                    <SelectItem value="Porto Belo">Porto Belo</SelectItem>
+                    <SelectItem value="Bombinhas">Bombinhas</SelectItem>
+                    <SelectItem value="Navegantes">Navegantes</SelectItem>
+                    <SelectItem value="Penha">Penha</SelectItem>
+                    <SelectItem value="Piçarras">Piçarras</SelectItem>
+                    <SelectItem value="Ilhota">Ilhota</SelectItem>
+                    <SelectItem value="Luiz Alves">Luiz Alves</SelectItem>
+                    <SelectItem value="Brusque">Brusque</SelectItem>
+                    <SelectItem value="Canelinha">Canelinha</SelectItem>
+                    <SelectItem value="Tijucas">Tijucas</SelectItem>
+                    <SelectItem value="São João Batista">São João Batista</SelectItem>
+                    <SelectItem value="Nova Trento">Nova Trento</SelectItem>
+                    <SelectItem value="Gaspar">Gaspar</SelectItem>
+                    <SelectItem value="Blumenau">Blumenau</SelectItem>
+                    <SelectItem value="Guabiruba">Guabiruba</SelectItem>
+                    <SelectItem value="Botuverá">Botuverá</SelectItem>
+                    <SelectItem value="Itapoá">Itapoá</SelectItem>
+                    <SelectItem value="Barra Velha">Barra Velha</SelectItem>
+                    <SelectItem value="Massaranduba">Massaranduba</SelectItem>
+                    <SelectItem value="Schroeder">Schroeder</SelectItem>
+                    <SelectItem value="Jaraguá do Sul">Jaraguá do Sul</SelectItem>
+                    <SelectItem value="Corupá">Corupá</SelectItem>
+                    <SelectItem value="São Bento do Sul">São Bento do Sul</SelectItem>
+                    <SelectItem value="Campo Alegre">Campo Alegre</SelectItem>
+                    <SelectItem value="Joinville">Joinville</SelectItem>
+                    <SelectItem value="Araquari">Araquari</SelectItem>
+                    <SelectItem value="São Francisco do Sul">São Francisco do Sul</SelectItem>
+                    <SelectItem value="Garuva">Garuva</SelectItem>
+                    <SelectItem value="Major Gercino">Major Gercino</SelectItem>
+                    <SelectItem value="Angelina">Angelina</SelectItem>
+                    <SelectItem value="Leoberto Leal">Leoberto Leal</SelectItem>
+                    <SelectItem value="Vidal Ramos">Vidal Ramos</SelectItem>
+                    <SelectItem value="Alfredo Wagner">Alfredo Wagner</SelectItem>
+                    <SelectItem value="Benedito Novo">Benedito Novo</SelectItem>
+                    <SelectItem value="Rodeio">Rodeio</SelectItem>
+                    <SelectItem value="Ascurra">Ascurra</SelectItem>
+                    <SelectItem value="Indaial">Indaial</SelectItem>
+                    <SelectItem value="Timbó">Timbó</SelectItem>
+                    <SelectItem value="Pomerode">Pomerode</SelectItem>
+                    <SelectItem value="Rio dos Cedros">Rio dos Cedros</SelectItem>
+                    <SelectItem value="Doutor Pedrinho">Doutor Pedrinho</SelectItem>
+                    <SelectItem value="Lontras">Lontras</SelectItem>
+                    <SelectItem value="Rio do Sul">Rio do Sul</SelectItem>
+                    <SelectItem value="Agronômica">Agronômica</SelectItem>
+                    <SelectItem value="Laurentino">Laurentino</SelectItem>
+                    <SelectItem value="Ibirama">Ibirama</SelectItem>
+                    <SelectItem value="Apiúna">Apiúna</SelectItem>
+                    <SelectItem value="Presidente Getúlio">Presidente Getúlio</SelectItem>
+                    <SelectItem value="Witmarsum">Witmarsum</SelectItem>
+                    <SelectItem value="Mirim Doce">Mirim Doce</SelectItem>
+                    <SelectItem value="Taió">Taió</SelectItem>
+                    <SelectItem value="Nova Erechim">Nova Erechim</SelectItem>
+                    <SelectItem value="Ituporanga">Ituporanga</SelectItem>
+                    <SelectItem value="Petrolândia">Petrolândia</SelectItem>
+                    <SelectItem value="Rancho Queimado">Rancho Queimado</SelectItem>
+                    <SelectItem value="Águas Mornas">Águas Mornas</SelectItem>
+                    <SelectItem value="Santo Amaro da Imperatriz">Santo Amaro da Imperatriz</SelectItem>
+                    <SelectItem value="São Pedro de Alcântara">São Pedro de Alcântara</SelectItem>
+                    <SelectItem value="Palhoça">Palhoça</SelectItem>
+                    <SelectItem value="São José">São José</SelectItem>
+                    <SelectItem value="Florianópolis">Florianópolis</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
                 <Label htmlFor="address">Endereço</Label>
-                <Input id="address" name="address" value={formData.address} onChange={handleChange} required className="mt-1" placeholder="Cidade, bairro" />
+                <Input id="address" name="address" value={formData.address} onChange={handleChange} required className="mt-1" placeholder="Bairro, rua" />
               </div>
 
               <div>
