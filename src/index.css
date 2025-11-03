@@ -58,6 +58,11 @@ All colors MUST be HSL.
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-fast: all 0.15s ease;
 
+    /* WhatsApp Colors */
+    --whatsapp: 142 70% 49%;
+    --whatsapp-hover: 142 70% 44%;
+    --whatsapp-foreground: 0 0% 100%;
+
     --sidebar-background: 0 0% 98%;
 
     --sidebar-foreground: 240 5.3% 26.1%;

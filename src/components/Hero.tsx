@@ -46,8 +46,12 @@ const Hero = () => {
             </Button>
             <Button 
               size="lg" 
-              variant="outline"
-              className="border-2 border-white text-white hover:bg-white hover:text-primary font-semibold transition-all"
+              className="bg-whatsapp hover:bg-whatsapp-hover text-whatsapp-foreground font-semibold shadow-lg transition-all hover:scale-105"
+              onClick={() => {
+                const phoneNumber = "5500000000000";
+                const message = encodeURIComponent("Olá! Gostaria de agendar uma visita gratuita.");
+                window.open(`https://wa.me/${phoneNumber}?text=${message}`, "_blank");
+              }}
             >
               <MessageCircle className="mr-2 h-5 w-5" />
               WhatsApp
