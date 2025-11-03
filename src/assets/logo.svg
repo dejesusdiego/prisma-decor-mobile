@@ -1,0 +1,14 @@
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Light gray triangle (top) -->
+  <path d="M100 20 L160 100 L140 100 Z" fill="#8B8B8B"/>
+  
+  <!-- Dark gray triangle (left) -->
+  <path d="M40 100 L100 180 L60 100 Z" fill="#3A3A3A"/>
+  
+  <!-- Black triangles (right and bottom) -->
+  <path d="M140 100 L160 100 L100 180 Z" fill="#000000"/>
+  <path d="M60 100 L100 180 L140 100 Z" fill="#000000"/>
+  
+  <!-- Gold accent line -->
+  <path d="M100 20 L105 25 L40 100 L35 95 Z" fill="#D4AF37"/>
+</svg>
