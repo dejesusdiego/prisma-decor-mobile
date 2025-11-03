@@ -10,9 +10,9 @@ const Navbar = () => {
 
   return (
     <>
-      <nav className="fixed top-0 w-full bg-white/95 backdrop-blur-sm shadow-md z-50">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between h-20">
+      <nav className="fixed top-4 left-1/2 -translate-x-1/2 w-[95%] max-w-6xl bg-white/95 backdrop-blur-sm shadow-lg rounded-full z-50">
+        <div className="px-6">
+          <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <div className="flex items-center gap-3">
             <img src={logo} alt="Prisma Interiores" className="h-12 w-12" />
@@ -23,25 +23,26 @@ const Navbar = () => {
           </div>
 
           {/* Desktop Menu */}
-          <div className="hidden md:flex items-center gap-8">
-            <a href="#cortinas" className="text-foreground hover:text-primary transition-colors font-medium">
+          <div className="hidden md:flex items-center gap-6">
+            <a href="#cortinas" className="text-foreground hover:text-primary transition-colors font-medium text-sm">
               Cortinas
             </a>
-            <a href="#persianas" className="text-foreground hover:text-primary transition-colors font-medium">
+            <a href="#persianas" className="text-foreground hover:text-primary transition-colors font-medium text-sm">
               Persianas
             </a>
-            <a href="#sobre" className="text-foreground hover:text-primary transition-colors font-medium">
+            <a href="#sobre" className="text-foreground hover:text-primary transition-colors font-medium text-sm">
               Sobre
             </a>
-            <Button 
-              size="sm" 
-              onClick={() => setIsDialogOpen(true)}
-              className="bg-accent hover:bg-accent/90 text-primary font-semibold rounded-full px-6"
-            >
-              <Calendar className="mr-2 h-4 w-4" />
-              Agendar Visita
-            </Button>
           </div>
+
+          {/* Yellow Button - Always visible on desktop */}
+          <Button 
+            size="sm" 
+            onClick={() => setIsDialogOpen(true)}
+            className="hidden md:flex bg-[#F4C430] hover:bg-[#F4C430]/90 text-primary font-semibold rounded-full px-5 shadow-md"
+          >
+            <Calendar className="h-4 w-4" />
+          </Button>
 
           {/* Mobile Menu Button */}
           <button
