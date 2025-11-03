@@ -18,7 +18,7 @@ interface BookingDialogProps {
 type Step = "datetime" | "form" | "confirmation";
 
 const timeSlots = [
-  "08:00", "10:00", "12:00", "14:00", "16:00", "18:00"
+  "08:00-09:00", "10:00-11:00", "12:00-13:00", "14:00-15:00", "16:00-17:00", "18:00-19:00"
 ];
 
 const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
@@ -111,16 +111,16 @@ const BookingDialog = ({ open, onOpenChange }: BookingDialogProps) => {
                 <div className="space-y-3">
                   <Label className="text-base flex items-center gap-2">
                     <Clock className="h-5 w-5" />
-                    Selecione o Horário
+                    Selecione o Horário Aproximado
                   </Label>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {timeSlots.map((time) => (
                       <Button
                         key={time}
                         type="button"
                         variant={selectedTime === time ? "default" : "outline"}
                         onClick={() => setSelectedTime(time)}
-                        className="h-12"
+                        className="h-12 text-sm"
                       >
                         {time}
                       </Button>
