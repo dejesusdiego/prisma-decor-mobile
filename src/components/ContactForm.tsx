@@ -76,9 +76,9 @@ const ContactForm = () => {
                   Outras Formas de Contato
                 </h3>
                 <div className="space-y-3">
-                  <a href="tel:+" className="flex items-center gap-3 text-muted-foreground hover:text-accent transition-colors">
+                  <a href="tel:+5547992624706" className="flex items-center gap-3 text-muted-foreground hover:text-accent transition-colors">
                     <Phone className="h-5 w-5" />
-                    <span>(00) -0000</span>
+                    <span>(47) 99262-4706</span>
                   </a>
                   <a href="mailto:contato@prismainteriores.com.br" className="flex items-center gap-3 text-muted-foreground hover:text-accent transition-colors">
                     <Mail className="h-5 w-5" />
