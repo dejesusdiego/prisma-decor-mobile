@@ -1,20 +1,17 @@
 import { useState } from "react";
 import { Menu, X, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import BookingDialog from "@/components/BookingDialog";
 import logo from "@/assets/logo.svg";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  const handleScheduleClick = () => {
-    setIsDialogOpen(true);
-  };
-
   return (
     <>
-      <nav className="fixed top-4 left-1/2 -translate-x-1/2 w-[95%] max-w-7xl bg-background/80 backdrop-blur-md shadow-xl rounded-full z-50 border border-border/50">
-        <div className="px-6">
+      <nav className="fixed top-0 w-full bg-white/95 backdrop-blur-sm shadow-md z-50">
+        <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-20">
           {/* Logo */}
           <div className="flex items-center gap-3">
@@ -38,8 +35,8 @@ const Navbar = () => {
             </a>
             <Button 
               size="sm" 
-              onClick={handleScheduleClick}
-              className="bg-accent hover:bg-accent/90 text-primary font-semibold rounded-full px-6 shadow-lg hover:shadow-xl transition-all"
+              onClick={() => setIsDialogOpen(true)}
+              className="bg-accent hover:bg-accent/90 text-primary font-semibold rounded-full px-6"
             >
               <Calendar className="mr-2 h-4 w-4" />
               Agendar Visita
@@ -84,7 +81,7 @@ const Navbar = () => {
                 size="sm" 
                 onClick={() => {
                   setIsOpen(false);
-                  handleScheduleClick();
+                  setIsDialogOpen(true);
                 }}
                 className="bg-accent hover:bg-accent/90 text-primary font-semibold w-full rounded-full"
               >
@@ -97,22 +94,7 @@ const Navbar = () => {
         </div>
       </nav>
 
-      {/* Import and render BookingDialog */}
-      {isDialogOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setIsDialogOpen(false)} />
-          <div className="relative bg-background rounded-lg p-6 max-w-md w-full mx-4">
-            {/* Simple inline dialog for now - you can enhance this */}
-            <h2 className="text-2xl font-bold mb-4">Agendar Visita</h2>
-            <p className="text-muted-foreground mb-4">
-              Entre em contato conosco para agendar sua visita gratuita.
-            </p>
-            <Button onClick={() => setIsDialogOpen(false)} className="w-full">
-              Fechar
-            </Button>
-          </div>
-        </div>
-      )}
+      <BookingDialog open={isDialogOpen} onOpenChange={setIsDialogOpen} />
     </>
   );
 };
