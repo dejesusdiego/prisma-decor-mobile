@@ -2,12 +2,9 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { MapPin, Phone, Mail } from "lucide-react";
 import BookingDialog from "./BookingDialog";
-
 const ContactForm = () => {
   const [bookingOpen, setBookingOpen] = useState(false);
-
-  return (
-    <section id="contato" className="py-20 bg-background">
+  return <section id="contato" className="py-20 bg-background">
       <BookingDialog open={bookingOpen} onOpenChange={setBookingOpen} />
       <div className="container mx-auto px-4">
         <div className="max-w-4xl mx-auto">
@@ -23,11 +20,7 @@ const ContactForm = () => {
           <div className="grid md:grid-cols-2 gap-8">
             {/* CTA Button */}
             <div className="flex items-center justify-center">
-              <Button 
-                onClick={() => setBookingOpen(true)}
-                className="w-full max-w-md bg-accent hover:bg-accent/90 text-primary font-semibold shadow-gold"
-                size="lg"
-              >
+              <Button onClick={() => setBookingOpen(true)} className="w-full max-w-md bg-accent hover:bg-accent/90 text-primary font-semibold shadow-gold" size="lg">
                 Agendar Visita Gratuita
               </Button>
             </div>
@@ -85,7 +78,7 @@ const ContactForm = () => {
                 <div className="space-y-3">
                   <a href="tel:+" className="flex items-center gap-3 text-muted-foreground hover:text-accent transition-colors">
                     <Phone className="h-5 w-5" />
-                    <span>(00) 0000-0000</span>
+                    <span>(00) -0000</span>
                   </a>
                   <a href="mailto:contato@prismainteriores.com.br" className="flex items-center gap-3 text-muted-foreground hover:text-accent transition-colors">
                     <Mail className="h-5 w-5" />
@@ -93,7 +86,7 @@ const ContactForm = () => {
                   </a>
                   <div className="flex items-center gap-3 text-muted-foreground">
                     <MapPin className="h-5 w-5" />
-                    <span>Atendemos toda a região</span>
+                    <span>Atendemos Balneário Camboriú, Itajaí e arredores.</span>
                   </div>
                 </div>
               </div>
@@ -101,8 +94,6 @@ const ContactForm = () => {
           </div>
         </div>
       </div>
-    </section>
-  );
+    </section>;
 };
-
 export default ContactForm;
