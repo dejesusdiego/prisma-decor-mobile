@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { MessageCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
 const WhatsAppButton = () => {
   const [isVisible, setIsVisible] = useState(false);
@@ -29,16 +28,16 @@ const WhatsAppButton = () => {
   };
 
   return (
-    <Button
+    <button
       onClick={handleWhatsAppClick}
-      className={`fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full bg-whatsapp hover:bg-whatsapp-hover text-whatsapp-foreground shadow-lg transition-all duration-300 ${
-        isVisible ? "scale-100 opacity-100" : "scale-0 opacity-0"
+      className={`fixed bottom-0 left-0 right-0 z-50 bg-whatsapp hover:bg-whatsapp-hover text-whatsapp-foreground font-semibold py-4 px-6 shadow-lg transition-all duration-300 flex items-center justify-center gap-3 ${
+        isVisible ? "translate-y-0 opacity-100" : "translate-y-full opacity-0"
       }`}
-      size="icon"
       aria-label="Chamar no WhatsApp"
     >
       <MessageCircle className="h-6 w-6" />
-    </Button>
+      <span className="text-lg">Chamar no WhatsApp</span>
+    </button>
   );
 };
 
