@@ -1,48 +1,14 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Calendar, MapPin, Phone, Mail } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { MapPin, Phone, Mail } from "lucide-react";
+import BookingDialog from "./BookingDialog";
 
 const ContactForm = () => {
-  const { toast } = useToast();
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    address: "",
-    message: ""
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Aqui será integrado com RD Station no futuro
-    toast({
-      title: "Visita agendada!",
-      description: "Entraremos em contato em breve para confirmar o horário.",
-    });
-    
-    setFormData({
-      name: "",
-      email: "",
-      phone: "",
-      address: "",
-      message: ""
-    });
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-  };
+  const [bookingOpen, setBookingOpen] = useState(false);
 
   return (
     <section id="contato" className="py-20 bg-background">
+      <BookingDialog open={bookingOpen} onOpenChange={setBookingOpen} />
       <div className="container mx-auto px-4">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
@@ -55,84 +21,16 @@ const ContactForm = () => {
           </div>
 
           <div className="grid md:grid-cols-2 gap-8">
-            {/* Form */}
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div>
-                <Label htmlFor="name" className="text-foreground">Nome Completo</Label>
-                <Input
-                  id="name"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  required
-                  className="mt-1"
-                  placeholder="Seu nome"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="email" className="text-foreground">E-mail</Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  required
-                  className="mt-1"
-                  placeholder="seu@email.com"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="phone" className="text-foreground">Telefone/WhatsApp</Label>
-                <Input
-                  id="phone"
-                  name="phone"
-                  type="tel"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  required
-                  className="mt-1"
-                  placeholder="(00) 00000-0000"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="address" className="text-foreground">Endereço</Label>
-                <Input
-                  id="address"
-                  name="address"
-                  value={formData.address}
-                  onChange={handleChange}
-                  required
-                  className="mt-1"
-                  placeholder="Cidade, bairro"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="message" className="text-foreground">Mensagem (opcional)</Label>
-                <Textarea
-                  id="message"
-                  name="message"
-                  value={formData.message}
-                  onChange={handleChange}
-                  className="mt-1"
-                  placeholder="Conte-nos sobre seu projeto..."
-                  rows={4}
-                />
-              </div>
-
+            {/* CTA Button */}
+            <div className="flex items-center justify-center">
               <Button 
-                type="submit" 
-                className="w-full bg-accent hover:bg-accent/90 text-primary font-semibold shadow-gold"
+                onClick={() => setBookingOpen(true)}
+                className="w-full max-w-md bg-accent hover:bg-accent/90 text-primary font-semibold shadow-gold"
                 size="lg"
               >
-                <Calendar className="mr-2 h-5 w-5" />
-                Solicitar Visita Gratuita
+                Agendar Visita Gratuita
               </Button>
-            </form>
+            </div>
 
             {/* Info */}
             <div className="space-y-6">

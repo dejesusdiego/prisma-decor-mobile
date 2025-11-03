@@ -1,9 +1,15 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Calendar, MessageCircle } from "lucide-react";
 import heroImage from "@/assets/hero-curtains.jpg";
+import BookingDialog from "./BookingDialog";
 
 const Hero = () => {
+  const [bookingOpen, setBookingOpen] = useState(false);
+
   return (
+    <>
+    <BookingDialog open={bookingOpen} onOpenChange={setBookingOpen} />
     <section className="relative min-h-screen flex items-center">
       {/* Background Image with Overlay */}
       <div className="absolute inset-0 z-0">
@@ -33,6 +39,7 @@ const Hero = () => {
               size="lg" 
               variant="default"
               className="bg-accent hover:bg-accent/90 text-primary font-semibold shadow-gold transition-all hover:scale-105"
+              onClick={() => setBookingOpen(true)}
             >
               <Calendar className="mr-2 h-5 w-5" />
               Agendar Visita Gratuita
@@ -56,6 +63,7 @@ const Hero = () => {
         </div>
       </div>
     </section>
+    </>
   );
 };
 
