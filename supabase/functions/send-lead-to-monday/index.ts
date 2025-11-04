@@ -47,21 +47,16 @@ serve(async (req) => {
     // lead_phone = Telefone - Formato JSON: {"phone":"+5561...", "countryShortName":"BR"}
     // text_mkxchhsz = Cidade - String simples
     // date_mkxcyp8r = Data - Formato JSON: {"date":"YYYY-MM-DD"}
-    // hour_mkxck3dh = Hora - Formato JSON: {"hour":14, "minute":30}
+    // hour_mkxck3dh = Hora - String simples (texto com o range, ex: "14:00 - 15:00")
     // text_mkxcvcxn = Endereço - String simples
     // text_mkxcd71p = Mensagem - String simples
-    // lead_status = Status - Formato JSON: {"label":"Novo Lead"}
+    // lead_status = Status - Formato JSON: {"label":"NOVO LEAD"}
     
     console.log('Preparando dados para Monday.com...');
     
     // Converter data para formato YYYY-MM-DD
     const dateParts = leadData.scheduledDate.split('/');
     const formattedDate = `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`;
-    
-    // Extrair hora do formato "HH:MM - HH:MM"
-    const hourPart = leadData.scheduledTime.split(' - ')[0].split(':');
-    const hour = parseInt(hourPart[0]);
-    const minute = parseInt(hourPart[1] || "0");
     
     // Formatar telefone com + e código do país BR
     const formattedPhone = leadData.phone.startsWith('+') ? leadData.phone : `+55${leadData.phone}`;
@@ -80,10 +75,7 @@ serve(async (req) => {
       date_mkxcyp8r: {
         date: formattedDate
       },
-      hour_mkxck3dh: {
-        hour: hour,
-        minute: minute
-      },
+      hour_mkxck3dh: leadData.scheduledTime,  // Hora como texto (range)
       text_mkxcvcxn: leadData.address,
       text_mkxcd71p: leadData.message || 'Sem mensagem',
       lead_status: {
