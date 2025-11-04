@@ -16,8 +16,8 @@ const Index = () => {
       <Benefits />
       <FAQ />
       <ContactForm />
-      <Footer />
       <WhatsAppButton />
+      <Footer />
     </div>;
 };
 export default Index;
