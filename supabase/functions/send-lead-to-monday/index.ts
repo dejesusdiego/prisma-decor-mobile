@@ -33,40 +33,14 @@ serve(async (req) => {
     }
 
     // IMPORTANTE: Você precisa configurar estes valores do seu Monday.com:
-    // 
-    // 1. BOARD_ID: Está na URL quando você acessa seu board
-    //    Exemplo: https://monday.com/boards/1234567890
-    //
-    // 2. GROUP_ID: Para descobrir, use esta query GraphQL no API Playground do Monday
-    //    (https://monday.com/ > Seu Avatar > Developers > API Playground):
-    //
-    //    query {
-    //      boards(ids: [SEU_BOARD_ID]) {
-    //        groups {
-    //          id
-    //          title
-    //        }
-    //      }
-    //    }
-    //
-    //    Isso retornará todos os grupos com seus IDs. Use o ID do grupo desejado.
-    //    Exemplos comuns: "topics", "group_title", "new_group"
-    //
-    // 3. COLUMN IDs: Use a mesma query acima mas adicione 'columns' para ver os IDs:
-    //
-    //    query {
-    //      boards(ids: [SEU_BOARD_ID]) {
-    //        columns {
-    //          id
-    //          title
-    //          type
-    //        }
-    //      }
-    //    }
+    // 1. Vá em https://monday.com/ e acesse seu board
+    // 2. O board_id está na URL: https://monday.com/boards/[BOARD_ID]
+    // 3. O group_id você encontra clicando nos 3 pontos do grupo e em "Copy group ID"
+    // 4. Os IDs das colunas você encontra em: Board Settings > Columns > clique na coluna > o ID aparece na URL
     
     // Substitua os valores abaixo pelos seus:
-    const MONDAY_BOARD_ID = "1234567890"; // ⚠️ ALTERAR: seu board_id aqui
-    const MONDAY_GROUP_ID = "topics"; // ⚠️ ALTERAR: seu group_id aqui (use a query GraphQL acima para descobrir)
+    const MONDAY_BOARD_ID = "18338210789"; // ⚠️ ALTERAR: seu board_id aqui
+    const MONDAY_GROUP_ID = "topics"; // ⚠️ ALTERAR: seu group_id aqui
     
     // Formatar data e hora para exibição
     const scheduledDateTime = `${leadData.scheduledDate} às ${leadData.scheduledTime}`;
