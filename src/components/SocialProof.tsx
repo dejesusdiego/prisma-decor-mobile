@@ -5,6 +5,8 @@ import parisBistroCurtains from "@/assets/paris-bistro-curtains.jpg";
 import parisBistroProfile from "@/assets/paris-bistro-profile.jpg";
 import yachthouseCurtains from "@/assets/yachthouse-curtains.jpg";
 import yachthouseProfile from "@/assets/yachthouse-profile.png";
+import emersonsheikCurtains from "@/assets/emersonsheik-curtains.jpg";
+import emersonsheikProfile from "@/assets/emersonsheik-profile.jpg";
 
 // Dados de exemplo - você pode editar com as informações reais
 const testimonials = [
@@ -27,12 +29,13 @@ const testimonials = [
     caption: "Elegância e tecnologia juntas! Nossas cortinas de tear com motorização integrada à Alexa transformam qualquer ambiente. Conforto, sofisticação e praticidade no comando de voz. 🏠✨🎙️"
   },
   {
-    username: "casa.dos.sonhos",
+    username: "emersonsheik",
     verified: true,
-    postImage: "https://images.unsplash.com/photo-1616486029423-aaa4789e8c9a?w=800&h=800&fit=crop",
-    likes: 892,
-    comments: 123,
-    caption: "As persianas ficaram lindas! Atendimento excelente do início ao fim. Super recomendo! 💛"
+    profileImage: emersonsheikProfile,
+    postImage: emersonsheikCurtains,
+    likes: 1243,
+    comments: 156,
+    caption: "\"Tudo o que um sonho precisa para ser realizado é alguém que acredite que ele pode ser realizado.\" Agradeço imensamente pela oportunidade, confiança em nosso serviço e na minha equipe, estar entre vocês foi um sonho realizado, obrigado! 🙏✨💫"
   },
   {
     username: "ana.designer",
