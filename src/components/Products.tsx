@@ -1,5 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
+import { Link } from "react-router-dom";
 import blackoutImage from "@/assets/blackout-curtains.jpg";
 import linenImage from "@/assets/linen-curtains.jpg";
 import blindsImage from "@/assets/venetian-blinds.jpg";
@@ -85,6 +87,12 @@ const Products = () => {
               </CardContent>
             </Card>
           ))}
+        </div>
+
+        <div className="text-center mt-12">
+          <Button asChild size="lg" variant="default" className="bg-accent hover:bg-accent/90 text-primary font-semibold">
+            <Link to="/nossos-produtos">Ver mais</Link>
+          </Button>
         </div>
       </div>
     </section>
