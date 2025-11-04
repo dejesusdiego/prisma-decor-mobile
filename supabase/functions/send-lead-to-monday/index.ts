@@ -43,14 +43,14 @@ serve(async (req) => {
     const MONDAY_GROUP_ID = "topics"; // ⚠️ ALTERAR: seu group_id aqui
     
     // Mapeamento de colunas do Monday.com conforme documentação oficial:
-    // lead_email = E-mail (tipo email) - formato: string simples com o email
-    // lead_phone = Telefone (tipo phone) - formato: string simples com o número
-    // text_mkxchhsz = Cidade (tipo text) - formato: string simples
-    // date_mkxcyp8r = Data (tipo date) - formato: {"date": "YYYY-MM-DD"}
-    // hour_mkxck3dh = Hora (tipo hour) - formato: {"hour": number, "minute": number}
-    // text_mkxcvcxn = Endereço (tipo text) - formato: string simples
-    // text_mkxcd71p = Mensagem (tipo text) - formato: string simples
-    // lead_status = Status (tipo status) - formato: {"label": "Nome do status"}
+    // lead_email = E-mail - Formato JSON: {"email":"email@example.com", "text":"Nome ou label"}
+    // lead_phone = Telefone - Formato JSON: {"phone":"+5561...", "countryShortName":"BR"}
+    // text_mkxchhsz = Cidade - String simples
+    // date_mkxcyp8r = Data - Formato JSON: {"date":"YYYY-MM-DD"}
+    // hour_mkxck3dh = Hora - Formato JSON: {"hour":14, "minute":30}
+    // text_mkxcvcxn = Endereço - String simples
+    // text_mkxcd71p = Mensagem - String simples
+    // lead_status = Status - Formato JSON: {"label":"Novo Lead"}
     
     console.log('Preparando dados para Monday.com...');
     
@@ -58,36 +58,49 @@ serve(async (req) => {
     const dateParts = leadData.scheduledDate.split('/');
     const formattedDate = `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`;
     
-    // Extrair hora do formato "HH:MM - HH:MM" para pegar apenas a primeira hora
+    // Extrair hora do formato "HH:MM - HH:MM"
     const hourPart = leadData.scheduledTime.split(' - ')[0].split(':');
     const hour = parseInt(hourPart[0]);
     const minute = parseInt(hourPart[1] || "0");
     
-    // Construir o objeto column_values seguindo a documentação do Monday.com
+    // Formatar telefone com + e código do país BR
+    const formattedPhone = leadData.phone.startsWith('+') ? leadData.phone : `+55${leadData.phone}`;
+    
+    // Construir column_values conforme documentação oficial do Monday.com
     const columnValues = {
-      lead_email: leadData.email,  // String simples
-      lead_phone: leadData.phone,  // String simples
-      text_mkxchhsz: leadData.city,  // String simples
-      date_mkxcyp8r: { date: formattedDate },  // Objeto com date
-      hour_mkxck3dh: { hour, minute },  // Objeto com hour e minute
-      text_mkxcvcxn: leadData.address,  // String simples
-      text_mkxcd71p: leadData.message || 'Sem mensagem',  // String simples
-      lead_status: { label: "Novo Lead" }  // Objeto com label
+      lead_email: {
+        email: leadData.email,
+        text: leadData.name  // Texto de exibição obrigatório
+      },
+      lead_phone: {
+        phone: formattedPhone,
+        countryShortName: "BR"  // Código do país em maiúsculas
+      },
+      text_mkxchhsz: leadData.city,
+      date_mkxcyp8r: {
+        date: formattedDate
+      },
+      hour_mkxck3dh: {
+        hour: hour,
+        minute: minute
+      },
+      text_mkxcvcxn: leadData.address,
+      text_mkxcd71p: leadData.message || 'Sem mensagem',
+      lead_status: {
+        label: "Novo Lead"
+      }
     };
     
-    console.log('Column values preparados:', JSON.stringify(columnValues, null, 2));
+    console.log('Column values:', JSON.stringify(columnValues, null, 2));
     
-    // Converter para string JSON (apenas uma vez)
-    const columnValuesStr = JSON.stringify(columnValues);
-    
-    // Criar item no Monday.com usando GraphQL
+    // Criar mutation - column_values precisa ser JSON stringify
     const mutation = `
       mutation {
         create_item (
           board_id: ${MONDAY_BOARD_ID},
           group_id: "${MONDAY_GROUP_ID}",
           item_name: "${leadData.name} - ${leadData.city}",
-          column_values: ${JSON.stringify(columnValuesStr)}
+          column_values: ${JSON.stringify(JSON.stringify(columnValues))}
         ) {
           id
           name
