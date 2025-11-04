@@ -46,22 +46,31 @@ serve(async (req) => {
     const scheduledDateTime = `${leadData.scheduledDate} às ${leadData.scheduledTime}`;
     
     // Mapeamento de colunas (altere os IDs conforme suas colunas):
-    // text = Nome
-    // text9 = Email
-    // phone = Telefone
-    // text0 = Cidade
-    // text1 = Endereço
-    // long_text = Mensagem
-    // text7 = Data/Hora Agendada
+    // Para descobrir os IDs, use a query no API Playground:
+    // query { boards(ids: 18338210789) { columns { id title type } } }
+    //
+    // EXEMPLO DE MAPEAMENTO:
+    // text = Nome (tipo: text)
+    // text9 = Email (tipo: email)  
+    // phone = Telefone (tipo: phone)
+    // text0 = Cidade (tipo: text)
+    // text1 = Endereço (tipo: text)
+    // long_text = Mensagem (tipo: long_text)
+    // text7 = Data/Hora Agendada (tipo: text)
+    // status = Status/Tag (tipo: status) - use {"label": "Novo Lead"}
+    //
+    // ⚠️ IMPORTANTE: Substitua os IDs abaixo pelos IDs reais das suas colunas!
     
     // Criar item no Monday.com usando GraphQL
+    // ⚠️ ATENÇÃO: Substitua os IDs das colunas abaixo pelos IDs corretos do seu board
+    // Para adicionar uma tag/status, adicione: \\"status\\":{\\"label\\":\\"Novo Lead\\"}
     const mutation = `
       mutation {
         create_item (
           board_id: ${MONDAY_BOARD_ID},
           group_id: "${MONDAY_GROUP_ID}",
           item_name: "${leadData.name} - ${leadData.city}",
-          column_values: "{\\"text\\":\\"${leadData.name}\\",\\"text9\\":\\"${leadData.email}\\",\\"phone\\":\\"${leadData.phone}\\",\\"text0\\":\\"${leadData.city}\\",\\"text1\\":\\"${leadData.address}\\",\\"long_text\\":\\"${leadData.message || 'Sem mensagem'}\\",\\"text7\\":\\"${scheduledDateTime}\\"}"
+          column_values: "{\\"text\\":\\"${leadData.name}\\",\\"text9\\":\\"${leadData.email}\\",\\"phone\\":\\"${leadData.phone}\\",\\"text0\\":\\"${leadData.city}\\",\\"text1\\":\\"${leadData.address}\\",\\"long_text\\":\\"${leadData.message || 'Sem mensagem'}\\",\\"text7\\":\\"${scheduledDateTime}\\",\\"status\\":{\\"label\\":\\"Novo Lead\\"}}"
         ) {
           id
           name
