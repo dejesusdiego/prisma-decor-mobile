@@ -21,8 +21,7 @@ const WhatsAppButton = () => {
   }, []);
 
   const handleWhatsAppClick = () => {
-    // Substitua pelo número real do WhatsApp
-    const phoneNumber = "5500000000000"; // Formato: 55 + DDD + número
+    const phoneNumber = "5547992624706";
     const message = encodeURIComponent("Olá! Gostaria de saber mais sobre cortinas e persianas.");
     window.open(`https://wa.me/${phoneNumber}?text=${message}`, "_blank");
   };
