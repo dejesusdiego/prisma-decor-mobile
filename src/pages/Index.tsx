@@ -3,6 +3,7 @@ import Hero from "@/components/Hero";
 import Products from "@/components/Products";
 import ProcessFlow from "@/components/ProcessFlow";
 import Benefits from "@/components/Benefits";
+import SocialProof from "@/components/SocialProof";
 import FAQ from "@/components/FAQ";
 import ContactForm from "@/components/ContactForm";
 import Footer from "@/components/Footer";
@@ -14,6 +15,7 @@ const Index = () => {
       <Products />
       <ProcessFlow />
       <Benefits />
+      <SocialProof />
       <FAQ />
       <ContactForm />
       <WhatsAppButton />
