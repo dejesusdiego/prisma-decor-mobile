@@ -87,7 +87,7 @@ serve(async (req) => {
       text_mkxcvcxn: leadData.address,
       text_mkxcd71p: leadData.message || 'Sem mensagem',
       lead_status: {
-        label: "Novo Lead"
+        label: "NOVO LEAD"  // Status correto em MAIÚSCULAS conforme configurado no Monday.com
       }
     };
     
