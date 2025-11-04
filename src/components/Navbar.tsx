@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Menu, X, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import BookingDialog from "@/components/BookingDialog";
+import { Link } from "react-router-dom";
 import logo from "@/assets/logo.svg";
 
 const Navbar = () => {
@@ -14,13 +15,13 @@ const Navbar = () => {
         <div className="px-6">
           <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <div className="flex items-center gap-3">
+          <Link to="/" className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity">
             <img src={logo} alt="Prisma Interiores" className="h-12 w-12" />
             <div className="flex flex-col">
               <span className="text-xl font-bold text-primary">PRISMA</span>
               <span className="text-sm text-muted-foreground -mt-1">Interiores</span>
             </div>
-          </div>
+          </Link>
 
           {/* Desktop Menu */}
           <div className="hidden md:flex items-center gap-6">
