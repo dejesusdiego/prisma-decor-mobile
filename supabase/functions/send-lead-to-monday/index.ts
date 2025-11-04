@@ -45,8 +45,8 @@ serve(async (req) => {
     // Mapeamento de colunas do Monday.com:
     // name = Nome do item (usado no item_name)
     // lead_status = Status (NOVO LEAD já configurado como padrão)
-    // lead_email = E-mail (tipo email)
-    // lead_phone = Telefone (tipo phone)
+    // lead_email = E-mail (tipo email) - formato: apenas o email como string
+    // lead_phone = Telefone (tipo phone) - formato: apenas o número como string
     // text_mkxchhsz = Cidade (tipo text)
     // date_mkxcyp8r = Data (tipo date)
     // hour_mkxck3dh = Hora (tipo hour)
@@ -59,8 +59,23 @@ serve(async (req) => {
     
     // Extrair hora do formato "HH:MM - HH:MM" para pegar apenas a primeira hora
     const hourPart = leadData.scheduledTime.split(' - ')[0].split(':');
-    const hour = hourPart[0];
-    const minute = hourPart[1] || "00";
+    const hour = parseInt(hourPart[0]);
+    const minute = parseInt(hourPart[1] || "0");
+    
+    // Construir o objeto column_values
+    const columnValues = {
+      lead_email: leadData.email,
+      lead_phone: leadData.phone,
+      text_mkxchhsz: leadData.city,
+      date_mkxcyp8r: { date: formattedDate },
+      hour_mkxck3dh: { hour, minute },
+      text_mkxcvcxn: leadData.address,
+      text_mkxcd71p: leadData.message || 'Sem mensagem',
+      lead_status: { label: "Novo Lead" }
+    };
+    
+    // Converter para string JSON e escapar aspas corretamente para GraphQL
+    const columnValuesJson = JSON.stringify(JSON.stringify(columnValues));
     
     // Criar item no Monday.com usando GraphQL
     const mutation = `
@@ -69,7 +84,7 @@ serve(async (req) => {
           board_id: ${MONDAY_BOARD_ID},
           group_id: "${MONDAY_GROUP_ID}",
           item_name: "${leadData.name} - ${leadData.city}",
-          column_values: "{\\"lead_email\\":{\\"email\\":\\"${leadData.email}\\",\\"text\\":\\"${leadData.email}\\"},\\"lead_phone\\":{\\"phone\\":\\"${leadData.phone}\\",\\"countryShortName\\":\\"BR\\"},\\"text_mkxchhsz\\":\\"${leadData.city}\\",\\"date_mkxcyp8r\\":{\\"date\\":\\"${formattedDate}\\"},\\"hour_mkxck3dh\\":{\\"hour\\":${hour},\\"minute\\":${minute}},\\"text_mkxcvcxn\\":\\"${leadData.address}\\",\\"text_mkxcd71p\\":\\"${leadData.message || 'Sem mensagem'}\\",\\"lead_status\\":{\\"label\\":\\"Novo Lead\\"}}"
+          column_values: ${columnValuesJson}
         ) {
           id
           name
