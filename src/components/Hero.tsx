@@ -21,13 +21,14 @@ const Hero = () => {
             Cortinas e Persianas
             <span className="block text-accent"> Sob Medida</span>
           </h1>
-          <p className="text-lg md:text-xl text-white/90 mb-8 leading-relaxed">Transforme seus ambientes com elegância e funcionalidade. Soluções personalizadas em cortinas e persianas que combinam design sofisticado com qualidade superior.
-
-
-Agende agora uma visita sem compromisso
-
-
-          </p>
+          <div className="mb-8">
+            <p className="text-lg md:text-xl text-white/90 mb-4 leading-relaxed">
+              Transforme seus ambientes com elegância e funcionalidade. Soluções personalizadas em cortinas e persianas que combinam design sofisticado com qualidade superior.
+            </p>
+            <p className="text-sm md:text-base text-white/70 font-light">
+              Agende agora uma visita sem compromisso!
+            </p>
+          </div>
           
           <div className="flex flex-col sm:flex-row gap-4">
             <Button size="lg" variant="default" className="bg-accent hover:bg-accent/90 text-primary font-semibold shadow-gold transition-all hover:scale-105" onClick={() => setBookingOpen(true)}>
