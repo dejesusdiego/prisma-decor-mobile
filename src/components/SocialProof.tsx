@@ -1,16 +1,17 @@
 import { useState, useEffect } from "react";
-import { Heart, MessageCircle, Send, Bookmark, CheckCircle } from "lucide-react";
+import { Heart, MessageCircle, Send, Bookmark } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import parisBistroCurtains from "@/assets/paris-bistro-curtains.jpg";
 
 // Dados de exemplo - você pode editar com as informações reais
 const testimonials = [
   {
-    username: "maria.silva",
+    username: "paris6_balneariocamboriu",
     verified: true,
-    postImage: "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&h=800&fit=crop",
-    likes: 324,
-    comments: 45,
-    caption: "Apaixonada pelas cortinas que a Prisma instalou! Transformaram completamente meu quarto. Qualidade impecável! ✨"
+    postImage: parisBistroCurtains,
+    likes: 458,
+    comments: 67,
+    caption: "Todas as cortinas foram entregues junto com essas abraçadeiras, do mesmo tecido da cortina, Shantung Classic Dourado! ✨🪟💛"
   },
   {
     username: "joao.arquiteto",
