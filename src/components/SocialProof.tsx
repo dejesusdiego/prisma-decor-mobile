@@ -103,7 +103,7 @@ const SocialProof = () => {
                           {post.username}
                         </span>
                         {post.verified && (
-                          <CheckCircle className="h-4 w-4 text-blue-500 fill-blue-500" />
+                          <CheckCircle className="h-4 w-4 text-blue-500 fill-current" />
                         )}
                       </div>
                     </div>
