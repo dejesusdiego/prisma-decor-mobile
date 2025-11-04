@@ -2,12 +2,14 @@ import { useState, useEffect } from "react";
 import { Heart, MessageCircle, Send, Bookmark } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import parisBistroCurtains from "@/assets/paris-bistro-curtains.jpg";
+import parisBistroProfile from "@/assets/paris-bistro-profile.jpg";
 
 // Dados de exemplo - você pode editar com as informações reais
 const testimonials = [
   {
     username: "paris6_balneariocamboriu",
     verified: true,
+    profileImage: parisBistroProfile,
     postImage: parisBistroCurtains,
     likes: 458,
     comments: 67,
@@ -93,10 +95,20 @@ const SocialProof = () => {
                     {/* Header - Perfil */}
                     <div className="p-4 flex items-center gap-3 border-b border-border">
                       <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-400 via-pink-500 to-red-400 p-[2px]">
-                        <div className="w-full h-full rounded-full bg-background flex items-center justify-center">
-                          <span className="text-xs font-bold text-foreground">
-                            {post.username.charAt(0).toUpperCase()}
-                          </span>
+                        <div className="w-full h-full rounded-full bg-background overflow-hidden">
+                          {post.profileImage ? (
+                            <img 
+                              src={post.profileImage} 
+                              alt={`Perfil de ${post.username}`}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <span className="text-xs font-bold text-foreground">
+                                {post.username.charAt(0).toUpperCase()}
+                              </span>
+                            </div>
+                          )}
                         </div>
                       </div>
                       <div className="flex items-center gap-1">
