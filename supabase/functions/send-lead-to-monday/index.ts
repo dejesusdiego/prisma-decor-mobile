@@ -42,16 +42,17 @@ serve(async (req) => {
     const MONDAY_BOARD_ID = "18338210789"; // ⚠️ ALTERAR: seu board_id aqui
     const MONDAY_GROUP_ID = "topics"; // ⚠️ ALTERAR: seu group_id aqui
     
-    // Mapeamento de colunas do Monday.com:
-    // name = Nome do item (usado no item_name)
-    // lead_status = Status (NOVO LEAD já configurado como padrão)
-    // lead_email = E-mail (tipo email) - formato: apenas o email como string
-    // lead_phone = Telefone (tipo phone) - formato: apenas o número como string
-    // text_mkxchhsz = Cidade (tipo text)
-    // date_mkxcyp8r = Data (tipo date)
-    // hour_mkxck3dh = Hora (tipo hour)
-    // text_mkxcvcxn = Endereço (tipo text)
-    // text_mkxcd71p = Mensagem (tipo text)
+    // Mapeamento de colunas do Monday.com conforme documentação oficial:
+    // lead_email = E-mail (tipo email) - formato: string simples com o email
+    // lead_phone = Telefone (tipo phone) - formato: string simples com o número
+    // text_mkxchhsz = Cidade (tipo text) - formato: string simples
+    // date_mkxcyp8r = Data (tipo date) - formato: {"date": "YYYY-MM-DD"}
+    // hour_mkxck3dh = Hora (tipo hour) - formato: {"hour": number, "minute": number}
+    // text_mkxcvcxn = Endereço (tipo text) - formato: string simples
+    // text_mkxcd71p = Mensagem (tipo text) - formato: string simples
+    // lead_status = Status (tipo status) - formato: {"label": "Nome do status"}
+    
+    console.log('Preparando dados para Monday.com...');
     
     // Converter data para formato YYYY-MM-DD
     const dateParts = leadData.scheduledDate.split('/');
@@ -62,20 +63,22 @@ serve(async (req) => {
     const hour = parseInt(hourPart[0]);
     const minute = parseInt(hourPart[1] || "0");
     
-    // Construir o objeto column_values
+    // Construir o objeto column_values seguindo a documentação do Monday.com
     const columnValues = {
-      lead_email: leadData.email,
-      lead_phone: leadData.phone,
-      text_mkxchhsz: leadData.city,
-      date_mkxcyp8r: { date: formattedDate },
-      hour_mkxck3dh: { hour, minute },
-      text_mkxcvcxn: leadData.address,
-      text_mkxcd71p: leadData.message || 'Sem mensagem',
-      lead_status: { label: "Novo Lead" }
+      lead_email: leadData.email,  // String simples
+      lead_phone: leadData.phone,  // String simples
+      text_mkxchhsz: leadData.city,  // String simples
+      date_mkxcyp8r: { date: formattedDate },  // Objeto com date
+      hour_mkxck3dh: { hour, minute },  // Objeto com hour e minute
+      text_mkxcvcxn: leadData.address,  // String simples
+      text_mkxcd71p: leadData.message || 'Sem mensagem',  // String simples
+      lead_status: { label: "Novo Lead" }  // Objeto com label
     };
     
-    // Converter para string JSON e escapar aspas corretamente para GraphQL
-    const columnValuesJson = JSON.stringify(JSON.stringify(columnValues));
+    console.log('Column values preparados:', JSON.stringify(columnValues, null, 2));
+    
+    // Converter para string JSON (apenas uma vez)
+    const columnValuesStr = JSON.stringify(columnValues);
     
     // Criar item no Monday.com usando GraphQL
     const mutation = `
@@ -84,13 +87,15 @@ serve(async (req) => {
           board_id: ${MONDAY_BOARD_ID},
           group_id: "${MONDAY_GROUP_ID}",
           item_name: "${leadData.name} - ${leadData.city}",
-          column_values: ${columnValuesJson}
+          column_values: ${JSON.stringify(columnValuesStr)}
         ) {
           id
           name
         }
       }
     `;
+    
+    console.log('Enviando mutation para Monday.com...');
 
     const mondayResponse = await fetch('https://api.monday.com/v2', {
       method: 'POST',
