@@ -52,7 +52,9 @@ const Footer = () => {
             <h3 className="text-lg font-semibold mb-4">Redes Sociais</h3>
             <div className="flex gap-4">
               <a 
-                href="#" 
+                href="https://www.instagram.com/prismainter/" 
+                target="_blank"
+                rel="noopener noreferrer"
                 className="w-10 h-10 rounded-full bg-primary-foreground/10 flex items-center justify-center hover:bg-accent hover:text-primary transition-all"
               >
                 <Instagram className="h-5 w-5" />
