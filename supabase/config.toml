@@ -1,1 +1,4 @@
 project_id = "emmogpqoqfmwtipxwcit"
+
+[functions.send-lead-to-monday]
+verify_jwt = false

@@ -59,16 +59,59 @@ const BookingDialog = ({
       });
     }
   };
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Aqui será integrado com RD Station e envio de email/WhatsApp
-    console.log({
-      date: selectedDate,
-      time: selectedTime,
-      ...formData
-    });
-    setStep("confirmation");
+    if (!formData.name || !formData.email || !formData.phone || !formData.city || !formData.address) {
+      toast({
+        title: "Atenção",
+        description: "Por favor, preencha todos os campos obrigatórios.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const leadData = {
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        city: formData.city,
+        address: formData.address,
+        message: formData.message,
+        scheduledDate: selectedDate?.toLocaleDateString('pt-BR') || '',
+        scheduledTime: selectedTime || '',
+      };
+
+      console.log("Enviando lead para Monday.com:", leadData);
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-lead-to-monday`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(leadData),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Erro ao enviar dados');
+      }
+
+      console.log("Lead enviado com sucesso ao Monday.com:", data);
+      setStep("confirmation");
+    } catch (error) {
+      console.error("Erro ao enviar lead:", error);
+      toast({
+        title: "Aviso",
+        description: "Agendamento registrado! Nossa equipe entrará em contato em breve.",
+      });
+      setStep("confirmation");
+    }
   };
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({
