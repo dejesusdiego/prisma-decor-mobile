@@ -3,6 +3,8 @@ import { Heart, MessageCircle, Send, Bookmark } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import parisBistroCurtains from "@/assets/paris-bistro-curtains.jpg";
 import parisBistroProfile from "@/assets/paris-bistro-profile.jpg";
+import yachthouseCurtains from "@/assets/yachthouse-curtains.jpg";
+import yachthouseProfile from "@/assets/yachthouse-profile.png";
 
 // Dados de exemplo - você pode editar com as informações reais
 const testimonials = [
@@ -16,12 +18,13 @@ const testimonials = [
     caption: "Todas as cortinas foram entregues junto com essas abraçadeiras, do mesmo tecido da cortina, Shantung Classic Dourado! ✨🪟💛"
   },
   {
-    username: "joao.arquiteto",
+    username: "yachthouse",
     verified: true,
-    postImage: "https://images.unsplash.com/photo-1616137422492-5e0a7c2cd6c7?w=800&h=800&fit=crop",
-    likes: 567,
-    comments: 89,
-    caption: "Sempre indico a Prisma para meus clientes. Profissionalismo e acabamento perfeito! 👏"
+    profileImage: yachthouseProfile,
+    postImage: yachthouseCurtains,
+    likes: 734,
+    comments: 92,
+    caption: "Elegância e tecnologia juntas! Nossas cortinas de tear com motorização integrada à Alexa transformam qualquer ambiente. Conforto, sofisticação e praticidade no comando de voz. 🏠✨🎙️"
   },
   {
     username: "casa.dos.sonhos",
