@@ -90,7 +90,7 @@ const Products = () => {
         </div>
 
         <div className="text-center mt-12">
-          <Button asChild size="lg" variant="default" className="bg-accent hover:bg-accent/90 text-primary font-semibold">
+          <Button asChild size="lg" variant="outline" className="bg-background border-2 border-accent text-foreground hover:bg-accent/10 font-semibold rounded-full uppercase">
             <Link to="/nossos-produtos">Ver mais</Link>
           </Button>
         </div>
