@@ -42,35 +42,25 @@ serve(async (req) => {
     const MONDAY_BOARD_ID = "18338210789"; // ⚠️ ALTERAR: seu board_id aqui
     const MONDAY_GROUP_ID = "topics"; // ⚠️ ALTERAR: seu group_id aqui
     
-    // Formatar data e hora para exibição
-    const scheduledDateTime = `${leadData.scheduledDate} às ${leadData.scheduledTime}`;
-    
-    // Mapeamento de colunas (altere os IDs conforme suas colunas):
-    // Para descobrir os IDs, use a query no API Playground:
-    // query { boards(ids: 18338210789) { columns { id title type } } }
-    //
-    // EXEMPLO DE MAPEAMENTO:
-    // text = Nome (tipo: text)
-    // text9 = Email (tipo: email)  
-    // phone = Telefone (tipo: phone)
-    // text0 = Cidade (tipo: text)
-    // text1 = Endereço (tipo: text)
-    // long_text = Mensagem (tipo: long_text)
-    // text7 = Data/Hora Agendada (tipo: text)
-    // status = Status/Tag (tipo: status) - use {"label": "Novo Lead"}
-    //
-    // ⚠️ IMPORTANTE: Substitua os IDs abaixo pelos IDs reais das suas colunas!
+    // Mapeamento de colunas do Monday.com:
+    // name = Nome do item (usado no item_name)
+    // lead_status = Status (NOVO LEAD já configurado como padrão)
+    // lead_email = E-mail
+    // lead_phone = Telefone
+    // text_mkxchhsz = Cidade
+    // date_mkxcyp8r = Data (formato: YYYY-MM-DD)
+    // hour_mkxck3dh = Hora (formato: HH:MM)
+    // text_mkxcvcxn = Endereço
+    // text_mkxcd71p = Mensagem
     
     // Criar item no Monday.com usando GraphQL
-    // ⚠️ ATENÇÃO: Substitua os IDs das colunas abaixo pelos IDs corretos do seu board
-    // Para adicionar uma tag/status, adicione: \\"status\\":{\\"label\\":\\"Novo Lead\\"}
     const mutation = `
       mutation {
         create_item (
           board_id: ${MONDAY_BOARD_ID},
           group_id: "${MONDAY_GROUP_ID}",
           item_name: "${leadData.name} - ${leadData.city}",
-          column_values: "{\\"text\\":\\"${leadData.name}\\",\\"text9\\":\\"${leadData.email}\\",\\"phone\\":\\"${leadData.phone}\\",\\"text0\\":\\"${leadData.city}\\",\\"text1\\":\\"${leadData.address}\\",\\"long_text\\":\\"${leadData.message || 'Sem mensagem'}\\",\\"text7\\":\\"${scheduledDateTime}\\",\\"status\\":{\\"label\\":\\"Novo Lead\\"}}"
+          column_values: "{\\"lead_email\\":\\"${leadData.email}\\",\\"lead_phone\\":\\"${leadData.phone}\\",\\"text_mkxchhsz\\":\\"${leadData.city}\\",\\"date_mkxcyp8r\\":{\\"date\\":\\"${leadData.scheduledDate}\\"},\\"hour_mkxck3dh\\":{\\"hour\\":\\"${leadData.scheduledTime}\\",\\"minute\\":\\"00\\"},\\"text_mkxcvcxn\\":\\"${leadData.address}\\",\\"text_mkxcd71p\\":\\"${leadData.message || 'Sem mensagem'}\\",\\"lead_status\\":{\\"label\\":\\"Novo Lead\\"}}"
         ) {
           id
           name
