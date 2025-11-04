@@ -6,6 +6,16 @@ import { Check } from "lucide-react";
 import blackoutImage from "@/assets/blackout-curtains.jpg";
 import linenImage from "@/assets/linen-curtains.jpg";
 import blindsImage from "@/assets/venetian-blinds.jpg";
+import rollerImage from "@/assets/roller-curtains.jpg";
+import fabricImage from "@/assets/fabric-curtains.jpg";
+import verticalImage from "@/assets/vertical-blinds.jpg";
+import woodenImage from "@/assets/wooden-blinds.jpg";
+import romanImage from "@/assets/roman-shades.jpg";
+import solarImage from "@/assets/solar-screen.jpg";
+import doubleVisionImage from "@/assets/double-vision.jpg";
+import tripleShadeImage from "@/assets/triple-shade.jpg";
+import cellularImage from "@/assets/cellular-shades.jpg";
+import motorizationImage from "@/assets/motorization.jpg";
 
 const products = [
   {
@@ -21,7 +31,7 @@ const products = [
   },
   {
     title: "Cortinas de Linho",
-    description: "Elegância natural com tecidos nobres que trazem sofisticação e leveza aos seus ambientes.",
+    description: "Elegância natural com tecidos nobres que trazem sofisticação e leveza aos ambientes.",
     image: linenImage,
     features: [
       "Tecido natural e sustentável",
@@ -39,6 +49,116 @@ const products = [
       "Design minimalista",
       "Fácil operação",
       "Durabilidade garantida"
+    ]
+  },
+  {
+    title: "Cortina de Rolo",
+    description: "Modernidade e praticidade com acionamento suave e visual clean, ideal para qualquer ambiente.",
+    image: rollerImage,
+    features: [
+      "Design contemporâneo e funcional",
+      "Facilidade de uso e manutenção",
+      "Controle eficiente de luminosidade",
+      "Opção blackout ou translúcida"
+    ]
+  },
+  {
+    title: "Cortina de Tecido",
+    description: "Sofisticação e conforto com tecidos personalizados sob medida, perfeitos para salas e quartos.",
+    image: fabricImage,
+    features: [
+      "Ampla variedade de tecidos e cores",
+      "Acabamento sob medida",
+      "Equilíbrio entre elegância e funcionalidade",
+      "Conforto térmico e acústico"
+    ]
+  },
+  {
+    title: "Persiana Vertical",
+    description: "Solução versátil e elegante para janelas amplas e portas de vidro.",
+    image: verticalImage,
+    features: [
+      "Controle total de luz e privacidade",
+      "Visual clean e moderno",
+      "Fácil de operar e limpar",
+      "Opções em PVC, tecido ou blackout"
+    ]
+  },
+  {
+    title: "Persiana de Madeira",
+    description: "Toque natural e aconchegante com lâminas de madeira tratada que valorizam o ambiente.",
+    image: woodenImage,
+    features: [
+      "Estilo clássico e sofisticado",
+      "Alta durabilidade",
+      "Controle preciso de luminosidade",
+      "Produzida com madeiras sustentáveis"
+    ]
+  },
+  {
+    title: "Persiana Romana",
+    description: "Design refinado e estrutura em camadas que proporcionam elegância e conforto visual.",
+    image: romanImage,
+    features: [
+      "Estilo sofisticado e atemporal",
+      "Variedade de tecidos e cores",
+      "Acionamento suave e silencioso",
+      "Ideal para salas e quartos"
+    ]
+  },
+  {
+    title: "Persiana Tela Solar (Rolô)",
+    description: "Proteção solar eficaz sem perder a vista externa, perfeita para ambientes com grande incidência de luz.",
+    image: solarImage,
+    features: [
+      "Filtragem de até 97% dos raios UV",
+      "Redução de calor e brilho",
+      "Preserva a vista externa",
+      "Material resistente e de fácil limpeza"
+    ]
+  },
+  {
+    title: "Persiana Double Vision",
+    description: "Elegância e sofisticação com controle dinâmico de luz através de faixas duplas translúcidas e opacas.",
+    image: doubleVisionImage,
+    features: [
+      "Combinação de privacidade e luminosidade",
+      "Design moderno e funcional",
+      "Fácil acionamento manual ou motorizado",
+      "Ideal para salas, escritórios e varandas"
+    ]
+  },
+  {
+    title: "Cortina Triple Shade",
+    description: "Excelência em design e controle solar, com camadas sobrepostas que oferecem suavidade e desempenho.",
+    image: tripleShadeImage,
+    features: [
+      "Controle ajustável de luz e visibilidade",
+      "Estilo sofisticado e contemporâneo",
+      "Material leve e resistente aos raios UV",
+      "Indicado para quartos e ambientes de descanso"
+    ]
+  },
+  {
+    title: "Cortina Celular (Honeycomb)",
+    description: "Tecnologia e conforto com estrutura celular que retém o ar, proporcionando isolamento térmico e acústico.",
+    image: cellularImage,
+    features: [
+      "Reduz calor e ruído externo",
+      "Alta eficiência energética",
+      "Acionamento manual ou motorizado",
+      "Design clean e elegante"
+    ]
+  },
+  {
+    title: "Motorização",
+    description: "Praticidade e conforto com acionamento automatizado para cortinas e persianas.",
+    image: motorizationImage,
+    features: [
+      "Controle via controle remoto, app ou assistente de voz",
+      "Sistema silencioso e seguro",
+      "Compatível com diversos modelos de cortinas e persianas",
+      "Ideal para automação residencial"
     ]
   }
 ];
@@ -59,7 +179,7 @@ const OurProducts = () => {
               </p>
             </div>
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid md:grid-cols-2 gap-8">
               {products.map((product, index) => (
                 <Card 
                   key={index} 
