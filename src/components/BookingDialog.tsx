@@ -287,7 +287,7 @@ const BookingDialog = ({
 
               <div>
                 <Label htmlFor="address">Endereço</Label>
-                <Input id="address" name="address" value={formData.address} onChange={handleChange} required className="mt-1" placeholder="Bairro, rua" />
+                <Input id="address" name="address" value={formData.address} onChange={handleChange} required className="mt-1" placeholder="Bairro, rua, número, apartamento (se aplicável)" />
               </div>
 
               <div>
