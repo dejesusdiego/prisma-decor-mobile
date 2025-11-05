@@ -89,7 +89,7 @@ serve(async (req) => {
         create_item (
           board_id: ${MONDAY_BOARD_ID},
           group_id: "${MONDAY_GROUP_ID}",
-          item_name: "${leadData.name} - ${leadData.city}",
+          item_name: "${leadData.name}",
           column_values: ${JSON.stringify(JSON.stringify(columnValues))}
         ) {
           id
