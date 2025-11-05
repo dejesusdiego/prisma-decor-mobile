@@ -65,7 +65,7 @@ serve(async (req) => {
     const columnValues = {
       lead_email: {
         email: leadData.email,
-        text: leadData.name  // Texto de exibição obrigatório
+        text: leadData.email  // Email como texto de exibição
       },
       lead_phone: {
         phone: formattedPhone,
@@ -79,7 +79,7 @@ serve(async (req) => {
       text_mkxcvcxn: leadData.address,
       text_mkxcd71p: leadData.message || 'Sem mensagem',
       lead_status: {
-        label: "NOVO LEAD"  // Status correto em MAIÚSCULAS conforme configurado no Monday.com
+        label: "Novo Lead"  // Status conforme configurado no Monday.com
       }
     };
     
