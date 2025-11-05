@@ -26,6 +26,8 @@ const BookingDialog = ({
   const [step, setStep] = useState<Step>("datetime");
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [selectedTime, setSelectedTime] = useState<string>();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [lastSubmitTime, setLastSubmitTime] = useState(0);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -62,6 +64,17 @@ const BookingDialog = ({
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Rate limit: 10 segundos entre envios
+    const now = Date.now();
+    if (now - lastSubmitTime < 10000) {
+      toast({
+        title: "Aguarde",
+        description: "Por favor, aguarde alguns segundos antes de enviar novamente.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     if (!formData.name || !formData.email || !formData.phone || !formData.city || !formData.address) {
       toast({
         title: "Atenção",
@@ -70,6 +83,9 @@ const BookingDialog = ({
       });
       return;
     }
+
+    setIsSubmitting(true);
+    setLastSubmitTime(now);
 
     try {
       const leadData = {
@@ -111,6 +127,8 @@ const BookingDialog = ({
         description: "Agendamento registrado! Nossa equipe entrará em contato em breve.",
       });
       setStep("confirmation");
+    } finally {
+      setIsSubmitting(false);
     }
   };
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -278,12 +296,12 @@ const BookingDialog = ({
               </div>
 
               <div className="flex justify-between gap-2 pt-2">
-                <Button type="button" variant="outline" onClick={() => setStep("datetime")}>
+                <Button type="button" variant="outline" onClick={() => setStep("datetime")} disabled={isSubmitting}>
                   <ArrowLeft className="mr-2 h-4 w-4" />
                   Voltar
                 </Button>
-                <Button type="submit">
-                  Confirmar Agendamento
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? "Enviando..." : "Confirmar Agendamento"}
                 </Button>
               </div>
             </form>
