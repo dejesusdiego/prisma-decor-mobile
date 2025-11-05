@@ -8,6 +8,7 @@ import FAQ from "@/components/FAQ";
 import ContactForm from "@/components/ContactForm";
 import Footer from "@/components/Footer";
 import WhatsAppButton from "@/components/WhatsAppButton";
+import TrustBar from "@/components/TrustBar";
 const Index = () => {
   return <div className="min-h-screen">
       <Navbar />
@@ -19,6 +20,7 @@ const Index = () => {
       <FAQ />
       <ContactForm />
       <WhatsAppButton />
+      <TrustBar />
       <Footer />
     </div>;
 };
