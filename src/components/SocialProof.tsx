@@ -7,6 +7,8 @@ import yachthouseCurtains from "@/assets/yachthouse-curtains.jpg";
 import yachthouseProfile from "@/assets/yachthouse-profile.png";
 import emersonsheikCurtains from "@/assets/emersonsheik-curtains.jpg";
 import emersonsheikProfile from "@/assets/emersonsheik-profile.jpg";
+import anaDesignerCurtains from "@/assets/ana-designer-curtains.jpg";
+import anaDesignerProfile from "@/assets/ana-designer-profile.jpg";
 
 // Dados de exemplo - você pode editar com as informações reais
 const testimonials = [
@@ -40,10 +42,11 @@ const testimonials = [
   {
     username: "ana.designer",
     verified: true,
-    postImage: "https://images.unsplash.com/photo-1616137422495-b4a3f26fd058?w=800&h=800&fit=crop",
-    likes: 445,
-    comments: 67,
-    caption: "Melhor escolha! As cortinas blackout são perfeitas. Equipe super atenciosa e pontual! ⭐"
+    profileImage: anaDesignerProfile,
+    postImage: anaDesignerCurtains,
+    likes: 892,
+    comments: 134,
+    caption: "Projeto finalizado com as cortinas blackout da Prisma! A qualidade é excepcional e o acabamento impecável. Meus clientes adoraram o resultado. Equipe super profissional e pontual na entrega! 🏠✨ #designdeinteriores #cortinasblackout"
   }
 ];
 
