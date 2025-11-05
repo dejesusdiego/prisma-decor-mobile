@@ -62,6 +62,7 @@ serve(async (req) => {
     const formattedPhone = leadData.phone.startsWith('+') ? leadData.phone : `+55${leadData.phone}`;
     
     // Construir column_values conforme documentação oficial do Monday.com
+    // Status não é enviado - Monday.com adiciona automaticamente
     const columnValues = {
       lead_email: {
         email: leadData.email,
@@ -77,10 +78,7 @@ serve(async (req) => {
       },
       text_mkxczgf3: leadData.scheduledTime,  // Hora como texto (range)
       text_mkxcvcxn: leadData.address,
-      text_mkxcd71p: leadData.message || 'Sem mensagem',
-      lead_status: {
-        label: "NOVO LEAD"  // Status correto: deve ser exatamente "NOVO LEAD" em maiúsculas
-      }
+      text_mkxcd71p: leadData.message || 'Sem mensagem'
     };
     
     console.log('Column values:', JSON.stringify(columnValues, null, 2));
