@@ -31,7 +31,7 @@ const Navbar = () => {
             <a href="#persianas" className="text-foreground hover:text-primary transition-colors font-medium text-sm">
               Persianas
             </a>
-            <Link to="/our-products" className="text-foreground hover:text-primary transition-colors font-medium text-sm">
+            <Link to="/nossos-produtos" className="text-foreground hover:text-primary transition-colors font-medium text-sm">
               Nossos Produtos
             </Link>
             <a href="#sobre" className="text-foreground hover:text-primary transition-colors font-medium text-sm">
@@ -79,7 +79,7 @@ const Navbar = () => {
                 Persianas
               </a>
               <Link 
-                to="/our-products" 
+                to="/nossos-produtos" 
                 className="text-foreground hover:text-primary transition-colors font-medium py-2"
                 onClick={() => setIsOpen(false)}
               >
