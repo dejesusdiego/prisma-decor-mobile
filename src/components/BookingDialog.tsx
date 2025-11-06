@@ -34,6 +34,7 @@ const BookingDialog = ({
     phone: "",
     city: "",
     address: "",
+    complement: "",
     message: ""
   });
   const resetAndClose = () => {
@@ -46,6 +47,7 @@ const BookingDialog = ({
       phone: "",
       city: "",
       address: "",
+      complement: "",
       message: ""
     });
     onOpenChange(false);
@@ -94,6 +96,7 @@ const BookingDialog = ({
         phone: formData.phone,
         city: formData.city,
         address: formData.address,
+        complement: formData.complement,
         message: formData.message,
         scheduledDate: selectedDate?.toLocaleDateString('pt-BR') || '',
         scheduledTime: selectedTime || '',
@@ -287,7 +290,12 @@ const BookingDialog = ({
 
               <div>
                 <Label htmlFor="address">Endereço</Label>
-                <Input id="address" name="address" value={formData.address} onChange={handleChange} required className="mt-1" placeholder="Bairro, rua, número, apartamento (se aplicável)" />
+                <Input id="address" name="address" value={formData.address} onChange={handleChange} required className="mt-1" placeholder="Bairro, rua, número" />
+              </div>
+
+              <div>
+                <Label htmlFor="complement">Complemento</Label>
+                <Input id="complement" name="complement" value={formData.complement} onChange={handleChange} className="mt-1" placeholder="Casa, apartamento, bloco" />
               </div>
 
               <div>
