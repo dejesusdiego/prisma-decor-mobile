@@ -11,6 +11,7 @@ interface LeadData {
   phone: string;
   city: string;
   address: string;
+  complement?: string;
   message?: string;
   scheduledDate: string;
   scheduledTime: string;
@@ -49,6 +50,7 @@ serve(async (req) => {
     // date_mkxcyp8r = Data - Formato JSON: {"date":"YYYY-MM-DD"}
     // text_mkxczgf3 = Hora - String simples (texto com o range, ex: "14:00 - 15:00")
     // text_mkxcvcxn = Endereço - String simples
+    // text_mkxenpnd = Complemento - String simples
     // text_mkxcd71p = Mensagem - String simples
     // lead_status = Status - Formato JSON: {"label":"NOVO LEAD"}
     
@@ -78,6 +80,7 @@ serve(async (req) => {
       },
       text_mkxczgf3: leadData.scheduledTime,  // Hora como texto (range)
       text_mkxcvcxn: leadData.address,
+      text_mkxenpnd: leadData.complement || '',
       text_mkxcd71p: leadData.message || 'Sem mensagem'
     };
     
@@ -129,6 +132,7 @@ serve(async (req) => {
       `📱 *Telefone:* ${leadData.phone}\n` +
       `🏙️ *Cidade:* ${leadData.city}\n` +
       `📍 *Endereço:* ${leadData.address}\n` +
+      (leadData.complement ? `🏢 *Complemento:* ${leadData.complement}\n` : '') +
       (leadData.message ? `💬 *Mensagem:* ${leadData.message}` : '')
     );
     
