@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { MapPin, Phone, Mail } from "lucide-react";
 import BookingDialog from "./BookingDialog";
+import { analytics } from "@/lib/analytics";
 const ContactForm = () => {
   const [bookingOpen, setBookingOpen] = useState(false);
   return <section id="contato" className="py-20 bg-background">
@@ -20,7 +21,10 @@ const ContactForm = () => {
           <div className="grid md:grid-cols-2 gap-8">
             {/* CTA Button */}
             <div className="flex items-center justify-center">
-              <Button onClick={() => setBookingOpen(true)} className="w-full max-w-md bg-accent hover:bg-accent/90 text-primary font-semibold shadow-gold" size="lg">
+              <Button onClick={() => {
+                analytics.openBookingDialog('contact_form');
+                setBookingOpen(true);
+              }} className="w-full max-w-md bg-accent hover:bg-accent/90 text-primary font-semibold shadow-gold" size="lg">
                 Agendar Visita Gratuita
               </Button>
             </div>
@@ -76,11 +80,19 @@ const ContactForm = () => {
                   Outras Formas de Contato
                 </h3>
                 <div className="space-y-3">
-                  <a href="tel:+5547992624706" className="flex items-center gap-3 text-muted-foreground hover:text-accent transition-colors">
+                  <a 
+                    href="tel:+5547992624706" 
+                    className="flex items-center gap-3 text-muted-foreground hover:text-accent transition-colors"
+                    onClick={() => analytics.clickPhone()}
+                  >
                     <Phone className="h-5 w-5" />
                     <span>(47) 99262-4706</span>
                   </a>
-                  <a href="mailto:contato@prismainteriores.com.br" className="flex items-center gap-3 text-muted-foreground hover:text-accent transition-colors">
+                  <a 
+                    href="mailto:contato@prismainteriores.com.br" 
+                    className="flex items-center gap-3 text-muted-foreground hover:text-accent transition-colors"
+                    onClick={() => analytics.clickEmail()}
+                  >
                     <Mail className="h-5 w-5" />
                     <span>contato@prismainteriores.com.br</span>
                   </a>

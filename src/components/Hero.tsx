@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar, MessageCircle } from "lucide-react";
 import heroImage from "@/assets/hero-curtains.jpg";
 import BookingDialog from "./BookingDialog";
+import { analytics } from "@/lib/analytics";
 const Hero = () => {
   const [bookingOpen, setBookingOpen] = useState(false);
   return <>
@@ -31,12 +32,16 @@ const Hero = () => {
           </div>
           
           <div className="flex flex-col sm:flex-row gap-4">
-            <Button size="lg" variant="default" className="bg-accent hover:bg-accent/90 text-primary font-semibold shadow-gold transition-all hover:scale-105" onClick={() => setBookingOpen(true)}>
+            <Button size="lg" variant="default" className="bg-accent hover:bg-accent/90 text-primary font-semibold shadow-gold transition-all hover:scale-105" onClick={() => {
+              analytics.openBookingDialog('hero');
+              setBookingOpen(true);
+            }}>
               <Calendar className="mr-2 h-5 w-5" />
               Agendar Visita Gratuita
             </Button>
             <Button size="lg" className="bg-whatsapp hover:bg-whatsapp-hover text-whatsapp-foreground font-semibold shadow-lg transition-all hover:scale-105" onClick={() => {
-              const phoneNumber = "5500000000000";
+              analytics.clickWhatsApp('hero');
+              const phoneNumber = "5547992624706";
               const message = encodeURIComponent("Olá! Gostaria de agendar uma visita gratuita.");
               window.open(`https://wa.me/${phoneNumber}?text=${message}`, "_blank");
             }}>
