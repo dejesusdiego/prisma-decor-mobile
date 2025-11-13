@@ -1,4 +1,5 @@
-// Google Analytics helper functions
+// Google Analytics & Google Ads helper functions
+// Events are automatically sent to both GA4 (G-4SZLQTGPF9) and Google Ads (AW-17709164266)
 declare global {
   interface Window {
     gtag?: (
@@ -15,8 +16,30 @@ export const trackEvent = (
   eventParams?: Record<string, any>
 ) => {
   if (typeof window !== 'undefined' && window.gtag) {
+    // Envia para GA4 e Google Ads automaticamente
     window.gtag('event', eventName, eventParams);
-    console.log('GA Event:', eventName, eventParams);
+    console.log('Event tracked (GA4 + Google Ads):', eventName, eventParams);
+  }
+};
+
+// Função específica para rastrear conversões no Google Ads
+export const trackConversion = (
+  conversionLabel?: string,
+  value?: number,
+  currency: string = 'BRL'
+) => {
+  if (typeof window !== 'undefined' && window.gtag) {
+    const params: Record<string, any> = {
+      send_to: conversionLabel ? `AW-17709164266/${conversionLabel}` : 'AW-17709164266',
+    };
+    
+    if (value) {
+      params.value = value;
+      params.currency = currency;
+    }
+    
+    window.gtag('event', 'conversion', params);
+    console.log('Google Ads Conversion:', params);
   }
 };
 
@@ -49,6 +72,9 @@ export const analytics = {
       event_category: 'lead_generation',
       event_label: 'Booking Form Submitted',
     });
+    
+    // Rastreia como conversão no Google Ads também
+    trackConversion();
   },
 
   // Navegação
