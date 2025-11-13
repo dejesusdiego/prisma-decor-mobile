@@ -10,6 +10,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Calendar as CalendarIcon, Clock, CheckCircle2, ArrowRight, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { analytics } from "@/lib/analytics";
 interface BookingDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -122,6 +123,12 @@ const BookingDialog = ({
       }
 
       console.log("Lead enviado com sucesso ao Monday.com:", data);
+      
+      analytics.submitBooking({
+        hasMessage: !!formData.message,
+        city: formData.city,
+      });
+      
       setStep("confirmation");
     } catch (error) {
       console.error("Erro ao enviar lead:", error);
