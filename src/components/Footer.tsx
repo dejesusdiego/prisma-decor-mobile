@@ -76,7 +76,9 @@ const Footer = () => {
         </div>
 
         <div className="border-t border-primary-foreground/20 pt-8 text-center text-sm text-primary-foreground/60">
-          <p>&copy; {new Date().getFullYear()} Prisma Interiores. Todos os direitos reservados.</p>
+          <p>&copy; {new Date().getFullYear()} Prisma Interiores</p>
+          <p>Futuris Intelligence LTDA - ME | CNPJ: 44.840.624/0001-92</p>
+          <p>Balneário Camboriú - SC | Todos os direitos reservados.</p>
         </div>
       </div>
     </footer>
