@@ -3,6 +3,7 @@ import { MessageCircle } from "lucide-react";
 
 const WhatsAppButton = () => {
   const [isVisible, setIsVisible] = useState(false);
+  const [isFooterVisible, setIsFooterVisible] = useState(false);
 
   useEffect(() => {
     const toggleVisibility = () => {
@@ -20,6 +21,26 @@ const WhatsAppButton = () => {
     };
   }, []);
 
+  useEffect(() => {
+    const footer = document.getElementById("footer");
+    if (!footer) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsFooterVisible(entry.isIntersecting);
+      },
+      {
+        threshold: 0.1,
+      }
+    );
+
+    observer.observe(footer);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
   const handleWhatsAppClick = () => {
     const phoneNumber = "5547992624706";
     const message = encodeURIComponent("Olá! Gostaria de saber mais sobre cortinas e persianas.");
@@ -30,7 +51,7 @@ const WhatsAppButton = () => {
     <button
       onClick={handleWhatsAppClick}
       className={`fixed bottom-0 left-0 right-0 z-50 bg-whatsapp hover:bg-whatsapp-hover text-whatsapp-foreground font-semibold py-4 px-6 shadow-lg transition-all duration-300 flex items-center justify-center gap-3 ${
-        isVisible ? "translate-y-0 opacity-100" : "translate-y-full opacity-0"
+        isVisible && !isFooterVisible ? "translate-y-0 opacity-100" : "translate-y-full opacity-0"
       }`}
       aria-label="Chamar no WhatsApp"
     >
