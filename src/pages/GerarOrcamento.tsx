@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { Dashboard } from '@/components/orcamento/Dashboard';
 import { NovoOrcamento } from '@/components/orcamento/NovoOrcamento';
 import { ListaOrcamentos } from '@/components/orcamento/ListaOrcamentos';
-import { ImportarDados } from '@/components/orcamento/ImportarDados';
+import { BotaoImportacaoRapida } from '@/components/orcamento/BotaoImportacaoRapida';
 
 type View = 'dashboard' | 'novoOrcamento' | 'listaOrcamentos' | 'importarDados';
 
@@ -78,7 +78,7 @@ export default function GerarOrcamento() {
         )}
 
         {view === 'importarDados' && (
-          <ImportarDados onVoltar={handleVoltarDashboard} />
+          <BotaoImportacaoRapida onVoltar={handleVoltarDashboard} />
         )}
       </main>
     </div>

@@ -1,0 +1,233 @@
+[
+  {
+    "codigoItem": "CONF-PREGA-MACHO-PREGA-PAV-O-AMERICANA-INVERTIDA-ARGOLA-RODIZIO-ILHOS",
+    "nomeModelo": "Prega Macho/Prega Pavão/Americana/Invertida (argola/rodizio/ilhos)",
+    "unidade": "mt",
+    "precoCusto": 6500.0,
+    "ativo": true
+  },
+  {
+    "codigoItem": "CONF-PRE-O-POR-TOMA-NERVURA",
+    "nomeModelo": "Preço por Toma/Nervura",
+    "unidade": "mt",
+    "precoCusto": 2000.0,
+    "ativo": true
+  },
+  {
+    "codigoItem": "CONF-PREGA-ILH-S-COSTURADO",
+    "nomeModelo": "Prega Ilhós Costurado",
+    "unidade": "mt",
+    "precoCusto": 6500.0,
+    "ativo": true
+  },
+  {
+    "codigoItem": "CONF-XALE-MODELO-SACA",
+    "nomeModelo": "Xale Modelo Saca",
+    "unidade": "mt",
+    "precoCusto": 7500.0,
+    "ativo": true
+  },
+  {
+    "codigoItem": "CONF-PREGA-MACHO-AMERICANA-MACHO-DUPLO-COM-CAPTON-RODIZIO-ARGOLA",
+    "nomeModelo": "Prega Macho/Americana/Macho Duplo com Captoné (rodizio/argola)",
+    "unidade": "mt",
+    "precoCusto": 7500.0,
+    "ativo": true
+  },
+  {
+    "codigoItem": "CONF-PREGA-MACHO-DUPLO",
+    "nomeModelo": "Prega Macho Duplo",
+    "unidade": "mt",
+    "precoCusto": 7500.0,
+    "ativo": true
+  },
+  {
+    "codigoItem": "CONF-ILHOS",
+    "nomeModelo": "Ilhos",
+    "unidade": "mt",
+    "precoCusto": 6000.0,
+    "ativo": true
+  },
+  {
+    "codigoItem": "CONF-BK-TECIDO-PREGA-SIMPLES",
+    "nomeModelo": "Bk tecido prega simples",
+    "unidade": "mt",
+    "precoCusto": 4500.0,
+    "ativo": true
+  },
+  {
+    "codigoItem": "CONF-FRANZIDO-SIMPLES",
+    "nomeModelo": "Franzido Simples",
+    "unidade": "mt",
+    "precoCusto": 5500.0,
+    "ativo": true
+  },
+  {
+    "codigoItem": "CONF-BLACK-OUT-PVC-S-PREGA-OU-PREGA-SIMPLES",
+    "nomeModelo": "Black - Out PVC s/ Prega ou Prega Simples",
+    "unidade": "mt",
+    "precoCusto": 4500.0,
+    "ativo": true
+  },
+  {
+    "codigoItem": "CONF-FORRO-COSTURADO-JUNTO",
+    "nomeModelo": "Forro Costurado Junto",
+    "unidade": "mt",
+    "precoCusto": 3500.0,
+    "ativo": true
+  },
+  {
+    "codigoItem": "CONF-FORRO-COM-BOT-ES",
+    "nomeModelo": "Forro Com Botões",
+    "unidade": "mt",
+    "precoCusto": 5000.0,
+    "ativo": true
+  },
+  {
+    "codigoItem": "CONF-AL-A-DE-TECIDO",
+    "nomeModelo": "Alça de Tecido",
+    "unidade": "mt",
+    "precoCusto": 7000.0,
+    "ativo": true
+  },
+  {
+    "codigoItem": "CONF-AL-A-DE-TECIDO-C-PREGA-SIMPLES-PRESO-BOT-O",
+    "nomeModelo": "Alça de Tecido c/prega simples preso botão",
+    "unidade": "mt",
+    "precoCusto": 7500.0,
+    "ativo": true
+  },
+  {
+    "codigoItem": "CONF-ENFIADO-VAR-O",
+    "nomeModelo": "Enfiado Varão",
+    "unidade": "mt",
+    "precoCusto": 5000.0,
+    "ativo": true
+  },
+  {
+    "codigoItem": "CONF-BARRA-LATERAL",
+    "nomeModelo": "Barra (Lateral)",
+    "unidade": "folha",
+    "precoCusto": 2000.0,
+    "ativo": true
+  },
+  {
+    "codigoItem": "CONF-ALMOFADA-SOMENTE-CAPA",
+    "nomeModelo": "Almofada (somente capa)",
+    "unidade": "cada",
+    "precoCusto": 2500.0,
+    "ativo": true
+  },
+  {
+    "codigoItem": "CONF-TRAVESSEIRO-SEM-ENCHIMENTO",
+    "nomeModelo": "Travesseiro (sem enchimento)",
+    "unidade": "cada",
+    "precoCusto": 5000.0,
+    "ativo": true
+  },
+  {
+    "codigoItem": "CONF-ABRA-ADEIRA",
+    "nomeModelo": "Abraçadeira",
+    "unidade": "cada",
+    "precoCusto": 1500.0,
+    "ativo": true
+  },
+  {
+    "codigoItem": "CONF-BAINHA-POSTI-A-OU-NORMAL",
+    "nomeModelo": "Bainha (Postiça ou Normal)",
+    "unidade": "mt",
+    "precoCusto": 3000.0,
+    "ativo": true
+  },
+  {
+    "codigoItem": "CONF-PREGA-WAVE-TRILHO-SUISSO",
+    "nomeModelo": "Prega Wave (trilho suisso)",
+    "unidade": "mt",
+    "precoCusto": 6500.0,
+    "ativo": true
+  },
+  {
+    "codigoItem": "CONF-DRAPEADO",
+    "nomeModelo": "Drapeado",
+    "unidade": "mt",
+    "precoCusto": 5500.0,
+    "ativo": true
+  },
+  {
+    "codigoItem": "CONF-LATERAL-VELCRO",
+    "nomeModelo": "Lateral Velcro",
+    "unidade": "folha",
+    "precoCusto": 1500.0,
+    "ativo": true
+  },
+  {
+    "codigoItem": "CONF-DESMANCHAR-AL-A-E-COLOCAR-RODIZIO",
+    "nomeModelo": "Desmanchar alça e colocar rodizio",
+    "unidade": "mt",
+    "precoCusto": 4000.0,
+    "ativo": true
+  },
+  {
+    "codigoItem": "CONF-TAXA-MEDI-O",
+    "nomeModelo": "Taxa Medição",
+    "unidade": "pedido",
+    "precoCusto": 8000.0,
+    "ativo": true
+  },
+  {
+    "codigoItem": "CONF-ENCHIMENTO-SEM-FIBRA",
+    "nomeModelo": "Enchimento (sem fibra)",
+    "unidade": "cada",
+    "precoCusto": 1000.0,
+    "ativo": true
+  },
+  {
+    "codigoItem": "CONF-RECORTE",
+    "nomeModelo": "Recorte",
+    "unidade": "folha",
+    "precoCusto": 2500.0,
+    "ativo": true
+  },
+  {
+    "codigoItem": "CONF-ROLOT-FITA-PALITO-FRANJA",
+    "nomeModelo": "Rolotê/Fita Palito/Franja",
+    "unidade": "mt",
+    "precoCusto": 1500.0,
+    "ativo": true
+  },
+  {
+    "codigoItem": "CONF-CORTINA-COM-P-DIREITO-ACIMA-DE-3-50MT",
+    "nomeModelo": "Cortina com pé direito acima de 3,50mt",
+    "unidade": "mt",
+    "precoCusto": 3500.0,
+    "ativo": true
+  },
+  {
+    "codigoItem": "CONF-TOALHA-SIMPLES",
+    "nomeModelo": "Toalha simples",
+    "unidade": "mt",
+    "precoCusto": 2500.0,
+    "ativo": true
+  },
+  {
+    "codigoItem": "CONF-TOALHA-TECIDO-DUPLO",
+    "nomeModelo": "Toalha tecido duplo",
+    "unidade": "mt",
+    "precoCusto": 4000.0,
+    "ativo": true
+  },
+  {
+    "codigoItem": "CONF-TOALHA-DUPLO-MATELADA",
+    "nomeModelo": "Toalha duplo matelada",
+    "unidade": "mt",
+    "precoCusto": 5500.0,
+    "ativo": true
+  },
+  {
+    "codigoItem": "CONF-EMENDA-CORTINAS-POR-ALTURA",
+    "nomeModelo": "Emenda Cortinas por altura",
+    "unidade": "emenda",
+    "precoCusto": 1500.0,
+    "ativo": true
+  }
+]
