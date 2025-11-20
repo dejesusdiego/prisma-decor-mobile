@@ -11,12 +11,44 @@ import { ptBR } from "date-fns/locale";
 import { Calendar as CalendarIcon, Clock, CheckCircle2, ArrowRight, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { analytics } from "@/lib/analytics";
+import { z } from "zod";
 interface BookingDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 type Step = "datetime" | "form" | "confirmation";
 const timeSlots = ["08:00 - 09:00", "10:00 - 11:00", "12:00 - 13:00", "14:00 - 15:00", "16:00 - 17:00", "18:00 - 19:00"];
+
+// Input validation schema
+const bookingFormSchema = z.object({
+  name: z.string()
+    .trim()
+    .min(1, "Nome é obrigatório")
+    .max(100, "Nome deve ter no máximo 100 caracteres"),
+  email: z.string()
+    .trim()
+    .email("Email inválido")
+    .max(255, "Email deve ter no máximo 255 caracteres"),
+  phone: z.string()
+    .trim()
+    .min(1, "Telefone é obrigatório")
+    .regex(/^[\d\s\-\(\)\+]+$/, "Telefone contém caracteres inválidos")
+    .max(20, "Telefone deve ter no máximo 20 caracteres"),
+  city: z.string()
+    .trim()
+    .min(1, "Cidade é obrigatória")
+    .max(200, "Cidade deve ter no máximo 200 caracteres"),
+  address: z.string()
+    .trim()
+    .min(1, "Endereço é obrigatório")
+    .max(200, "Endereço deve ter no máximo 200 caracteres"),
+  complement: z.string()
+    .trim()
+    .max(200, "Complemento deve ter no máximo 200 caracteres"),
+  message: z.string()
+    .trim()
+    .max(1000, "Mensagem deve ter no máximo 1000 caracteres")
+});
 const BookingDialog = ({
   open,
   onOpenChange
@@ -78,13 +110,19 @@ const BookingDialog = ({
       return;
     }
 
-    if (!formData.name || !formData.email || !formData.phone || !formData.city || !formData.address) {
-      toast({
-        title: "Atenção",
-        description: "Por favor, preencha todos os campos obrigatórios.",
-        variant: "destructive"
-      });
-      return;
+    // Validate form data with zod
+    try {
+      bookingFormSchema.parse(formData);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const firstError = error.errors[0];
+        toast({
+          title: "Erro de validação",
+          description: firstError.message,
+          variant: "destructive"
+        });
+        return;
+      }
     }
 
     setIsSubmitting(true);
