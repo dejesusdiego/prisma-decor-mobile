@@ -35,12 +35,14 @@ export function PersianaCard({
   const [materiais, setMateriais] = useState<Material[]>([]);
   const [acessorios, setAcessorios] = useState<Material[]>([]);
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     carregarMateriais();
   }, []);
 
   const carregarMateriais = async () => {
+    setLoading(true);
     try {
       const { data, error } = await supabase
         .from('materiais')
@@ -48,8 +50,14 @@ export function PersianaCard({
         .eq('ativo', true)
         .order('nome');
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro na query de materiais:', error);
+        throw error;
+      }
 
+      console.log('Materiais carregados:', data?.length || 0);
+
+      // Para persianas, filtramos tecidos, papéis e trilhos como material principal
       const materiaisList = data?.filter((m) => 
         m.categoria === 'tecido' || 
         m.categoria === 'papel' ||
@@ -58,14 +66,21 @@ export function PersianaCard({
       
       const acessoriosList = data?.filter((m) => m.categoria === 'acessorio') || [];
 
+      console.log('Materiais principais:', materiaisList.length, 'Acessórios:', acessoriosList.length);
+
       setMateriais(materiaisList);
       setAcessorios(acessoriosList);
 
       if (materiaisList.length === 0) {
         toast({
-          title: 'Base de dados vazia',
-          description: 'Importe a base de dados da Prisma antes de criar orçamentos',
+          title: 'Materiais não encontrados',
+          description: 'Retorne ao dashboard e importe a base de dados da Prisma',
           variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Materiais carregados',
+          description: `${materiaisList.length} materiais principais e ${acessoriosList.length} acessórios disponíveis`,
         });
       }
     } catch (error) {
@@ -75,6 +90,8 @@ export function PersianaCard({
         description: 'Verifique sua conexão e tente novamente',
         variant: 'destructive',
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -201,6 +218,16 @@ export function PersianaCard({
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
         <CardTitle className="text-lg">{persiana.nomeIdentificacao}</CardTitle>
         <div className="flex gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={carregarMateriais}
+            disabled={loading}
+            title="Recarregar materiais"
+          >
+            {loading ? 'Carregando...' : 'Recarregar'}
+          </Button>
           <Button
             type="button"
             variant="outline"
