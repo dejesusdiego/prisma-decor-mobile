@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import OurProducts from "./pages/OurProducts";
 import Auth from "./pages/Auth";
 import GerarOrcamento from "./pages/GerarOrcamento";
+import GerenciarUsuarios from "./pages/GerenciarUsuarios";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -29,6 +30,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <GerarOrcamento />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/gerenciarusuarios" 
+              element={
+                <ProtectedRoute>
+                  <GerenciarUsuarios />
                 </ProtectedRoute>
               } 
             />

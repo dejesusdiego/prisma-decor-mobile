@@ -1,17 +1,27 @@
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
-import { LogOut } from 'lucide-react';
+import { LogOut, Users } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 export default function GerarOrcamento() {
   const { user, signOut } = useAuth();
+  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
           <h1 className="text-2xl font-bold text-gray-900">Sistema de Orçamentos</h1>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
             <span className="text-sm text-gray-600">{user?.email}</span>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => navigate('/gerenciarusuarios')}
+            >
+              <Users className="h-4 w-4 mr-2" />
+              Usuários
+            </Button>
             <Button variant="outline" size="sm" onClick={signOut}>
               <LogOut className="h-4 w-4 mr-2" />
               Sair
