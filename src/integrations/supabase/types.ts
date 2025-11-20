@@ -28,6 +28,7 @@ export type Database = {
           forro_id: string | null
           id: string
           largura: number
+          material_principal_id: string | null
           nome_identificacao: string
           orcamento_id: string
           pontos_instalacao: number | null
@@ -36,6 +37,7 @@ export type Database = {
           quantidade: number
           tecido_id: string
           tipo_cortina: string
+          tipo_produto: string | null
           trilho_id: string
           updated_at: string
         }
@@ -52,6 +54,7 @@ export type Database = {
           forro_id?: string | null
           id?: string
           largura: number
+          material_principal_id?: string | null
           nome_identificacao: string
           orcamento_id: string
           pontos_instalacao?: number | null
@@ -60,6 +63,7 @@ export type Database = {
           quantidade?: number
           tecido_id: string
           tipo_cortina: string
+          tipo_produto?: string | null
           trilho_id: string
           updated_at?: string
         }
@@ -76,6 +80,7 @@ export type Database = {
           forro_id?: string | null
           id?: string
           largura?: number
+          material_principal_id?: string | null
           nome_identificacao?: string
           orcamento_id?: string
           pontos_instalacao?: number | null
@@ -84,6 +89,7 @@ export type Database = {
           quantidade?: number
           tecido_id?: string
           tipo_cortina?: string
+          tipo_produto?: string | null
           trilho_id?: string
           updated_at?: string
         }
@@ -91,6 +97,13 @@ export type Database = {
           {
             foreignKeyName: "cortina_items_forro_id_fkey"
             columns: ["forro_id"]
+            isOneToOne: false
+            referencedRelation: "materiais"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cortina_items_material_principal_id_fkey"
+            columns: ["material_principal_id"]
             isOneToOne: false
             referencedRelation: "materiais"
             referencedColumns: ["id"]

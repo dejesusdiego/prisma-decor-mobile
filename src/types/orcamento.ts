@@ -11,15 +11,18 @@ export interface Cortina {
   largura: number;
   altura: number;
   quantidade: number;
-  tipoCortina: 'wave' | 'prega' | 'painel' | 'rolo';
-  tecidoId: string;
+  tipoProduto: 'cortina' | 'persiana';
+  tipoCortina: 'wave' | 'prega' | 'painel' | 'rolo' | 'horizontal' | 'vertical' | 'romana' | 'celular' | 'madeira';
+  tecidoId?: string;
   forroId?: string;
-  trilhoId: string;
+  trilhoId?: string;
+  materialPrincipalId?: string; // Para persianas que não usam tecido
   precisaInstalacao: boolean;
   pontosInstalacao?: number;
   custoTecido?: number;
   custoForro?: number;
   custoTrilho?: number;
+  custoMaterialPrincipal?: number;
   custoCostura?: number;
   custoInstalacao?: number;
   custoTotal?: number;
@@ -56,6 +59,11 @@ export const COEFICIENTES_CORTINA = {
   prega: 2.5,
   painel: 1.0,
   rolo: 1.0,
+  horizontal: 1.0, // Persianas horizontais
+  vertical: 1.0,   // Persianas verticais
+  romana: 1.0,     // Persianas romanas
+  celular: 1.0,    // Persianas celulares
+  madeira: 1.0,    // Persianas de madeira
 } as const;
 
 export const OPCOES_AMBIENTE = [
