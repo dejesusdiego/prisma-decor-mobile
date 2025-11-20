@@ -6,8 +6,9 @@ import { useNavigate } from 'react-router-dom';
 import { Dashboard } from '@/components/orcamento/Dashboard';
 import { NovoOrcamento } from '@/components/orcamento/NovoOrcamento';
 import { ListaOrcamentos } from '@/components/orcamento/ListaOrcamentos';
+import { ImportarDados } from '@/components/orcamento/ImportarDados';
 
-type View = 'dashboard' | 'novoOrcamento' | 'listaOrcamentos';
+type View = 'dashboard' | 'novoOrcamento' | 'listaOrcamentos' | 'importarDados';
 
 export default function GerarOrcamento() {
   const { user, signOut } = useAuth();
@@ -58,6 +59,7 @@ export default function GerarOrcamento() {
           <Dashboard
             onNovoOrcamento={handleNovoOrcamento}
             onMeusOrcamentos={() => setView('listaOrcamentos')}
+            onImportarDados={() => setView('importarDados')}
           />
         )}
 
@@ -73,6 +75,10 @@ export default function GerarOrcamento() {
             onVoltar={handleVoltarDashboard}
             onEditar={handleEditarOrcamento}
           />
+        )}
+
+        {view === 'importarDados' && (
+          <ImportarDados onVoltar={handleVoltarDashboard} />
         )}
       </main>
     </div>

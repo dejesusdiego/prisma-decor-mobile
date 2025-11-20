@@ -5,9 +5,10 @@ import { Plus, FileText } from 'lucide-react';
 interface DashboardProps {
   onNovoOrcamento: () => void;
   onMeusOrcamentos: () => void;
+  onImportarDados: () => void;
 }
 
-export function Dashboard({ onNovoOrcamento, onMeusOrcamentos }: DashboardProps) {
+export function Dashboard({ onNovoOrcamento, onMeusOrcamentos, onImportarDados }: DashboardProps) {
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-8">
       <div className="text-center space-y-2">
@@ -43,6 +44,13 @@ export function Dashboard({ onNovoOrcamento, onMeusOrcamentos }: DashboardProps)
             </Button>
           </CardContent>
         </Card>
+      </div>
+
+      <div className="flex justify-center mt-8">
+        <Button variant="outline" onClick={onImportarDados}>
+          <Plus className="mr-2 h-4 w-4" />
+          Importar Base de Dados
+        </Button>
       </div>
     </div>
   );

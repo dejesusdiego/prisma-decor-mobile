@@ -122,6 +122,7 @@ export type Database = {
         Row: {
           ativo: boolean
           categoria: string
+          codigo_item: string | null
           created_at: string
           id: string
           largura_metro: number | null
@@ -136,6 +137,7 @@ export type Database = {
         Insert: {
           ativo?: boolean
           categoria: string
+          codigo_item?: string | null
           created_at?: string
           id?: string
           largura_metro?: number | null
@@ -150,6 +152,7 @@ export type Database = {
         Update: {
           ativo?: boolean
           categoria?: string
+          codigo_item?: string | null
           created_at?: string
           id?: string
           largura_metro?: number | null
@@ -226,6 +229,7 @@ export type Database = {
       servicos_confeccao: {
         Row: {
           ativo: boolean
+          codigo_item: string | null
           created_at: string
           id: string
           margem_tabela_percent: number
@@ -237,6 +241,7 @@ export type Database = {
         }
         Insert: {
           ativo?: boolean
+          codigo_item?: string | null
           created_at?: string
           id?: string
           margem_tabela_percent?: number
@@ -248,6 +253,7 @@ export type Database = {
         }
         Update: {
           ativo?: boolean
+          codigo_item?: string | null
           created_at?: string
           id?: string
           margem_tabela_percent?: number
@@ -262,6 +268,7 @@ export type Database = {
       servicos_instalacao: {
         Row: {
           ativo: boolean
+          codigo_item: string | null
           created_at: string
           id: string
           margem_tabela_percent: number
@@ -272,6 +279,7 @@ export type Database = {
         }
         Insert: {
           ativo?: boolean
+          codigo_item?: string | null
           created_at?: string
           id?: string
           margem_tabela_percent?: number
@@ -282,6 +290,7 @@ export type Database = {
         }
         Update: {
           ativo?: boolean
+          codigo_item?: string | null
           created_at?: string
           id?: string
           margem_tabela_percent?: number
