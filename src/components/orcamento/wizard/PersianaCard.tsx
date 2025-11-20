@@ -64,6 +64,11 @@ export function PersianaCard({
   const salvarPersiana = async () => {
     setSaving(true);
     try {
+      // Validar campos obrigatórios
+      if (!persiana.materialPrincipalId) {
+        throw new Error('Material principal é obrigatório');
+      }
+
       // Buscar materiais e serviços para calcular custos
       const { data: materiaisData } = await supabase
         .from('materiais')
@@ -77,17 +82,19 @@ export function PersianaCard({
         .limit(1)
         .maybeSingle();
 
-      if (!materiaisData) {
-        throw new Error('Materiais não encontrados');
+      if (!materiaisData || materiaisData.length === 0) {
+        throw new Error('Materiais não encontrados na base de dados');
       }
 
-      // Cálculo simplificado para persianas
-      const materialPrincipal = persiana.materialPrincipalId 
-        ? materiaisData.find((m) => m.id === persiana.materialPrincipalId)
-        : null;
+      // Usar função de cálculo específica para persianas
+      const materialPrincipal = materiaisData.find((m) => m.id === persiana.materialPrincipalId);
       
+      if (!materialPrincipal) {
+        throw new Error('Material principal não encontrado');
+      }
+
       const area = persiana.largura * persiana.altura * persiana.quantidade;
-      const custoMaterialPrincipal = materialPrincipal ? area * materialPrincipal.preco_custo : 0;
+      const custoMaterialPrincipal = area * materialPrincipal.preco_custo;
       
       const trilho = persiana.trilhoId 
         ? materiaisData.find((m) => m.id === persiana.trilhoId)
