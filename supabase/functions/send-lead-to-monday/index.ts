@@ -17,6 +17,67 @@ interface LeadData {
   scheduledTime: string;
 }
 
+// Simple in-memory rate limiting (per IP address)
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+const RATE_LIMIT_WINDOW = 60 * 60 * 1000; // 1 hour
+const MAX_REQUESTS_PER_WINDOW = 5;
+
+function checkRateLimit(ip: string): { allowed: boolean; retryAfter?: number } {
+  const now = Date.now();
+  const record = rateLimitMap.get(ip);
+
+  if (!record || now > record.resetTime) {
+    // New window
+    rateLimitMap.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
+    return { allowed: true };
+  }
+
+  if (record.count >= MAX_REQUESTS_PER_WINDOW) {
+    // Rate limit exceeded
+    const retryAfter = Math.ceil((record.resetTime - now) / 1000);
+    return { allowed: false, retryAfter };
+  }
+
+  // Increment count
+  record.count++;
+  return { allowed: true };
+}
+
+// Server-side input validation
+function validateLeadData(data: any): { valid: boolean; error?: string } {
+  if (!data.name || typeof data.name !== 'string' || data.name.trim().length === 0 || data.name.length > 100) {
+    return { valid: false, error: 'Nome inválido (máximo 100 caracteres)' };
+  }
+  
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!data.email || typeof data.email !== 'string' || !emailRegex.test(data.email) || data.email.length > 255) {
+    return { valid: false, error: 'Email inválido (máximo 255 caracteres)' };
+  }
+  
+  const phoneRegex = /^[\d\s\-\(\)\+]+$/;
+  if (!data.phone || typeof data.phone !== 'string' || !phoneRegex.test(data.phone) || data.phone.length > 20) {
+    return { valid: false, error: 'Telefone inválido (máximo 20 caracteres)' };
+  }
+  
+  if (!data.city || typeof data.city !== 'string' || data.city.trim().length === 0 || data.city.length > 200) {
+    return { valid: false, error: 'Cidade inválida (máximo 200 caracteres)' };
+  }
+  
+  if (!data.address || typeof data.address !== 'string' || data.address.trim().length === 0 || data.address.length > 200) {
+    return { valid: false, error: 'Endereço inválido (máximo 200 caracteres)' };
+  }
+  
+  if (data.complement && (typeof data.complement !== 'string' || data.complement.length > 200)) {
+    return { valid: false, error: 'Complemento inválido (máximo 200 caracteres)' };
+  }
+  
+  if (data.message && (typeof data.message !== 'string' || data.message.length > 1000)) {
+    return { valid: false, error: 'Mensagem inválida (máximo 1000 caracteres)' };
+  }
+  
+  return { valid: true };
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -24,8 +85,46 @@ serve(async (req) => {
   }
 
   try {
+    // Get client IP for rate limiting
+    const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0] || 
+                     req.headers.get('x-real-ip') || 
+                     'unknown';
+
+    // Check rate limit
+    const rateLimitCheck = checkRateLimit(clientIp);
+    if (!rateLimitCheck.allowed) {
+      console.warn(`Rate limit exceeded for IP: ${clientIp}`);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Limite de requisições excedido. Tente novamente mais tarde.',
+          retryAfter: rateLimitCheck.retryAfter 
+        }),
+        {
+          status: 429,
+          headers: {
+            ...corsHeaders,
+            'Content-Type': 'application/json',
+            'Retry-After': String(rateLimitCheck.retryAfter)
+          }
+        }
+      );
+    }
+
     const leadData: LeadData = await req.json();
     console.log('Recebendo lead:', leadData);
+
+    // Validate input data
+    const validation = validateLeadData(leadData);
+    if (!validation.valid) {
+      console.error('Validation failed:', validation.error);
+      return new Response(
+        JSON.stringify({ error: validation.error }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
 
     const mondayApiToken = Deno.env.get('MONDAY_API_TOKEN');
     
