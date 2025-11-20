@@ -103,15 +103,18 @@ export function CortinaCard({
         largura: cortina.largura,
         altura: cortina.altura,
         quantidade: cortina.quantidade,
+        tipo_produto: 'cortina',
         tipo_cortina: cortina.tipoCortina,
         tecido_id: cortina.tecidoId,
         forro_id: cortina.forroId || null,
         trilho_id: cortina.trilhoId,
+        material_principal_id: null,
         precisa_instalacao: cortina.precisaInstalacao,
         pontos_instalacao: cortina.pontosInstalacao || 1,
         custo_tecido: custos.custoTecido,
         custo_forro: custos.custoForro,
         custo_trilho: custos.custoTrilho,
+        custo_acessorios: 0,
         custo_costura: custos.custoCostura,
         custo_instalacao: custos.custoInstalacao,
         custo_total: custos.custoTotal,
@@ -136,7 +139,7 @@ export function CortinaCard({
 
       if (result.error) throw result.error;
 
-      onUpdate({ ...cortina, id: result.data.id, ...custos });
+      onUpdate({ ...cortina, id: result.data.id, tipoProduto: 'cortina', ...custos });
 
       toast({
         title: 'Sucesso',

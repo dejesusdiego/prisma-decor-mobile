@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { EtapaCliente } from './wizard/EtapaCliente';
-import { EtapaCortinas } from './wizard/EtapaCortinas';
+import { EtapaProdutos } from './wizard/EtapaProdutos';
 import { EtapaResumo } from './wizard/EtapaResumo';
 import type { DadosOrcamento, Cortina } from '@/types/orcamento';
 
@@ -74,14 +74,14 @@ export function NovoOrcamento({ onVoltar, orcamentoId }: NovoOrcamentoProps) {
         />
       )}
 
-      {etapa === 2 && orcamentoIdAtual && (
-        <EtapaCortinas
-          orcamentoId={orcamentoIdAtual}
-          cortinasIniciais={cortinas}
-          onAvancar={handleAvancarEtapa2}
-          onVoltar={() => setEtapa(1)}
-        />
-      )}
+        {etapa === 2 && orcamentoIdAtual && (
+          <EtapaProdutos
+            orcamentoId={orcamentoIdAtual}
+            produtosIniciais={cortinas}
+            onAvancar={handleAvancarEtapa2}
+            onVoltar={() => setEtapa(1)}
+          />
+        )}
 
       {etapa === 3 && orcamentoIdAtual && (
         <EtapaResumo
