@@ -101,7 +101,14 @@ export function BotaoImportacaoRapida({ onVoltar }: { onVoltar: () => void }) {
         description: `${countMateriais} materiais, ${countConfeccao} serviços de confecção e ${countInstalacao} serviços de instalação importados.`,
       });
 
-      setTimeout(() => onVoltar(), 2000);
+      // Aguardar 2 segundos antes de voltar
+      setTimeout(() => {
+        toast({
+          title: 'Pronto para usar!',
+          description: 'Agora você pode criar orçamentos com a base completa de dados.',
+        });
+        onVoltar();
+      }, 2000);
     } catch (error) {
       console.error('Erro durante importação:', error);
       toast({

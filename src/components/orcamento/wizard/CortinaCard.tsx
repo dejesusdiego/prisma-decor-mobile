@@ -276,11 +276,17 @@ export function CortinaCard({
                 <SelectValue placeholder="Selecione o tecido" />
               </SelectTrigger>
               <SelectContent>
-                {tecidos.map((tecido) => (
-                  <SelectItem key={tecido.id} value={tecido.id}>
-                    {tecido.nome}
+                {tecidos.length === 0 ? (
+                  <SelectItem value="none" disabled>
+                    Nenhum tecido disponível - Importe a base de dados
                   </SelectItem>
-                ))}
+                ) : (
+                  tecidos.map((tecido) => (
+                    <SelectItem key={tecido.id} value={tecido.id}>
+                      {tecido.nome}
+                    </SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
           </div>
