@@ -45,14 +45,36 @@ export function PersianaCard({
       const { data, error } = await supabase
         .from('materiais')
         .select('*')
-        .eq('ativo', true);
+        .eq('ativo', true)
+        .order('nome');
 
       if (error) throw error;
 
-      setMateriais(data?.filter((m) => m.categoria === 'tecido' || m.categoria === 'papel') || []);
-      setAcessorios(data?.filter((m) => m.categoria === 'acessorio') || []);
+      const materiaisList = data?.filter((m) => 
+        m.categoria === 'tecido' || 
+        m.categoria === 'papel' ||
+        m.categoria === 'trilho'
+      ) || [];
+      
+      const acessoriosList = data?.filter((m) => m.categoria === 'acessorio') || [];
+
+      setMateriais(materiaisList);
+      setAcessorios(acessoriosList);
+
+      if (materiaisList.length === 0) {
+        toast({
+          title: 'Base de dados vazia',
+          description: 'Importe a base de dados da Prisma antes de criar orçamentos',
+          variant: 'destructive',
+        });
+      }
     } catch (error) {
       console.error('Erro ao carregar materiais:', error);
+      toast({
+        title: 'Erro ao carregar materiais',
+        description: 'Verifique sua conexão e tente novamente',
+        variant: 'destructive',
+      });
     }
   };
 
