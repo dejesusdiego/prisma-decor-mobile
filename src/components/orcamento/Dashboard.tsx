@@ -48,16 +48,21 @@ export function Dashboard({ onNovoOrcamento, onMeusOrcamentos, onImportarDados }
       {!loading && materiaisCount < 100 && (
         <Alert className="max-w-2xl">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Base de dados não importada</AlertTitle>
-          <AlertDescription>
-            Você tem apenas {materiaisCount} materiais cadastrados. Para criar orçamentos completos, 
-            importe a base de dados da Prisma com ~2.700 materiais e serviços.
+          <AlertTitle>⚠️ Ação Necessária: Importar Base de Dados</AlertTitle>
+          <AlertDescription className="space-y-2">
+            <p>
+              Você tem apenas {materiaisCount} materiais cadastrados. 
+              <strong> Os campos de seleção estarão vazios até importar os dados.</strong>
+            </p>
+            <p>
+              Clique no botão abaixo para importar ~2.700 materiais e serviços da Prisma (leva ~2-3 minutos).
+            </p>
             <Button 
-              variant="link" 
-              className="px-2 h-auto" 
               onClick={onImportarDados}
+              className="mt-2"
             >
-              Importar agora
+              <Plus className="mr-2 h-4 w-4" />
+              Importar Base de Dados Agora
             </Button>
           </AlertDescription>
         </Alert>

@@ -300,11 +300,17 @@ export function PersianaCard({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">Selecionar...</SelectItem>
-                {materiais.map((material) => (
-                  <SelectItem key={material.id} value={material.id}>
-                    {material.nome}
+                {materiais.length === 0 ? (
+                  <SelectItem value="empty" disabled>
+                    Nenhum material disponível - Importe a base de dados
                   </SelectItem>
-                ))}
+                ) : (
+                  materiais.map((material) => (
+                    <SelectItem key={material.id} value={material.id}>
+                      {material.nome}
+                    </SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
           </div>
