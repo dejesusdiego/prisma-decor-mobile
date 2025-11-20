@@ -1,6 +1,9 @@
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Plus, FileText } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Plus, FileText, AlertCircle } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface DashboardProps {
   onNovoOrcamento: () => void;
@@ -9,6 +12,28 @@ interface DashboardProps {
 }
 
 export function Dashboard({ onNovoOrcamento, onMeusOrcamentos, onImportarDados }: DashboardProps) {
+  const [materiaisCount, setMateriaisCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    verificarDados();
+  }, []);
+
+  const verificarDados = async () => {
+    try {
+      const { count } = await supabase
+        .from('materiais')
+        .select('*', { count: 'exact', head: true })
+        .eq('ativo', true);
+      
+      setMateriaisCount(count || 0);
+    } catch (error) {
+      console.error('Erro ao verificar dados:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-8">
       <div className="text-center space-y-2">
@@ -19,6 +44,24 @@ export function Dashboard({ onNovoOrcamento, onMeusOrcamentos, onImportarDados }
           Prisma Interiores
         </p>
       </div>
+
+      {!loading && materiaisCount < 100 && (
+        <Alert className="max-w-2xl">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Base de dados não importada</AlertTitle>
+          <AlertDescription>
+            Você tem apenas {materiaisCount} materiais cadastrados. Para criar orçamentos completos, 
+            importe a base de dados da Prisma com ~2.700 materiais e serviços.
+            <Button 
+              variant="link" 
+              className="px-2 h-auto" 
+              onClick={onImportarDados}
+            >
+              Importar agora
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-2xl">
         <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={onNovoOrcamento}>

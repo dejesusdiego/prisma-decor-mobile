@@ -46,15 +46,33 @@ export function CortinaCard({
       const { data, error } = await supabase
         .from('materiais')
         .select('*')
-        .eq('ativo', true);
+        .eq('ativo', true)
+        .order('nome');
 
       if (error) throw error;
 
-      setTecidos(data?.filter((m) => m.categoria === 'tecido') || []);
-      setForros(data?.filter((m) => m.categoria === 'forro') || []);
-      setTrilhos(data?.filter((m) => m.categoria === 'trilho') || []);
+      const tecidosList = data?.filter((m) => m.categoria === 'tecido') || [];
+      const forrosList = data?.filter((m) => m.categoria === 'forro') || [];
+      const trilhosList = data?.filter((m) => m.categoria === 'trilho') || [];
+
+      setTecidos(tecidosList);
+      setForros(forrosList);
+      setTrilhos(trilhosList);
+
+      if (tecidosList.length === 0) {
+        toast({
+          title: 'Base de dados vazia',
+          description: 'Importe a base de dados da Prisma antes de criar orçamentos',
+          variant: 'destructive',
+        });
+      }
     } catch (error) {
       console.error('Erro ao carregar materiais:', error);
+      toast({
+        title: 'Erro ao carregar materiais',
+        description: 'Verifique sua conexão e tente novamente',
+        variant: 'destructive',
+      });
     }
   };
 
