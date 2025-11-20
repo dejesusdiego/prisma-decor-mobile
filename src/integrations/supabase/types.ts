@@ -35,10 +35,10 @@ export type Database = {
           precisa_instalacao: boolean
           preco_venda: number | null
           quantidade: number
-          tecido_id: string
+          tecido_id: string | null
           tipo_cortina: string
           tipo_produto: string | null
-          trilho_id: string
+          trilho_id: string | null
           updated_at: string
         }
         Insert: {
@@ -61,10 +61,10 @@ export type Database = {
           precisa_instalacao?: boolean
           preco_venda?: number | null
           quantidade?: number
-          tecido_id: string
+          tecido_id?: string | null
           tipo_cortina: string
           tipo_produto?: string | null
-          trilho_id: string
+          trilho_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -87,10 +87,10 @@ export type Database = {
           precisa_instalacao?: boolean
           preco_venda?: number | null
           quantidade?: number
-          tecido_id?: string
+          tecido_id?: string | null
           tipo_cortina?: string
           tipo_produto?: string | null
-          trilho_id?: string
+          trilho_id?: string | null
           updated_at?: string
         }
         Relationships: [
