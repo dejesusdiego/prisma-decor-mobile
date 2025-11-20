@@ -36,12 +36,14 @@ export function CortinaCard({
   const [forros, setForros] = useState<Material[]>([]);
   const [trilhos, setTrilhos] = useState<Material[]>([]);
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     carregarMateriais();
   }, []);
 
   const carregarMateriais = async () => {
+    setLoading(true);
     try {
       const { data, error } = await supabase
         .from('materiais')
@@ -49,11 +51,18 @@ export function CortinaCard({
         .eq('ativo', true)
         .order('nome');
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro na query de materiais:', error);
+        throw error;
+      }
+
+      console.log('Materiais carregados:', data?.length || 0);
 
       const tecidosList = data?.filter((m) => m.categoria === 'tecido') || [];
       const forrosList = data?.filter((m) => m.categoria === 'forro') || [];
       const trilhosList = data?.filter((m) => m.categoria === 'trilho') || [];
+
+      console.log('Tecidos:', tecidosList.length, 'Forros:', forrosList.length, 'Trilhos:', trilhosList.length);
 
       setTecidos(tecidosList);
       setForros(forrosList);
@@ -61,9 +70,14 @@ export function CortinaCard({
 
       if (tecidosList.length === 0) {
         toast({
-          title: 'Base de dados vazia',
-          description: 'Importe a base de dados da Prisma antes de criar orçamentos',
+          title: 'Materiais não encontrados',
+          description: 'Retorne ao dashboard e importe a base de dados da Prisma',
           variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Materiais carregados',
+          description: `${tecidosList.length} tecidos, ${forrosList.length} forros, ${trilhosList.length} trilhos disponíveis`,
         });
       }
     } catch (error) {
@@ -73,6 +87,8 @@ export function CortinaCard({
         description: 'Verifique sua conexão e tente novamente',
         variant: 'destructive',
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -180,6 +196,16 @@ export function CortinaCard({
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
         <CardTitle className="text-lg">{cortina.nomeIdentificacao}</CardTitle>
         <div className="flex gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={carregarMateriais}
+            disabled={loading}
+            title="Recarregar materiais"
+          >
+            {loading ? 'Carregando...' : 'Recarregar'}
+          </Button>
           <Button
             type="button"
             variant="outline"
