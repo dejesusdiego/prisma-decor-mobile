@@ -267,14 +267,14 @@ export function CortinaCard({
           <div className="space-y-2">
             <Label htmlFor={`forro-${cortina.id}`}>Forro (Opcional)</Label>
             <Select
-              value={cortina.forroId || ''}
-              onValueChange={(value) => handleChange('forroId', value || undefined)}
+              value={cortina.forroId || 'none'}
+              onValueChange={(value) => handleChange('forroId', value === 'none' ? undefined : value)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Selecione o forro" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Sem forro</SelectItem>
+                <SelectItem value="none">Sem forro</SelectItem>
                 {forros.map((forro) => (
                   <SelectItem key={forro.id} value={forro.id}>
                     {forro.nome}
