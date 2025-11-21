@@ -11,109 +11,135 @@ export function BotaoImportacaoRapida({ onVoltar }: { onVoltar: () => void }) {
   const importarTodosArquivos = async () => {
     setImporting(true);
     try {
-      // Importar materials.json
-      const materialsResponse = await fetch('/data/materials.json');
-      const materialsData = await materialsResponse.json();
-      
-      console.log(`Importando ${materialsData.length} materiais...`);
-      
-      let countMateriais = 0;
-      for (const item of materialsData) {
-        const materialData = {
-          codigo_item: item.codigoItem,
-          nome: item.nome,
-          categoria: item.categoria,
-          unidade: item.unidade || 'M',
-          largura_metro: item.larguraMetro || null,
-          preco_custo: item.precoCusto,
-          preco_tabela: item.precoCusto * 1.615,
-          ativo: item.ativo !== false,
-        };
+      // 1. Carregar arquivos JSON de seed
+      const materialsRes = await fetch('/data/seed-materials.json');
+      const confeccaoRes = await fetch('/data/seed-servicos-confeccao.json');
+      const instalacaoRes = await fetch('/data/seed-servicos-instalacao.json');
+
+      if (!materialsRes.ok || !confeccaoRes.ok || !instalacaoRes.ok) {
+        throw new Error('Erro ao carregar arquivos de dados');
+      }
+
+      const materialsData = await materialsRes.json();
+      const confeccaoData = await confeccaoRes.json();
+      const instalacaoData = await instalacaoRes.json();
+
+      toast({
+        title: 'Iniciando importação',
+        description: `${materialsData.length} materiais, ${confeccaoData.length} serviços de confecção, ${instalacaoData.length} serviços de instalação`,
+      });
+
+      let materiaisImportados = 0;
+      let confeccaoImportados = 0;
+      let instalacaoImportados = 0;
+
+      // 2. Importar Materiais em lotes de 50
+      const batchSize = 50;
+      for (let i = 0; i < materialsData.length; i += batchSize) {
+        const batch = materialsData.slice(i, i + batchSize);
+        const materialToInsert = batch.map((item: any) => {
+          const precoCusto = Number(item.precoCusto) / 100;
+          const precoTabela = precoCusto * 1.615;
+          
+          return {
+            codigo_item: item.codigoItem,
+            nome: item.nome,
+            categoria: item.categoria,
+            unidade: item.unidade || 'M',
+            largura_metro: item.larguraMetro || null,
+            preco_custo: precoCusto,
+            preco_tabela: precoTabela,
+            margem_tabela_percent: 61.5,
+            perda_percent: 10,
+            ativo: item.ativo !== false,
+          };
+        });
 
         const { error } = await supabase
           .from('materiais')
-          .upsert(materialData, { onConflict: 'codigo_item' });
+          .upsert(materialToInsert, {
+            onConflict: 'codigo_item',
+            ignoreDuplicates: false,
+          });
 
-        if (error) {
-          console.error('Erro ao inserir material:', item.codigoItem, error);
-        } else {
-          countMateriais++;
+        if (error) throw error;
+        materiaisImportados += batch.length;
+        
+        console.log(`Materiais: ${materiaisImportados}/${materialsData.length}`);
+        
+        if (materiaisImportados % 500 === 0 || materiaisImportados === materialsData.length) {
+          toast({
+            title: 'Importando materiais...',
+            description: `${materiaisImportados}/${materialsData.length} materiais`,
+          });
         }
       }
 
-      // Importar servicos_confeccao.json
-      const confeccaoResponse = await fetch('/data/servicos_confeccao.json');
-      const confeccaoData = await confeccaoResponse.json();
-      
-      console.log(`Importando ${confeccaoData.length} serviços de confecção...`);
-      
-      let countConfeccao = 0;
-      for (const item of confeccaoData) {
-        const confeccaoDataObj = {
+      // 3. Importar Serviços de Confecção
+      const confeccaoToInsert = confeccaoData.map((item: any) => {
+        const precoCusto = Number(item.precoCusto) / 100;
+        const precoTabela = precoCusto * 1.55;
+        
+        return {
           codigo_item: item.codigoItem,
           nome_modelo: item.nomeModelo,
           unidade: item.unidade || 'mt',
-          preco_custo: item.precoCusto,
-          preco_tabela: item.precoCusto * 1.55,
+          preco_custo: precoCusto,
+          preco_tabela: precoTabela,
+          margem_tabela_percent: 55,
           ativo: item.ativo !== false,
         };
-
-        const { error } = await supabase
-          .from('servicos_confeccao')
-          .upsert(confeccaoDataObj, { onConflict: 'codigo_item' });
-
-        if (error) {
-          console.error('Erro ao inserir serviço:', item.codigoItem, error);
-        } else {
-          countConfeccao++;
-        }
-      }
-
-      // Importar servicos_instalacao.json
-      const instalacaoResponse = await fetch('/data/servicos_instalacao.json');
-      const instalacaoData = await instalacaoResponse.json();
-      
-      console.log(`Importando ${instalacaoData.length} serviços de instalação...`);
-      
-      let countInstalacao = 0;
-      for (const item of instalacaoData) {
-        const instalacaoDataObj = {
-          codigo_item: item.codigoItem,
-          nome: item.nome,
-          preco_custo_por_ponto: item.precoCustoPorPonto,
-          preco_tabela_por_ponto: item.precoCustoPorPonto * 1.615,
-          ativo: item.ativo !== false,
-        };
-
-        const { error } = await supabase
-          .from('servicos_instalacao')
-          .upsert(instalacaoDataObj, { onConflict: 'codigo_item' });
-
-        if (error) {
-          console.error('Erro ao inserir instalação:', item.codigoItem, error);
-        } else {
-          countInstalacao++;
-        }
-      }
-
-      toast({
-        title: 'Importação concluída com sucesso!',
-        description: `${countMateriais} materiais, ${countConfeccao} serviços de confecção e ${countInstalacao} serviços de instalação importados.`,
       });
 
-      // Aguardar 2 segundos antes de voltar
-      setTimeout(() => {
-        toast({
-          title: 'Pronto para usar!',
-          description: 'Agora você pode criar orçamentos com a base completa de dados.',
+      const { error: confeccaoError } = await supabase
+        .from('servicos_confeccao')
+        .upsert(confeccaoToInsert, {
+          onConflict: 'codigo_item',
+          ignoreDuplicates: false,
         });
+
+      if (confeccaoError) throw confeccaoError;
+      confeccaoImportados = confeccaoData.length;
+
+      // 4. Importar Serviços de Instalação
+      const instalacaoToInsert = instalacaoData.map((item: any) => {
+        const precoCustoPorPonto = Number(item.precoCustoPorPonto);
+        const precoTabelaPorPonto = precoCustoPorPonto * 1.615;
+        
+        return {
+          codigo_item: item.codigoItem,
+          nome: item.nome,
+          preco_custo_por_ponto: precoCustoPorPonto,
+          preco_tabela_por_ponto: precoTabelaPorPonto,
+          margem_tabela_percent: 61.5,
+          ativo: item.ativo !== false,
+        };
+      });
+
+      const { error: instalacaoError } = await supabase
+        .from('servicos_instalacao')
+        .upsert(instalacaoToInsert, {
+          onConflict: 'codigo_item',
+          ignoreDuplicates: false,
+        });
+
+      if (instalacaoError) throw instalacaoError;
+      instalacaoImportados = instalacaoData.length;
+
+      toast({
+        title: 'Importação Concluída!',
+        description: `✓ ${materiaisImportados} materiais\n✓ ${confeccaoImportados} serviços de confecção\n✓ ${instalacaoImportados} serviços de instalação`,
+        duration: 5000,
+      });
+
+      setTimeout(() => {
         onVoltar();
       }, 2000);
     } catch (error) {
-      console.error('Erro durante importação:', error);
+      console.error('Erro na importação:', error);
       toast({
         title: 'Erro na importação',
-        description: 'Ocorreu um erro ao importar os dados. Verifique o console.',
+        description: error instanceof Error ? error.message : 'Erro desconhecido',
         variant: 'destructive',
       });
     } finally {
