@@ -95,38 +95,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "cortina_items_forro_id_fkey"
-            columns: ["forro_id"]
-            isOneToOne: false
-            referencedRelation: "materiais"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "cortina_items_material_principal_id_fkey"
-            columns: ["material_principal_id"]
-            isOneToOne: false
-            referencedRelation: "materiais"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "cortina_items_orcamento_id_fkey"
             columns: ["orcamento_id"]
             isOneToOne: false
             referencedRelation: "orcamentos"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "cortina_items_tecido_id_fkey"
-            columns: ["tecido_id"]
-            isOneToOne: false
-            referencedRelation: "materiais"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "cortina_items_trilho_id_fkey"
-            columns: ["trilho_id"]
-            isOneToOne: false
-            referencedRelation: "materiais"
             referencedColumns: ["id"]
           },
         ]

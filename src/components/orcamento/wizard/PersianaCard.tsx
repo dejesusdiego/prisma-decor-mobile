@@ -315,12 +315,18 @@ export function PersianaCard({
                 ) : (
                   materiais.map((material) => (
                     <SelectItem key={material.id} value={material.id}>
-                      {material.nome}
+                      {material.codigo_item} - {material.nome}
                     </SelectItem>
                   ))
                 )}
               </SelectContent>
             </Select>
+            {persiana.materialPrincipalId && materiais.find(m => m.id === persiana.materialPrincipalId) && (
+              <div className="text-sm text-muted-foreground p-2 bg-muted rounded">
+                <p><strong>Código:</strong> {materiais.find(m => m.id === persiana.materialPrincipalId)?.codigo_item}</p>
+                <p><strong>Preço custo:</strong> R$ {materiais.find(m => m.id === persiana.materialPrincipalId)?.preco_custo.toFixed(2)}/m²</p>
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -336,11 +342,17 @@ export function PersianaCard({
                 <SelectItem value="none">Sem acessório</SelectItem>
                 {acessorios.map((acessorio) => (
                   <SelectItem key={acessorio.id} value={acessorio.id}>
-                    {acessorio.nome}
+                    {acessorio.codigo_item} - {acessorio.nome}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            {persiana.trilhoId && acessorios.find(a => a.id === persiana.trilhoId) && (
+              <div className="text-sm text-muted-foreground p-2 bg-muted rounded">
+                <p><strong>Código:</strong> {acessorios.find(a => a.id === persiana.trilhoId)?.codigo_item}</p>
+                <p><strong>Preço custo:</strong> R$ {acessorios.find(a => a.id === persiana.trilhoId)?.preco_custo.toFixed(2)}/m</p>
+              </div>
+            )}
           </div>
 
           <div className="space-y-2 flex items-center justify-between md:col-span-2">

@@ -31,6 +31,7 @@ export interface Cortina {
 
 export interface Material {
   id: string;
+  codigo_item: string;
   nome: string;
   categoria: string;
   unidade: string;
