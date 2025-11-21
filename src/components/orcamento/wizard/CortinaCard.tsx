@@ -45,46 +45,42 @@ export function CortinaCard({
   const carregarMateriais = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('materiais')
-        .select('*')
-        .eq('ativo', true)
-        .order('nome');
+      const response = await fetch('/data/materials.json');
+      const data = await response.json();
 
-      if (error) {
-        console.error('Erro na query de materiais:', error);
-        throw error;
-      }
+      const tecidosList = data.filter((m: any) => m.categoria === 'tecido');
+      const forrosList = data.filter((m: any) => m.categoria === 'forro');
+      const trilhosList = data.filter((m: any) => m.categoria === 'trilho');
 
-      console.log('Materiais carregados:', data?.length || 0);
+      const materiaisFormatados = (items: any[]) => items.map((item: any) => ({
+        id: item.codigoItem,
+        codigo_item: item.codigoItem,
+        nome: item.nome,
+        categoria: item.categoria,
+        unidade: item.unidade || 'M',
+        largura_metro: item.larguraMetro || null,
+        preco_custo: Number(item.precoCusto) / 100,
+        preco_tabela: (Number(item.precoCusto) / 100) * 1.615,
+        margem_tabela_percent: 61.5,
+        perda_percent: 10,
+        ativo: item.ativo !== false,
+        created_at: '',
+        updated_at: '',
+      }));
 
-      const tecidosList = data?.filter((m) => m.categoria === 'tecido') || [];
-      const forrosList = data?.filter((m) => m.categoria === 'forro') || [];
-      const trilhosList = data?.filter((m) => m.categoria === 'trilho') || [];
+      setTecidos(materiaisFormatados(tecidosList));
+      setForros(materiaisFormatados(forrosList));
+      setTrilhos(materiaisFormatados(trilhosList));
 
-      console.log('Tecidos:', tecidosList.length, 'Forros:', forrosList.length, 'Trilhos:', trilhosList.length);
-
-      setTecidos(tecidosList);
-      setForros(forrosList);
-      setTrilhos(trilhosList);
-
-      if (tecidosList.length === 0) {
-        toast({
-          title: 'Materiais não encontrados',
-          description: 'Retorne ao dashboard e importe a base de dados da Prisma',
-          variant: 'destructive',
-        });
-      } else {
-        toast({
-          title: 'Materiais carregados',
-          description: `${tecidosList.length} tecidos, ${forrosList.length} forros, ${trilhosList.length} trilhos disponíveis`,
-        });
-      }
+      toast({
+        title: 'Materiais carregados',
+        description: `${tecidosList.length} tecidos, ${forrosList.length} forros, ${trilhosList.length} trilhos disponíveis`,
+      });
     } catch (error) {
       console.error('Erro ao carregar materiais:', error);
       toast({
         title: 'Erro ao carregar materiais',
-        description: 'Verifique sua conexão e tente novamente',
+        description: 'Não foi possível carregar os materiais do catálogo',
         variant: 'destructive',
       });
     } finally {
@@ -100,35 +96,45 @@ export function CortinaCard({
   const salvarCortina = async () => {
     setSaving(true);
     try {
-      // Buscar materiais e serviços para calcular custos
-      const { data: materiaisData } = await supabase
-        .from('materiais')
-        .select('*')
-        .in('id', [cortina.tecidoId, cortina.forroId, cortina.trilhoId].filter(Boolean));
+      // Buscar serviços de confecção do JSON
+      const confeccaoResponse = await fetch('/data/servicos_confeccao.json');
+      const confeccaoData = await confeccaoResponse.json();
+      const servicoConfeccao = confeccaoData[0]; // Pegar primeiro serviço
 
-      const { data: servicosConfeccao } = await supabase
-        .from('servicos_confeccao')
-        .select('*')
-        .eq('ativo', true)
-        .limit(1)
-        .single();
+      // Buscar serviços de instalação do JSON
+      const instalacaoResponse = await fetch('/data/servicos_instalacao.json');
+      const instalacaoData = await instalacaoResponse.json();
+      const servicoInstalacao = instalacaoData[0]; // Pegar primeiro serviço
 
-      const { data: servicosInstalacao } = await supabase
-        .from('servicos_instalacao')
-        .select('*')
-        .eq('ativo', true)
-        .limit(1)
-        .single();
-
-      if (!materiaisData || !servicosConfeccao) {
-        throw new Error('Materiais ou serviços não encontrados');
-      }
+      const materiaisSelecionados = [
+        tecidos.find(t => t.id === cortina.tecidoId),
+        forros.find(f => f.id === cortina.forroId),
+        trilhos.find(t => t.id === cortina.trilhoId)
+      ].filter(Boolean);
 
       const custos = calcularCustosCortina(
         cortina,
-        materiaisData,
-        servicosConfeccao,
-        servicosInstalacao
+        materiaisSelecionados as Material[],
+        {
+          ...servicoConfeccao,
+          id: servicoConfeccao.codigoItem,
+          preco_custo: Number(servicoConfeccao.precoCusto) / 100,
+          preco_tabela: (Number(servicoConfeccao.precoCusto) / 100) * 1.55,
+          margem_tabela_percent: 55,
+          ativo: true,
+          created_at: '',
+          updated_at: '',
+        },
+        servicoInstalacao ? {
+          ...servicoInstalacao,
+          id: servicoInstalacao.codigoItem,
+          preco_custo_por_ponto: Number(servicoInstalacao.precoCustoPorPonto),
+          preco_tabela_por_ponto: Number(servicoInstalacao.precoCustoPorPonto) * 1.615,
+          margem_tabela_percent: 61.5,
+          ativo: true,
+          created_at: '',
+          updated_at: '',
+        } : null
       );
 
       const dadosCortina = {
@@ -152,7 +158,7 @@ export function CortinaCard({
         custo_costura: custos.custoCostura,
         custo_instalacao: custos.custoInstalacao,
         custo_total: custos.custoTotal,
-        preco_venda: 0, // Será calculado na etapa 3
+        preco_venda: 0,
       };
 
       let result;
@@ -304,7 +310,7 @@ export function CortinaCard({
               <SelectContent>
                 {tecidos.length === 0 ? (
                   <SelectItem value="none" disabled>
-                    Nenhum tecido disponível - Importe a base de dados
+                    Carregando tecidos...
                   </SelectItem>
                 ) : (
                   tecidos.map((tecido) => (
