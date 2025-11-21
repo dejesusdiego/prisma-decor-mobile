@@ -315,12 +315,21 @@ export function CortinaCard({
                 ) : (
                   tecidos.map((tecido) => (
                     <SelectItem key={tecido.id} value={tecido.id}>
-                      {tecido.nome}
+                      {tecido.codigo_item} - {tecido.nome}
                     </SelectItem>
                   ))
                 )}
               </SelectContent>
             </Select>
+            {cortina.tecidoId && tecidos.find(t => t.id === cortina.tecidoId) && (
+              <div className="text-sm text-muted-foreground p-2 bg-muted rounded">
+                <p><strong>Código:</strong> {tecidos.find(t => t.id === cortina.tecidoId)?.codigo_item}</p>
+                <p><strong>Preço custo:</strong> R$ {tecidos.find(t => t.id === cortina.tecidoId)?.preco_custo.toFixed(2)}/m</p>
+                {tecidos.find(t => t.id === cortina.tecidoId)?.largura_metro && (
+                  <p><strong>Largura rolo:</strong> {tecidos.find(t => t.id === cortina.tecidoId)?.largura_metro}m</p>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -336,11 +345,17 @@ export function CortinaCard({
                 <SelectItem value="none">Sem forro</SelectItem>
                 {forros.map((forro) => (
                   <SelectItem key={forro.id} value={forro.id}>
-                    {forro.nome}
+                    {forro.codigo_item} - {forro.nome}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            {cortina.forroId && forros.find(f => f.id === cortina.forroId) && (
+              <div className="text-sm text-muted-foreground p-2 bg-muted rounded">
+                <p><strong>Código:</strong> {forros.find(f => f.id === cortina.forroId)?.codigo_item}</p>
+                <p><strong>Preço custo:</strong> R$ {forros.find(f => f.id === cortina.forroId)?.preco_custo.toFixed(2)}/m</p>
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -355,11 +370,17 @@ export function CortinaCard({
               <SelectContent>
                 {trilhos.map((trilho) => (
                   <SelectItem key={trilho.id} value={trilho.id}>
-                    {trilho.nome}
+                    {trilho.codigo_item} - {trilho.nome}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            {cortina.trilhoId && trilhos.find(t => t.id === cortina.trilhoId) && (
+              <div className="text-sm text-muted-foreground p-2 bg-muted rounded">
+                <p><strong>Código:</strong> {trilhos.find(t => t.id === cortina.trilhoId)?.codigo_item}</p>
+                <p><strong>Preço custo:</strong> R$ {trilhos.find(t => t.id === cortina.trilhoId)?.preco_custo.toFixed(2)}/m</p>
+              </div>
+            )}
           </div>
 
           <div className="space-y-2 flex items-center justify-between md:col-span-2">
