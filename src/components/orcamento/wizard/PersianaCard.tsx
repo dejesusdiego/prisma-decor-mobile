@@ -44,50 +44,45 @@ export function PersianaCard({
   const carregarMateriais = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('materiais')
-        .select('*')
-        .eq('ativo', true)
-        .order('nome');
+      const response = await fetch('/data/materials.json');
+      const data = await response.json();
 
-      if (error) {
-        console.error('Erro na query de materiais:', error);
-        throw error;
-      }
-
-      console.log('Materiais carregados:', data?.length || 0);
-
-      // Para persianas, filtramos tecidos, papéis e trilhos como material principal
-      const materiaisList = data?.filter((m) => 
+      const materiaisList = data.filter((m: any) => 
         m.categoria === 'tecido' || 
         m.categoria === 'papel' ||
         m.categoria === 'trilho'
-      ) || [];
+      );
       
-      const acessoriosList = data?.filter((m) => m.categoria === 'acessorio') || [];
+      const acessoriosList = data.filter((m: any) => m.categoria === 'acessorio');
 
-      console.log('Materiais principais:', materiaisList.length, 'Acessórios:', acessoriosList.length);
+      const materiaisFormatados = (items: any[]) => items.map((item: any) => ({
+        id: item.codigoItem,
+        codigo_item: item.codigoItem,
+        nome: item.nome,
+        categoria: item.categoria,
+        unidade: item.unidade || 'M',
+        largura_metro: item.larguraMetro || null,
+        preco_custo: Number(item.precoCusto) / 100,
+        preco_tabela: (Number(item.precoCusto) / 100) * 1.615,
+        margem_tabela_percent: 61.5,
+        perda_percent: 10,
+        ativo: item.ativo !== false,
+        created_at: '',
+        updated_at: '',
+      }));
 
-      setMateriais(materiaisList);
-      setAcessorios(acessoriosList);
+      setMateriais(materiaisFormatados(materiaisList));
+      setAcessorios(materiaisFormatados(acessoriosList));
 
-      if (materiaisList.length === 0) {
-        toast({
-          title: 'Materiais não encontrados',
-          description: 'Retorne ao dashboard e importe a base de dados da Prisma',
-          variant: 'destructive',
-        });
-      } else {
-        toast({
-          title: 'Materiais carregados',
-          description: `${materiaisList.length} materiais principais e ${acessoriosList.length} acessórios disponíveis`,
-        });
-      }
+      toast({
+        title: 'Materiais carregados',
+        description: `${materiaisList.length} materiais principais e ${acessoriosList.length} acessórios disponíveis`,
+      });
     } catch (error) {
       console.error('Erro ao carregar materiais:', error);
       toast({
         title: 'Erro ao carregar materiais',
-        description: 'Verifique sua conexão e tente novamente',
+        description: 'Não foi possível carregar os materiais do catálogo',
         variant: 'destructive',
       });
     } finally {
@@ -103,30 +98,16 @@ export function PersianaCard({
   const salvarPersiana = async () => {
     setSaving(true);
     try {
-      // Validar campos obrigatórios
       if (!persiana.materialPrincipalId) {
         throw new Error('Material principal é obrigatório');
       }
 
-      // Buscar materiais e serviços para calcular custos
-      const { data: materiaisData } = await supabase
-        .from('materiais')
-        .select('*')
-        .in('id', [persiana.materialPrincipalId, persiana.trilhoId].filter(Boolean));
+      // Buscar serviço de instalação do JSON
+      const instalacaoResponse = await fetch('/data/servicos_instalacao.json');
+      const instalacaoData = await instalacaoResponse.json();
+      const servicoInstalacao = instalacaoData[0];
 
-      const { data: servicosInstalacao } = await supabase
-        .from('servicos_instalacao')
-        .select('*')
-        .eq('ativo', true)
-        .limit(1)
-        .maybeSingle();
-
-      if (!materiaisData || materiaisData.length === 0) {
-        throw new Error('Materiais não encontrados na base de dados');
-      }
-
-      // Usar função de cálculo específica para persianas
-      const materialPrincipal = materiaisData.find((m) => m.id === persiana.materialPrincipalId);
+      const materialPrincipal = materiais.find((m) => m.id === persiana.materialPrincipalId);
       
       if (!materialPrincipal) {
         throw new Error('Material principal não encontrado');
@@ -136,12 +117,12 @@ export function PersianaCard({
       const custoMaterialPrincipal = area * materialPrincipal.preco_custo;
       
       const trilho = persiana.trilhoId 
-        ? materiaisData.find((m) => m.id === persiana.trilhoId)
+        ? materiais.find((m) => m.id === persiana.trilhoId) || acessorios.find((m) => m.id === persiana.trilhoId)
         : null;
       const custoTrilho = trilho ? (persiana.largura + 0.1) * trilho.preco_custo * persiana.quantidade : 0;
 
-      const custoInstalacao = persiana.precisaInstalacao && servicosInstalacao
-        ? (persiana.pontosInstalacao || 1) * servicosInstalacao.preco_custo_por_ponto
+      const custoInstalacao = persiana.precisaInstalacao && servicoInstalacao
+        ? (persiana.pontosInstalacao || 1) * Number(servicoInstalacao.precoCustoPorPonto)
         : 0;
 
       const custoTotal = custoMaterialPrincipal + custoTrilho + custoInstalacao;
@@ -329,7 +310,7 @@ export function PersianaCard({
                 <SelectItem value="none">Selecionar...</SelectItem>
                 {materiais.length === 0 ? (
                   <SelectItem value="empty" disabled>
-                    Nenhum material disponível - Importe a base de dados
+                    Carregando materiais...
                   </SelectItem>
                 ) : (
                   materiais.map((material) => (
