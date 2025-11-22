@@ -17,7 +17,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Edit, Copy, FileDown, Search } from 'lucide-react';
+import { ArrowLeft, Edit, Copy, FileDown, Search, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
@@ -158,6 +158,44 @@ export function ListaOrcamentos({ onVoltar, onEditar }: ListaOrcamentosProps) {
     }
   };
 
+  const excluirOrcamento = async (orcamentoId: string, codigo: string) => {
+    if (!confirm(`Tem certeza que deseja excluir o orçamento ${codigo}?`)) {
+      return;
+    }
+
+    try {
+      // Primeiro deletar os itens de cortina relacionados
+      const { error: cortinasError } = await supabase
+        .from('cortina_items')
+        .delete()
+        .eq('orcamento_id', orcamentoId);
+
+      if (cortinasError) throw cortinasError;
+
+      // Depois deletar o orçamento
+      const { error: orcError } = await supabase
+        .from('orcamentos')
+        .delete()
+        .eq('id', orcamentoId);
+
+      if (orcError) throw orcError;
+
+      toast({
+        title: 'Sucesso',
+        description: 'Orçamento excluído com sucesso',
+      });
+
+      carregarOrcamentos();
+    } catch (error) {
+      console.error('Erro ao excluir orçamento:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível excluir o orçamento',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const baixarPDF = (orcamentoId: string) => {
     toast({
       title: 'Em desenvolvimento',
@@ -277,6 +315,15 @@ export function ListaOrcamentos({ onVoltar, onEditar }: ListaOrcamentosProps) {
                             title="Baixar PDF"
                           >
                             <FileDown className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => excluirOrcamento(orc.id, orc.codigo)}
+                            title="Excluir"
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
                       </TableCell>
