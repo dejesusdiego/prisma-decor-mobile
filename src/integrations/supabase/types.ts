@@ -17,6 +17,7 @@ export type Database = {
       cortina_items: {
         Row: {
           altura: number
+          barra_cm: number | null
           created_at: string
           custo_acessorios: number | null
           custo_costura: number | null
@@ -43,6 +44,7 @@ export type Database = {
         }
         Insert: {
           altura: number
+          barra_cm?: number | null
           created_at?: string
           custo_acessorios?: number | null
           custo_costura?: number | null
@@ -69,6 +71,7 @@ export type Database = {
         }
         Update: {
           altura?: number
+          barra_cm?: number | null
           created_at?: string
           custo_acessorios?: number | null
           custo_costura?: number | null

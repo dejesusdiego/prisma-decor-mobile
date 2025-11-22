@@ -142,6 +142,7 @@ export function CortinaCard({
         nome_identificacao: cortina.nomeIdentificacao,
         largura: cortina.largura,
         altura: cortina.altura,
+        barra_cm: cortina.barraCm || 0,
         quantidade: cortina.quantidade,
         tipo_produto: 'cortina',
         tipo_cortina: cortina.tipoCortina,
