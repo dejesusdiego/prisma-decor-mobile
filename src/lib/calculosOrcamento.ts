@@ -31,11 +31,15 @@ export function calcularCustosCortina(
 
   const coeficiente = COEFICIENTES_CORTINA[cortina.tipoCortina];
 
+  // Calcular altura final com barra (se definida)
+  const barraMt = (cortina.barraCm || 0) / 100; // Converter cm para metros
+  const alturaFinal = cortina.altura + barraMt;
+
   // Cálculo do tecido
   let metragemBaseTecido = cortina.largura * coeficiente * cortina.quantidade;
   
   // Se altura for maior que largura do rolo, dobrar consumo
-  if (tecido.largura_metro && cortina.altura > tecido.largura_metro) {
+  if (tecido.largura_metro && alturaFinal > tecido.largura_metro) {
     metragemBaseTecido *= 2;
   }
 
@@ -45,7 +49,7 @@ export function calcularCustosCortina(
   let custoForro = 0;
   if (forro) {
     let metragemBaseForro = cortina.largura * coeficiente * cortina.quantidade;
-    if (forro.largura_metro && cortina.altura > forro.largura_metro) {
+    if (forro.largura_metro && alturaFinal > forro.largura_metro) {
       metragemBaseForro *= 2;
     }
     custoForro = metragemBaseForro * forro.preco_custo;

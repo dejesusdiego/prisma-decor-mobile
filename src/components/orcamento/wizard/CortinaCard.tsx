@@ -287,6 +287,18 @@ export function CortinaCard({
           </div>
 
           <div className="space-y-2">
+            <Label htmlFor={`barra-${cortina.id}`}>Barra (cm)</Label>
+            <Input
+              id={`barra-${cortina.id}`}
+              type="number"
+              step="1"
+              value={cortina.barraCm || ''}
+              onChange={(e) => handleChange('barraCm', parseFloat(e.target.value) || 0)}
+              placeholder="0"
+            />
+          </div>
+
+          <div className="space-y-2">
             <Label htmlFor={`quantidade-${cortina.id}`}>Quantidade *</Label>
             <Input
               id={`quantidade-${cortina.id}`}
