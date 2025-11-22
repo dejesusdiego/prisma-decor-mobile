@@ -10,6 +10,7 @@ export interface Cortina {
   nomeIdentificacao: string;
   largura: number;
   altura: number;
+  barraCm?: number; // Barra da cortina em centímetros
   quantidade: number;
   tipoProduto: 'cortina' | 'persiana';
   tipoCortina: 'wave' | 'prega' | 'painel' | 'rolo' | 'horizontal' | 'vertical' | 'romana' | 'celular' | 'madeira';
@@ -56,10 +57,10 @@ export interface ServicoInstalacao {
 }
 
 export const COEFICIENTES_CORTINA = {
-  wave: 2.0,
-  prega: 2.5,
-  painel: 1.0,
-  rolo: 1.0,
+  wave: 3.5,
+  prega: 3.5,
+  painel: 3.5,
+  rolo: 3.5,
   horizontal: 1.0, // Persianas horizontais
   vertical: 1.0,   // Persianas verticais
   romana: 1.0,     // Persianas romanas
