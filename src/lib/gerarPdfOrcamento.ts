@@ -1,7 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { supabase } from '@/integrations/supabase/client';
-import logoPrisma from '@/assets/logo-prisma.png';
+import logo from '@/assets/logo.svg';
 
 interface OrcamentoData {
   codigo: string;
@@ -72,28 +72,33 @@ export async function gerarPdfOrcamento(orcamentoId: string): Promise<void> {
     let yPos = 0;
 
     // ============================================================
-    // 1. CABEÇALHO COM FUNDO PRETO E LOGO BRANCA
+    // 1. CABEÇALHO COM FUNDO PRETO E LOGO (igual navbar do site)
     // ============================================================
     
     // Fundo preto no topo
     doc.setFillColor(17, 17, 17); // Preto #111111
     doc.rect(0, 0, 210, 35, 'F'); // Largura A4 = 210mm
     
-    // Logo Prisma no lado esquerdo
-    yPos = 10;
+    // Logo e texto PRISMA Interiores (replicando navbar do site)
+    yPos = 12;
+    
     try {
-      doc.addImage(logoPrisma, 'PNG', 15, yPos, 40, 15);
+      // Tentar adicionar logo SVG
+      doc.addImage(logo, 'SVG', 15, yPos, 12, 12);
     } catch (error) {
-      console.error('Erro ao adicionar logo:', error);
-      // Fallback: texto caso a imagem não carregue
-      doc.setFontSize(20);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(255, 255, 255);
-      doc.text('PRISMA', 15, yPos + 5);
-      doc.setFontSize(9);
-      doc.setFont('helvetica', 'italic');
-      doc.text('Interiores', 15, yPos + 10);
+      console.error('Erro ao adicionar logo SVG:', error);
     }
+    
+    // Texto PRISMA e Interiores (igual navbar)
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(255, 255, 255); // Branco
+    doc.text('PRISMA', 30, yPos + 5);
+    
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(200, 200, 200); // Cinza claro
+    doc.text('Interiores', 30, yPos + 10);
     
     // Informações de contato no lado direito do cabeçalho
     doc.setFontSize(8);
