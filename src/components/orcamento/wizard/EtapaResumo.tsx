@@ -6,10 +6,10 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import type { Cortina, DadosOrcamento } from '@/types/orcamento';
+import type { Cortina, DadosOrcamento, Material } from '@/types/orcamento';
 import { OPCOES_MARGEM } from '@/types/orcamento';
 import { calcularResumoOrcamento } from '@/lib/calculosOrcamento';
-import { FileDown, Home } from 'lucide-react';
+import { FileDown, Home, Save } from 'lucide-react';
 import { DialogValidade } from '../DialogValidade';
 import { gerarPdfOrcamento } from '@/lib/gerarPdfOrcamento';
 
@@ -33,6 +33,7 @@ export function EtapaResumo({
   const [loading, setLoading] = useState(false);
   const [dialogValidadeOpen, setDialogValidadeOpen] = useState(false);
   const [validadeDias, setValidadeDias] = useState<number>(7);
+  const [materiais, setMateriais] = useState<Material[]>([]);
 
   const margemAtual =
     margemTipo === 'personalizada'
@@ -41,9 +42,10 @@ export function EtapaResumo({
 
   const resumo = calcularResumoOrcamento(cortinas, margemAtual);
 
-  // Carregar validade atual do orçamento
+  // Carregar validade e materiais
   useEffect(() => {
-    const carregarValidade = async () => {
+    const carregarDados = async () => {
+      // Carregar validade
       const { data, error } = await supabase
         .from('orcamentos')
         .select('validade_dias')
@@ -53,10 +55,32 @@ export function EtapaResumo({
       if (!error && data?.validade_dias) {
         setValidadeDias(data.validade_dias);
       }
+
+      // Carregar materiais
+      const { data: materiaisData } = await supabase
+        .from('materiais')
+        .select('*')
+        .eq('ativo', true);
+
+      if (materiaisData) {
+        setMateriais(materiaisData);
+      }
     };
 
-    carregarValidade();
+    carregarDados();
   }, [orcamentoId]);
+
+  const obterMaterial = (id: string | undefined): Material | null => {
+    if (!id) return null;
+    return materiais.find(m => m.id === id) || null;
+  };
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    }).format(value);
+  };
 
   const salvarOrcamento = async (status: 'rascunho' | 'finalizado') => {
     setLoading(true);
@@ -194,29 +218,142 @@ export function EtapaResumo({
             )}
           </div>
 
-          {/* Resumo das Cortinas */}
+          {/* Resumo dos Produtos */}
           <div className="space-y-4">
-            <h3 className="font-semibold">Cortinas Incluídas</h3>
-            <div className="space-y-2">
+            <h3 className="font-semibold">Produtos Incluídos ({cortinas.length})</h3>
+            <div className="space-y-4">
               {cortinas.map((cortina, index) => (
                 <div
                   key={index}
-                  className="flex justify-between items-center p-3 bg-muted rounded-md"
+                  className="border rounded-lg p-4 space-y-3"
                 >
-                  <div>
-                    <p className="font-medium">{cortina.nomeIdentificacao}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {cortina.largura}m × {cortina.altura}m - {cortina.tipoCortina} - Qtd:{' '}
-                      {cortina.quantidade}
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="font-semibold text-lg">{cortina.nomeIdentificacao}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {cortina.tipoProduto === 'cortina' ? 'Cortina' : cortina.tipoProduto === 'persiana' ? 'Persiana' : 'Outro'} - {cortina.tipoCortina}
+                      </p>
+                    </div>
+                    <p className="font-bold text-primary">
+                      {formatCurrency((cortina.custoTotal || 0) * (1 + margemAtual / 100))}
                     </p>
                   </div>
-                  <div className="text-right">
-                    <p className="font-medium">
-                      R$ {((cortina.custoTotal || 0) * (1 + margemAtual / 100)).toFixed(2)}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Custo: R$ {(cortina.custoTotal || 0).toFixed(2)}
-                    </p>
+
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Largura</p>
+                      <p className="font-medium">{cortina.largura}m</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Altura</p>
+                      <p className="font-medium">{cortina.altura}m</p>
+                    </div>
+                    {cortina.barraCm && (
+                      <div>
+                        <p className="text-xs text-muted-foreground">Barra</p>
+                        <p className="font-medium">{cortina.barraCm}cm</p>
+                      </div>
+                    )}
+                    <div>
+                      <p className="text-xs text-muted-foreground">Quantidade</p>
+                      <p className="font-medium">{cortina.quantidade}</p>
+                    </div>
+                  </div>
+
+                  {cortina.tipoProduto === 'cortina' && (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      {/* Tecido */}
+                      {(() => {
+                        const tecido = obterMaterial(cortina.tecidoId);
+                        return tecido ? (
+                          <div className="bg-muted/30 p-2 rounded border">
+                            <p className="text-xs font-semibold text-muted-foreground mb-1">Tecido</p>
+                            <p className="text-sm font-medium mb-1">{tecido.nome}</p>
+                            <div className="space-y-0.5">
+                              <p className="text-xs text-muted-foreground">
+                                Código: {tecido.codigo_item || '-'}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                Preço custo: {formatCurrency(tecido.preco_custo)}/m
+                              </p>
+                              {tecido.largura_metro && (
+                                <p className="text-xs text-muted-foreground">
+                                  Largura rolo: {tecido.largura_metro}m
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="bg-muted/30 p-2 rounded border">
+                            <p className="text-xs font-semibold text-muted-foreground">Tecido</p>
+                            <p className="text-sm">-</p>
+                          </div>
+                        );
+                      })()}
+
+                      {/* Forro */}
+                      {(() => {
+                        const forro = obterMaterial(cortina.forroId);
+                        return forro ? (
+                          <div className="bg-muted/30 p-2 rounded border">
+                            <p className="text-xs font-semibold text-muted-foreground mb-1">Forro</p>
+                            <p className="text-sm font-medium mb-1">{forro.nome}</p>
+                            <div className="space-y-0.5">
+                              <p className="text-xs text-muted-foreground">
+                                Código: {forro.codigo_item || '-'}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                Preço custo: {formatCurrency(forro.preco_custo)}/m
+                              </p>
+                              {forro.largura_metro && (
+                                <p className="text-xs text-muted-foreground">
+                                  Largura rolo: {forro.largura_metro}m
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="bg-muted/30 p-2 rounded border">
+                            <p className="text-xs font-semibold text-muted-foreground">Forro</p>
+                            <p className="text-sm">-</p>
+                          </div>
+                        );
+                      })()}
+
+                      {/* Trilho */}
+                      {(() => {
+                        const trilho = obterMaterial(cortina.trilhoId);
+                        return trilho ? (
+                          <div className="bg-muted/30 p-2 rounded border">
+                            <p className="text-xs font-semibold text-muted-foreground mb-1">Trilho</p>
+                            <p className="text-sm font-medium mb-1">{trilho.nome}</p>
+                            <div className="space-y-0.5">
+                              <p className="text-xs text-muted-foreground">
+                                Código: {trilho.codigo_item || '-'}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                Preço custo: {formatCurrency(trilho.preco_custo)}/m
+                              </p>
+                              {trilho.largura_metro && (
+                                <p className="text-xs text-muted-foreground">
+                                  Largura rolo: {trilho.largura_metro}m
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="bg-muted/30 p-2 rounded border">
+                            <p className="text-xs font-semibold text-muted-foreground">Trilho</p>
+                            <p className="text-sm">-</p>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
+
+                  <div className="flex justify-between pt-2 border-t text-sm">
+                    <span className="text-muted-foreground">Custo Total</span>
+                    <span className="font-semibold">{formatCurrency(cortina.custoTotal || 0)}</span>
                   </div>
                 </div>
               ))}
@@ -271,7 +408,15 @@ export function EtapaResumo({
         >
           Salvar Rascunho
         </Button>
-        <Button onClick={handleGerarPDF} disabled={loading} className="flex-1">
+        <Button
+          onClick={() => salvarOrcamento('finalizado')}
+          disabled={loading}
+          className="flex-1"
+        >
+          <Save className="mr-2 h-4 w-4" />
+          Salvar Orçamento
+        </Button>
+        <Button onClick={handleGerarPDF} disabled={loading} className="flex-1" variant="secondary">
           <FileDown className="mr-2 h-4 w-4" />
           Gerar PDF
         </Button>
