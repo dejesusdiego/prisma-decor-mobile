@@ -53,6 +53,7 @@ export function OutrosCard({
       const dadosOutro = {
         orcamento_id: orcamentoId,
         nome_identificacao: outro.nomeIdentificacao,
+        descricao: outro.descricao || null,
         largura: 0,
         altura: 0,
         quantidade: outro.quantidade,
@@ -191,6 +192,16 @@ export function OutrosCard({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="space-y-2 md:col-span-2">
+            <Label htmlFor={`descricao-${outro.id}`}>Descrição</Label>
+            <Input
+              id={`descricao-${outro.id}`}
+              value={outro.descricao || ''}
+              onChange={(e) => handleChange('descricao', e.target.value)}
+              placeholder="Descrição detalhada do item..."
+            />
           </div>
 
           <div className="space-y-2">
