@@ -45,6 +45,8 @@ export function EtapaResumo({
   // Carregar validade e materiais
   useEffect(() => {
     const carregarDados = async () => {
+      console.log('🔄 Iniciando carregamento de dados...');
+      
       // Carregar validade
       const { data, error } = await supabase
         .from('orcamentos')
@@ -57,18 +59,33 @@ export function EtapaResumo({
       }
 
       // Carregar materiais
-      const { data: materiaisData } = await supabase
+      const { data: materiaisData, error: materiaisError } = await supabase
         .from('materiais')
         .select('*')
         .eq('ativo', true);
 
+      console.log('📦 Materiais carregados:', materiaisData?.length || 0, 'materiais');
+      console.log('📦 Materiais data:', materiaisData);
+      
+      if (materiaisError) {
+        console.error('❌ Erro ao carregar materiais:', materiaisError);
+      }
+
       if (materiaisData) {
         setMateriais(materiaisData);
       }
+      
+      // Debug: mostrar IDs das cortinas
+      console.log('🎨 Cortinas:', cortinas.map(c => ({
+        nome: c.nomeIdentificacao,
+        tecidoId: c.tecidoId,
+        forroId: c.forroId,
+        trilhoId: c.trilhoId
+      })));
     };
 
     carregarDados();
-  }, [orcamentoId]);
+  }, [orcamentoId, cortinas]);
 
   const obterMaterial = (id: string | undefined): Material | null => {
     if (!id) return null;
