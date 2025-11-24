@@ -1,19 +1,105 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Plus } from 'lucide-react';
+import { Plus, GripVertical } from 'lucide-react';
 import { CortinaCard } from './CortinaCard';
 import { PersianaCard } from './PersianaCard';
 import { OutrosCard } from './OutrosCard';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import type { Cortina } from '@/types/orcamento';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface EtapaProdutosProps {
   orcamentoId: string;
   produtosIniciais: Cortina[];
   onAvancar: (produtos: Cortina[]) => void;
   onVoltar: () => void;
+}
+
+interface SortableProductItemProps {
+  id: string;
+  produto: Cortina;
+  index: number;
+  orcamentoId: string;
+  onUpdate: (index: number, produto: Cortina) => void;
+  onRemove: (index: number) => void;
+  onDuplicate: (index: number) => void;
+}
+
+function SortableProductItem({
+  id,
+  produto,
+  index,
+  orcamentoId,
+  onUpdate,
+  onRemove,
+  onDuplicate,
+}: SortableProductItemProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className="relative">
+      <div className="absolute left-2 top-1/2 -translate-y-1/2 z-10 cursor-grab active:cursor-grabbing" {...attributes} {...listeners}>
+        <GripVertical className="h-5 w-5 text-muted-foreground" />
+      </div>
+      <div className="pl-8">
+        {produto.tipoProduto === 'cortina' ? (
+          <CortinaCard
+            cortina={produto}
+            orcamentoId={orcamentoId}
+            onUpdate={(p) => onUpdate(index, p)}
+            onRemove={() => onRemove(index)}
+            onDuplicate={() => onDuplicate(index)}
+          />
+        ) : produto.tipoProduto === 'persiana' ? (
+          <PersianaCard
+            persiana={produto}
+            orcamentoId={orcamentoId}
+            onUpdate={(p) => onUpdate(index, p)}
+            onRemove={() => onRemove(index)}
+          />
+        ) : (
+          <OutrosCard
+            outro={produto}
+            orcamentoId={orcamentoId}
+            onUpdate={(p) => onUpdate(index, p)}
+            onRemove={() => onRemove(index)}
+            onDuplicate={() => onDuplicate(index)}
+          />
+        )}
+      </div>
+    </div>
+  );
 }
 
 export function EtapaProdutos({
@@ -144,6 +230,30 @@ export function EtapaProdutos({
     setProdutos(novosProdutos);
   };
 
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      setProdutos((items) => {
+        const oldIndex = items.findIndex((item, idx) => 
+          (item.id || `temp-${idx}`) === active.id
+        );
+        const newIndex = items.findIndex((item, idx) => 
+          (item.id || `temp-${idx}`) === over.id
+        );
+
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
+  };
+
   const handleAvancar = async () => {
     if (produtos.length === 0) {
       toast({
@@ -232,36 +342,31 @@ export function EtapaProdutos({
           <p className="text-sm mt-2">Clique em "Adicionar Cortina" ou "Adicionar Persiana" para começar.</p>
         </Card>
       ) : (
-        <div className="space-y-4">
-          {produtos.map((produto, index) => (
-            <div key={produto.id || index}>
-              {produto.tipoProduto === 'cortina' ? (
-                <CortinaCard
-                  cortina={produto}
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={produtos.map((p, idx) => p.id || `temp-${idx}`)}
+            strategy={verticalListSortingStrategy}
+          >
+            <div className="space-y-4">
+              {produtos.map((produto, index) => (
+                <SortableProductItem
+                  key={produto.id || `temp-${index}`}
+                  id={produto.id || `temp-${index}`}
+                  produto={produto}
+                  index={index}
                   orcamentoId={orcamentoId}
-                  onUpdate={(p) => atualizarProduto(index, p)}
-                  onRemove={() => removerProduto(index)}
-                  onDuplicate={() => duplicarProduto(index)}
+                  onUpdate={atualizarProduto}
+                  onRemove={removerProduto}
+                  onDuplicate={duplicarProduto}
                 />
-              ) : produto.tipoProduto === 'persiana' ? (
-                <PersianaCard
-                  persiana={produto}
-                  orcamentoId={orcamentoId}
-                  onUpdate={(p) => atualizarProduto(index, p)}
-                  onRemove={() => removerProduto(index)}
-                />
-              ) : (
-                <OutrosCard
-                  outro={produto}
-                  orcamentoId={orcamentoId}
-                  onUpdate={(p) => atualizarProduto(index, p)}
-                  onRemove={() => removerProduto(index)}
-                  onDuplicate={() => duplicarProduto(index)}
-                />
-              )}
+              ))}
             </div>
-          ))}
-        </div>
+          </SortableContext>
+        </DndContext>
       )}
 
       <div className="flex gap-4">
