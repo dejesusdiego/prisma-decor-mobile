@@ -280,7 +280,7 @@ export function VisualizarOrcamento({ orcamentoId, onVoltar }: VisualizarOrcamen
               {cortina.tipoProduto === 'cortina' && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
                   {/* Tecido */}
-                  {cortina.tecidoId && (() => {
+                  {(() => {
                     const tecido = obterMaterial(cortina.tecidoId);
                     return tecido ? (
                       <div className="bg-muted/30 p-3 rounded-lg border">
@@ -288,11 +288,14 @@ export function VisualizarOrcamento({ orcamentoId, onVoltar }: VisualizarOrcamen
                         <p className="text-sm font-medium mb-1">{tecido.nome}</p>
                         <div className="space-y-0.5">
                           <p className="text-xs text-muted-foreground">
-                            Preço: {formatCurrency(tecido.preco_custo)}/m
+                            Código: {tecido.codigo_item || '-'}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Preço custo: {formatCurrency(tecido.preco_custo)}/m
                           </p>
                           {tecido.largura_metro && (
                             <p className="text-xs text-muted-foreground">
-                              Largura do rolo: {tecido.largura_metro}m
+                              Largura rolo: {tecido.largura_metro}m
                             </p>
                           )}
                         </div>
@@ -306,7 +309,7 @@ export function VisualizarOrcamento({ orcamentoId, onVoltar }: VisualizarOrcamen
                   })()}
                   
                   {/* Forro */}
-                  {cortina.forroId && (() => {
+                  {(() => {
                     const forro = obterMaterial(cortina.forroId);
                     return forro ? (
                       <div className="bg-muted/30 p-3 rounded-lg border">
@@ -314,11 +317,14 @@ export function VisualizarOrcamento({ orcamentoId, onVoltar }: VisualizarOrcamen
                         <p className="text-sm font-medium mb-1">{forro.nome}</p>
                         <div className="space-y-0.5">
                           <p className="text-xs text-muted-foreground">
-                            Preço: {formatCurrency(forro.preco_custo)}/m
+                            Código: {forro.codigo_item || '-'}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Preço custo: {formatCurrency(forro.preco_custo)}/m
                           </p>
                           {forro.largura_metro && (
                             <p className="text-xs text-muted-foreground">
-                              Largura do rolo: {forro.largura_metro}m
+                              Largura rolo: {forro.largura_metro}m
                             </p>
                           )}
                         </div>
@@ -332,7 +338,7 @@ export function VisualizarOrcamento({ orcamentoId, onVoltar }: VisualizarOrcamen
                   })()}
                   
                   {/* Trilho */}
-                  {cortina.trilhoId && (() => {
+                  {(() => {
                     const trilho = obterMaterial(cortina.trilhoId);
                     return trilho ? (
                       <div className="bg-muted/30 p-3 rounded-lg border">
@@ -340,11 +346,14 @@ export function VisualizarOrcamento({ orcamentoId, onVoltar }: VisualizarOrcamen
                         <p className="text-sm font-medium mb-1">{trilho.nome}</p>
                         <div className="space-y-0.5">
                           <p className="text-xs text-muted-foreground">
-                            Preço: {formatCurrency(trilho.preco_custo)}/m
+                            Código: {trilho.codigo_item || '-'}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Preço custo: {formatCurrency(trilho.preco_custo)}/m
                           </p>
                           {trilho.largura_metro && (
                             <p className="text-xs text-muted-foreground">
-                              Largura do rolo: {trilho.largura_metro}m
+                              Largura rolo: {trilho.largura_metro}m
                             </p>
                           )}
                         </div>
