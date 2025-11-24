@@ -117,7 +117,7 @@ export async function gerarPdfOrcamento(orcamentoId: string): Promise<void> {
     doc.setTextColor(220, 220, 220); // Cinza claro
     const contactInfo = [
       'www.prismadecorlab.com',
-      'somosprisma@gmail.com',
+      'somosprismainteiores@gmail.com',
       'WhatsApp: (47) 99262-4706'
     ];
     let contactY = 12;
@@ -367,7 +367,7 @@ export async function gerarPdfOrcamento(orcamentoId: string): Promise<void> {
     yPos += 8;
     
     // Box com fundo claro para formas de pagamento
-    const paymentBoxHeight = 22;
+    const paymentBoxHeight = 17;
     doc.setFillColor(248, 248, 248);
     doc.roundedRect(cardX, yPos - 5, cardWidth, paymentBoxHeight, 3, 3, 'F');
     
@@ -381,15 +381,9 @@ export async function gerarPdfOrcamento(orcamentoId: string): Promise<void> {
     
     yPos += 5;
     doc.setFont('helvetica', 'bold');
-    doc.text('Boleto:', cardX + 3, yPos);
+    doc.text('Cartão de crédito (link de pagamento): ', cardX + 3, yPos);
     doc.setFont('helvetica', 'normal');
-    doc.text('50% na confirmação do pedido e 50% na entrega.', cardX + 15, yPos);
-    
-    yPos += 5;
-    doc.setFont('helvetica', 'bold');
-    doc.text('Cartão de crédito (link de pagamento):', cardX + 3, yPos);
-    doc.setFont('helvetica', 'normal');
-    doc.text('parcelamento em até 12x.', cardX + 67, yPos);
+    doc.text('parcelamento em até 12x.', cardX + 68, yPos);
     
     yPos += 15;
     
@@ -445,7 +439,7 @@ export async function gerarPdfOrcamento(orcamentoId: string): Promise<void> {
       doc.setTextColor(100, 100, 100);
       
       doc.text('Prisma Interiores - Transformando ambientes com qualidade e profissionalismo.', 105, 280, { align: 'center' });
-      doc.text('WhatsApp: (47) 99262-4706 | Email: somosprisma@gmail.com | Website: www.prismadecorlab.com', 105, 285, { align: 'center' });
+      doc.text('WhatsApp: (47) 99262-4706 | Email: somosprismainteiores@gmail.com | Website: www.prismadecorlab.com', 105, 285, { align: 'center' });
       
       doc.setFont('helvetica', 'bold');
       doc.text('CNPJ: 44.840.624/0001-92', 105, 290, { align: 'center' });
