@@ -72,6 +72,7 @@ export function NovoOrcamento({ onVoltar, orcamentoId }: NovoOrcamentoProps) {
             trilhoId: item.trilho_id || undefined,
             materialPrincipalId: item.material_principal_id || undefined,
             precoUnitario: item.preco_unitario || undefined,
+            valorInstalacao: item.custo_instalacao || undefined,
             precisaInstalacao: item.precisa_instalacao,
             pontosInstalacao: item.pontos_instalacao || undefined,
             custoTecido: item.custo_tecido || undefined,
