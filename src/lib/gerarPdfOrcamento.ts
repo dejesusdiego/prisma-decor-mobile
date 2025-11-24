@@ -7,6 +7,7 @@ interface OrcamentoData {
   codigo: string;
   cliente_nome: string;
   cliente_telefone: string;
+  cidade?: string;
   endereco: string;
   observacoes?: string;
   created_at: string;
@@ -188,7 +189,7 @@ export async function gerarPdfOrcamento(orcamentoId: string): Promise<void> {
     yPos += 8;
     
     // Box com fundo claro para dados do cliente
-    const clientBoxHeight = orcamento.endereco ? 28 : 20;
+    const clientBoxHeight = orcamento.cidade || orcamento.endereco ? 34 : 20;
     doc.setFillColor(248, 248, 248);
     doc.roundedRect(cardX, yPos - 5, cardWidth, clientBoxHeight, 3, 3, 'F');
     
@@ -208,6 +209,14 @@ export async function gerarPdfOrcamento(orcamentoId: string): Promise<void> {
     doc.text('Telefone/WhatsApp:', cardX + 3, clientY);
     doc.setFont('helvetica', 'normal');
     doc.text(formatarTelefone(orcamento.cliente_telefone), cardX + 35, clientY);
+    
+    if (orcamento.cidade) {
+      clientY += 6;
+      doc.setFont('helvetica', 'bold');
+      doc.text('Cidade:', cardX + 3, clientY);
+      doc.setFont('helvetica', 'normal');
+      doc.text(orcamento.cidade, cardX + 35, clientY);
+    }
     
     if (orcamento.endereco) {
       clientY += 6;

@@ -18,6 +18,7 @@ export function NovoOrcamento({ onVoltar, orcamentoId }: NovoOrcamentoProps) {
   const [dados, setDados] = useState<DadosOrcamento>({
     clienteNome: '',
     clienteTelefone: '',
+    cidade: '',
     endereco: '',
     observacoes: '',
   });
@@ -44,6 +45,7 @@ export function NovoOrcamento({ onVoltar, orcamentoId }: NovoOrcamentoProps) {
         setDados({
           clienteNome: orcamento.cliente_nome,
           clienteTelefone: orcamento.cliente_telefone,
+          cidade: orcamento.cidade || 'Balneário Camboriú',
           endereco: orcamento.endereco || '',
           observacoes: orcamento.observacoes || '',
         });

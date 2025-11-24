@@ -1,6 +1,7 @@
 export interface DadosOrcamento {
   clienteNome: string;
   clienteTelefone: string;
+  cidade: string;
   endereco: string;
   observacoes?: string;
 }

@@ -51,6 +51,7 @@ export function EtapaCliente({ dados, orcamentoId, onAvancar, onCancelar }: Etap
           .update({
             cliente_nome: formData.clienteNome,
             cliente_telefone: formData.clienteTelefone,
+            cidade: formData.cidade,
             endereco: formData.endereco,
             observacoes: formData.observacoes || null,
           })
@@ -71,6 +72,7 @@ export function EtapaCliente({ dados, orcamentoId, onAvancar, onCancelar }: Etap
           .insert({
             cliente_nome: formData.clienteNome,
             cliente_telefone: formData.clienteTelefone,
+            cidade: formData.cidade,
             endereco: formData.endereco,
             observacoes: formData.observacoes || null,
             margem_tipo: 'padrao',
@@ -130,6 +132,56 @@ export function EtapaCliente({ dados, orcamentoId, onAvancar, onCancelar }: Etap
               required
               placeholder="(00) 00000-0000"
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="cidade">Cidade *</Label>
+            <Select
+              value={formData.cidade}
+              onValueChange={(value) => setFormData({ ...formData, cidade: value })}
+              required
+            >
+              <SelectTrigger id="cidade">
+                <SelectValue placeholder="Selecione a cidade" />
+              </SelectTrigger>
+              <SelectContent className="max-h-[300px]">
+                <SelectItem value="Balneário Camboriú">Balneário Camboriú</SelectItem>
+                <SelectItem value="Camboriú">Camboriú</SelectItem>
+                <SelectItem value="Itajaí">Itajaí</SelectItem>
+                <SelectItem value="Itapema">Itapema</SelectItem>
+                <SelectItem value="Porto Belo">Porto Belo</SelectItem>
+                <SelectItem value="Bombinhas">Bombinhas</SelectItem>
+                <SelectItem value="Navegantes">Navegantes</SelectItem>
+                <SelectItem value="Penha">Penha</SelectItem>
+                <SelectItem value="Piçarras">Piçarras</SelectItem>
+                <SelectItem value="Ilhota">Ilhota</SelectItem>
+                <SelectItem value="Luiz Alves">Luiz Alves</SelectItem>
+                <SelectItem value="Brusque">Brusque</SelectItem>
+                <SelectItem value="Canelinha">Canelinha</SelectItem>
+                <SelectItem value="Tijucas">Tijucas</SelectItem>
+                <SelectItem value="São João Batista">São João Batista</SelectItem>
+                <SelectItem value="Nova Trento">Nova Trento</SelectItem>
+                <SelectItem value="Gaspar">Gaspar</SelectItem>
+                <SelectItem value="Blumenau">Blumenau</SelectItem>
+                <SelectItem value="Guabiruba">Guabiruba</SelectItem>
+                <SelectItem value="Botuverá">Botuverá</SelectItem>
+                <SelectItem value="Itapoá">Itapoá</SelectItem>
+                <SelectItem value="Barra Velha">Barra Velha</SelectItem>
+                <SelectItem value="Massaranduba">Massaranduba</SelectItem>
+                <SelectItem value="Schroeder">Schroeder</SelectItem>
+                <SelectItem value="Jaraguá do Sul">Jaraguá do Sul</SelectItem>
+                <SelectItem value="Corupá">Corupá</SelectItem>
+                <SelectItem value="São Bento do Sul">São Bento do Sul</SelectItem>
+                <SelectItem value="Campo Alegre">Campo Alegre</SelectItem>
+                <SelectItem value="Joinville">Joinville</SelectItem>
+                <SelectItem value="Araquari">Araquari</SelectItem>
+                <SelectItem value="São Francisco do Sul">São Francisco do Sul</SelectItem>
+                <SelectItem value="Garuva">Garuva</SelectItem>
+                <SelectItem value="Florianópolis">Florianópolis</SelectItem>
+                <SelectItem value="Palhoça">Palhoça</SelectItem>
+                <SelectItem value="São José">São José</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">

@@ -174,6 +174,7 @@ export type Database = {
       }
       orcamentos: {
         Row: {
+          cidade: string | null
           cliente_nome: string
           cliente_telefone: string
           codigo: string
@@ -194,6 +195,7 @@ export type Database = {
           validade_dias: number | null
         }
         Insert: {
+          cidade?: string | null
           cliente_nome: string
           cliente_telefone: string
           codigo: string
@@ -214,6 +216,7 @@ export type Database = {
           validade_dias?: number | null
         }
         Update: {
+          cidade?: string | null
           cliente_nome?: string
           cliente_telefone?: string
           codigo?: string
