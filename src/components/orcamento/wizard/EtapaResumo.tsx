@@ -72,7 +72,9 @@ export function EtapaResumo({
 
   const obterMaterial = (id: string | undefined): Material | null => {
     if (!id) return null;
-    return materiais.find(m => m.id === id) || null;
+    const material = materiais.find(m => m.id === id);
+    console.log('Procurando material:', id, 'Encontrado:', material, 'Total materiais:', materiais.length);
+    return material || null;
   };
 
   const formatCurrency = (value: number) => {
@@ -82,7 +84,7 @@ export function EtapaResumo({
     }).format(value);
   };
 
-  const salvarOrcamento = async (status: 'rascunho' | 'enviado') => {
+  const salvarOrcamento = async (status: 'rascunho' | 'finalizado') => {
     setLoading(true);
     try {
       const markup = 1 + margemAtual / 100;
@@ -121,7 +123,7 @@ export function EtapaResumo({
 
       toast({
         title: 'Sucesso',
-        description: `Orçamento ${status === 'enviado' ? 'finalizado' : 'salvo'} com sucesso`,
+        description: `Orçamento ${status === 'finalizado' ? 'finalizado' : 'salvo'} com sucesso`,
       });
 
       onFinalizar();
@@ -412,7 +414,7 @@ export function EtapaResumo({
           Salvar Rascunho
         </Button>
         <Button
-          onClick={() => salvarOrcamento('enviado')}
+          onClick={() => salvarOrcamento('finalizado')}
           disabled={loading}
           className="flex-1"
         >
