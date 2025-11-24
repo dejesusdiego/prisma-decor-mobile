@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { ChevronDown, ChevronUp, Copy, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { Cortina } from '@/types/orcamento';
@@ -30,6 +31,7 @@ export function PersianaCard({
   onRemove,
 }: PersianaCardProps) {
   const [persiana, setPersiana] = useState<Cortina>(persianaInicial);
+  const [expanded, setExpanded] = useState(!persianaInicial.id); // Expandido se for novo item
 
   const salvarPersiana = async () => {
     if (!persiana.nomeIdentificacao || !persiana.tipoCortina || !persiana.ambiente || !persiana.precoUnitario) {
@@ -102,6 +104,9 @@ export function PersianaCard({
       onUpdate(persianaAtualizada);
       
       toast.success('Persiana salva com sucesso!');
+      
+      // Colapsar após salvar
+      setExpanded(false);
     } catch (error) {
       console.error('Erro ao salvar persiana:', error);
       toast.error('Erro ao salvar persiana');
@@ -110,7 +115,40 @@ export function PersianaCard({
 
   return (
     <Card className="p-4">
-      <div className="grid grid-cols-2 gap-4">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex-1 cursor-pointer" onClick={() => setExpanded(!expanded)}>
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            {persiana.nomeIdentificacao}
+            {!expanded && persiana.id && (
+              <span className="text-sm text-muted-foreground font-normal">
+                • {persiana.tipoCortina} • {persiana.largura}x{persiana.altura}m • R$ {((persiana.precoUnitario || 0) * persiana.quantidade + (persiana.precisaInstalacao && persiana.valorInstalacao ? persiana.valorInstalacao : 0)).toFixed(2)}
+              </span>
+            )}
+          </h3>
+        </div>
+        <div className="flex gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setExpanded(!expanded)}
+            title={expanded ? "Recolher" : "Expandir"}
+          >
+            {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </Button>
+          <Button
+            onClick={onRemove}
+            variant="destructive"
+            size="icon"
+            title="Remover"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+
+      {expanded && (
+        <>
+        <div className="grid grid-cols-2 gap-4">
         <div>
           <Label>Nome/Identificação *</Label>
           <Input
@@ -281,7 +319,9 @@ export function PersianaCard({
             Remover
           </Button>
         </div>
-      </div>
+        </div>
+        </>
+      )}
     </Card>
   );
 }

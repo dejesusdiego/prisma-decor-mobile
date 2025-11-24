@@ -99,7 +99,7 @@ export function EtapaProdutos({
       quantidade: 1,
       tipoProduto: 'outro',
       tipoCortina: 'outro',
-      precoUnitario: 0,
+      precoUnitario: undefined,
       precisaInstalacao: false,
     };
     setProdutos([...produtos, novoOutro]);

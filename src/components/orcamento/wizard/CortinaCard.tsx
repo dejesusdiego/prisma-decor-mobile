@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Copy, Trash2 } from 'lucide-react';
+import { Copy, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import type { Cortina, Material } from '@/types/orcamento';
@@ -38,6 +38,7 @@ export function CortinaCard({
   const [trilhos, setTrilhos] = useState<Material[]>([]);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [expanded, setExpanded] = useState(!cortina.id); // Expandido se for novo item
 
   useEffect(() => {
     carregarMateriais();
@@ -188,6 +189,9 @@ export function CortinaCard({
         title: 'Sucesso',
         description: 'Cortina salva com sucesso',
       });
+      
+      // Colapsar após salvar
+      setExpanded(false);
     } catch (error) {
       console.error('Erro ao salvar cortina:', error);
       toast({
@@ -203,18 +207,38 @@ export function CortinaCard({
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-        <CardTitle className="text-lg">{cortina.nomeIdentificacao}</CardTitle>
+        <div className="flex-1 cursor-pointer" onClick={() => setExpanded(!expanded)}>
+          <CardTitle className="text-lg flex items-center gap-2">
+            {cortina.nomeIdentificacao}
+            {!expanded && cortina.id && (
+              <span className="text-sm text-muted-foreground font-normal">
+                • {cortina.tipoCortina} • {cortina.largura}x{cortina.altura}m • Qtd: {cortina.quantidade}
+              </span>
+            )}
+          </CardTitle>
+        </div>
         <div className="flex gap-2">
           <Button
             type="button"
-            variant="outline"
-            size="sm"
-            onClick={carregarMateriais}
-            disabled={loading}
-            title="Recarregar materiais"
+            variant="ghost"
+            size="icon"
+            onClick={() => setExpanded(!expanded)}
+            title={expanded ? "Recolher" : "Expandir"}
           >
-            {loading ? 'Carregando...' : 'Recarregar'}
+            {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
           </Button>
+          {expanded && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={carregarMateriais}
+              disabled={loading}
+              title="Recarregar materiais"
+            >
+              {loading ? 'Carregando...' : 'Recarregar'}
+            </Button>
+          )}
           <Button
             type="button"
             variant="outline"
@@ -235,7 +259,8 @@ export function CortinaCard({
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+      {expanded && (
+        <CardContent className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor={`nome-${cortina.id}`}>Nome/Identificação *</Label>
@@ -453,6 +478,7 @@ export function CortinaCard({
           {saving ? 'Salvando...' : 'Salvar Cortina'}
         </Button>
       </CardContent>
+      )}
     </Card>
   );
 }

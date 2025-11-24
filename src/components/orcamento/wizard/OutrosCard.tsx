@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Copy, Trash2 } from 'lucide-react';
+import { Copy, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import type { Cortina } from '@/types/orcamento';
@@ -33,6 +33,7 @@ export function OutrosCard({
   onDuplicate,
 }: OutrosCardProps) {
   const [saving, setSaving] = useState(false);
+  const [expanded, setExpanded] = useState(!outro.id); // Expandido se for novo item
 
   const handleChange = (field: keyof Cortina, value: any) => {
     const novosDados = { ...outro, [field]: value };
@@ -100,6 +101,9 @@ export function OutrosCard({
         title: 'Sucesso',
         description: 'Item salvo com sucesso',
       });
+
+      // Colapsar após salvar
+      setExpanded(false);
     } catch (error) {
       console.error('Erro ao salvar item:', error);
       toast({
@@ -115,8 +119,26 @@ export function OutrosCard({
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-        <CardTitle className="text-lg">{outro.nomeIdentificacao}</CardTitle>
+        <div className="flex-1 cursor-pointer" onClick={() => setExpanded(!expanded)}>
+          <CardTitle className="text-lg flex items-center gap-2">
+            {outro.nomeIdentificacao}
+            {!expanded && outro.id && (
+              <span className="text-sm text-muted-foreground font-normal">
+                • Qtd: {outro.quantidade} • R$ {(outro.quantidade * (outro.precoUnitario || 0) + (outro.precisaInstalacao ? (outro.valorInstalacao || 0) : 0)).toFixed(2)}
+              </span>
+            )}
+          </CardTitle>
+        </div>
         <div className="flex gap-2">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={() => setExpanded(!expanded)}
+            title={expanded ? "Recolher" : "Expandir"}
+          >
+            {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </Button>
           <Button
             type="button"
             variant="outline"
@@ -137,7 +159,8 @@ export function OutrosCard({
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+      {expanded && (
+        <CardContent className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor={`nome-${outro.id}`}>Nome/Descrição *</Label>
@@ -215,7 +238,7 @@ export function OutrosCard({
                 min="0"
                 value={outro.valorInstalacao || ''}
                 onChange={(e) =>
-                  handleChange('valorInstalacao', parseFloat(e.target.value) || 0)
+                  handleChange('valorInstalacao', parseFloat(e.target.value) || undefined)
                 }
                 required
                 placeholder="0.00"
@@ -257,7 +280,8 @@ export function OutrosCard({
         >
           {saving ? 'Salvando...' : 'Salvar Item'}
         </Button>
-      </CardContent>
+        </CardContent>
+      )}
     </Card>
   );
 }
