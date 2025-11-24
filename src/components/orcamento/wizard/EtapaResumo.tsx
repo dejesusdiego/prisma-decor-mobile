@@ -87,10 +87,11 @@ export function EtapaResumo({
     carregarDados();
   }, [orcamentoId, cortinas]);
 
-  const obterMaterial = (id: string | undefined): Material | null => {
-    if (!id) return null;
-    const material = materiais.find(m => m.id === id);
-    console.log('Procurando material:', id, 'Encontrado:', material, 'Total materiais:', materiais.length);
+  const obterMaterial = (codigoOuId: string | undefined): Material | null => {
+    if (!codigoOuId) return null;
+    // Procura primeiro por codigo_item (para materiais novos) e depois por id (para materiais antigos)
+    const material = materiais.find(m => m.codigo_item === codigoOuId || m.id === codigoOuId);
+    console.log('Procurando material:', codigoOuId, 'Encontrado:', material?.nome || 'não encontrado');
     return material || null;
   };
 
