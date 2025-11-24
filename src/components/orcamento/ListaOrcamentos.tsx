@@ -17,7 +17,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Edit, Copy, FileDown, Search, Trash2 } from 'lucide-react';
+import { ArrowLeft, Edit, Copy, FileDown, Search, Trash2, Eye } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
@@ -35,9 +35,10 @@ interface Orcamento {
 interface ListaOrcamentosProps {
   onVoltar: () => void;
   onEditar: (orcamentoId: string) => void;
+  onVisualizar: (orcamentoId: string) => void;
 }
 
-export function ListaOrcamentos({ onVoltar, onEditar }: ListaOrcamentosProps) {
+export function ListaOrcamentos({ onVoltar, onEditar, onVisualizar }: ListaOrcamentosProps) {
   const { user } = useAuth();
   const [orcamentos, setOrcamentos] = useState<Orcamento[]>([]);
   const [filtroNome, setFiltroNome] = useState('');
@@ -292,6 +293,14 @@ export function ListaOrcamentos({ onVoltar, onEditar }: ListaOrcamentosProps) {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => onVisualizar(orc.id)}
+                            title="Ver Resumo"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
                           <Button
                             variant="ghost"
                             size="icon"

@@ -6,8 +6,9 @@ import { useNavigate } from 'react-router-dom';
 import { Dashboard } from '@/components/orcamento/Dashboard';
 import { NovoOrcamento } from '@/components/orcamento/NovoOrcamento';
 import { ListaOrcamentos } from '@/components/orcamento/ListaOrcamentos';
+import { VisualizarOrcamento } from '@/components/orcamento/VisualizarOrcamento';
 
-type View = 'dashboard' | 'novoOrcamento' | 'listaOrcamentos';
+type View = 'dashboard' | 'novoOrcamento' | 'listaOrcamentos' | 'visualizarOrcamento';
 
 export default function GerarOrcamento() {
   const { user, signOut } = useAuth();
@@ -23,6 +24,11 @@ export default function GerarOrcamento() {
   const handleEditarOrcamento = (orcamentoId: string) => {
     setOrcamentoEditandoId(orcamentoId);
     setView('novoOrcamento');
+  };
+
+  const handleVisualizarOrcamento = (orcamentoId: string) => {
+    setOrcamentoEditandoId(orcamentoId);
+    setView('visualizarOrcamento');
   };
 
   const handleVoltarDashboard = () => {
@@ -72,6 +78,14 @@ export default function GerarOrcamento() {
           <ListaOrcamentos
             onVoltar={handleVoltarDashboard}
             onEditar={handleEditarOrcamento}
+            onVisualizar={handleVisualizarOrcamento}
+          />
+        )}
+
+        {view === 'visualizarOrcamento' && orcamentoEditandoId && (
+          <VisualizarOrcamento
+            orcamentoId={orcamentoEditandoId}
+            onVoltar={handleVoltarDashboard}
           />
         )}
       </main>
