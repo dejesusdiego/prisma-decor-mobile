@@ -18,7 +18,7 @@ export function NovoOrcamento({ onVoltar, orcamentoId }: NovoOrcamentoProps) {
   const [dados, setDados] = useState<DadosOrcamento>({
     clienteNome: '',
     clienteTelefone: '',
-    ambiente: '',
+    endereco: '',
     observacoes: '',
   });
   const [cortinas, setCortinas] = useState<Cortina[]>([]);
@@ -44,7 +44,7 @@ export function NovoOrcamento({ onVoltar, orcamentoId }: NovoOrcamentoProps) {
         setDados({
           clienteNome: orcamento.cliente_nome,
           clienteTelefone: orcamento.cliente_telefone,
-          ambiente: orcamento.ambiente,
+          endereco: orcamento.endereco || '',
           observacoes: orcamento.observacoes || '',
         });
 
@@ -64,12 +64,14 @@ export function NovoOrcamento({ onVoltar, orcamentoId }: NovoOrcamentoProps) {
             altura: item.altura,
             barraCm: item.barra_cm || undefined,
             quantidade: item.quantidade,
-            tipoProduto: (item.tipo_produto as 'cortina' | 'persiana') || 'cortina',
+            tipoProduto: (item.tipo_produto as 'cortina' | 'persiana' | 'outro') || 'cortina',
             tipoCortina: item.tipo_cortina as any,
+            ambiente: item.ambiente || undefined,
             tecidoId: item.tecido_id || undefined,
             forroId: item.forro_id || undefined,
             trilhoId: item.trilho_id || undefined,
             materialPrincipalId: item.material_principal_id || undefined,
+            precoUnitario: item.preco_unitario || undefined,
             precisaInstalacao: item.precisa_instalacao,
             pontosInstalacao: item.pontos_instalacao || undefined,
             custoTecido: item.custo_tecido || undefined,

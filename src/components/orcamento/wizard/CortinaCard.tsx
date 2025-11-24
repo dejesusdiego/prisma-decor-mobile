@@ -16,6 +16,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import type { Cortina, Material } from '@/types/orcamento';
 import { calcularCustosCortina } from '@/lib/calculosOrcamento';
+import { OPCOES_AMBIENTE } from '@/types/orcamento';
 
 interface CortinaCardProps {
   cortina: Cortina;
@@ -146,6 +147,7 @@ export function CortinaCard({
         quantidade: cortina.quantidade,
         tipo_produto: 'cortina',
         tipo_cortina: cortina.tipoCortina,
+        ambiente: cortina.ambiente || null,
         tecido_id: cortina.tecidoId,
         forro_id: cortina.forroId || null,
         trilho_id: cortina.trilhoId,
@@ -259,6 +261,26 @@ export function CortinaCard({
                 <SelectItem value="prega">Prega</SelectItem>
                 <SelectItem value="painel">Painel</SelectItem>
                 <SelectItem value="rolo">Rolo</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor={`ambiente-${cortina.id}`}>Ambiente</Label>
+            <Select
+              value={cortina.ambiente || 'none'}
+              onValueChange={(value) => handleChange('ambiente', value === 'none' ? undefined : value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o ambiente" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Não especificado</SelectItem>
+                {OPCOES_AMBIENTE.map((ambiente) => (
+                  <SelectItem key={ambiente} value={ambiente}>
+                    {ambiente}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Plus } from 'lucide-react';
 import { CortinaCard } from './CortinaCard';
 import { PersianaCard } from './PersianaCard';
+import { OutrosCard } from './OutrosCard';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import type { Cortina } from '@/types/orcamento';
@@ -90,6 +91,20 @@ export function EtapaProdutos({
     setProdutos([...produtos, novaPersiana]);
   };
 
+  const adicionarOutro = () => {
+    const novoOutro: Cortina = {
+      nomeIdentificacao: `Outro ${produtos.filter(p => p.tipoProduto === 'outro').length + 1}`,
+      largura: 0,
+      altura: 0,
+      quantidade: 1,
+      tipoProduto: 'outro',
+      tipoCortina: 'outro',
+      precoUnitario: 0,
+      precisaInstalacao: false,
+    };
+    setProdutos([...produtos, novoOutro]);
+  };
+
   const removerProduto = async (index: number) => {
     const produto = produtos[index];
     
@@ -150,6 +165,9 @@ export function EtapaProdutos({
       if (p.tipoProduto === 'persiana') {
         return !p.materialPrincipalId;
       }
+      if (p.tipoProduto === 'outro') {
+        return !p.precoUnitario || p.precoUnitario <= 0;
+      }
       return false;
     });
 
@@ -187,7 +205,7 @@ export function EtapaProdutos({
             onClick={adicionarCortina}
           >
             <Plus className="mr-2 h-4 w-4" />
-            Adicionar Cortina
+            Cortina
           </Button>
           <Button
             type="button"
@@ -195,7 +213,15 @@ export function EtapaProdutos({
             onClick={adicionarPersiana}
           >
             <Plus className="mr-2 h-4 w-4" />
-            Adicionar Persiana
+            Persiana
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={adicionarOutro}
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            + Outros
           </Button>
         </div>
       </div>
@@ -217,9 +243,17 @@ export function EtapaProdutos({
                   onRemove={() => removerProduto(index)}
                   onDuplicate={() => duplicarProduto(index)}
                 />
-              ) : (
+              ) : produto.tipoProduto === 'persiana' ? (
                 <PersianaCard
                   persiana={produto}
+                  orcamentoId={orcamentoId}
+                  onUpdate={(p) => atualizarProduto(index, p)}
+                  onRemove={() => removerProduto(index)}
+                  onDuplicate={() => duplicarProduto(index)}
+                />
+              ) : (
+                <OutrosCard
+                  outro={produto}
                   orcamentoId={orcamentoId}
                   onUpdate={(p) => atualizarProduto(index, p)}
                   onRemove={() => removerProduto(index)}
