@@ -52,6 +52,9 @@ export default {
           hover: "hsl(var(--whatsapp-hover))",
           foreground: "hsl(var(--whatsapp-foreground))",
         },
+        lovable: {
+          blue: "hsl(var(--lovable-blue))",
+        },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",

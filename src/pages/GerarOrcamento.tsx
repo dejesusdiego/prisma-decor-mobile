@@ -64,6 +64,7 @@ export default function GerarOrcamento() {
           <Dashboard
             onNovoOrcamento={handleNovoOrcamento}
             onMeusOrcamentos={() => setView('listaOrcamentos')}
+            onVisualizarOrcamento={handleVisualizarOrcamento}
           />
         )}
 
