@@ -143,6 +143,9 @@ export function calcularResumoOrcamento(
   cortinas: Cortina[],
   margemPercent: number
 ): ResumoOrcamento {
+  const markup = 1 + margemPercent / 100;
+  
+  // Calcular subtotais de custos internos
   const subtotalMateriais = cortinas.reduce(
     (acc, c) => acc + (c.custoTecido || 0) + (c.custoForro || 0) + (c.custoTrilho || 0),
     0
@@ -159,8 +162,14 @@ export function calcularResumoOrcamento(
   );
 
   const custoTotal = subtotalMateriais + subtotalMaoObraCostura + subtotalInstalacao;
-  const markup = 1 + margemPercent / 100;
-  const totalGeral = custoTotal * markup;
+  
+  // Total geral é a soma dos preços de venda de cada item (que já têm margem aplicada)
+  // Para calcular aqui, aplicamos a margem no custo total de cada item
+  const totalGeral = cortinas.reduce((acc, c) => {
+    const custoTotalItem = (c.custoTotal || 0);
+    const precoVendaItem = custoTotalItem * markup;
+    return acc + precoVendaItem;
+  }, 0);
 
   return {
     subtotalMateriais,
