@@ -221,7 +221,7 @@ export function EtapaProdutos({
             onClick={adicionarOutro}
           >
             <Plus className="mr-2 h-4 w-4" />
-            + Outros
+            Outros
           </Button>
         </div>
       </div>

@@ -20,6 +20,7 @@ export interface Cortina {
   materialPrincipalId?: string; // Para persianas que não usam tecido
   ambiente?: string; // Ambiente específico deste produto
   precoUnitario?: number; // Para produtos "Outros"
+  valorInstalacao?: number; // Valor direto de instalação para produtos "Outros"
   precisaInstalacao: boolean;
   pontosInstalacao?: number;
   custoTecido?: number;

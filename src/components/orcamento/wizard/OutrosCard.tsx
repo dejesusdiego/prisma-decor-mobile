@@ -46,7 +46,8 @@ export function OutrosCard({
         throw new Error('Preencha todos os campos obrigatórios');
       }
 
-      const custoTotal = outro.quantidade * (outro.precoUnitario || 0);
+      const custoInstalacao = outro.precisaInstalacao ? (outro.valorInstalacao || 0) : 0;
+      const custoTotal = (outro.quantidade * (outro.precoUnitario || 0)) + custoInstalacao;
 
       const dadosOutro = {
         orcamento_id: orcamentoId,
@@ -64,15 +65,13 @@ export function OutrosCard({
         trilho_id: null,
         material_principal_id: null,
         precisa_instalacao: outro.precisaInstalacao,
-        pontos_instalacao: outro.pontosInstalacao || 1,
+        pontos_instalacao: null,
         custo_tecido: 0,
         custo_forro: 0,
         custo_trilho: 0,
         custo_acessorios: 0,
         custo_costura: 0,
-        custo_instalacao: outro.precisaInstalacao 
-          ? (outro.pontosInstalacao || 1) * 50 // Valor padrão para instalação
-          : 0,
+        custo_instalacao: custoInstalacao,
         custo_total: custoTotal,
         preco_venda: 0,
       };
@@ -95,7 +94,7 @@ export function OutrosCard({
 
       if (result.error) throw result.error;
 
-      onUpdate({ ...outro, id: result.data.id, custoTotal });
+      onUpdate({ ...outro, id: result.data.id, custoInstalacao, custoTotal });
 
       toast({
         title: 'Sucesso',
@@ -208,25 +207,44 @@ export function OutrosCard({
 
           {outro.precisaInstalacao && (
             <div className="space-y-2 md:col-span-2">
-              <Label htmlFor={`pontos-${outro.id}`}>Pontos de Instalação *</Label>
+              <Label htmlFor={`valor-instalacao-${outro.id}`}>Valor da Instalação (R$) *</Label>
               <Input
-                id={`pontos-${outro.id}`}
+                id={`valor-instalacao-${outro.id}`}
                 type="number"
-                min="1"
-                value={outro.pontosInstalacao || 1}
+                step="0.01"
+                min="0"
+                value={outro.valorInstalacao || ''}
                 onChange={(e) =>
-                  handleChange('pontosInstalacao', parseInt(e.target.value) || 1)
+                  handleChange('valorInstalacao', parseFloat(e.target.value) || 0)
                 }
                 required
+                placeholder="0.00"
               />
             </div>
           )}
 
           {outro.precoUnitario && outro.quantidade > 0 && (
             <div className="md:col-span-2 p-4 bg-muted rounded-lg">
-              <p className="text-sm font-medium">
-                Total: R$ {(outro.quantidade * (outro.precoUnitario || 0)).toFixed(2)}
-              </p>
+              <div className="space-y-1">
+                <p className="text-sm">
+                  Subtotal: R$ {(outro.quantidade * (outro.precoUnitario || 0)).toFixed(2)}
+                </p>
+                {outro.precisaInstalacao && outro.valorInstalacao && (
+                  <>
+                    <p className="text-sm">
+                      Instalação: R$ {outro.valorInstalacao.toFixed(2)}
+                    </p>
+                    <p className="text-sm font-medium border-t pt-1">
+                      Total: R$ {((outro.quantidade * (outro.precoUnitario || 0)) + (outro.valorInstalacao || 0)).toFixed(2)}
+                    </p>
+                  </>
+                )}
+                {!outro.precisaInstalacao && (
+                  <p className="text-sm font-medium">
+                    Total: R$ {(outro.quantidade * (outro.precoUnitario || 0)).toFixed(2)}
+                  </p>
+                )}
+              </div>
             </div>
           )}
         </div>
