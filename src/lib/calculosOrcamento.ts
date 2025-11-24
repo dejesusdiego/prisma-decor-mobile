@@ -28,10 +28,13 @@ export function calcularCustosCortina(
   // 1) Converter barra de cm para metros
   const barra_m = (cortina.barraCm || 0) / 100;
 
-  // 2) Cálculo do tecido (se houver)
+  // 2) Obter coeficiente baseado no tipo de cortina
+  const coeficiente = COEFICIENTES_CORTINA[cortina.tipoCortina as keyof typeof COEFICIENTES_CORTINA] || 3.5;
+
+  // 3) Cálculo do tecido (se houver)
   let custoTecido = 0;
   if (tecido) {
-    let consumoPorCortina_m = (cortina.largura * 3.5) + barra_m;
+    let consumoPorCortina_m = (cortina.largura * coeficiente) + barra_m;
     
     // Verificar se precisa emenda (altura vs largura do rolo)
     if (tecido.largura_metro && cortina.altura > tecido.largura_metro) {
@@ -42,10 +45,10 @@ export function calcularCustosCortina(
     custoTecido = consumoTotalTecido_m * tecido.preco_custo;
   }
 
-  // Cálculo do forro (se houver) - usa coeficiente 2.5
+  // 4) Cálculo do forro (se houver) - usa mesmo coeficiente do tipo de cortina
   let custoForro = 0;
   if (forro) {
-    let consumoPorCortinaForro_m = (cortina.largura * 2.5) + barra_m;
+    let consumoPorCortinaForro_m = (cortina.largura * coeficiente) + barra_m;
     
     if (forro.largura_metro && cortina.altura > forro.largura_metro) {
       consumoPorCortinaForro_m *= 2;
@@ -55,12 +58,13 @@ export function calcularCustosCortina(
     custoForro = consumoTotalForro_m * forro.preco_custo;
   }
 
-  // Cálculo do trilho (10cm de sobra, SEM multiplicar por quantidade) - opcional
+  // 5) Cálculo do trilho (10cm de sobra, SEM multiplicar por quantidade) - opcional
   const comprimentoTrilho_m = cortina.largura + 0.1;
   const custoTrilho = trilho ? (comprimentoTrilho_m * trilho.preco_custo) : 0;
 
-  // Cálculo da costura (usa comprimento do trilho, SEM multiplicar por quantidade)
-  const custoCostura = comprimentoTrilho_m * servicoConfeccao.preco_custo;
+  // 6) Cálculo da costura (usa comprimento do trilho OU largura se não tiver trilho, SEM multiplicar por quantidade)
+  const comprimentoParaCostura = trilho ? comprimentoTrilho_m : cortina.largura;
+  const custoCostura = comprimentoParaCostura * servicoConfeccao.preco_custo;
 
   // Cálculo da instalação
   const custoInstalacao = cortina.precisaInstalacao && servicoInstalacao

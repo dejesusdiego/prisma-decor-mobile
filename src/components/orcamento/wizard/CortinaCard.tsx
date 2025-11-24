@@ -98,6 +98,24 @@ export function CortinaCard({
   const salvarCortina = async () => {
     setSaving(true);
     try {
+      // Validação: pelo menos tecido OU forro deve estar preenchido
+      if (!cortina.tecidoId && !cortina.forroId) {
+        toast({
+          title: 'Atenção',
+          description: 'É necessário informar pelo menos o tecido principal ou o forro',
+          variant: 'destructive',
+        });
+        setSaving(false);
+        return;
+      }
+
+      console.log('🔍 Salvando cortina:', {
+        tecidoId: cortina.tecidoId,
+        forroId: cortina.forroId,
+        trilhoId: cortina.trilhoId,
+        tipoCortina: cortina.tipoCortina
+      });
+
       // Buscar serviços de confecção do JSON
       const confeccaoResponse = await fetch('/data/servicos_confeccao.json');
       const confeccaoData = await confeccaoResponse.json();
@@ -109,10 +127,12 @@ export function CortinaCard({
       const servicoInstalacao = instalacaoData[0]; // Pegar primeiro serviço
 
       const materiaisSelecionados = [
-        tecidos.find(t => t.id === cortina.tecidoId),
-        forros.find(f => f.id === cortina.forroId),
-        trilhos.find(t => t.id === cortina.trilhoId)
+        cortina.tecidoId ? tecidos.find(t => t.id === cortina.tecidoId) : null,
+        cortina.forroId ? forros.find(f => f.id === cortina.forroId) : null,
+        cortina.trilhoId ? trilhos.find(t => t.id === cortina.trilhoId) : null
       ].filter(Boolean);
+
+      console.log('📦 Materiais selecionados:', materiaisSelecionados.length);
 
       const custos = calcularCustosCortina(
         cortina,
@@ -181,7 +201,12 @@ export function CortinaCard({
           .single();
       }
 
-      if (result.error) throw result.error;
+      if (result.error) {
+        console.error('❌ Erro do Supabase:', result.error);
+        throw result.error;
+      }
+
+      console.log('✅ Cortina salva com sucesso:', result.data.id);
 
       onUpdate({ ...cortina, id: result.data.id, tipoProduto: 'cortina', ...custos });
 
@@ -192,11 +217,11 @@ export function CortinaCard({
       
       // Colapsar após salvar
       setExpanded(false);
-    } catch (error) {
-      console.error('Erro ao salvar cortina:', error);
+    } catch (error: any) {
+      console.error('❌ Erro ao salvar cortina:', error);
       toast({
         title: 'Erro',
-        description: 'Não foi possível salvar a cortina',
+        description: error.message || 'Não foi possível salvar a cortina',
         variant: 'destructive',
       });
     } finally {

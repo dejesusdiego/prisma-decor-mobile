@@ -74,7 +74,7 @@ export interface ServicoInstalacao {
 export const COEFICIENTES_CORTINA = {
   wave: 3.5,
   prega: 3.5,
-  painel: 3.5,
+  painel: 2.5,  // Painel usa coeficiente 2.5
   rolo: 3.5,
   horizontal: 1.0, // Persianas horizontais
   vertical: 1.0,   // Persianas verticais
