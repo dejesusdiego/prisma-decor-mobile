@@ -266,14 +266,17 @@ export function EtapaProdutos({
 
     // Validar campos obrigatórios
     const produtosInvalidos = produtos.filter((p) => {
-      if (!p.nomeIdentificacao || p.largura <= 0 || p.altura <= 0 || p.quantidade <= 0) {
+      // Validações comuns
+      if (!p.nomeIdentificacao || p.quantidade <= 0) {
         return true;
       }
+      
+      // Validações específicas por tipo
       if (p.tipoProduto === 'cortina') {
-        return !p.tecidoId || !p.trilhoId;
+        return p.largura <= 0 || p.altura <= 0 || !p.tecidoId || !p.trilhoId;
       }
       if (p.tipoProduto === 'persiana') {
-        return !p.materialPrincipalId;
+        return p.largura <= 0 || p.altura <= 0 || !p.materialPrincipalId;
       }
       if (p.tipoProduto === 'outro') {
         return !p.precoUnitario || p.precoUnitario <= 0;
