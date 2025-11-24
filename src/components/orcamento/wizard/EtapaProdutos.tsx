@@ -249,7 +249,6 @@ export function EtapaProdutos({
                   orcamentoId={orcamentoId}
                   onUpdate={(p) => atualizarProduto(index, p)}
                   onRemove={() => removerProduto(index)}
-                  onDuplicate={() => duplicarProduto(index)}
                 />
               ) : (
                 <OutrosCard

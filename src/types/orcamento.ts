@@ -14,15 +14,26 @@ export interface Cortina {
   quantidade: number;
   tipoProduto: 'cortina' | 'persiana' | 'outro';
   tipoCortina: 'wave' | 'prega' | 'painel' | 'rolo' | 'horizontal' | 'vertical' | 'romana' | 'celular' | 'madeira' | 'outro';
+  
+  // Cortina specific
   tecidoId?: string;
   forroId?: string;
   trilhoId?: string;
-  materialPrincipalId?: string; // Para persianas que não usam tecido
-  ambiente?: string; // Ambiente específico deste produto
-  precoUnitario?: number; // Para produtos "Outros"
+  
+  // Persiana specific (com orçamento de fábrica)
+  materialPrincipalId?: string;
+  descricao?: string;
+  fabrica?: string;
+  motorizada?: boolean;
+  
+  // Comum
+  ambiente?: string;
+  precoUnitario?: number; // Para persianas e "Outros"
   valorInstalacao?: number; // Valor direto de instalação para produtos "Outros"
   precisaInstalacao: boolean;
   pontosInstalacao?: number;
+  
+  // Custos
   custoTecido?: number;
   custoForro?: number;
   custoTrilho?: number;

@@ -27,11 +27,14 @@ export type Database = {
           custo_tecido: number | null
           custo_total: number | null
           custo_trilho: number | null
+          descricao: string | null
+          fabrica: string | null
           forro_id: string | null
           id: string
           is_outro: boolean | null
           largura: number
           material_principal_id: string | null
+          motorizada: boolean | null
           nome_identificacao: string
           orcamento_id: string
           pontos_instalacao: number | null
@@ -57,11 +60,14 @@ export type Database = {
           custo_tecido?: number | null
           custo_total?: number | null
           custo_trilho?: number | null
+          descricao?: string | null
+          fabrica?: string | null
           forro_id?: string | null
           id?: string
           is_outro?: boolean | null
           largura: number
           material_principal_id?: string | null
+          motorizada?: boolean | null
           nome_identificacao: string
           orcamento_id: string
           pontos_instalacao?: number | null
@@ -87,11 +93,14 @@ export type Database = {
           custo_tecido?: number | null
           custo_total?: number | null
           custo_trilho?: number | null
+          descricao?: string | null
+          fabrica?: string | null
           forro_id?: string | null
           id?: string
           is_outro?: boolean | null
           largura?: number
           material_principal_id?: string | null
+          motorizada?: boolean | null
           nome_identificacao?: string
           orcamento_id?: string
           pontos_instalacao?: number | null
