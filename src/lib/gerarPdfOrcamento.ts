@@ -1,7 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { supabase } from '@/integrations/supabase/client';
-import logoSvg from '@/assets/logo.svg';
+import logoPrisma from '@/assets/logo-prisma.png';
 
 interface OrcamentoData {
   codigo: string;
@@ -79,18 +79,21 @@ export async function gerarPdfOrcamento(orcamentoId: string): Promise<void> {
     doc.setFillColor(17, 17, 17); // Preto #111111
     doc.rect(0, 0, 210, 35, 'F'); // Largura A4 = 210mm
     
-    // Logo branca (placeholder - ajustar quando tiver a logo real)
-    // Posicionar logo no lado esquerdo
+    // Logo Prisma no lado esquerdo
     yPos = 10;
-    doc.setFontSize(20);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(255, 255, 255); // Branco
-    doc.text('PRISMA', 15, yPos + 5);
-    
-    yPos = 12;
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'italic');
-    doc.text('Refletindo estilo, projetando vidas', 15, yPos + 10);
+    try {
+      doc.addImage(logoPrisma, 'PNG', 15, yPos, 40, 15);
+    } catch (error) {
+      console.error('Erro ao adicionar logo:', error);
+      // Fallback: texto caso a imagem não carregue
+      doc.setFontSize(20);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(255, 255, 255);
+      doc.text('PRISMA', 15, yPos + 5);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'italic');
+      doc.text('Interiores', 15, yPos + 10);
+    }
     
     // Informações de contato no lado direito do cabeçalho
     doc.setFontSize(8);
