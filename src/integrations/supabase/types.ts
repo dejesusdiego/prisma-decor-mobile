@@ -17,6 +17,7 @@ export type Database = {
       cortina_items: {
         Row: {
           altura: number
+          ambiente: string | null
           barra_cm: number | null
           created_at: string
           custo_acessorios: number | null
@@ -28,12 +29,14 @@ export type Database = {
           custo_trilho: number | null
           forro_id: string | null
           id: string
+          is_outro: boolean | null
           largura: number
           material_principal_id: string | null
           nome_identificacao: string
           orcamento_id: string
           pontos_instalacao: number | null
           precisa_instalacao: boolean
+          preco_unitario: number | null
           preco_venda: number | null
           quantidade: number
           tecido_id: string | null
@@ -44,6 +47,7 @@ export type Database = {
         }
         Insert: {
           altura: number
+          ambiente?: string | null
           barra_cm?: number | null
           created_at?: string
           custo_acessorios?: number | null
@@ -55,12 +59,14 @@ export type Database = {
           custo_trilho?: number | null
           forro_id?: string | null
           id?: string
+          is_outro?: boolean | null
           largura: number
           material_principal_id?: string | null
           nome_identificacao: string
           orcamento_id: string
           pontos_instalacao?: number | null
           precisa_instalacao?: boolean
+          preco_unitario?: number | null
           preco_venda?: number | null
           quantidade?: number
           tecido_id?: string | null
@@ -71,6 +77,7 @@ export type Database = {
         }
         Update: {
           altura?: number
+          ambiente?: string | null
           barra_cm?: number | null
           created_at?: string
           custo_acessorios?: number | null
@@ -82,12 +89,14 @@ export type Database = {
           custo_trilho?: number | null
           forro_id?: string | null
           id?: string
+          is_outro?: boolean | null
           largura?: number
           material_principal_id?: string | null
           nome_identificacao?: string
           orcamento_id?: string
           pontos_instalacao?: number | null
           precisa_instalacao?: boolean
+          preco_unitario?: number | null
           preco_venda?: number | null
           quantidade?: number
           tecido_id?: string | null
@@ -156,13 +165,13 @@ export type Database = {
       }
       orcamentos: {
         Row: {
-          ambiente: string
           cliente_nome: string
           cliente_telefone: string
           codigo: string
           created_at: string
           created_by_user_id: string
           custo_total: number | null
+          endereco: string
           id: string
           margem_percent: number
           margem_tipo: string
@@ -175,13 +184,13 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          ambiente: string
           cliente_nome: string
           cliente_telefone: string
           codigo: string
           created_at?: string
           created_by_user_id: string
           custo_total?: number | null
+          endereco?: string
           id?: string
           margem_percent: number
           margem_tipo: string
@@ -194,13 +203,13 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          ambiente?: string
           cliente_nome?: string
           cliente_telefone?: string
           codigo?: string
           created_at?: string
           created_by_user_id?: string
           custo_total?: number | null
+          endereco?: string
           id?: string
           margem_percent?: number
           margem_tipo?: string

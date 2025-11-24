@@ -51,7 +51,7 @@ export function EtapaCliente({ dados, orcamentoId, onAvancar, onCancelar }: Etap
           .update({
             cliente_nome: formData.clienteNome,
             cliente_telefone: formData.clienteTelefone,
-            ambiente: formData.ambiente,
+            endereco: formData.endereco,
             observacoes: formData.observacoes || null,
           })
           .eq('id', orcamentoId);
@@ -71,7 +71,7 @@ export function EtapaCliente({ dados, orcamentoId, onAvancar, onCancelar }: Etap
           .insert({
             cliente_nome: formData.clienteNome,
             cliente_telefone: formData.clienteTelefone,
-            ambiente: formData.ambiente,
+            endereco: formData.endereco,
             observacoes: formData.observacoes || null,
             margem_tipo: 'padrao',
             margem_percent: 61.5,
@@ -133,23 +133,14 @@ export function EtapaCliente({ dados, orcamentoId, onAvancar, onCancelar }: Etap
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="ambiente">Ambiente *</Label>
-            <Select
-              value={formData.ambiente}
-              onValueChange={(value) => setFormData({ ...formData, ambiente: value })}
+            <Label htmlFor="endereco">Endereço *</Label>
+            <Input
+              id="endereco"
+              value={formData.endereco}
+              onChange={(e) => setFormData({ ...formData, endereco: e.target.value })}
               required
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o ambiente" />
-              </SelectTrigger>
-              <SelectContent>
-                {OPCOES_AMBIENTE.map((ambiente) => (
-                  <SelectItem key={ambiente} value={ambiente}>
-                    {ambiente}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              placeholder="Digite o endereço completo"
+            />
           </div>
 
           <div className="space-y-2">

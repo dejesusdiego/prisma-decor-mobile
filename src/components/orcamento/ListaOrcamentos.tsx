@@ -26,7 +26,7 @@ interface Orcamento {
   id: string;
   codigo: string;
   cliente_nome: string;
-  ambiente: string;
+  endereco: string;
   created_at: string;
   total_geral: number;
   status: string;
@@ -100,7 +100,7 @@ export function ListaOrcamentos({ onVoltar, onEditar, onVisualizar }: ListaOrcam
         .insert({
           cliente_nome: orcOriginal.cliente_nome,
           cliente_telefone: orcOriginal.cliente_telefone,
-          ambiente: orcOriginal.ambiente,
+          endereco: orcOriginal.endereco,
           observacoes: orcOriginal.observacoes,
           margem_tipo: orcOriginal.margem_tipo,
           margem_percent: orcOriginal.margem_percent,
@@ -263,7 +263,7 @@ export function ListaOrcamentos({ onVoltar, onEditar, onVisualizar }: ListaOrcam
                   <TableRow>
                     <TableHead>Código</TableHead>
                     <TableHead>Cliente</TableHead>
-                    <TableHead>Ambiente</TableHead>
+                    <TableHead>Endereço</TableHead>
                     <TableHead>Data</TableHead>
                     <TableHead>Total</TableHead>
                     <TableHead>Status</TableHead>
@@ -275,7 +275,7 @@ export function ListaOrcamentos({ onVoltar, onEditar, onVisualizar }: ListaOrcam
                     <TableRow key={orc.id}>
                       <TableCell className="font-medium">{orc.codigo}</TableCell>
                       <TableCell>{orc.cliente_nome}</TableCell>
-                      <TableCell>{orc.ambiente}</TableCell>
+                      <TableCell>{orc.endereco}</TableCell>
                       <TableCell>
                         {new Date(orc.created_at).toLocaleDateString('pt-BR')}
                       </TableCell>

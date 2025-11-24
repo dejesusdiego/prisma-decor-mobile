@@ -16,6 +16,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import type { Cortina, Material } from '@/types/orcamento';
 import { calcularCustosCortina } from '@/lib/calculosOrcamento';
+import { OPCOES_AMBIENTE } from '@/types/orcamento';
 
 interface PersianaCardProps {
   persiana: Cortina;
@@ -135,6 +136,7 @@ export function PersianaCard({
         quantidade: persiana.quantidade,
         tipo_produto: 'persiana',
         tipo_cortina: persiana.tipoCortina,
+        ambiente: persiana.ambiente || null,
         material_principal_id: persiana.materialPrincipalId || null,
         trilho_id: persiana.trilhoId || null,
         tecido_id: null,
@@ -257,6 +259,26 @@ export function PersianaCard({
                 <SelectItem value="celular">Celular</SelectItem>
                 <SelectItem value="madeira">Madeira</SelectItem>
                 <SelectItem value="rolo">Rolo</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor={`ambiente-${persiana.id}`}>Ambiente</Label>
+            <Select
+              value={persiana.ambiente || 'none'}
+              onValueChange={(value) => handleChange('ambiente', value === 'none' ? undefined : value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o ambiente" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Não especificado</SelectItem>
+                {OPCOES_AMBIENTE.map((ambiente) => (
+                  <SelectItem key={ambiente} value={ambiente}>
+                    {ambiente}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

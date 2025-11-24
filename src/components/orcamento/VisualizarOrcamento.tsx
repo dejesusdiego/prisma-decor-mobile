@@ -16,7 +16,7 @@ interface OrcamentoCompleto {
   codigo: string;
   cliente_nome: string;
   cliente_telefone: string;
-  ambiente: string;
+  endereco: string;
   observacoes: string | null;
   status: string;
   margem_tipo: string;
@@ -66,12 +66,14 @@ export function VisualizarOrcamento({ orcamentoId, onVoltar }: VisualizarOrcamen
             altura: item.altura,
             barraCm: item.barra_cm || undefined,
             quantidade: item.quantidade,
-            tipoProduto: (item.tipo_produto as 'cortina' | 'persiana') || 'cortina',
+            tipoProduto: (item.tipo_produto as 'cortina' | 'persiana' | 'outro') || 'cortina',
             tipoCortina: item.tipo_cortina as any,
+            ambiente: item.ambiente || undefined,
             tecidoId: item.tecido_id || undefined,
             forroId: item.forro_id || undefined,
             trilhoId: item.trilho_id || undefined,
             materialPrincipalId: item.material_principal_id || undefined,
+            precoUnitario: item.preco_unitario || undefined,
             precisaInstalacao: item.precisa_instalacao,
             pontosInstalacao: item.pontos_instalacao || undefined,
             custoTecido: item.custo_tecido || undefined,
@@ -208,8 +210,8 @@ export function VisualizarOrcamento({ orcamentoId, onVoltar }: VisualizarOrcamen
               <p className="text-lg">{orcamento.cliente_telefone}</p>
             </div>
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Ambiente</p>
-              <p className="text-lg">{orcamento.ambiente}</p>
+              <p className="text-sm font-medium text-muted-foreground">Endereço</p>
+              <p className="text-lg">{orcamento.endereco}</p>
             </div>
             <div>
               <p className="text-sm font-medium text-muted-foreground">Data de Criação</p>

@@ -1,7 +1,7 @@
 export interface DadosOrcamento {
   clienteNome: string;
   clienteTelefone: string;
-  ambiente: string;
+  endereco: string;
   observacoes?: string;
 }
 
@@ -12,12 +12,14 @@ export interface Cortina {
   altura: number;
   barraCm?: number; // Barra da cortina em centímetros
   quantidade: number;
-  tipoProduto: 'cortina' | 'persiana';
-  tipoCortina: 'wave' | 'prega' | 'painel' | 'rolo' | 'horizontal' | 'vertical' | 'romana' | 'celular' | 'madeira';
+  tipoProduto: 'cortina' | 'persiana' | 'outro';
+  tipoCortina: 'wave' | 'prega' | 'painel' | 'rolo' | 'horizontal' | 'vertical' | 'romana' | 'celular' | 'madeira' | 'outro';
   tecidoId?: string;
   forroId?: string;
   trilhoId?: string;
   materialPrincipalId?: string; // Para persianas que não usam tecido
+  ambiente?: string; // Ambiente específico deste produto
+  precoUnitario?: number; // Para produtos "Outros"
   precisaInstalacao: boolean;
   pontosInstalacao?: number;
   custoTecido?: number;
@@ -75,6 +77,9 @@ export const OPCOES_AMBIENTE = [
   'Cozinha',
   'Escritório',
   'Varanda',
+  'Banheiro',
+  'Lavanderia',
+  'Área Externa',
   'Outros',
 ] as const;
 
