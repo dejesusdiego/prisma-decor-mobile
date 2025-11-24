@@ -16,40 +16,36 @@ export function calcularCustosCortina(
   servicoConfeccao: ServicoConfeccao,
   servicoInstalacao?: ServicoInstalacao | null
 ): CustosCortina {
-  // Validação de entrada
-  if (!cortina.tecidoId || !cortina.trilhoId) {
-    throw new Error('Tecido e trilho são obrigatórios para cortinas');
+  // Validação de entrada - pelo menos tecido OU forro deve estar presente
+  if (!cortina.tecidoId && !cortina.forroId) {
+    throw new Error('É necessário informar pelo menos tecido ou forro');
   }
 
-  const tecido = materiais.find((m) => m.id === cortina.tecidoId);
+  const tecido = cortina.tecidoId ? materiais.find((m) => m.id === cortina.tecidoId) : null;
   const forro = cortina.forroId ? materiais.find((m) => m.id === cortina.forroId) : null;
-  const trilho = materiais.find((m) => m.id === cortina.trilhoId);
-
-  if (!tecido || !trilho) {
-    throw new Error('Tecido ou trilho não encontrado na base de dados');
-  }
+  const trilho = cortina.trilhoId ? materiais.find((m) => m.id === cortina.trilhoId) : null;
 
   // 1) Converter barra de cm para metros
   const barra_m = (cortina.barraCm || 0) / 100;
 
-  // 2) Consumo POR CORTINA (sem considerar quantidade ainda)
-  let consumoPorCortina_m = (cortina.largura * 3.5) + barra_m;
-
-  // 3) Verificar se precisa emenda (altura vs largura do rolo)
-  if (tecido.largura_metro && cortina.altura > tecido.largura_metro) {
-    consumoPorCortina_m *= 2;
+  // 2) Cálculo do tecido (se houver)
+  let custoTecido = 0;
+  if (tecido) {
+    let consumoPorCortina_m = (cortina.largura * 3.5) + barra_m;
+    
+    // Verificar se precisa emenda (altura vs largura do rolo)
+    if (tecido.largura_metro && cortina.altura > tecido.largura_metro) {
+      consumoPorCortina_m *= 2;
+    }
+    
+    const consumoTotalTecido_m = consumoPorCortina_m * cortina.quantidade;
+    custoTecido = consumoTotalTecido_m * tecido.preco_custo;
   }
 
-  // 4) Consumo total de tecido (considerando quantidade)
-  const consumoTotalTecido_m = consumoPorCortina_m * cortina.quantidade;
-
-  // 5) Custo do tecido
-  const custoTecido = consumoTotalTecido_m * tecido.preco_custo;
-
-  // Cálculo do forro (se houver) - mesma lógica do tecido
+  // Cálculo do forro (se houver) - usa coeficiente 2.5
   let custoForro = 0;
   if (forro) {
-    let consumoPorCortinaForro_m = (cortina.largura * 3.5) + barra_m;
+    let consumoPorCortinaForro_m = (cortina.largura * 2.5) + barra_m;
     
     if (forro.largura_metro && cortina.altura > forro.largura_metro) {
       consumoPorCortinaForro_m *= 2;
@@ -59,9 +55,9 @@ export function calcularCustosCortina(
     custoForro = consumoTotalForro_m * forro.preco_custo;
   }
 
-  // Cálculo do trilho (10cm de sobra, SEM multiplicar por quantidade)
+  // Cálculo do trilho (10cm de sobra, SEM multiplicar por quantidade) - opcional
   const comprimentoTrilho_m = cortina.largura + 0.1;
-  const custoTrilho = comprimentoTrilho_m * trilho.preco_custo;
+  const custoTrilho = trilho ? (comprimentoTrilho_m * trilho.preco_custo) : 0;
 
   // Cálculo da costura (usa comprimento do trilho, SEM multiplicar por quantidade)
   const custoCostura = comprimentoTrilho_m * servicoConfeccao.preco_custo;
