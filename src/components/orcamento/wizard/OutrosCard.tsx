@@ -125,7 +125,12 @@ export function OutrosCard({
             {outro.nomeIdentificacao}
             {!expanded && outro.id && (
               <span className="text-sm text-muted-foreground font-normal">
-                • Qtd: {outro.quantidade} • R$ {(outro.quantidade * (outro.precoUnitario || 0) + (outro.precisaInstalacao ? (outro.valorInstalacao || 0) : 0)).toFixed(2)}
+                • Qtd: {outro.quantidade}
+                {outro.custoTotal !== undefined && outro.custoTotal > 0 && (
+                  <span className="ml-2 text-primary font-semibold">
+                    • Custo: R$ {outro.custoTotal.toFixed(2)}
+                  </span>
+                )}
               </span>
             )}
           </CardTitle>
