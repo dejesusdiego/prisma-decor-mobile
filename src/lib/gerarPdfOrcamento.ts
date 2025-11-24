@@ -42,6 +42,15 @@ function formatarValor(valor: number): string {
   });
 }
 
+// Função auxiliar para formatar telefone
+function formatarTelefone(telefone: string): string {
+  const numeros = telefone.replace(/\D/g, '');
+  if (numeros.length === 11) {
+    return `(${numeros.slice(0, 2)}) ${numeros.slice(2, 7)}-${numeros.slice(7)}`;
+  }
+  return telefone; // Retorna original se não tiver 11 dígitos
+}
+
 export async function gerarPdfOrcamento(orcamentoId: string): Promise<void> {
   try {
     // Buscar dados do orçamento
@@ -198,7 +207,7 @@ export async function gerarPdfOrcamento(orcamentoId: string): Promise<void> {
     doc.setFont('helvetica', 'bold');
     doc.text('Telefone/WhatsApp:', cardX + 3, clientY);
     doc.setFont('helvetica', 'normal');
-    doc.text(orcamento.cliente_telefone, cardX + 35, clientY);
+    doc.text(formatarTelefone(orcamento.cliente_telefone), cardX + 35, clientY);
     
     if (orcamento.endereco) {
       clientY += 6;
@@ -257,19 +266,9 @@ export async function gerarPdfOrcamento(orcamentoId: string): Promise<void> {
         descricao += `, barra ${cortina.barra_cm}cm`;
       }
       
-      // Adicionar ambiente e instalação
-      const detalhesFinais = [];
-      
-      if (cortina.custo_instalacao && cortina.custo_instalacao > 0) {
-        detalhesFinais.push('Valor inclui instalação');
-      }
-      
+      // Adicionar ambiente
       if (cortina.ambiente) {
-        detalhesFinais.push(`Ambiente: ${cortina.ambiente}`);
-      }
-      
-      if (detalhesFinais.length > 0) {
-        descricao += `. ${detalhesFinais.join('. ')}.`;
+        descricao += `. Ambiente: ${cortina.ambiente}`;
       }
 
       const precoUnitario = (cortina.preco_venda || 0) / cortina.quantidade;
@@ -373,15 +372,15 @@ export async function gerarPdfOrcamento(orcamentoId: string): Promise<void> {
     
     yPos += 5;
     doc.setFont('helvetica', 'bold');
-    doc.text('Boleto bancário:', cardX + 3, yPos);
+    doc.text('Boleto:', cardX + 3, yPos);
     doc.setFont('helvetica', 'normal');
-    doc.text('50% entrada e 50% na entrega (mediante aprovação de cadastro).', cardX + 28, yPos);
+    doc.text('50% na confirmação do pedido e 50% na entrega.', cardX + 15, yPos);
     
     yPos += 5;
     doc.setFont('helvetica', 'bold');
-    doc.text('Cartão de crédito:', cardX + 3, yPos);
+    doc.text('Cartão de crédito (link de pagamento):', cardX + 3, yPos);
     doc.setFont('helvetica', 'normal');
-    doc.text('Parcelamento em até 12x via link de pagamento (sujeito à aprovação).', cardX + 30, yPos);
+    doc.text('parcelamento em até 12x.', cardX + 67, yPos);
     
     yPos += 15;
     
@@ -410,6 +409,9 @@ export async function gerarPdfOrcamento(orcamentoId: string): Promise<void> {
     }
     
     doc.setTextColor(100, 100, 100);
+    doc.text('• Valor inclui instalação.', cardX, yPos);
+    
+    yPos += 4;
     doc.text('• Prazo de entrega estimado: 15 a 25 dias úteis após confirmação do pedido.', cardX, yPos);
     
     yPos += 4;
