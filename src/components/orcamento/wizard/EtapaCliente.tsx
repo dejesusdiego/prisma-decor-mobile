@@ -19,11 +19,12 @@ import { OPCOES_AMBIENTE } from '@/types/orcamento';
 
 interface EtapaClienteProps {
   dados: DadosOrcamento;
+  orcamentoId?: string | null;
   onAvancar: (dados: DadosOrcamento, orcamentoId: string) => void;
   onCancelar: () => void;
 }
 
-export function EtapaCliente({ dados, onAvancar, onCancelar }: EtapaClienteProps) {
+export function EtapaCliente({ dados, orcamentoId, onAvancar, onCancelar }: EtapaClienteProps) {
   const { user } = useAuth();
   const [formData, setFormData] = useState<DadosOrcamento>(dados);
   const [loading, setLoading] = useState(false);
@@ -43,30 +44,53 @@ export function EtapaCliente({ dados, onAvancar, onCancelar }: EtapaClienteProps
     setLoading(true);
     
     try {
-      const { data, error } = await supabase
-        .from('orcamentos')
-        .insert({
-          cliente_nome: formData.clienteNome,
-          cliente_telefone: formData.clienteTelefone,
-          ambiente: formData.ambiente,
-          observacoes: formData.observacoes || null,
-          margem_tipo: 'padrao',
-          margem_percent: 61.5,
-          status: 'rascunho',
-          created_by_user_id: user.id,
-          codigo: '', // Será gerado pelo trigger
-        })
-        .select()
-        .single();
+      if (orcamentoId) {
+        // Atualizar orçamento existente
+        const { error } = await supabase
+          .from('orcamentos')
+          .update({
+            cliente_nome: formData.clienteNome,
+            cliente_telefone: formData.clienteTelefone,
+            ambiente: formData.ambiente,
+            observacoes: formData.observacoes || null,
+          })
+          .eq('id', orcamentoId);
 
-      if (error) throw error;
+        if (error) throw error;
 
-      toast({
-        title: 'Sucesso',
-        description: 'Dados do cliente salvos com sucesso',
-      });
+        toast({
+          title: 'Sucesso',
+          description: 'Dados do cliente atualizados com sucesso',
+        });
 
-      onAvancar(formData, data.id);
+        onAvancar(formData, orcamentoId);
+      } else {
+        // Criar novo orçamento
+        const { data, error } = await supabase
+          .from('orcamentos')
+          .insert({
+            cliente_nome: formData.clienteNome,
+            cliente_telefone: formData.clienteTelefone,
+            ambiente: formData.ambiente,
+            observacoes: formData.observacoes || null,
+            margem_tipo: 'padrao',
+            margem_percent: 61.5,
+            status: 'rascunho',
+            created_by_user_id: user.id,
+            codigo: '', // Será gerado pelo trigger
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        toast({
+          title: 'Sucesso',
+          description: 'Dados do cliente salvos com sucesso',
+        });
+
+        onAvancar(formData, data.id);
+      }
     } catch (error) {
       console.error('Erro ao salvar orçamento:', error);
       toast({
