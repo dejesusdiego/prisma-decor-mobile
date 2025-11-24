@@ -213,6 +213,11 @@ export function CortinaCard({
             {!expanded && cortina.id && (
               <span className="text-sm text-muted-foreground font-normal">
                 • {cortina.tipoCortina} • {cortina.largura}x{cortina.altura}m • Qtd: {cortina.quantidade}
+                {cortina.custoTotal !== undefined && cortina.custoTotal > 0 && (
+                  <span className="ml-2 text-primary font-semibold">
+                    • Custo: R$ {cortina.custoTotal.toFixed(2)}
+                  </span>
+                )}
               </span>
             )}
           </CardTitle>

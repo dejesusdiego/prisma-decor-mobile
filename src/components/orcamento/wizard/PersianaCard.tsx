@@ -121,7 +121,12 @@ export function PersianaCard({
             {persiana.nomeIdentificacao}
             {!expanded && persiana.id && (
               <span className="text-sm text-muted-foreground font-normal">
-                • {persiana.tipoCortina} • {persiana.largura}x{persiana.altura}m • R$ {((persiana.precoUnitario || 0) * persiana.quantidade + (persiana.precisaInstalacao && persiana.valorInstalacao ? persiana.valorInstalacao : 0)).toFixed(2)}
+                • {persiana.tipoCortina} • {persiana.largura}x{persiana.altura}m
+                {persiana.custoTotal !== undefined && persiana.custoTotal > 0 && (
+                  <span className="ml-2 text-primary font-semibold">
+                    • Custo: R$ {persiana.custoTotal.toFixed(2)}
+                  </span>
+                )}
               </span>
             )}
           </h3>
