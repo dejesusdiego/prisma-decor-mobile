@@ -82,7 +82,7 @@ export function EtapaResumo({
     }).format(value);
   };
 
-  const salvarOrcamento = async (status: 'rascunho' | 'finalizado') => {
+  const salvarOrcamento = async (status: 'rascunho' | 'enviado') => {
     setLoading(true);
     try {
       const markup = 1 + margemAtual / 100;
@@ -121,7 +121,7 @@ export function EtapaResumo({
 
       toast({
         title: 'Sucesso',
-        description: `Orçamento ${status === 'finalizado' ? 'finalizado' : 'salvo'} com sucesso`,
+        description: `Orçamento ${status === 'enviado' ? 'finalizado' : 'salvo'} com sucesso`,
       });
 
       onFinalizar();
@@ -265,28 +265,29 @@ export function EtapaResumo({
                       {/* Tecido */}
                       {(() => {
                         const tecido = obterMaterial(cortina.tecidoId);
-                        return tecido ? (
+                        return (
                           <div className="bg-muted/30 p-2 rounded border">
                             <p className="text-xs font-semibold text-muted-foreground mb-1">Tecido</p>
-                            <p className="text-sm font-medium mb-1">{tecido.nome}</p>
-                            <div className="space-y-0.5">
-                              <p className="text-xs text-muted-foreground">
-                                Código: {tecido.codigo_item || '-'}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                Preço custo: {formatCurrency(tecido.preco_custo)}/m
-                              </p>
-                              {tecido.largura_metro && (
-                                <p className="text-xs text-muted-foreground">
-                                  Largura rolo: {tecido.largura_metro}m
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="bg-muted/30 p-2 rounded border">
-                            <p className="text-xs font-semibold text-muted-foreground">Tecido</p>
-                            <p className="text-sm">-</p>
+                            {tecido ? (
+                              <>
+                                <p className="text-sm font-medium mb-1">{tecido.nome}</p>
+                                <div className="space-y-0.5">
+                                  <p className="text-xs text-muted-foreground">
+                                    Código: {tecido.codigo_item || '-'}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">
+                                    Preço custo: {formatCurrency(tecido.preco_custo)}/m
+                                  </p>
+                                  {tecido.largura_metro && (
+                                    <p className="text-xs text-muted-foreground">
+                                      Largura rolo: {tecido.largura_metro}m
+                                    </p>
+                                  )}
+                                </div>
+                              </>
+                            ) : (
+                              <p className="text-sm">-</p>
+                            )}
                           </div>
                         );
                       })()}
@@ -294,28 +295,29 @@ export function EtapaResumo({
                       {/* Forro */}
                       {(() => {
                         const forro = obterMaterial(cortina.forroId);
-                        return forro ? (
+                        return (
                           <div className="bg-muted/30 p-2 rounded border">
                             <p className="text-xs font-semibold text-muted-foreground mb-1">Forro</p>
-                            <p className="text-sm font-medium mb-1">{forro.nome}</p>
-                            <div className="space-y-0.5">
-                              <p className="text-xs text-muted-foreground">
-                                Código: {forro.codigo_item || '-'}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                Preço custo: {formatCurrency(forro.preco_custo)}/m
-                              </p>
-                              {forro.largura_metro && (
-                                <p className="text-xs text-muted-foreground">
-                                  Largura rolo: {forro.largura_metro}m
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="bg-muted/30 p-2 rounded border">
-                            <p className="text-xs font-semibold text-muted-foreground">Forro</p>
-                            <p className="text-sm">-</p>
+                            {forro ? (
+                              <>
+                                <p className="text-sm font-medium mb-1">{forro.nome}</p>
+                                <div className="space-y-0.5">
+                                  <p className="text-xs text-muted-foreground">
+                                    Código: {forro.codigo_item || '-'}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">
+                                    Preço custo: {formatCurrency(forro.preco_custo)}/m
+                                  </p>
+                                  {forro.largura_metro && (
+                                    <p className="text-xs text-muted-foreground">
+                                      Largura rolo: {forro.largura_metro}m
+                                    </p>
+                                  )}
+                                </div>
+                              </>
+                            ) : (
+                              <p className="text-sm">-</p>
+                            )}
                           </div>
                         );
                       })()}
@@ -323,28 +325,29 @@ export function EtapaResumo({
                       {/* Trilho */}
                       {(() => {
                         const trilho = obterMaterial(cortina.trilhoId);
-                        return trilho ? (
+                        return (
                           <div className="bg-muted/30 p-2 rounded border">
                             <p className="text-xs font-semibold text-muted-foreground mb-1">Trilho</p>
-                            <p className="text-sm font-medium mb-1">{trilho.nome}</p>
-                            <div className="space-y-0.5">
-                              <p className="text-xs text-muted-foreground">
-                                Código: {trilho.codigo_item || '-'}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                Preço custo: {formatCurrency(trilho.preco_custo)}/m
-                              </p>
-                              {trilho.largura_metro && (
-                                <p className="text-xs text-muted-foreground">
-                                  Largura rolo: {trilho.largura_metro}m
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="bg-muted/30 p-2 rounded border">
-                            <p className="text-xs font-semibold text-muted-foreground">Trilho</p>
-                            <p className="text-sm">-</p>
+                            {trilho ? (
+                              <>
+                                <p className="text-sm font-medium mb-1">{trilho.nome}</p>
+                                <div className="space-y-0.5">
+                                  <p className="text-xs text-muted-foreground">
+                                    Código: {trilho.codigo_item || '-'}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">
+                                    Preço custo: {formatCurrency(trilho.preco_custo)}/m
+                                  </p>
+                                  {trilho.largura_metro && (
+                                    <p className="text-xs text-muted-foreground">
+                                      Largura rolo: {trilho.largura_metro}m
+                                    </p>
+                                  )}
+                                </div>
+                              </>
+                            ) : (
+                              <p className="text-sm">-</p>
+                            )}
                           </div>
                         );
                       })()}
@@ -409,7 +412,7 @@ export function EtapaResumo({
           Salvar Rascunho
         </Button>
         <Button
-          onClick={() => salvarOrcamento('finalizado')}
+          onClick={() => salvarOrcamento('enviado')}
           disabled={loading}
           className="flex-1"
         >
