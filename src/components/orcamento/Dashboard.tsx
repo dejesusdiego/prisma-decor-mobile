@@ -126,7 +126,7 @@ export function Dashboard({ onNovoOrcamento, onMeusOrcamentos, onVisualizarOrcam
               <div className="w-16 h-16 rounded-full bg-foreground/10 flex items-center justify-center">
                 <FileText className="w-8 h-8 text-foreground" />
               </div>
-              <Button variant="outline" size="lg" className="w-full">
+              <Button variant="default" size="lg" className="w-full">
                 <FileText className="mr-2 h-5 w-5" />
                 Meus Orçamentos
               </Button>
