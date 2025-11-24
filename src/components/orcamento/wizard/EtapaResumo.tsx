@@ -88,10 +88,29 @@ export function EtapaResumo({
   }, [orcamentoId, cortinas]);
 
   const obterMaterial = (codigoOuId: string | undefined): Material | null => {
-    if (!codigoOuId) return null;
+    if (!codigoOuId) {
+      console.log('❌ codigoOuId é undefined/null');
+      return null;
+    }
+    
+    console.log('🔎 Procurando por:', codigoOuId);
+    console.log('📦 Materiais disponíveis:', materiais.length);
+    console.log('📋 Primeiro material como exemplo:', materiais[0]);
+    
     // Procura primeiro por codigo_item (para materiais novos) e depois por id (para materiais antigos)
-    const material = materiais.find(m => m.codigo_item === codigoOuId || m.id === codigoOuId);
-    console.log('Procurando material:', codigoOuId, 'Encontrado:', material?.nome || 'não encontrado');
+    const material = materiais.find(m => {
+      const matchCodigo = m.codigo_item === codigoOuId;
+      const matchId = m.id === codigoOuId;
+      if (matchCodigo || matchId) {
+        console.log('✅ Match encontrado!', m.nome, matchCodigo ? '(por código)' : '(por id)');
+      }
+      return matchCodigo || matchId;
+    });
+    
+    if (!material) {
+      console.log('❌ Material NÃO encontrado para:', codigoOuId);
+    }
+    
     return material || null;
   };
 
@@ -280,11 +299,13 @@ export function EtapaResumo({
                     </div>
                   </div>
 
-                  {cortina.tipoProduto === 'cortina' && (
+                   {cortina.tipoProduto === 'cortina' && (
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                       {/* Tecido */}
                       {(() => {
+                        console.log('🔍 Buscando tecido:', cortina.tecidoId, 'Total materiais:', materiais.length);
                         const tecido = obterMaterial(cortina.tecidoId);
+                        console.log('✅ Tecido encontrado:', tecido?.nome || 'NÃO ENCONTRADO');
                         return (
                           <div className="bg-muted/30 p-2 rounded border">
                             <p className="text-xs font-semibold text-muted-foreground mb-1">Tecido</p>
