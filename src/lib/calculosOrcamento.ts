@@ -29,38 +29,42 @@ export function calcularCustosCortina(
     throw new Error('Tecido ou trilho não encontrado na base de dados');
   }
 
-  const coeficiente = COEFICIENTES_CORTINA[cortina.tipoCortina];
+  // 1) Converter barra de cm para metros
+  const barra_m = (cortina.barraCm || 0) / 100;
 
-  // Calcular altura final com barra (se definida)
-  const barraMt = (cortina.barraCm || 0) / 100; // Converter cm para metros
-  const alturaFinal = cortina.altura + barraMt;
+  // 2) Consumo POR CORTINA (sem considerar quantidade ainda)
+  let consumoPorCortina_m = (cortina.largura * 3.5) + barra_m;
 
-  // Cálculo do tecido
-  let metragemBaseTecido = cortina.largura * coeficiente * cortina.quantidade;
-  
-  // Se altura for maior que largura do rolo, dobrar consumo
-  if (tecido.largura_metro && alturaFinal > tecido.largura_metro) {
-    metragemBaseTecido *= 2;
+  // 3) Verificar se precisa emenda (altura vs largura do rolo)
+  if (tecido.largura_metro && cortina.altura > tecido.largura_metro) {
+    consumoPorCortina_m *= 2;
   }
 
-  const custoTecido = metragemBaseTecido * tecido.preco_custo;
+  // 4) Consumo total de tecido (considerando quantidade)
+  const consumoTotalTecido_m = consumoPorCortina_m * cortina.quantidade;
 
-  // Cálculo do forro (se houver)
+  // 5) Custo do tecido
+  const custoTecido = consumoTotalTecido_m * tecido.preco_custo;
+
+  // Cálculo do forro (se houver) - mesma lógica do tecido
   let custoForro = 0;
   if (forro) {
-    let metragemBaseForro = cortina.largura * coeficiente * cortina.quantidade;
-    if (forro.largura_metro && alturaFinal > forro.largura_metro) {
-      metragemBaseForro *= 2;
+    let consumoPorCortinaForro_m = (cortina.largura * 3.5) + barra_m;
+    
+    if (forro.largura_metro && cortina.altura > forro.largura_metro) {
+      consumoPorCortinaForro_m *= 2;
     }
-    custoForro = metragemBaseForro * forro.preco_custo;
+    
+    const consumoTotalForro_m = consumoPorCortinaForro_m * cortina.quantidade;
+    custoForro = consumoTotalForro_m * forro.preco_custo;
   }
 
-  // Cálculo do trilho
-  const comprimentoTrilho = cortina.largura + 0.1; // 10cm de sobra
-  const custoTrilho = comprimentoTrilho * trilho.preco_custo * cortina.quantidade;
+  // Cálculo do trilho (10cm de sobra, SEM multiplicar por quantidade)
+  const comprimentoTrilho_m = cortina.largura + 0.1;
+  const custoTrilho = comprimentoTrilho_m * trilho.preco_custo;
 
-  // Cálculo da costura (usa preco_custo do serviço por metro linear de trilho)
-  const custoCostura = comprimentoTrilho * servicoConfeccao.preco_custo * cortina.quantidade;
+  // Cálculo da costura (usa comprimento do trilho, SEM multiplicar por quantidade)
+  const custoCostura = comprimentoTrilho_m * servicoConfeccao.preco_custo;
 
   // Cálculo da instalação
   const custoInstalacao = cortina.precisaInstalacao && servicoInstalacao
