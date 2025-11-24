@@ -21,6 +21,8 @@ import { ArrowLeft, Edit, Copy, FileDown, Search, Trash2, Eye } from 'lucide-rea
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
+import { DialogValidade } from './DialogValidade';
+import { gerarPdfOrcamento } from '@/lib/gerarPdfOrcamento';
 
 interface Orcamento {
   id: string;
@@ -30,6 +32,7 @@ interface Orcamento {
   created_at: string;
   total_geral: number;
   status: string;
+  validade_dias?: number;
 }
 
 interface ListaOrcamentosProps {
@@ -44,6 +47,9 @@ export function ListaOrcamentos({ onVoltar, onEditar, onVisualizar }: ListaOrcam
   const [filtroNome, setFiltroNome] = useState('');
   const [filtroStatus, setFiltroStatus] = useState('todos');
   const [loading, setLoading] = useState(true);
+  const [dialogValidadeOpen, setDialogValidadeOpen] = useState(false);
+  const [orcamentoSelecionadoId, setOrcamentoSelecionadoId] = useState<string>('');
+  const [validadeAtual, setValidadeAtual] = useState<number | undefined>(undefined);
 
   useEffect(() => {
     carregarOrcamentos();
@@ -197,11 +203,71 @@ export function ListaOrcamentos({ onVoltar, onEditar, onVisualizar }: ListaOrcam
     }
   };
 
-  const baixarPDF = (orcamentoId: string) => {
-    toast({
-      title: 'Em desenvolvimento',
-      description: 'A geração de PDF estará disponível em breve',
-    });
+  const baixarPDF = async (orcamentoId: string) => {
+    const orcamento = orcamentos.find((o) => o.id === orcamentoId);
+    
+    if (!orcamento) return;
+
+    // Se validade já está definida, gerar PDF diretamente
+    if (orcamento.validade_dias) {
+      try {
+        setLoading(true);
+        await gerarPdfOrcamento(orcamentoId);
+        toast({
+          title: 'Sucesso',
+          description: 'PDF gerado com sucesso',
+        });
+      } catch (error) {
+        console.error('Erro ao gerar PDF:', error);
+        toast({
+          title: 'Erro',
+          description: 'Não foi possível gerar o PDF',
+          variant: 'destructive',
+        });
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      // Abrir dialog para definir validade
+      setOrcamentoSelecionadoId(orcamentoId);
+      setValidadeAtual(undefined);
+      setDialogValidadeOpen(true);
+    }
+  };
+
+  const handleConfirmarValidade = async (novaValidade: number) => {
+    try {
+      setLoading(true);
+
+      // Salvar validade no banco
+      const { error } = await supabase
+        .from('orcamentos')
+        .update({ validade_dias: novaValidade })
+        .eq('id', orcamentoSelecionadoId);
+
+      if (error) throw error;
+
+      // Gerar PDF
+      await gerarPdfOrcamento(orcamentoSelecionadoId);
+
+      toast({
+        title: 'Sucesso',
+        description: 'PDF gerado com sucesso',
+      });
+
+      // Recarregar orçamentos para atualizar a validade
+      carregarOrcamentos();
+    } catch (error) {
+      console.error('Erro ao gerar PDF:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível gerar o PDF',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+      setOrcamentoSelecionadoId('');
+    }
   };
 
   const orcamentosFiltrados = orcamentos.filter((orc) => {
@@ -344,6 +410,13 @@ export function ListaOrcamentos({ onVoltar, onEditar, onVisualizar }: ListaOrcam
           )}
         </CardContent>
       </Card>
+
+      <DialogValidade
+        open={dialogValidadeOpen}
+        onOpenChange={setDialogValidadeOpen}
+        onConfirmar={handleConfirmarValidade}
+        validadeAtual={validadeAtual}
+      />
     </div>
   );
 }

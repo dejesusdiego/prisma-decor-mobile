@@ -10,6 +10,8 @@ import type { Cortina, DadosOrcamento } from '@/types/orcamento';
 import { OPCOES_MARGEM } from '@/types/orcamento';
 import { calcularResumoOrcamento } from '@/lib/calculosOrcamento';
 import { FileDown, Home } from 'lucide-react';
+import { DialogValidade } from '../DialogValidade';
+import { gerarPdfOrcamento } from '@/lib/gerarPdfOrcamento';
 
 interface EtapaResumoProps {
   orcamentoId: string;
@@ -29,6 +31,8 @@ export function EtapaResumo({
   const [margemTipo, setMargemTipo] = useState<string>('padrao');
   const [margemPersonalizada, setMargemPersonalizada] = useState<number>(61.5);
   const [loading, setLoading] = useState(false);
+  const [dialogValidadeOpen, setDialogValidadeOpen] = useState(false);
+  const [validadeDias, setValidadeDias] = useState<number>(7);
 
   const margemAtual =
     margemTipo === 'personalizada'
@@ -37,9 +41,43 @@ export function EtapaResumo({
 
   const resumo = calcularResumoOrcamento(cortinas, margemAtual);
 
+  // Carregar validade atual do orçamento
+  useEffect(() => {
+    const carregarValidade = async () => {
+      const { data, error } = await supabase
+        .from('orcamentos')
+        .select('validade_dias')
+        .eq('id', orcamentoId)
+        .single();
+
+      if (!error && data?.validade_dias) {
+        setValidadeDias(data.validade_dias);
+      }
+    };
+
+    carregarValidade();
+  }, [orcamentoId]);
+
   const salvarOrcamento = async (status: 'rascunho' | 'finalizado') => {
     setLoading(true);
     try {
+      const markup = 1 + margemAtual / 100;
+
+      // Atualizar preços de venda das cortinas primeiro
+      for (const cortina of cortinas) {
+        if (cortina.id) {
+          const precoVendaItem = (cortina.custoTotal || 0) * markup;
+          const { error } = await supabase
+            .from('cortina_items')
+            .update({
+              preco_venda: precoVendaItem,
+            })
+            .eq('id', cortina.id);
+
+          if (error) throw error;
+        }
+      }
+
       // Atualizar orçamento com margem e totais
       const { error: orcError } = await supabase
         .from('orcamentos')
@@ -56,21 +94,6 @@ export function EtapaResumo({
         .eq('id', orcamentoId);
 
       if (orcError) throw orcError;
-
-      // Atualizar preços de venda das cortinas
-      const markup = 1 + margemAtual / 100;
-      for (const cortina of cortinas) {
-        if (cortina.id) {
-          const { error } = await supabase
-            .from('cortina_items')
-            .update({
-              preco_venda: (cortina.custoTotal || 0) * markup,
-            })
-            .eq('id', cortina.id);
-
-          if (error) throw error;
-        }
-      }
 
       toast({
         title: 'Sucesso',
@@ -90,11 +113,40 @@ export function EtapaResumo({
     }
   };
 
-  const gerarPDF = async () => {
-    toast({
-      title: 'Em desenvolvimento',
-      description: 'A geração de PDF estará disponível em breve',
-    });
+  const handleGerarPDF = () => {
+    setDialogValidadeOpen(true);
+  };
+
+  const handleConfirmarValidade = async (novaValidade: number) => {
+    setLoading(true);
+    try {
+      // Salvar validade no banco
+      const { error } = await supabase
+        .from('orcamentos')
+        .update({ validade_dias: novaValidade })
+        .eq('id', orcamentoId);
+
+      if (error) throw error;
+
+      setValidadeDias(novaValidade);
+
+      // Gerar PDF
+      await gerarPdfOrcamento(orcamentoId);
+
+      toast({
+        title: 'Sucesso',
+        description: 'PDF gerado com sucesso',
+      });
+    } catch (error) {
+      console.error('Erro ao gerar PDF:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível gerar o PDF',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -219,7 +271,7 @@ export function EtapaResumo({
         >
           Salvar Rascunho
         </Button>
-        <Button onClick={gerarPDF} disabled={loading} className="flex-1">
+        <Button onClick={handleGerarPDF} disabled={loading} className="flex-1">
           <FileDown className="mr-2 h-4 w-4" />
           Gerar PDF
         </Button>
@@ -229,6 +281,13 @@ export function EtapaResumo({
         <Home className="mr-2 h-4 w-4" />
         Voltar ao Início
       </Button>
+
+      <DialogValidade
+        open={dialogValidadeOpen}
+        onOpenChange={setDialogValidadeOpen}
+        onConfirmar={handleConfirmarValidade}
+        validadeAtual={validadeDias}
+      />
     </div>
   );
 }

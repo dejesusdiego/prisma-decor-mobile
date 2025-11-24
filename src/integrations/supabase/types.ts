@@ -191,6 +191,7 @@ export type Database = {
           subtotal_materiais: number | null
           total_geral: number | null
           updated_at: string
+          validade_dias: number | null
         }
         Insert: {
           cliente_nome: string
@@ -210,6 +211,7 @@ export type Database = {
           subtotal_materiais?: number | null
           total_geral?: number | null
           updated_at?: string
+          validade_dias?: number | null
         }
         Update: {
           cliente_nome?: string
@@ -229,6 +231,7 @@ export type Database = {
           subtotal_materiais?: number | null
           total_geral?: number | null
           updated_at?: string
+          validade_dias?: number | null
         }
         Relationships: []
       }
