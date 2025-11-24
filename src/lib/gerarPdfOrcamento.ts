@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { supabase } from '@/integrations/supabase/client';
+import logoSvg from '@/assets/logo.svg';
 
 interface OrcamentoData {
   codigo: string;
@@ -32,6 +33,14 @@ interface MaterialData {
   nome: string;
 }
 
+// Função auxiliar para formatar valores em BRL
+function formatarValor(valor: number): string {
+  return valor.toLocaleString('pt-BR', { 
+    minimumFractionDigits: 2, 
+    maximumFractionDigits: 2 
+  });
+}
+
 export async function gerarPdfOrcamento(orcamentoId: string): Promise<void> {
   try {
     // Buscar dados do orçamento
@@ -60,76 +69,155 @@ export async function gerarPdfOrcamento(orcamentoId: string): Promise<void> {
 
     // Criar PDF
     const doc = new jsPDF();
-    let yPos = 20;
+    let yPos = 0;
 
-    // Cabeçalho
-    doc.setFontSize(18);
+    // ============================================================
+    // 1. CABEÇALHO COM FUNDO PRETO E LOGO BRANCA
+    // ============================================================
+    
+    // Fundo preto no topo
+    doc.setFillColor(17, 17, 17); // Preto #111111
+    doc.rect(0, 0, 210, 35, 'F'); // Largura A4 = 210mm
+    
+    // Logo branca (placeholder - ajustar quando tiver a logo real)
+    // Posicionar logo no lado esquerdo
+    yPos = 10;
+    doc.setFontSize(20);
     doc.setFont('helvetica', 'bold');
-    doc.text('Prisma Interiores', 105, yPos, { align: 'center' });
+    doc.setTextColor(255, 255, 255); // Branco
+    doc.text('PRISMA', 15, yPos + 5);
     
-    yPos += 7;
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'italic');
-    doc.text('Refletindo estilo, projetando vidas', 105, yPos, { align: 'center' });
-    
-    yPos += 6;
+    yPos = 12;
     doc.setFontSize(9);
+    doc.setFont('helvetica', 'italic');
+    doc.text('Refletindo estilo, projetando vidas', 15, yPos + 10);
+    
+    // Informações de contato no lado direito do cabeçalho
+    doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
-    doc.text('www.prismadecorlab.com | somosprisma@gmail.com | WhatsApp: (47) 99262-4706', 105, yPos, { align: 'center' });
+    doc.setTextColor(220, 220, 220); // Cinza claro
+    const contactInfo = [
+      'www.prismadecorlab.com',
+      'somosprisma@gmail.com',
+      'WhatsApp: (47) 99262-4706'
+    ];
+    let contactY = 12;
+    contactInfo.forEach(info => {
+      doc.text(info, 195, contactY, { align: 'right' });
+      contactY += 4;
+    });
     
-    yPos += 10;
-
-    // Box Orçamento
-    doc.setFillColor(245, 245, 245);
-    doc.rect(15, yPos, 180, 25, 'F');
+    // Reset cor do texto para preto
+    doc.setTextColor(0, 0, 0);
     
-    yPos += 7;
-    doc.setFontSize(14);
+    yPos = 45; // Começar conteúdo após o cabeçalho
+    
+    // ============================================================
+    // 2. CORPO EM "CARD" CENTRALIZADO
+    // ============================================================
+    
+    const cardMargin = 12;
+    const cardWidth = 186; // 210 - (2 * 12)
+    const cardX = cardMargin;
+    
+    // ============================================================
+    // 3. SEÇÃO "ORÇAMENTO" (NÚMERO, DATA, VALIDADE)
+    // ============================================================
+    
+    yPos += 5;
+    
+    // Título "ORÇAMENTO"
+    doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
-    doc.text('ORÇAMENTO', 20, yPos);
+    doc.setTextColor(34, 34, 34);
+    doc.text('ORÇAMENTO', cardX, yPos);
     
-    yPos += 6;
+    // Linha decorativa abaixo do título
+    yPos += 2;
+    doc.setDrawColor(200, 200, 200);
+    doc.setLineWidth(0.5);
+    doc.line(cardX, yPos, cardX + 60, yPos);
+    
+    yPos += 8;
+    
+    // Informações do orçamento em linha
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.text(`Número: ${orcamento.codigo}`, 20, yPos);
+    doc.setTextColor(60, 60, 60);
     
-    yPos += 5;
     const dataEmissao = new Date(orcamento.created_at).toLocaleDateString('pt-BR');
-    doc.text(`Data de Emissão: ${dataEmissao}`, 20, yPos);
-    
-    yPos += 5;
     const validadeDias = orcamento.validade_dias || 7;
-    doc.text(`Validade: ${validadeDias} dias`, 20, yPos);
     
-    yPos += 10;
-
-    // Dados do Cliente
+    const orcInfo = `Nº ${orcamento.codigo}   |   Data: ${dataEmissao}   |   Validade: ${validadeDias} dias`;
+    doc.text(orcInfo, cardX, yPos);
+    
+    yPos += 12;
+    
+    // ============================================================
+    // 4. DADOS DO CLIENTE EM BLOCO ORGANIZADO
+    // ============================================================
+    
+    // Título
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
-    doc.text('Dados do Cliente', 15, yPos);
+    doc.setTextColor(34, 34, 34);
+    doc.text('Dados do Cliente', cardX, yPos);
     
-    yPos += 6;
-    doc.setFontSize(10);
+    // Linha decorativa
+    yPos += 2;
+    doc.line(cardX, yPos, cardX + 50, yPos);
+    
+    yPos += 8;
+    
+    // Box com fundo claro para dados do cliente
+    const clientBoxHeight = orcamento.endereco ? 28 : 20;
+    doc.setFillColor(248, 248, 248);
+    doc.roundedRect(cardX, yPos - 5, cardWidth, clientBoxHeight, 3, 3, 'F');
+    
+    // Dados do cliente
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(80, 80, 80);
+    
+    let clientY = yPos;
+    
+    doc.text('Nome:', cardX + 3, clientY);
     doc.setFont('helvetica', 'normal');
-    doc.text(`Nome: ${orcamento.cliente_nome}`, 15, yPos);
+    doc.text(orcamento.cliente_nome, cardX + 35, clientY);
     
-    yPos += 5;
-    doc.text(`Telefone/WhatsApp: ${orcamento.cliente_telefone}`, 15, yPos);
+    clientY += 6;
+    doc.setFont('helvetica', 'bold');
+    doc.text('Telefone/WhatsApp:', cardX + 3, clientY);
+    doc.setFont('helvetica', 'normal');
+    doc.text(orcamento.cliente_telefone, cardX + 35, clientY);
     
     if (orcamento.endereco) {
-      yPos += 5;
-      doc.text(`Endereço: ${orcamento.endereco}`, 15, yPos);
+      clientY += 6;
+      doc.setFont('helvetica', 'bold');
+      doc.text('Endereço:', cardX + 3, clientY);
+      doc.setFont('helvetica', 'normal');
+      const enderecoLines = doc.splitTextToSize(orcamento.endereco, cardWidth - 40);
+      doc.text(enderecoLines, cardX + 35, clientY);
+      clientY += (enderecoLines.length - 1) * 4;
     }
     
-    yPos += 10;
-
-    // Tabela de Itens
+    yPos = clientY + 15;
+    
+    // ============================================================
+    // 5. TABELA DE ITENS (MELHOR TIPOGRAFIA)
+    // ============================================================
+    
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
-    doc.text('Itens do Orçamento', 15, yPos);
+    doc.setTextColor(34, 34, 34);
+    doc.text('Itens do Orçamento', cardX, yPos);
+    
+    yPos += 2;
+    doc.line(cardX, yPos, cardX + 50, yPos);
     
     yPos += 5;
 
+    // Preparar dados da tabela
     const tableData = cortinas.map((cortina: CortinaItemData) => {
       // Montar descrição
       let descricao = `Cortina ${cortina.tipo_cortina}`;
@@ -171,86 +259,165 @@ export async function gerarPdfOrcamento(orcamentoId: string): Promise<void> {
       return [
         descricao,
         cortina.quantidade.toString(),
-        `R$ ${precoUnitario.toFixed(2)}`,
-        `R$ ${total.toFixed(2)}`
+        `R$ ${formatarValor(precoUnitario)}`,
+        `R$ ${formatarValor(total)}`
       ];
     });
 
+    // Tabela com estilo premium
     autoTable(doc, {
       startY: yPos,
       head: [['Descrição', 'Qtd.', 'Valor Unitário', 'Total']],
       body: tableData,
-      theme: 'grid',
+      theme: 'plain',
       headStyles: {
-        fillColor: [66, 66, 66],
-        textColor: [255, 255, 255],
+        fillColor: [242, 242, 242],
+        textColor: [34, 34, 34],
         fontStyle: 'bold',
+        fontSize: 9,
+        halign: 'left',
+        cellPadding: 4,
+      },
+      bodyStyles: {
+        fontSize: 9,
+        textColor: [60, 60, 60],
+        cellPadding: 4,
       },
       columnStyles: {
-        0: { cellWidth: 90 },
-        1: { cellWidth: 20, halign: 'center' },
-        2: { cellWidth: 35, halign: 'right' },
-        3: { cellWidth: 35, halign: 'right' },
+        0: { cellWidth: 100, halign: 'left' },
+        1: { cellWidth: 18, halign: 'right' },
+        2: { cellWidth: 32, halign: 'right' },
+        3: { cellWidth: 32, halign: 'right' },
       },
-      margin: { left: 15, right: 15 },
+      margin: { left: cardX, right: cardX },
+      styles: {
+        lineColor: [220, 220, 220],
+        lineWidth: 0.1,
+      },
+      alternateRowStyles: {
+        fillColor: [252, 252, 252],
+      },
     });
 
-    yPos = (doc as any).lastAutoTable.finalY + 10;
+    yPos = (doc as any).lastAutoTable.finalY + 15;
 
-    // Resumo Financeiro
-    doc.setFontSize(14);
+    // ============================================================
+    // 6. VALOR TOTAL (DESTAQUE)
+    // ============================================================
+    
+    // Box de destaque para valor total
+    const totalBoxWidth = 70;
+    const totalBoxX = 210 - cardX - totalBoxWidth;
+    
+    doc.setFillColor(248, 248, 248);
+    doc.roundedRect(totalBoxX, yPos - 3, totalBoxWidth, 12, 2, 2, 'F');
+    
+    doc.setFontSize(13);
     doc.setFont('helvetica', 'bold');
-    doc.text(`VALOR TOTAL: R$ ${orcamento.total_geral.toFixed(2)}`, 195, yPos, { align: 'right' });
+    doc.setTextColor(34, 34, 34);
+    doc.text('VALOR TOTAL:', totalBoxX + 3, yPos + 4);
+    
+    doc.setFontSize(14);
+    doc.setTextColor(0, 102, 51); // Verde escuro para valor
+    doc.text(`R$ ${formatarValor(orcamento.total_geral)}`, totalBoxX + totalBoxWidth - 3, yPos + 4, { align: 'right' });
+    
+    doc.setTextColor(0, 0, 0); // Reset cor
+    
+    yPos += 20;
+    
+    // ============================================================
+    // 7. FORMAS DE PAGAMENTO (MAIS PROFISSIONAL)
+    // ============================================================
+    
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(34, 34, 34);
+    doc.text('Formas de Pagamento', cardX, yPos);
+    
+    yPos += 2;
+    doc.line(cardX, yPos, cardX + 50, yPos);
+    
+    yPos += 8;
+    
+    // Box com fundo claro para formas de pagamento
+    const paymentBoxHeight = 22;
+    doc.setFillColor(248, 248, 248);
+    doc.roundedRect(cardX, yPos - 5, cardWidth, paymentBoxHeight, 3, 3, 'F');
+    
+    doc.setFontSize(9);
+    doc.setTextColor(60, 60, 60);
+    
+    doc.setFont('helvetica', 'bold');
+    doc.text('PIX:', cardX + 3, yPos);
+    doc.setFont('helvetica', 'normal');
+    doc.text('50% na confirmação do pedido e 50% na entrega.', cardX + 12, yPos);
+    
+    yPos += 5;
+    doc.setFont('helvetica', 'bold');
+    doc.text('Boleto bancário:', cardX + 3, yPos);
+    doc.setFont('helvetica', 'normal');
+    doc.text('50% entrada e 50% na entrega (mediante aprovação de cadastro).', cardX + 28, yPos);
+    
+    yPos += 5;
+    doc.setFont('helvetica', 'bold');
+    doc.text('Cartão de crédito:', cardX + 3, yPos);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Parcelamento em até 12x via link de pagamento (sujeito à aprovação).', cardX + 30, yPos);
     
     yPos += 15;
-
-    // Formas de Pagamento
+    
+    // ============================================================
+    // 8. OBSERVAÇÕES
+    // ============================================================
+    
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
-    doc.text('Formas de Pagamento Disponíveis', 15, yPos);
+    doc.setTextColor(34, 34, 34);
+    doc.text('Observações', cardX, yPos);
     
-    yPos += 6;
-    doc.setFontSize(10);
+    yPos += 2;
+    doc.line(cardX, yPos, cardX + 50, yPos);
+    
+    yPos += 8;
+    
+    doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
-    doc.text('• PIX: 50% na confirmação do pedido e 50% na entrega.', 15, yPos);
-    
-    yPos += 5;
-    doc.text('• Boleto bancário: 50% entrada e 50% na entrega (mediante aprovação de cadastro).', 15, yPos);
-    
-    yPos += 5;
-    doc.text('• Cartão de crédito (link de pagamento): parcelamento em até 12x (sujeito à aprovação).', 15, yPos);
-    
-    yPos += 12;
-
-    // Observações
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Observações', 15, yPos);
-    
-    yPos += 6;
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(80, 80, 80);
     
     if (orcamento.observacoes) {
-      const obsLines = doc.splitTextToSize(orcamento.observacoes, 180);
-      doc.text(obsLines, 15, yPos);
-      yPos += obsLines.length * 5;
+      const obsLines = doc.splitTextToSize(orcamento.observacoes, cardWidth - 6);
+      doc.text(obsLines, cardX, yPos);
+      yPos += obsLines.length * 4 + 5;
     }
     
-    yPos += 5;
-    doc.text('• Prazo de entrega estimado: 15 a 25 dias úteis após confirmação do pedido.', 15, yPos);
+    doc.setTextColor(100, 100, 100);
+    doc.text('• Prazo de entrega estimado: 15 a 25 dias úteis após confirmação do pedido.', cardX, yPos);
     
-    yPos += 5;
-    doc.text('• Valores sujeitos a alteração em caso de mudanças de projeto ou medidas.', 15, yPos);
+    yPos += 4;
+    doc.text('• Valores sujeitos a alteração em caso de mudanças de projeto ou medidas.', cardX, yPos);
 
-    // Rodapé
+    // ============================================================
+    // 9. RODAPÉ INSTITUCIONAL
+    // ============================================================
+    
     const pageCount = doc.getNumberOfPages();
     for (let i = 1; i <= pageCount; i++) {
       doc.setPage(i);
+      
+      // Linha separadora
+      doc.setDrawColor(200, 200, 200);
+      doc.setLineWidth(0.3);
+      doc.line(15, 275, 195, 275);
+      
+      // Textos do rodapé
       doc.setFontSize(8);
       doc.setFont('helvetica', 'normal');
+      doc.setTextColor(100, 100, 100);
+      
       doc.text('Prisma Interiores - Transformando ambientes com qualidade e profissionalismo.', 105, 280, { align: 'center' });
       doc.text('WhatsApp: (47) 99262-4706 | Email: somosprisma@gmail.com | Website: www.prismadecorlab.com', 105, 285, { align: 'center' });
+      
+      doc.setFont('helvetica', 'bold');
       doc.text('CNPJ: 44.840.624/0001-92', 105, 290, { align: 'center' });
     }
 
