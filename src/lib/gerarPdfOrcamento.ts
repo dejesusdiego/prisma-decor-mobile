@@ -1,7 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { supabase } from '@/integrations/supabase/client';
-import logoPng from '@/assets/logo-header-pdf.png';
+import logoPng from '@/assets/logo-prisma-pdf.png';
 
 interface OrcamentoData {
   codigo: string;
@@ -73,31 +73,33 @@ export async function gerarPdfOrcamento(orcamentoId: string): Promise<void> {
     let yPos = 0;
 
     // ============================================================
-    // 1. CABEÇALHO COM FUNDO PRETO E LOGO (igual navbar do site)
+    // 1. CABEÇALHO COM FUNDO PRETO E LOGO
     // ============================================================
     
     // Fundo preto no topo
     doc.setFillColor(17, 17, 17); // Preto #111111
     doc.rect(0, 0, 210, 35, 'F'); // Largura A4 = 210mm
     
-    // Logo PRISMA Interiores em PNG
-    yPos = 10;
+    // Logo PRISMA Interiores
+    yPos = 12;
     
     try {
-      // Adicionar logo PNG (90px width na imagem = ~47mm no PDF)
-      doc.addImage(logoPng, 'PNG', 15, yPos, 47, 15);
+      // Adicionar logo PNG ao lado esquerdo
+      doc.addImage(logoPng, 'PNG', 15, yPos, 12, 12);
     } catch (error) {
       console.error('Erro ao adicionar logo:', error);
-      // Fallback: texto caso a imagem não carregue
-      doc.setFontSize(16);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(255, 255, 255);
-      doc.text('PRISMA', 15, yPos + 5);
-      doc.setFontSize(9);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(200, 200, 200);
-      doc.text('Interiores', 15, yPos + 10);
     }
+    
+    // Texto PRISMA e Interiores ao lado da logo
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(255, 255, 255); // Branco
+    doc.text('PRISMA', 30, yPos + 5);
+    
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(200, 200, 200); // Cinza claro
+    doc.text('Interiores', 30, yPos + 10);
     
     // Informações de contato no lado direito do cabeçalho
     doc.setFontSize(8);
