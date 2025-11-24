@@ -149,9 +149,9 @@ export function CortinaCard({
         tipo_produto: 'cortina',
         tipo_cortina: cortina.tipoCortina,
         ambiente: cortina.ambiente || null,
-        tecido_id: cortina.tecidoId,
+        tecido_id: cortina.tecidoId || null,
         forro_id: cortina.forroId || null,
-        trilho_id: cortina.trilhoId,
+        trilho_id: cortina.trilhoId || null,
         material_principal_id: null,
         precisa_instalacao: cortina.precisaInstalacao,
         pontos_instalacao: cortina.pontosInstalacao || 1,
@@ -364,17 +364,18 @@ export function CortinaCard({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor={`tecido-${cortina.id}`}>Tecido Principal *</Label>
+            <Label htmlFor={`tecido-${cortina.id}`}>Tecido Principal</Label>
             <Select
-              value={cortina.tecidoId}
-              onValueChange={(value) => handleChange('tecidoId', value)}
+              value={cortina.tecidoId || 'none'}
+              onValueChange={(value) => handleChange('tecidoId', value === 'none' ? undefined : value)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Selecione o tecido" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="none">Sem tecido</SelectItem>
                 {tecidos.length === 0 ? (
-                  <SelectItem value="none" disabled>
+                  <SelectItem value="loading" disabled>
                     Carregando tecidos...
                   </SelectItem>
                 ) : (
@@ -424,15 +425,16 @@ export function CortinaCard({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor={`trilho-${cortina.id}`}>Trilho *</Label>
+            <Label htmlFor={`trilho-${cortina.id}`}>Trilho</Label>
             <Select
-              value={cortina.trilhoId}
-              onValueChange={(value) => handleChange('trilhoId', value)}
+              value={cortina.trilhoId || 'none'}
+              onValueChange={(value) => handleChange('trilhoId', value === 'none' ? undefined : value)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Selecione o trilho" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="none">Sem trilho</SelectItem>
                 {trilhos.map((trilho) => (
                   <SelectItem key={trilho.id} value={trilho.id}>
                     {trilho.codigo_item} - {trilho.nome}
