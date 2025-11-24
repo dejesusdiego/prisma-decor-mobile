@@ -1,7 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { supabase } from '@/integrations/supabase/client';
-import logo from '@/assets/logo.svg';
+import logoPng from '@/assets/logo-header-pdf.png';
 
 interface OrcamentoData {
   codigo: string;
@@ -26,6 +26,7 @@ interface CortinaItemData {
   trilho_id?: string;
   custo_instalacao?: number;
   preco_venda?: number;
+  ambiente?: string;
 }
 
 interface MaterialData {
@@ -79,26 +80,24 @@ export async function gerarPdfOrcamento(orcamentoId: string): Promise<void> {
     doc.setFillColor(17, 17, 17); // Preto #111111
     doc.rect(0, 0, 210, 35, 'F'); // Largura A4 = 210mm
     
-    // Logo e texto PRISMA Interiores (replicando navbar do site)
-    yPos = 12;
+    // Logo PRISMA Interiores em PNG
+    yPos = 10;
     
     try {
-      // Tentar adicionar logo SVG
-      doc.addImage(logo, 'SVG', 15, yPos, 12, 12);
+      // Adicionar logo PNG (90px width na imagem = ~47mm no PDF)
+      doc.addImage(logoPng, 'PNG', 15, yPos, 47, 15);
     } catch (error) {
-      console.error('Erro ao adicionar logo SVG:', error);
+      console.error('Erro ao adicionar logo:', error);
+      // Fallback: texto caso a imagem não carregue
+      doc.setFontSize(16);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(255, 255, 255);
+      doc.text('PRISMA', 15, yPos + 5);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(200, 200, 200);
+      doc.text('Interiores', 15, yPos + 10);
     }
-    
-    // Texto PRISMA e Interiores (igual navbar)
-    doc.setFontSize(16);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(255, 255, 255); // Branco
-    doc.text('PRISMA', 30, yPos + 5);
-    
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(200, 200, 200); // Cinza claro
-    doc.text('Interiores', 30, yPos + 10);
     
     // Informações de contato no lado direito do cabeçalho
     doc.setFontSize(8);
@@ -256,9 +255,19 @@ export async function gerarPdfOrcamento(orcamentoId: string): Promise<void> {
         descricao += `, barra ${cortina.barra_cm}cm`;
       }
       
-      // Adicionar instalação
+      // Adicionar ambiente e instalação
+      const detalhesFinais = [];
+      
       if (cortina.custo_instalacao && cortina.custo_instalacao > 0) {
-        descricao += '. Valor inclui instalação.';
+        detalhesFinais.push('Valor inclui instalação');
+      }
+      
+      if (cortina.ambiente) {
+        detalhesFinais.push(`Ambiente: ${cortina.ambiente}`);
+      }
+      
+      if (detalhesFinais.length > 0) {
+        descricao += `. ${detalhesFinais.join('. ')}.`;
       }
 
       const precoUnitario = (cortina.preco_venda || 0) / cortina.quantidade;
