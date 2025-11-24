@@ -273,7 +273,8 @@ export function EtapaProdutos({
       
       // Validações específicas por tipo
       if (p.tipoProduto === 'cortina') {
-        return p.largura <= 0 || p.altura <= 0 || !p.tecidoId || !p.trilhoId;
+        // Para cortinas: pelo menos tecido OU forro deve estar preenchido
+        return p.largura <= 0 || p.altura <= 0 || (!p.tecidoId && !p.forroId);
       }
       if (p.tipoProduto === 'persiana') {
         return p.largura <= 0 || p.altura <= 0 || !p.materialPrincipalId;
