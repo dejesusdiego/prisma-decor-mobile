@@ -141,6 +141,11 @@ export function VisualizarOrcamento({ orcamentoId, onVoltar }: VisualizarOrcamen
     return material ? material.nome : '-';
   };
 
+  const obterMaterial = (id: string | undefined): Material | null => {
+    if (!id) return null;
+    return materiais.find(m => m.id === id) || null;
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -274,18 +279,83 @@ export function VisualizarOrcamento({ orcamentoId, onVoltar }: VisualizarOrcamen
 
               {cortina.tipoProduto === 'cortina' && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
-                  <div>
-                    <p className="text-xs text-muted-foreground">Tecido</p>
-                    <p className="text-sm">{obterNomeMaterial(cortina.tecidoId)}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Forro</p>
-                    <p className="text-sm">{obterNomeMaterial(cortina.forroId)}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Trilho</p>
-                    <p className="text-sm">{obterNomeMaterial(cortina.trilhoId)}</p>
-                  </div>
+                  {/* Tecido */}
+                  {cortina.tecidoId && (() => {
+                    const tecido = obterMaterial(cortina.tecidoId);
+                    return tecido ? (
+                      <div className="bg-muted/30 p-3 rounded-lg border">
+                        <p className="text-xs font-semibold text-muted-foreground mb-1">Tecido</p>
+                        <p className="text-sm font-medium mb-1">{tecido.nome}</p>
+                        <div className="space-y-0.5">
+                          <p className="text-xs text-muted-foreground">
+                            Preço: {formatCurrency(tecido.preco_custo)}/m
+                          </p>
+                          {tecido.largura_metro && (
+                            <p className="text-xs text-muted-foreground">
+                              Largura do rolo: {tecido.largura_metro}m
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="bg-muted/30 p-3 rounded-lg border">
+                        <p className="text-xs font-semibold text-muted-foreground">Tecido</p>
+                        <p className="text-sm">-</p>
+                      </div>
+                    );
+                  })()}
+                  
+                  {/* Forro */}
+                  {cortina.forroId && (() => {
+                    const forro = obterMaterial(cortina.forroId);
+                    return forro ? (
+                      <div className="bg-muted/30 p-3 rounded-lg border">
+                        <p className="text-xs font-semibold text-muted-foreground mb-1">Forro</p>
+                        <p className="text-sm font-medium mb-1">{forro.nome}</p>
+                        <div className="space-y-0.5">
+                          <p className="text-xs text-muted-foreground">
+                            Preço: {formatCurrency(forro.preco_custo)}/m
+                          </p>
+                          {forro.largura_metro && (
+                            <p className="text-xs text-muted-foreground">
+                              Largura do rolo: {forro.largura_metro}m
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="bg-muted/30 p-3 rounded-lg border">
+                        <p className="text-xs font-semibold text-muted-foreground">Forro</p>
+                        <p className="text-sm">-</p>
+                      </div>
+                    );
+                  })()}
+                  
+                  {/* Trilho */}
+                  {cortina.trilhoId && (() => {
+                    const trilho = obterMaterial(cortina.trilhoId);
+                    return trilho ? (
+                      <div className="bg-muted/30 p-3 rounded-lg border">
+                        <p className="text-xs font-semibold text-muted-foreground mb-1">Trilho</p>
+                        <p className="text-sm font-medium mb-1">{trilho.nome}</p>
+                        <div className="space-y-0.5">
+                          <p className="text-xs text-muted-foreground">
+                            Preço: {formatCurrency(trilho.preco_custo)}/m
+                          </p>
+                          {trilho.largura_metro && (
+                            <p className="text-xs text-muted-foreground">
+                              Largura do rolo: {trilho.largura_metro}m
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="bg-muted/30 p-3 rounded-lg border">
+                        <p className="text-xs font-semibold text-muted-foreground">Trilho</p>
+                        <p className="text-sm">-</p>
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
 
