@@ -125,7 +125,7 @@ Deno.serve(async (req) => {
 
     console.log('Cleanup complete - all tables verified empty!')
 
-    // Step 2: Insert materials
+    // Step 2: Insert materials with UPSERT to handle any remaining duplicates
     console.log('Step 2: Inserting materials...')
     let insertedMateriais = 0
 
@@ -144,7 +144,10 @@ Deno.serve(async (req) => {
 
       const { data: insertedData, error: insertError } = await supabaseAdmin
         .from('materiais')
-        .insert(materiaisToInsert)
+        .upsert(materiaisToInsert, {
+          onConflict: 'codigo_item',
+          ignoreDuplicates: false
+        })
         .select()
 
       if (insertError) {
@@ -153,10 +156,10 @@ Deno.serve(async (req) => {
       }
 
       insertedMateriais = insertedData?.length || 0
-      console.log(`Inserted ${insertedMateriais} materials`)
+      console.log(`Inserted/Updated ${insertedMateriais} materials`)
     }
 
-    // Step 3: Insert confection services
+    // Step 3: Insert confection services with UPSERT
     console.log('Step 3: Inserting confection services...')
     let insertedConfeccao = 0
 
@@ -173,7 +176,10 @@ Deno.serve(async (req) => {
 
       const { data: insertedData, error: insertError } = await supabaseAdmin
         .from('servicos_confeccao')
-        .insert(confeccaoToInsert)
+        .upsert(confeccaoToInsert, {
+          onConflict: 'codigo_item',
+          ignoreDuplicates: false
+        })
         .select()
 
       if (insertError) {
@@ -182,10 +188,10 @@ Deno.serve(async (req) => {
       }
 
       insertedConfeccao = insertedData?.length || 0
-      console.log(`Inserted ${insertedConfeccao} confection services`)
+      console.log(`Inserted/Updated ${insertedConfeccao} confection services`)
     }
 
-    // Step 4: Insert installation services
+    // Step 4: Insert installation services with UPSERT
     console.log('Step 4: Inserting installation services...')
     let insertedInstalacao = 0
 
@@ -201,7 +207,10 @@ Deno.serve(async (req) => {
 
       const { data: insertedData, error: insertError } = await supabaseAdmin
         .from('servicos_instalacao')
-        .insert(instalacaoToInsert)
+        .upsert(instalacaoToInsert, {
+          onConflict: 'codigo_item',
+          ignoreDuplicates: false
+        })
         .select()
 
       if (insertError) {
@@ -210,7 +219,7 @@ Deno.serve(async (req) => {
       }
 
       insertedInstalacao = insertedData?.length || 0
-      console.log(`Inserted ${insertedInstalacao} installation services`)
+      console.log(`Inserted/Updated ${insertedInstalacao} installation services`)
     }
 
     console.log('=== Seed complete! ===')
