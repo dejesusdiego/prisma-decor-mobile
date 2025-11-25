@@ -20,6 +20,7 @@ interface Material {
   preco_custo: number;
   preco_tabela: number;
   ativo: boolean;
+  fornecedor: string | null;
 }
 
 export function ListaMateriais() {
@@ -29,6 +30,7 @@ export function ListaMateriais() {
   const [busca, setBusca] = useState('');
   const [categoriaFiltro, setCategoriaFiltro] = useState('todas');
   const [statusFiltro, setStatusFiltro] = useState('todos');
+  const [fornecedorFiltro, setFornecedorFiltro] = useState('todos');
   const [dialogAberto, setDialogAberto] = useState(false);
   const [materialEditando, setMaterialEditando] = useState<Material | null>(null);
   const [materialDeletando, setMaterialDeletando] = useState<Material | null>(null);
@@ -84,8 +86,13 @@ export function ListaMateriais() {
       resultado = resultado.filter((m) => !m.ativo);
     }
 
+    // Filtro de fornecedor
+    if (fornecedorFiltro !== 'todos') {
+      resultado = resultado.filter((m) => m.fornecedor === fornecedorFiltro);
+    }
+
     setMateriaisFiltrados(resultado);
-  }, [busca, categoriaFiltro, statusFiltro, materiais]);
+  }, [busca, categoriaFiltro, statusFiltro, fornecedorFiltro, materiais]);
 
   const handleToggleStatus = async (material: Material) => {
     try {
@@ -159,6 +166,10 @@ export function ListaMateriais() {
   };
 
   const categorias = ['tecido', 'forro', 'trilho', 'acessorio', 'papel'];
+  
+  const fornecedoresUnicos = Array.from(
+    new Set(materiais.map((m) => m.fornecedor).filter(Boolean))
+  ).sort() as string[];
 
   return (
     <div className="space-y-4">
@@ -183,6 +194,20 @@ export function ListaMateriais() {
               {categorias.map((cat) => (
                 <SelectItem key={cat} value={cat}>
                   {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={fornecedorFiltro} onValueChange={setFornecedorFiltro}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Fornecedor" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos fornecedores</SelectItem>
+              {fornecedoresUnicos.map((fornecedor) => (
+                <SelectItem key={fornecedor} value={fornecedor}>
+                  {fornecedor}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -218,6 +243,7 @@ export function ListaMateriais() {
                 <TableHead>Código</TableHead>
                 <TableHead>Nome</TableHead>
                 <TableHead>Categoria</TableHead>
+                <TableHead>Fornecedor</TableHead>
                 <TableHead>Unidade</TableHead>
                 <TableHead>Largura</TableHead>
                 <TableHead className="text-right">Preço Custo</TableHead>
@@ -229,7 +255,7 @@ export function ListaMateriais() {
             <TableBody>
               {materiaisFiltrados.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
                     Nenhum material encontrado
                   </TableCell>
                 </TableRow>
@@ -242,6 +268,13 @@ export function ListaMateriais() {
                       <Badge variant="secondary">
                         {material.categoria.charAt(0).toUpperCase() + material.categoria.slice(1)}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {material.fornecedor ? (
+                        <span className="text-sm">{material.fornecedor}</span>
+                      ) : (
+                        <span className="text-muted-foreground text-sm">-</span>
+                      )}
                     </TableCell>
                     <TableCell>{material.unidade}</TableCell>
                     <TableCell>

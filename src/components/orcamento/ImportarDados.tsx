@@ -17,6 +17,7 @@ export function ImportarDados({ onVoltar }: { onVoltar: () => void }) {
   const [materialsFile, setMaterialsFile] = useState<File | null>(null);
   const [confeccaoFile, setConfeccaoFile] = useState<File | null>(null);
   const [instalacaoFile, setInstalacaoFile] = useState<File | null>(null);
+  const [fornecedor, setFornecedor] = useState('');
   const [status, setStatus] = useState<ImportStatus>({
     materials: 'idle',
     confeccao: 'idle',
@@ -28,38 +29,35 @@ export function ImportarDados({ onVoltar }: { onVoltar: () => void }) {
     setStatus((prev) => ({ ...prev, materials: 'loading' }));
     
     try {
-      for (const item of data) {
-        const materialData = {
-          codigo_item: item.codigoItem,
-          nome: item.nome,
-          categoria: item.categoria,
-          unidade: item.unidade || 'M',
-          largura_metro: item.larguraMetro || null,
-          preco_custo: item.precoCusto,
-          preco_tabela: item.precoCusto * 1.615, // Margem padrão para preço tabela
-          ativo: item.ativo !== false,
-        };
+      const materiaisData = data.map((item) => ({
+        codigo_item: item.codigoItem,
+        nome: item.nome,
+        categoria: item.categoria,
+        unidade: item.unidade || 'M',
+        largura_metro: item.larguraMetro || null,
+        preco_custo: item.precoCusto,
+        preco_tabela: item.precoCusto * 1.615,
+        ativo: item.ativo !== false,
+        fornecedor: fornecedor,
+      }));
 
-        // Tentar atualizar primeiro
-        const { error: updateError } = await supabase
-          .from('materiais')
-          .update(materialData)
-          .eq('codigo_item', item.codigoItem);
+      const { data: inserted, error } = await supabase
+        .from('materiais')
+        .upsert(materiaisData, {
+          onConflict: 'codigo_item',
+          ignoreDuplicates: true,
+        })
+        .select();
 
-        // Se não existe, inserir
-        if (updateError) {
-          const { error: insertError } = await supabase
-            .from('materiais')
-            .insert(materialData);
+      if (error) throw error;
 
-          if (insertError) throw insertError;
-        }
-      }
+      const numInseridos = inserted?.length || 0;
+      const numIgnorados = data.length - numInseridos;
 
       setStatus((prev) => ({ ...prev, materials: 'success' }));
       toast({
         title: 'Materiais importados',
-        description: `${data.length} materiais foram importados com sucesso`,
+        description: `${numInseridos} novos adicionados, ${numIgnorados} já existiam (ignorados)`,
       });
     } catch (error) {
       console.error('Erro ao importar materiais:', error);
@@ -76,36 +74,32 @@ export function ImportarDados({ onVoltar }: { onVoltar: () => void }) {
     setStatus((prev) => ({ ...prev, confeccao: 'loading' }));
     
     try {
-      for (const item of data) {
-        const confeccaoData = {
-          codigo_item: item.codigoItem,
-          nome_modelo: item.nomeModelo,
-          unidade: item.unidade || 'mt',
-          preco_custo: item.precoCusto,
-          preco_tabela: item.precoCusto * 1.55, // Margem padrão para preço tabela
-          ativo: item.ativo !== false,
-        };
+      const confeccaoData = data.map((item) => ({
+        codigo_item: item.codigoItem,
+        nome_modelo: item.nomeModelo,
+        unidade: item.unidade || 'mt',
+        preco_custo: item.precoCusto,
+        preco_tabela: item.precoCusto * 1.55,
+        ativo: item.ativo !== false,
+      }));
 
-        // Tentar atualizar primeiro
-        const { error: updateError } = await supabase
-          .from('servicos_confeccao')
-          .update(confeccaoData)
-          .eq('codigo_item', item.codigoItem);
+      const { data: inserted, error } = await supabase
+        .from('servicos_confeccao')
+        .upsert(confeccaoData, {
+          onConflict: 'codigo_item',
+          ignoreDuplicates: true,
+        })
+        .select();
 
-        // Se não existe, inserir
-        if (updateError) {
-          const { error: insertError } = await supabase
-            .from('servicos_confeccao')
-            .insert(confeccaoData);
+      if (error) throw error;
 
-          if (insertError) throw insertError;
-        }
-      }
+      const numInseridos = inserted?.length || 0;
+      const numIgnorados = data.length - numInseridos;
 
       setStatus((prev) => ({ ...prev, confeccao: 'success' }));
       toast({
         title: 'Serviços de confecção importados',
-        description: `${data.length} serviços foram importados com sucesso`,
+        description: `${numInseridos} novos adicionados, ${numIgnorados} já existiam (ignorados)`,
       });
     } catch (error) {
       console.error('Erro ao importar serviços de confecção:', error);
@@ -122,35 +116,31 @@ export function ImportarDados({ onVoltar }: { onVoltar: () => void }) {
     setStatus((prev) => ({ ...prev, instalacao: 'loading' }));
     
     try {
-      for (const item of data) {
-        const instalacaoData = {
-          codigo_item: item.codigoItem,
-          nome: item.nome,
-          preco_custo_por_ponto: item.precoCustoPorPonto,
-          preco_tabela_por_ponto: item.precoCustoPorPonto * 1.615, // Margem padrão para preço tabela
-          ativo: item.ativo !== false,
-        };
+      const instalacaoData = data.map((item) => ({
+        codigo_item: item.codigoItem,
+        nome: item.nome,
+        preco_custo_por_ponto: item.precoCustoPorPonto,
+        preco_tabela_por_ponto: item.precoCustoPorPonto * 1.615,
+        ativo: item.ativo !== false,
+      }));
 
-        // Tentar atualizar primeiro
-        const { error: updateError } = await supabase
-          .from('servicos_instalacao')
-          .update(instalacaoData)
-          .eq('codigo_item', item.codigoItem);
+      const { data: inserted, error } = await supabase
+        .from('servicos_instalacao')
+        .upsert(instalacaoData, {
+          onConflict: 'codigo_item',
+          ignoreDuplicates: true,
+        })
+        .select();
 
-        // Se não existe, inserir
-        if (updateError) {
-          const { error: insertError } = await supabase
-            .from('servicos_instalacao')
-            .insert(instalacaoData);
+      if (error) throw error;
 
-          if (insertError) throw insertError;
-        }
-      }
+      const numInseridos = inserted?.length || 0;
+      const numIgnorados = data.length - numInseridos;
 
       setStatus((prev) => ({ ...prev, instalacao: 'success' }));
       toast({
         title: 'Serviços de instalação importados',
-        description: `${data.length} serviços foram importados com sucesso`,
+        description: `${numInseridos} novos adicionados, ${numIgnorados} já existiam (ignorados)`,
       });
     } catch (error) {
       console.error('Erro ao importar serviços de instalação:', error);
@@ -168,6 +158,15 @@ export function ImportarDados({ onVoltar }: { onVoltar: () => void }) {
       toast({
         title: 'Nenhum arquivo selecionado',
         description: 'Selecione pelo menos um arquivo para importar',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (materialsFile && !fornecedor.trim()) {
+      toast({
+        title: 'Fornecedor obrigatório',
+        description: 'Informe o fornecedor para importar materiais',
         variant: 'destructive',
       });
       return;
@@ -254,13 +253,28 @@ export function ImportarDados({ onVoltar }: { onVoltar: () => void }) {
               <Label htmlFor="materials">1. Materiais (materials.json)</Label>
               {getStatusIcon(status.materials)}
             </div>
-            <Input
-              id="materials"
-              type="file"
-              accept=".json"
-              onChange={(e) => setMaterialsFile(e.target.files?.[0] || null)}
-              disabled={importing}
-            />
+            <div className="space-y-3">
+              <div>
+                <Label htmlFor="fornecedor" className="text-sm font-medium">
+                  Fornecedor <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="fornecedor"
+                  placeholder="Ex: Têxtil ABC, Casa dos Tecidos..."
+                  value={fornecedor}
+                  onChange={(e) => setFornecedor(e.target.value)}
+                  disabled={importing}
+                  className="mt-1.5"
+                />
+              </div>
+              <Input
+                id="materials"
+                type="file"
+                accept=".json"
+                onChange={(e) => setMaterialsFile(e.target.files?.[0] || null)}
+                disabled={importing}
+              />
+            </div>
             <p className="text-sm text-muted-foreground">
               Tecidos, forros, trilhos, acessórios e papéis de parede
             </p>
@@ -327,11 +341,11 @@ export function ImportarDados({ onVoltar }: { onVoltar: () => void }) {
           <CardTitle>Como funciona?</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2 text-sm text-muted-foreground">
-          <p>• Se o item já existe (mesmo código), ele será atualizado com os novos valores</p>
-          <p>• Se o item não existe, será criado um novo registro</p>
-          <p>• Todos os itens importados ficam ativos automaticamente</p>
-          <p>• Os preços de custo são mantidos exatamente como estão nos arquivos JSON</p>
-          <p>• Os cálculos dos orçamentos usarão esses dados como base oficial</p>
+          <p>• <strong>Proteção de dados:</strong> Materiais existentes NÃO são alterados</p>
+          <p>• <strong>Apenas novos itens:</strong> Se o código já existe, o material é ignorado</p>
+          <p>• <strong>Rastreamento:</strong> Materiais novos são marcados com o fornecedor especificado</p>
+          <p>• <strong>Ativação automática:</strong> Todos os novos itens ficam ativos</p>
+          <p>• <strong>Preços preservados:</strong> Os valores do JSON são mantidos exatamente como estão</p>
         </CardContent>
       </Card>
     </div>

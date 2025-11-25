@@ -18,6 +18,7 @@ interface Material {
   preco_custo: number;
   preco_tabela: number;
   ativo: boolean;
+  fornecedor: string | null;
 }
 
 interface DialogMaterialProps {
@@ -36,6 +37,7 @@ export function DialogMaterial({ aberto, material, onClose }: DialogMaterialProp
     largura_metro: '',
     preco_custo: '',
     margem_percent: '61.5',
+    fornecedor: '',
   });
 
   useEffect(() => {
@@ -52,6 +54,7 @@ export function DialogMaterial({ aberto, material, onClose }: DialogMaterialProp
         largura_metro: material.largura_metro?.toString() || '',
         preco_custo: material.preco_custo.toString(),
         margem_percent: margemPercent,
+        fornecedor: material.fornecedor || '',
       });
     } else {
       setFormData({
@@ -62,6 +65,7 @@ export function DialogMaterial({ aberto, material, onClose }: DialogMaterialProp
         largura_metro: '',
         preco_custo: '',
         margem_percent: '61.5',
+        fornecedor: '',
       });
     }
   }, [material, aberto]);
@@ -89,6 +93,7 @@ export function DialogMaterial({ aberto, material, onClose }: DialogMaterialProp
         preco_tabela: precoTabela,
         margem_tabela_percent: parseFloat(formData.margem_percent),
         ativo: true,
+        fornecedor: formData.fornecedor || null,
       };
 
       if (material) {
@@ -164,6 +169,16 @@ export function DialogMaterial({ aberto, material, onClose }: DialogMaterialProp
                 required
               />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="fornecedor">Fornecedor</Label>
+            <Input
+              id="fornecedor"
+              value={formData.fornecedor}
+              onChange={(e) => setFormData({ ...formData, fornecedor: e.target.value })}
+              placeholder="Ex: Têxtil ABC, Casa dos Tecidos"
+            />
           </div>
 
           <div className="grid grid-cols-3 gap-4">
