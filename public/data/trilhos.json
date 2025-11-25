@@ -1,0 +1,189 @@
+[
+  {
+    "codigoItem": "TRI-200-001-001-20-60",
+    "nome": "TRILHO MAX COM UMA VIA (2CM)",
+    "categoria": "trilho",
+    "unidade": "M",
+    "precoCusto": 6.16,
+    "ativo": true,
+    "tipo": "TRILHO MAX",
+    "linha": "MAX UMA VIA",
+    "cor": ""
+  },
+  {
+    "codigoItem": "TRI-200-001-004-20-60",
+    "nome": "TRILHO MAX COM UMA VIA PRETO (2CM)",
+    "categoria": "trilho",
+    "unidade": "M",
+    "precoCusto": 6.16,
+    "ativo": true,
+    "tipo": "TRILHO MAX",
+    "linha": "MAX UMA VIA",
+    "cor": "PRETO"
+  },
+  {
+    "codigoItem": "TRI-200-002-001-50-60",
+    "nome": "TRILHO MAX COM DUAS VIAS (4,9CM)",
+    "categoria": "trilho",
+    "unidade": "M",
+    "precoCusto": 14.17,
+    "ativo": true,
+    "tipo": "TRILHO MAX",
+    "linha": "MAX DUAS VIAS",
+    "cor": ""
+  },
+  {
+    "codigoItem": "TRI-200-002-001-80-60",
+    "nome": "TRILHO MAX COM DUAS VIAS LARGO (7,9CM)",
+    "categoria": "trilho",
+    "unidade": "M",
+    "precoCusto": 18.78,
+    "ativo": true,
+    "tipo": "TRILHO MAX",
+    "linha": "MAX DUAS VIAS LARGO",
+    "cor": ""
+  },
+  {
+    "codigoItem": "TRI-200-003-001-80-60",
+    "nome": "TRILHO MAX COM TRES VIAS (7,9CM)",
+    "categoria": "trilho",
+    "unidade": "M",
+    "precoCusto": 20.96,
+    "ativo": true,
+    "tipo": "TRILHO MAX",
+    "linha": "MAX TRES VIAS",
+    "cor": ""
+  },
+  {
+    "codigoItem": "TRI-200-050-001-20-60",
+    "nome": "TRILHO MAX COM AMERICANO BRANCO",
+    "categoria": "trilho",
+    "unidade": "M",
+    "precoCusto": 13.7,
+    "ativo": true,
+    "tipo": "TRILHO MAX",
+    "linha": "MAX AMERICANO",
+    "cor": "BRANCO"
+  },
+  {
+    "codigoItem": "TRI-500-028-001-60",
+    "nome": "VARAO EUROPEU 28MM BRANCO",
+    "categoria": "trilho",
+    "unidade": "M",
+    "precoCusto": 22.61,
+    "ativo": true,
+    "tipo": "VARAO EUROPEU",
+    "linha": "EUROPEU 28MM",
+    "cor": "BRANCO"
+  },
+  {
+    "codigoItem": "TRI-500-028-002-60",
+    "nome": "VARAO EUROPEU 28MM PRETO",
+    "categoria": "trilho",
+    "unidade": "M",
+    "precoCusto": 22.61,
+    "ativo": true,
+    "tipo": "VARAO EUROPEU",
+    "linha": "EUROPEU 28MM",
+    "cor": "PRETO"
+  },
+  {
+    "codigoItem": "TRI-500-028-003-60",
+    "nome": "VARAO EUROPEU 28MM ESCOVADO",
+    "categoria": "trilho",
+    "unidade": "M",
+    "precoCusto": 22.61,
+    "ativo": true,
+    "tipo": "VARAO EUROPEU",
+    "linha": "EUROPEU 28MM",
+    "cor": "ESCOVADO"
+  },
+  {
+    "codigoItem": "TRI-500-028-004-60",
+    "nome": "VARAO EUROPEU 28MM TITANIO",
+    "categoria": "trilho",
+    "unidade": "M",
+    "precoCusto": 22.61,
+    "ativo": true,
+    "tipo": "VARAO EUROPEU",
+    "linha": "EUROPEU 28MM",
+    "cor": "TITANIO"
+  },
+  {
+    "codigoItem": "TRI-500-028-021-60",
+    "nome": "VARAO EUROPEU 28MM BRILHANTE",
+    "categoria": "trilho",
+    "unidade": "M",
+    "precoCusto": 22.61,
+    "ativo": true,
+    "tipo": "VARAO EUROPEU",
+    "linha": "EUROPEU 28MM",
+    "cor": "BRILHANTE"
+  },
+  {
+    "codigoItem": "TRI-200-050-001-01-60",
+    "nome": "PERFIL TRILHO UNIVERSAL MAX",
+    "categoria": "trilho",
+    "unidade": "M",
+    "precoCusto": 28.73,
+    "ativo": true,
+    "tipo": "TRILHO UNIVERSAL",
+    "linha": "UNIVERSAL MAX",
+    "cor": ""
+  },
+  {
+    "codigoItem": "TRI-100-001-001-01-60",
+    "nome": "TRILHO MINI UMA VIA COM ABA",
+    "categoria": "trilho",
+    "unidade": "M",
+    "precoCusto": 5.73,
+    "ativo": true,
+    "tipo": "TRILHO MINI",
+    "linha": "MINI UMA VIA",
+    "cor": ""
+  },
+  {
+    "codigoItem": "TRI-100-002-001-01-60",
+    "nome": "TRILHO MINI DUAS VIAS",
+    "categoria": "trilho",
+    "unidade": "M",
+    "precoCusto": 13.98,
+    "ativo": true,
+    "tipo": "TRILHO MINI",
+    "linha": "MINI DUAS VIAS",
+    "cor": ""
+  },
+  {
+    "codigoItem": "TRI-100-003-001-01-60",
+    "nome": "TRILHO MINI TRES VIAS",
+    "categoria": "trilho",
+    "unidade": "M",
+    "precoCusto": 18.54,
+    "ativo": true,
+    "tipo": "TRILHO MINI",
+    "linha": "MINI TRES VIAS",
+    "cor": ""
+  },
+  {
+    "codigoItem": "TRI-100-050-001-01-60",
+    "nome": "TRILHO MINI FLEXIVEL",
+    "categoria": "trilho",
+    "unidade": "M",
+    "precoCusto": 9.27,
+    "ativo": true,
+    "tipo": "TRILHO MINI",
+    "linha": "MINI FLEXIVEL",
+    "cor": ""
+  },
+  {
+    "codigoItem": "TRI-100-050-001-04-60",
+    "nome": "TRILHO MINI FLEXIVEL PRETO",
+    "categoria": "trilho",
+    "unidade": "M",
+    "precoCusto": 9.27,
+    "ativo": true,
+    "tipo": "TRILHO MINI",
+    "linha": "MINI FLEXIVEL",
+    "cor": "PRETO"
+  }
+]

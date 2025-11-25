@@ -55,6 +55,14 @@ export interface Material {
   preco_custo: number;
   preco_tabela: number;
   ativo: boolean;
+  fornecedor?: string;
+  // Campos específicos por categoria
+  linha?: string;
+  cor?: string;
+  tipo?: string;
+  aplicacao?: string;
+  potencia?: string;
+  area_min_fat?: number;
 }
 
 export interface ServicoConfeccao {

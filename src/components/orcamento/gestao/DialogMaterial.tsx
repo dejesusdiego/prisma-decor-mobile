@@ -19,6 +19,12 @@ interface Material {
   preco_tabela: number;
   ativo: boolean;
   fornecedor: string | null;
+  linha?: string | null;
+  cor?: string | null;
+  tipo?: string | null;
+  aplicacao?: string | null;
+  potencia?: string | null;
+  area_min_fat?: number | null;
 }
 
 interface DialogMaterialProps {
@@ -38,6 +44,12 @@ export function DialogMaterial({ aberto, material, onClose }: DialogMaterialProp
     preco_custo: '',
     margem_percent: '61.5',
     fornecedor: '',
+    linha: '',
+    cor: '',
+    tipo: '',
+    aplicacao: '',
+    potencia: '',
+    area_min_fat: '',
   });
 
   useEffect(() => {
@@ -55,6 +67,12 @@ export function DialogMaterial({ aberto, material, onClose }: DialogMaterialProp
         preco_custo: material.preco_custo.toString(),
         margem_percent: margemPercent,
         fornecedor: material.fornecedor || '',
+        linha: material.linha || '',
+        cor: material.cor || '',
+        tipo: material.tipo || '',
+        aplicacao: material.aplicacao || '',
+        potencia: material.potencia || '',
+        area_min_fat: material.area_min_fat?.toString() || '',
       });
     } else {
       setFormData({
@@ -66,6 +84,12 @@ export function DialogMaterial({ aberto, material, onClose }: DialogMaterialProp
         preco_custo: '',
         margem_percent: '61.5',
         fornecedor: '',
+        linha: '',
+        cor: '',
+        tipo: '',
+        aplicacao: '',
+        potencia: '',
+        area_min_fat: '',
       });
     }
   }, [material, aberto]);
@@ -94,6 +118,12 @@ export function DialogMaterial({ aberto, material, onClose }: DialogMaterialProp
         margem_tabela_percent: parseFloat(formData.margem_percent),
         ativo: true,
         fornecedor: formData.fornecedor || null,
+        linha: formData.linha || null,
+        cor: formData.cor || null,
+        tipo: formData.tipo || null,
+        aplicacao: formData.aplicacao || null,
+        potencia: formData.potencia || null,
+        area_min_fat: formData.area_min_fat ? parseFloat(formData.area_min_fat) : null,
       };
 
       if (material) {
@@ -197,6 +227,8 @@ export function DialogMaterial({ aberto, material, onClose }: DialogMaterialProp
                   <SelectItem value="trilho">Trilho</SelectItem>
                   <SelectItem value="acessorio">Acessório</SelectItem>
                   <SelectItem value="papel">Papel de Parede</SelectItem>
+                  <SelectItem value="persiana">Persiana</SelectItem>
+                  <SelectItem value="motorizado">Motorizado</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -264,6 +296,72 @@ export function DialogMaterial({ aberto, material, onClose }: DialogMaterialProp
                 value={calcularPrecoTabela().toFixed(2)}
                 disabled
                 className="bg-muted"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="tipo">Tipo</Label>
+              <Input
+                id="tipo"
+                value={formData.tipo}
+                onChange={(e) => setFormData({ ...formData, tipo: e.target.value })}
+                placeholder="Ex: FORRO, TRILHO MAX"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="linha">Linha</Label>
+              <Input
+                id="linha"
+                value={formData.linha}
+                onChange={(e) => setFormData({ ...formData, linha: e.target.value })}
+                placeholder="Ex: BLACKOUT 100%"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="cor">Cor</Label>
+              <Input
+                id="cor"
+                value={formData.cor}
+                onChange={(e) => setFormData({ ...formData, cor: e.target.value })}
+                placeholder="Ex: BRANCO, PRETO"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="aplicacao">Aplicação</Label>
+              <Input
+                id="aplicacao"
+                value={formData.aplicacao}
+                onChange={(e) => setFormData({ ...formData, aplicacao: e.target.value })}
+                placeholder="Ex: PERSIANA PESADA"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="potencia">Potência</Label>
+              <Input
+                id="potencia"
+                value={formData.potencia}
+                onChange={(e) => setFormData({ ...formData, potencia: e.target.value })}
+                placeholder="Ex: UD 1,2N"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="area_min_fat">Área Mín. Fat. (m²)</Label>
+              <Input
+                id="area_min_fat"
+                type="number"
+                step="0.01"
+                value={formData.area_min_fat}
+                onChange={(e) => setFormData({ ...formData, area_min_fat: e.target.value })}
+                placeholder="Ex: 1.2"
               />
             </div>
           </div>

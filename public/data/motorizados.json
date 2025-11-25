@@ -1,0 +1,131 @@
+[
+  {
+    "codigoItem": "MOT-TMT250-1M",
+    "nome": "TMT 250 MOTOR ELETRONICO UD 1,2N (1M)",
+    "categoria": "motorizado",
+    "unidade": "UN",
+    "precoCusto": 83333,
+    "ativo": true,
+    "tipo": "MOTOR ELETRONICO",
+    "linha": "TMT 250",
+    "largura": "1M",
+    "potencia": "UD 1,2N"
+  },
+  {
+    "codigoItem": "MOT-TMT250-2M",
+    "nome": "TMT 250 MOTOR ELETRONICO UD 1,2N (2M)",
+    "categoria": "motorizado",
+    "unidade": "UN",
+    "precoCusto": 93793,
+    "ativo": true,
+    "tipo": "MOTOR ELETRONICO",
+    "linha": "TMT 250",
+    "largura": "2M",
+    "potencia": "UD 1,2N"
+  },
+  {
+    "codigoItem": "MOT-TMT250-3M",
+    "nome": "TMT 250 MOTOR ELETRONICO UD 1,2N (3M)",
+    "categoria": "motorizado",
+    "unidade": "UN",
+    "precoCusto": 104253,
+    "ativo": true,
+    "tipo": "MOTOR ELETRONICO",
+    "linha": "TMT 250",
+    "largura": "3M",
+    "potencia": "UD 1,2N"
+  },
+  {
+    "codigoItem": "MOT-TMT250-4M",
+    "nome": "TMT 250 MOTOR ELETRONICO UD 1,2N (4M)",
+    "categoria": "motorizado",
+    "unidade": "UN",
+    "precoCusto": 114713,
+    "ativo": true,
+    "tipo": "MOTOR ELETRONICO",
+    "linha": "TMT 250",
+    "largura": "4M",
+    "potencia": "UD 1,2N"
+  },
+  {
+    "codigoItem": "MOT-TMT250-5M",
+    "nome": "TMT 250 MOTOR ELETRONICO UD 1,2N (5M)",
+    "categoria": "motorizado",
+    "unidade": "UN",
+    "precoCusto": 125173,
+    "ativo": true,
+    "tipo": "MOTOR ELETRONICO",
+    "linha": "TMT 250",
+    "largura": "5M",
+    "potencia": "UD 1,2N"
+  },
+  {
+    "codigoItem": "MOT-TMT250-6M",
+    "nome": "TMT 250 MOTOR ELETRONICO UD 1,2N (6M)",
+    "categoria": "motorizado",
+    "unidade": "UN",
+    "precoCusto": 135634,
+    "ativo": true,
+    "tipo": "MOTOR ELETRONICO",
+    "linha": "TMT 250",
+    "largura": "6M",
+    "potencia": "UD 1,2N"
+  },
+  {
+    "codigoItem": "MOT-TMT250-7M",
+    "nome": "TMT 250 MOTOR ELETRONICO UD 1,2N (7M)",
+    "categoria": "motorizado",
+    "unidade": "UN",
+    "precoCusto": 146094,
+    "ativo": true,
+    "tipo": "MOTOR ELETRONICO",
+    "linha": "TMT 250",
+    "largura": "7M",
+    "potencia": "UD 1,2N"
+  },
+  {
+    "codigoItem": "MOT-TMT250-8M",
+    "nome": "TMT 250 MOTOR ELETRONICO UD 1,2N (8M)",
+    "categoria": "motorizado",
+    "unidade": "UN",
+    "precoCusto": 156554,
+    "ativo": true,
+    "tipo": "MOTOR ELETRONICO",
+    "linha": "TMT 250",
+    "largura": "8M",
+    "potencia": "UD 1,2N"
+  },
+  {
+    "codigoItem": "MOT-EMISSOR-1-CANAL",
+    "nome": "EMISSOR 1 CANAL",
+    "categoria": "motorizado",
+    "unidade": "UN",
+    "precoCusto": 8614,
+    "ativo": true,
+    "tipo": "EMISSOR",
+    "linha": "CONTROLE",
+    "canais": 1
+  },
+  {
+    "codigoItem": "MOT-EMISSOR-5-CANAIS",
+    "nome": "EMISSOR 5 CANAIS",
+    "categoria": "motorizado",
+    "unidade": "UN",
+    "precoCusto": 11719,
+    "ativo": true,
+    "tipo": "EMISSOR",
+    "linha": "CONTROLE",
+    "canais": 5
+  },
+  {
+    "codigoItem": "MOT-EMISSOR-16-CANAIS",
+    "nome": "EMISSOR 16 CANAIS",
+    "categoria": "motorizado",
+    "unidade": "UN",
+    "precoCusto": 31524,
+    "ativo": true,
+    "tipo": "EMISSOR",
+    "linha": "CONTROLE",
+    "canais": 16
+  }
+]

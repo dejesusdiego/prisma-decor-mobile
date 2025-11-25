@@ -21,6 +21,12 @@ interface Material {
   preco_tabela: number;
   ativo: boolean;
   fornecedor: string | null;
+  linha?: string | null;
+  cor?: string | null;
+  tipo?: string | null;
+  aplicacao?: string | null;
+  potencia?: string | null;
+  area_min_fat?: number | null;
 }
 
 export function ListaMateriais() {
@@ -165,7 +171,7 @@ export function ListaMateriais() {
     }
   };
 
-  const categorias = ['tecido', 'forro', 'trilho', 'acessorio', 'papel'];
+  const categorias = ['tecido', 'forro', 'trilho', 'acessorio', 'papel', 'persiana', 'motorizado'];
   
   const fornecedoresUnicos = Array.from(
     new Set(materiais.map((m) => m.fornecedor).filter(Boolean))
@@ -243,11 +249,9 @@ export function ListaMateriais() {
                 <TableHead>Código</TableHead>
                 <TableHead>Nome</TableHead>
                 <TableHead>Categoria</TableHead>
+                <TableHead>Tipo</TableHead>
                 <TableHead>Fornecedor</TableHead>
-                <TableHead>Unidade</TableHead>
-                <TableHead>Largura</TableHead>
                 <TableHead className="text-right">Preço Custo</TableHead>
-                <TableHead className="text-right">Preço Tabela</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
@@ -255,7 +259,7 @@ export function ListaMateriais() {
             <TableBody>
               {materiaisFiltrados.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                     Nenhum material encontrado
                   </TableCell>
                 </TableRow>
@@ -270,21 +274,21 @@ export function ListaMateriais() {
                       </Badge>
                     </TableCell>
                     <TableCell>
+                      {material.tipo ? (
+                        <span className="text-sm">{material.tipo}</span>
+                      ) : (
+                        <span className="text-muted-foreground text-sm">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
                       {material.fornecedor ? (
                         <span className="text-sm">{material.fornecedor}</span>
                       ) : (
                         <span className="text-muted-foreground text-sm">-</span>
                       )}
                     </TableCell>
-                    <TableCell>{material.unidade}</TableCell>
-                    <TableCell>
-                      {material.largura_metro ? `${material.largura_metro}m` : '-'}
-                    </TableCell>
                     <TableCell className="text-right">
                       R$ {material.preco_custo.toFixed(2)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      R$ {material.preco_tabela.toFixed(2)}
                     </TableCell>
                     <TableCell>
                       <Badge variant={material.ativo ? 'default' : 'secondary'}>

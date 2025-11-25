@@ -126,50 +126,68 @@ export type Database = {
       }
       materiais: {
         Row: {
+          aplicacao: string | null
+          area_min_fat: number | null
           ativo: boolean
           categoria: string
           codigo_item: string | null
+          cor: string | null
           created_at: string
           fornecedor: string | null
           id: string
           largura_metro: number | null
+          linha: string | null
           margem_tabela_percent: number
           nome: string
           perda_percent: number | null
+          potencia: string | null
           preco_custo: number
           preco_tabela: number
+          tipo: string | null
           unidade: string
           updated_at: string
         }
         Insert: {
+          aplicacao?: string | null
+          area_min_fat?: number | null
           ativo?: boolean
           categoria: string
           codigo_item?: string | null
+          cor?: string | null
           created_at?: string
           fornecedor?: string | null
           id?: string
           largura_metro?: number | null
+          linha?: string | null
           margem_tabela_percent?: number
           nome: string
           perda_percent?: number | null
+          potencia?: string | null
           preco_custo: number
           preco_tabela: number
+          tipo?: string | null
           unidade?: string
           updated_at?: string
         }
         Update: {
+          aplicacao?: string | null
+          area_min_fat?: number | null
           ativo?: boolean
           categoria?: string
           codigo_item?: string | null
+          cor?: string | null
           created_at?: string
           fornecedor?: string | null
           id?: string
           largura_metro?: number | null
+          linha?: string | null
           margem_tabela_percent?: number
           nome?: string
           perda_percent?: number | null
+          potencia?: string | null
           preco_custo?: number
           preco_tabela?: number
+          tipo?: string | null
           unidade?: string
           updated_at?: string
         }
