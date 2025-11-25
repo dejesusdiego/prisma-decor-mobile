@@ -56,19 +56,8 @@ Deno.serve(async (req) => {
 
     console.log(`Received: ${materiais?.length || 0} materials, ${servicosConfeccao?.length || 0} confection services, ${servicosInstalacao?.length || 0} installation services`)
 
-    // Step 1: Clean existing data using the delete function
-    console.log('Step 1: Cleaning existing data via RPC...')
-    const { error: cleanError } = await supabaseAdmin.rpc('truncate_materials_and_services')
-
-    if (cleanError) {
-      console.error('Error cleaning tables:', cleanError)
-      throw new Error(`Failed to clean tables: ${cleanError.message}`)
-    }
-
-    console.log('Tables cleaned successfully')
-
-    // Step 2: Insert materials
-    console.log('Step 2: Inserting materials...')
+    // Step 1: Upsert materials (updates existing, inserts new)
+    console.log('Step 1: Upserting materials...')
     let insertedMateriais = 0
 
     if (materiais && Array.isArray(materiais)) {
@@ -79,27 +68,31 @@ Deno.serve(async (req) => {
         unidade: m.unidade,
         largura_metro: m.larguraMetro || null,
         preco_custo: m.precoCusto,
-        preco_tabela: m.precoCusto * 1.615, // Default 61.5% margin
+        preco_tabela: m.precoCusto * 1.615,
         margem_tabela_percent: 61.5,
         ativo: m.ativo ?? true
       }))
 
+      // Use upsert to handle duplicates - this does INSERT ... ON CONFLICT DO UPDATE
       const { data: insertedData, error: insertError } = await supabaseAdmin
         .from('materiais')
-        .insert(materiaisToInsert)
+        .upsert(materiaisToInsert, {
+          onConflict: 'codigo_item',
+          ignoreDuplicates: false // This means it will UPDATE on conflict
+        })
         .select()
 
       if (insertError) {
-        console.error('Error inserting materials:', insertError)
+        console.error('Error upserting materials:', insertError)
         throw insertError
       }
 
       insertedMateriais = insertedData?.length || 0
-      console.log(`Inserted ${insertedMateriais} materials`)
+      console.log(`Upserted ${insertedMateriais} materials`)
     }
 
-    // Step 3: Insert confection services
-    console.log('Step 3: Inserting confection services...')
+    // Step 2: Upsert confection services
+    console.log('Step 2: Upserting confection services...')
     let insertedConfeccao = 0
 
     if (servicosConfeccao && Array.isArray(servicosConfeccao)) {
@@ -108,27 +101,30 @@ Deno.serve(async (req) => {
         nome_modelo: s.nomeModelo,
         unidade: s.unidade,
         preco_custo: s.precoCusto,
-        preco_tabela: s.precoCusto * 1.55, // Default 55% margin
+        preco_tabela: s.precoCusto * 1.55,
         margem_tabela_percent: 55,
         ativo: s.ativo ?? true
       }))
 
       const { data: insertedData, error: insertError } = await supabaseAdmin
         .from('servicos_confeccao')
-        .insert(confeccaoToInsert)
+        .upsert(confeccaoToInsert, {
+          onConflict: 'codigo_item',
+          ignoreDuplicates: false
+        })
         .select()
 
       if (insertError) {
-        console.error('Error inserting confection services:', insertError)
+        console.error('Error upserting confection services:', insertError)
         throw insertError
       }
 
       insertedConfeccao = insertedData?.length || 0
-      console.log(`Inserted ${insertedConfeccao} confection services`)
+      console.log(`Upserted ${insertedConfeccao} confection services`)
     }
 
-    // Step 4: Insert installation services
-    console.log('Step 4: Inserting installation services...')
+    // Step 3: Upsert installation services
+    console.log('Step 3: Upserting installation services...')
     let insertedInstalacao = 0
 
     if (servicosInstalacao && Array.isArray(servicosInstalacao)) {
@@ -136,23 +132,26 @@ Deno.serve(async (req) => {
         codigo_item: s.codigoItem,
         nome: s.nome,
         preco_custo_por_ponto: s.precoCustoPorPonto,
-        preco_tabela_por_ponto: s.precoCustoPorPonto * 1.615, // Default 61.5% margin
+        preco_tabela_por_ponto: s.precoCustoPorPonto * 1.615,
         margem_tabela_percent: 61.5,
         ativo: s.ativo ?? true
       }))
 
       const { data: insertedData, error: insertError } = await supabaseAdmin
         .from('servicos_instalacao')
-        .insert(instalacaoToInsert)
+        .upsert(instalacaoToInsert, {
+          onConflict: 'codigo_item',
+          ignoreDuplicates: false
+        })
         .select()
 
       if (insertError) {
-        console.error('Error inserting installation services:', insertError)
+        console.error('Error upserting installation services:', insertError)
         throw insertError
       }
 
       insertedInstalacao = insertedData?.length || 0
-      console.log(`Inserted ${insertedInstalacao} installation services`)
+      console.log(`Upserted ${insertedInstalacao} installation services`)
     }
 
     console.log('=== Seed complete! ===')
