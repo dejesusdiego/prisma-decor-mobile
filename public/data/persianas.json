@@ -1,0 +1,446 @@
+[
+  {
+    "codigoItem": "PER-ROMANA-001",
+    "nome": "SCREEN ONE FA1 (ROMANA)",
+    "categoria": "persiana",
+    "tipo": "ROMANA",
+    "unidade": "M2",
+    "precoCusto": 19474,
+    "ativo": true,
+    "areaMinFat": 1.2
+  },
+  {
+    "codigoItem": "PER-ROMANA-002",
+    "nome": "BLACKOUT (ROMANA)",
+    "categoria": "persiana",
+    "tipo": "ROMANA",
+    "unidade": "M2",
+    "precoCusto": 14954,
+    "ativo": true,
+    "areaMinFat": 1.2
+  },
+  {
+    "codigoItem": "PER-ROMANA-003",
+    "nome": "SCREEN FA3 (ROMANA)",
+    "categoria": "persiana",
+    "tipo": "ROMANA",
+    "unidade": "M2",
+    "precoCusto": 16431,
+    "ativo": true,
+    "areaMinFat": 1.2
+  },
+  {
+    "codigoItem": "PER-ROMANA-005",
+    "nome": "SCREEN FA5 (ROMANA)",
+    "categoria": "persiana",
+    "tipo": "ROMANA",
+    "unidade": "M2",
+    "precoCusto": 16356,
+    "ativo": true,
+    "areaMinFat": 1.2
+  },
+  {
+    "codigoItem": "PER-ROMANA-009",
+    "nome": "BLACKOUT TEXTIL (ROMANA)",
+    "categoria": "persiana",
+    "tipo": "ROMANA",
+    "unidade": "M2",
+    "precoCusto": 18820,
+    "ativo": true,
+    "areaMinFat": 1.2
+  },
+  {
+    "codigoItem": "PER-ROMANA-020",
+    "nome": "PRESTIGE/N (TR) (ROMANA)",
+    "categoria": "persiana",
+    "tipo": "ROMANA",
+    "unidade": "M2",
+    "precoCusto": 12474,
+    "ativo": true,
+    "areaMinFat": 1.2
+  },
+  {
+    "codigoItem": "PER-ROMANA-021",
+    "nome": "PRESTIGE/N (BK) (ROMANA)",
+    "categoria": "persiana",
+    "tipo": "ROMANA",
+    "unidade": "M2",
+    "precoCusto": 20470,
+    "ativo": true,
+    "areaMinFat": 1.2
+  },
+  {
+    "codigoItem": "PER-ROMANA-022",
+    "nome": "IBIZA (TR) (ROMANA)",
+    "categoria": "persiana",
+    "tipo": "ROMANA",
+    "unidade": "M2",
+    "precoCusto": 13349,
+    "ativo": true,
+    "areaMinFat": 1.2
+  },
+  {
+    "codigoItem": "PER-ROMANA-023",
+    "nome": "IBIZA (BK) (ROMANA)",
+    "categoria": "persiana",
+    "tipo": "ROMANA",
+    "unidade": "M2",
+    "precoCusto": 19966,
+    "ativo": true,
+    "areaMinFat": 1.2
+  },
+  {
+    "codigoItem": "PER-ROMANA-025",
+    "nome": "SEDA (BK) (ROMANA)",
+    "categoria": "persiana",
+    "tipo": "ROMANA",
+    "unidade": "M2",
+    "precoCusto": 17481,
+    "ativo": true,
+    "areaMinFat": 1.2
+  },
+  {
+    "codigoItem": "PER-ROMANA-029",
+    "nome": "LOOK (BK) (ROMANA)",
+    "categoria": "persiana",
+    "tipo": "ROMANA",
+    "unidade": "M2",
+    "precoCusto": 20181,
+    "ativo": true,
+    "areaMinFat": 1.2
+  },
+  {
+    "codigoItem": "PER-ROMANA-030",
+    "nome": "LINHO (BK) (ROMANA)",
+    "categoria": "persiana",
+    "tipo": "ROMANA",
+    "unidade": "M2",
+    "precoCusto": 19576,
+    "ativo": true,
+    "areaMinFat": 1.2
+  },
+  {
+    "codigoItem": "PER-ROMANA-031",
+    "nome": "SQUARE BK (ROMANA)",
+    "categoria": "persiana",
+    "tipo": "ROMANA",
+    "unidade": "M2",
+    "precoCusto": 19255,
+    "ativo": true,
+    "areaMinFat": 1.2
+  },
+  {
+    "codigoItem": "PER-ROMANA-032",
+    "nome": "METRO BK (ROMANA)",
+    "categoria": "persiana",
+    "tipo": "ROMANA",
+    "unidade": "M2",
+    "precoCusto": 19255,
+    "ativo": true,
+    "areaMinFat": 1.2
+  },
+  {
+    "codigoItem": "PER-ROMANA-063",
+    "nome": "PINPOINT BK (ROMANA)",
+    "categoria": "persiana",
+    "tipo": "ROMANA",
+    "unidade": "M2",
+    "precoCusto": 17588,
+    "ativo": true,
+    "areaMinFat": 1.2
+  },
+  {
+    "codigoItem": "PER-ROMANA-076",
+    "nome": "SCREEN NET FA5% (ROMANA)",
+    "categoria": "persiana",
+    "tipo": "ROMANA",
+    "unidade": "M2",
+    "precoCusto": 23517,
+    "ativo": true,
+    "areaMinFat": 1.2
+  },
+  {
+    "codigoItem": "PER-ROMANA-133",
+    "nome": "SUNSCREEN AG (ROMANA)",
+    "categoria": "persiana",
+    "tipo": "ROMANA",
+    "unidade": "M2",
+    "precoCusto": 16431,
+    "ativo": true,
+    "areaMinFat": 1.2
+  },
+  {
+    "codigoItem": "PER-ROMANA-162",
+    "nome": "NAPOLES TRANSLUCIDO (ROMANA)",
+    "categoria": "persiana",
+    "tipo": "ROMANA",
+    "unidade": "M2",
+    "precoCusto": 16161,
+    "ativo": true,
+    "areaMinFat": 1.2
+  },
+  {
+    "codigoItem": "PER-ROMANA-163",
+    "nome": "NAPOLES BK (ROMANA)",
+    "categoria": "persiana",
+    "tipo": "ROMANA",
+    "unidade": "M2",
+    "precoCusto": 17177,
+    "ativo": true,
+    "areaMinFat": 1.2
+  },
+  {
+    "codigoItem": "PER-ROMANA-282",
+    "nome": "METROPOLITAN BK (ROMANA)",
+    "categoria": "persiana",
+    "tipo": "ROMANA",
+    "unidade": "M2",
+    "precoCusto": 38955,
+    "ativo": true,
+    "areaMinFat": 1.2
+  },
+  {
+    "codigoItem": "PER-ROMANA-296",
+    "nome": "ACTION FA5 (ROMANA)",
+    "categoria": "persiana",
+    "tipo": "ROMANA",
+    "unidade": "M2",
+    "precoCusto": 17603,
+    "ativo": true,
+    "areaMinFat": 1.2
+  },
+  {
+    "codigoItem": "PER-ROLO-001",
+    "nome": "SCREEN ONE FA1 (ROLO)",
+    "categoria": "persiana",
+    "tipo": "ROLO",
+    "unidade": "M2",
+    "precoCusto": 16228,
+    "ativo": true
+  },
+  {
+    "codigoItem": "PER-ROLO-002",
+    "nome": "BLACKOUT (ROLO)",
+    "categoria": "persiana",
+    "tipo": "ROLO",
+    "unidade": "M2",
+    "precoCusto": 12782,
+    "ativo": true
+  },
+  {
+    "codigoItem": "PER-ROLO-003",
+    "nome": "SCREEN FA3 (ROLO)",
+    "categoria": "persiana",
+    "tipo": "ROLO",
+    "unidade": "M2",
+    "precoCusto": 13692,
+    "ativo": true
+  },
+  {
+    "codigoItem": "PER-ROLO-005",
+    "nome": "SCREEN FA5 (ROLO)",
+    "categoria": "persiana",
+    "tipo": "ROLO",
+    "unidade": "M2",
+    "precoCusto": 12364,
+    "ativo": true
+  },
+  {
+    "codigoItem": "PER-ROLO-006",
+    "nome": "SHEER (ROLO)",
+    "categoria": "persiana",
+    "tipo": "ROLO",
+    "unidade": "M2",
+    "precoCusto": 21856,
+    "ativo": true
+  },
+  {
+    "codigoItem": "PER-ROLO-009",
+    "nome": "BLACKOUT TEXTIL (ROLO)",
+    "categoria": "persiana",
+    "tipo": "ROLO",
+    "unidade": "M2",
+    "precoCusto": 15683,
+    "ativo": true
+  },
+  {
+    "codigoItem": "PER-ROLO-020",
+    "nome": "PRESTIGE/N (TR) (ROLO)",
+    "categoria": "persiana",
+    "tipo": "ROLO",
+    "unidade": "M2",
+    "precoCusto": 9980,
+    "ativo": true
+  },
+  {
+    "codigoItem": "PER-ROLO-021",
+    "nome": "PRESTIGE/N (BK) (ROLO)",
+    "categoria": "persiana",
+    "tipo": "ROLO",
+    "unidade": "M2",
+    "precoCusto": 16779,
+    "ativo": true
+  },
+  {
+    "codigoItem": "PER-ROLO-022",
+    "nome": "IBIZA (TR) (ROLO)",
+    "categoria": "persiana",
+    "tipo": "ROLO",
+    "unidade": "M2",
+    "precoCusto": 12054,
+    "ativo": true
+  },
+  {
+    "codigoItem": "PER-ROLO-023",
+    "nome": "IBIZA (BK) (ROLO)",
+    "categoria": "persiana",
+    "tipo": "ROLO",
+    "unidade": "M2",
+    "precoCusto": 16366,
+    "ativo": true
+  },
+  {
+    "codigoItem": "PER-ROLO-029",
+    "nome": "LOOK (BK) (ROLO)",
+    "categoria": "persiana",
+    "tipo": "ROLO",
+    "unidade": "M2",
+    "precoCusto": 16542,
+    "ativo": true
+  },
+  {
+    "codigoItem": "PER-ROLO-030",
+    "nome": "LINHO BK (ROLO)",
+    "categoria": "persiana",
+    "tipo": "ROLO",
+    "unidade": "M2",
+    "precoCusto": 16046,
+    "ativo": true
+  },
+  {
+    "codigoItem": "PER-ROLO-031",
+    "nome": "SQUARE BK (ROLO)",
+    "categoria": "persiana",
+    "tipo": "ROLO",
+    "unidade": "M2",
+    "precoCusto": 16046,
+    "ativo": true
+  },
+  {
+    "codigoItem": "PER-ROLO-032",
+    "nome": "METRO BK (ROLO)",
+    "categoria": "persiana",
+    "tipo": "ROLO",
+    "unidade": "M2",
+    "precoCusto": 16046,
+    "ativo": true
+  },
+  {
+    "codigoItem": "PER-ROLO-033",
+    "nome": "SCREEN FA3% (ROLO)",
+    "categoria": "persiana",
+    "tipo": "ROLO",
+    "unidade": "M2",
+    "precoCusto": 13692,
+    "ativo": true
+  },
+  {
+    "codigoItem": "PER-ROLO-055",
+    "nome": "LINHO SCREEN (ROLO)",
+    "categoria": "persiana",
+    "tipo": "ROLO",
+    "unidade": "M2",
+    "precoCusto": 11024,
+    "ativo": true
+  },
+  {
+    "codigoItem": "PER-ROLO-058",
+    "nome": "NOVARA BK (ROLO)",
+    "categoria": "persiana",
+    "tipo": "ROLO",
+    "unidade": "M2",
+    "precoCusto": 15889,
+    "ativo": true
+  },
+  {
+    "codigoItem": "PER-ROLO-059",
+    "nome": "NOVARA (ROLO)",
+    "categoria": "persiana",
+    "tipo": "ROLO",
+    "unidade": "M2",
+    "precoCusto": 12918,
+    "ativo": true
+  },
+  {
+    "codigoItem": "PER-ROLO-066",
+    "nome": "SHEER SCREEN (ROLO)",
+    "categoria": "persiana",
+    "tipo": "ROLO",
+    "unidade": "M2",
+    "precoCusto": 25550,
+    "ativo": true
+  },
+  {
+    "codigoItem": "PER-ROLO-067",
+    "nome": "NEW SHEER (ROLO)",
+    "categoria": "persiana",
+    "tipo": "ROLO",
+    "unidade": "M2",
+    "precoCusto": 19869,
+    "ativo": true
+  },
+  {
+    "codigoItem": "PER-ROLO-077",
+    "nome": "MIAMI BK (ROLO)",
+    "categoria": "persiana",
+    "tipo": "ROLO",
+    "unidade": "M2",
+    "precoCusto": 14305,
+    "ativo": true
+  },
+  {
+    "codigoItem": "PER-ROLO-078",
+    "nome": "LIRIA BK (ROLO)",
+    "categoria": "persiana",
+    "tipo": "ROLO",
+    "unidade": "M2",
+    "precoCusto": 15683,
+    "ativo": true
+  },
+  {
+    "codigoItem": "PER-ROLO-162",
+    "nome": "NAPOLES TR (ROLO)",
+    "categoria": "persiana",
+    "tipo": "ROLO",
+    "unidade": "M2",
+    "precoCusto": 13473,
+    "ativo": true
+  },
+  {
+    "codigoItem": "PER-ROLO-163",
+    "nome": "NAPOLES BK (ROLO)",
+    "categoria": "persiana",
+    "tipo": "ROLO",
+    "unidade": "M2",
+    "precoCusto": 16589,
+    "ativo": true
+  },
+  {
+    "codigoItem": "PER-ROLO-233",
+    "nome": "AUREA BK (ROLO)",
+    "categoria": "persiana",
+    "tipo": "ROLO",
+    "unidade": "M2",
+    "precoCusto": 17698,
+    "ativo": true
+  },
+  {
+    "codigoItem": "PER-ROLO-282",
+    "nome": "METROPOLITAN BK (ROLO)",
+    "categoria": "persiana",
+    "tipo": "ROLO",
+    "unidade": "M2",
+    "precoCusto": 35414,
+    "ativo": true
+  }
+]
