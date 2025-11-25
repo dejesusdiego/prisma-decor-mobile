@@ -56,44 +56,16 @@ Deno.serve(async (req) => {
 
     console.log(`Received: ${materiais?.length || 0} materials, ${servicosConfeccao?.length || 0} confection services, ${servicosInstalacao?.length || 0} installation services`)
 
-    // Step 1: Clean up existing data - use a more robust delete approach
+    // Step 1: Clean up existing data using the truncate function
     console.log('Step 1: Cleaning up existing data...')
     
-    // Delete all materials (using not null filter to ensure all rows are targeted)
-    const { error: deleteMateriaisError, count: deletedMaterials } = await supabaseAdmin
-      .from('materiais')
-      .delete({ count: 'exact' })
-      .not('id', 'is', null)
+    // Call the truncate function to clear all data
+    const { error: truncateError } = await supabaseAdmin.rpc('truncate_materials_and_services')
 
-    if (deleteMateriaisError) {
-      console.error('Error deleting materials:', deleteMateriaisError)
-      throw new Error(`Failed to clean materials: ${deleteMateriaisError.message}`)
+    if (truncateError) {
+      console.error('Error truncating tables:', truncateError)
+      throw new Error(`Failed to clean tables: ${truncateError.message}`)
     }
-    console.log(`Deleted ${deletedMaterials} existing materials`)
-
-    // Delete all confection services
-    const { error: deleteConfeccaoError, count: deletedConfeccao } = await supabaseAdmin
-      .from('servicos_confeccao')
-      .delete({ count: 'exact' })
-      .not('id', 'is', null)
-
-    if (deleteConfeccaoError) {
-      console.error('Error deleting confection services:', deleteConfeccaoError)
-      throw new Error(`Failed to clean confection services: ${deleteConfeccaoError.message}`)
-    }
-    console.log(`Deleted ${deletedConfeccao} existing confection services`)
-
-    // Delete all installation services
-    const { error: deleteInstalacaoError, count: deletedInstalacao } = await supabaseAdmin
-      .from('servicos_instalacao')
-      .delete({ count: 'exact' })
-      .not('id', 'is', null)
-
-    if (deleteInstalacaoError) {
-      console.error('Error deleting installation services:', deleteInstalacaoError)
-      throw new Error(`Failed to clean installation services: ${deleteInstalacaoError.message}`)
-    }
-    console.log(`Deleted ${deletedInstalacao} existing installation services`)
 
     console.log('Cleanup complete!')
 
