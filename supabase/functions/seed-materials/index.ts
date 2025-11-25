@@ -56,26 +56,71 @@ Deno.serve(async (req) => {
 
     console.log(`Received: ${materiais?.length || 0} materials, ${servicosConfeccao?.length || 0} confection services, ${servicosInstalacao?.length || 0} installation services`)
 
-    // Step 1: Clean up existing data using the truncate function
+    // Step 1: Clean up existing data - use direct deletes with service_role_key
     console.log('Step 1: Cleaning up existing data...')
     
-    // Call the truncate function to clear all data
+    // First, try using the truncate function
+    console.log('Attempting truncate via RPC...')
     const { error: truncateError } = await supabaseAdmin.rpc('truncate_materials_and_services')
-
+    
     if (truncateError) {
-      console.error('Error truncating tables:', truncateError)
-      throw new Error(`Failed to clean tables: ${truncateError.message}`)
+      console.warn('Truncate RPC failed, will use direct deletes:', truncateError)
+    } else {
+      console.log('Truncate RPC completed')
     }
 
-    // Verify tables are empty
+    // Verify and clean up any remaining data using direct deletes with service_role_key
+    console.log('Verifying tables are empty...')
+    
     const { count: materiaisCount } = await supabaseAdmin.from('materiais').select('*', { count: 'exact', head: true })
+    console.log(`Found ${materiaisCount ?? 0} existing materials`)
+    
+    if ((materiaisCount ?? 0) > 0) {
+      console.log('Deleting existing materials directly...')
+      const { error: deleteMatError } = await supabaseAdmin
+        .from('materiais')
+        .delete()
+        .gte('id', '00000000-0000-0000-0000-000000000000') // Match all UUIDs
+      
+      if (deleteMatError) {
+        console.error('Error deleting materials:', deleteMatError)
+        throw new Error(`Failed to delete materials: ${deleteMatError.message}`)
+      }
+      console.log('Materials deleted successfully')
+    }
+
     const { count: confeccaoCount } = await supabaseAdmin.from('servicos_confeccao').select('*', { count: 'exact', head: true })
+    console.log(`Found ${confeccaoCount ?? 0} existing confection services`)
+    
+    if ((confeccaoCount ?? 0) > 0) {
+      console.log('Deleting existing confection services directly...')
+      const { error: deleteConfError } = await supabaseAdmin
+        .from('servicos_confeccao')
+        .delete()
+        .gte('id', '00000000-0000-0000-0000-000000000000')
+      
+      if (deleteConfError) {
+        console.error('Error deleting confection services:', deleteConfError)
+        throw new Error(`Failed to delete confection services: ${deleteConfError.message}`)
+      }
+      console.log('Confection services deleted successfully')
+    }
+
     const { count: instalacaoCount } = await supabaseAdmin.from('servicos_instalacao').select('*', { count: 'exact', head: true })
+    console.log(`Found ${instalacaoCount ?? 0} existing installation services`)
     
-    console.log(`After truncate - materiais: ${materiaisCount ?? 0}, confeccao: ${confeccaoCount ?? 0}, instalacao: ${instalacaoCount ?? 0}`)
-    
-    if ((materiaisCount ?? 0) > 0 || (confeccaoCount ?? 0) > 0 || (instalacaoCount ?? 0) > 0) {
-      throw new Error(`Tables not empty after truncate! materiais: ${materiaisCount}, confeccao: ${confeccaoCount}, instalacao: ${instalacaoCount}`)
+    if ((instalacaoCount ?? 0) > 0) {
+      console.log('Deleting existing installation services directly...')
+      const { error: deleteInstError } = await supabaseAdmin
+        .from('servicos_instalacao')
+        .delete()
+        .gte('id', '00000000-0000-0000-0000-000000000000')
+      
+      if (deleteInstError) {
+        console.error('Error deleting installation services:', deleteInstError)
+        throw new Error(`Failed to delete installation services: ${deleteInstError.message}`)
+      }
+      console.log('Installation services deleted successfully')
     }
 
     console.log('Cleanup complete - all tables verified empty!')
