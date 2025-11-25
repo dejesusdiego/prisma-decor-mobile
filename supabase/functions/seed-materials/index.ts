@@ -76,8 +76,8 @@ Deno.serve(async (req) => {
         categoria: m.categoria,
         unidade: m.unidade,
         largura_metro: m.larguraMetro || null,
-        preco_custo: m.precoCusto,
-        preco_tabela: m.precoCusto * 1.615,
+        preco_custo: m.precoCusto / 100, // Convert from centavos to reais
+        preco_tabela: (m.precoCusto / 100) * 1.615,
         margem_tabela_percent: 61.5,
         ativo: m.ativo ?? true
       }))
@@ -116,8 +116,8 @@ Deno.serve(async (req) => {
         codigo_item: s.codigoItem,
         nome_modelo: s.nomeModelo,
         unidade: s.unidade,
-        preco_custo: s.precoCusto,
-        preco_tabela: s.precoCusto * 1.55,
+        preco_custo: s.precoCusto / 100, // Convert from centavos to reais
+        preco_tabela: (s.precoCusto / 100) * 1.55,
         margem_tabela_percent: 55,
         ativo: s.ativo ?? true
       }))
@@ -155,8 +155,8 @@ Deno.serve(async (req) => {
       const instalacaoToInsert = uniqueInstalacao.map((s: ServicoInstalacao) => ({
         codigo_item: s.codigoItem,
         nome: s.nome,
-        preco_custo_por_ponto: s.precoCustoPorPonto,
-        preco_tabela_por_ponto: s.precoCustoPorPonto * 1.615,
+        preco_custo_por_ponto: s.precoCustoPorPonto / 100, // Convert from centavos to reais
+        preco_tabela_por_ponto: (s.precoCustoPorPonto / 100) * 1.615,
         margem_tabela_percent: 61.5,
         ativo: s.ativo ?? true
       }))
