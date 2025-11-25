@@ -347,6 +347,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      truncate_materials_and_services: { Args: never; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "user"
