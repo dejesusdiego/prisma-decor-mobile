@@ -130,6 +130,7 @@ export type Database = {
           categoria: string
           codigo_item: string | null
           created_at: string
+          fornecedor: string | null
           id: string
           largura_metro: number | null
           margem_tabela_percent: number
@@ -145,6 +146,7 @@ export type Database = {
           categoria: string
           codigo_item?: string | null
           created_at?: string
+          fornecedor?: string | null
           id?: string
           largura_metro?: number | null
           margem_tabela_percent?: number
@@ -160,6 +162,7 @@ export type Database = {
           categoria?: string
           codigo_item?: string | null
           created_at?: string
+          fornecedor?: string | null
           id?: string
           largura_metro?: number | null
           margem_tabela_percent?: number
