@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { popularDadosIniciais } from '@/lib/popularDadosIniciais';
 
 interface DashboardProps {
   onNovoOrcamento: () => void;
@@ -37,6 +38,13 @@ export function Dashboard({ onNovoOrcamento, onMeusOrcamentos, onVisualizarOrcam
 
   useEffect(() => {
     loadRecentOrcamentos();
+    
+    // Popular dados iniciais se necessário
+    popularDadosIniciais().then((result) => {
+      if (result.success && result.message !== 'Dados já existem') {
+        console.log('✅ Dados iniciais populados:', result);
+      }
+    });
   }, []);
 
   const loadRecentOrcamentos = async () => {
