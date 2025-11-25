@@ -155,8 +155,8 @@ Deno.serve(async (req) => {
       const instalacaoToInsert = uniqueInstalacao.map((s: ServicoInstalacao) => ({
         codigo_item: s.codigoItem,
         nome: s.nome,
-        preco_custo_por_ponto: s.precoCustoPorPonto / 100, // Convert from centavos to reais
-        preco_tabela_por_ponto: (s.precoCustoPorPonto / 100) * 1.615,
+        preco_custo_por_ponto: s.precoCustoPorPonto, // Already in reais, no conversion needed
+        preco_tabela_por_ponto: s.precoCustoPorPonto * 1.615,
         margem_tabela_percent: 61.5,
         ativo: s.ativo ?? true
       }))
