@@ -7,8 +7,9 @@ import { Dashboard } from '@/components/orcamento/Dashboard';
 import { NovoOrcamento } from '@/components/orcamento/NovoOrcamento';
 import { ListaOrcamentos } from '@/components/orcamento/ListaOrcamentos';
 import { VisualizarOrcamento } from '@/components/orcamento/VisualizarOrcamento';
+import { GestaoMateriais } from '@/components/orcamento/GestaoMateriais';
 
-type View = 'dashboard' | 'novoOrcamento' | 'listaOrcamentos' | 'visualizarOrcamento';
+type View = 'dashboard' | 'novoOrcamento' | 'listaOrcamentos' | 'visualizarOrcamento' | 'gestaoMateriais';
 
 export default function GerarOrcamento() {
   const { user, signOut } = useAuth();
@@ -65,6 +66,7 @@ export default function GerarOrcamento() {
             onNovoOrcamento={handleNovoOrcamento}
             onMeusOrcamentos={() => setView('listaOrcamentos')}
             onVisualizarOrcamento={handleVisualizarOrcamento}
+            onGestaoMateriais={() => setView('gestaoMateriais')}
           />
         )}
 
@@ -88,6 +90,10 @@ export default function GerarOrcamento() {
             orcamentoId={orcamentoEditandoId}
             onVoltar={handleVoltarDashboard}
           />
+        )}
+
+        {view === 'gestaoMateriais' && (
+          <GestaoMateriais onVoltar={handleVoltarDashboard} />
         )}
       </main>
     </div>
