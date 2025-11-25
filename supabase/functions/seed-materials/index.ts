@@ -56,8 +56,19 @@ Deno.serve(async (req) => {
 
     console.log(`Received: ${materiais?.length || 0} materials, ${servicosConfeccao?.length || 0} confection services, ${servicosInstalacao?.length || 0} installation services`)
 
-    // Step 1: Upsert materials (insert new, update existing)
-    console.log('Step 1: Upserting materials...')
+    // Step 1: Clean existing data using the delete function
+    console.log('Step 1: Cleaning existing data via RPC...')
+    const { error: cleanError } = await supabaseAdmin.rpc('truncate_materials_and_services')
+
+    if (cleanError) {
+      console.error('Error cleaning tables:', cleanError)
+      throw new Error(`Failed to clean tables: ${cleanError.message}`)
+    }
+
+    console.log('Tables cleaned successfully')
+
+    // Step 2: Insert materials
+    console.log('Step 2: Inserting materials...')
     let insertedMateriais = 0
 
     if (materiais && Array.isArray(materiais)) {
@@ -73,32 +84,22 @@ Deno.serve(async (req) => {
         ativo: m.ativo ?? true
       }))
 
-      // Process in batches to avoid timeouts
-      const batchSize = 100
-      for (let i = 0; i < materiaisToInsert.length; i += batchSize) {
-        const batch = materiaisToInsert.slice(i, i + batchSize)
-        console.log(`Processing materials batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(materiaisToInsert.length/batchSize)}`)
-        
-        const { data: insertedData, error: insertError } = await supabaseAdmin
-          .from('materiais')
-          .upsert(batch, {
-            onConflict: 'codigo_item'
-          })
-          .select()
+      const { data: insertedData, error: insertError } = await supabaseAdmin
+        .from('materiais')
+        .insert(materiaisToInsert)
+        .select()
 
-        if (insertError) {
-          console.error('Error upserting materials batch:', insertError)
-          throw insertError
-        }
-
-        insertedMateriais += insertedData?.length || 0
+      if (insertError) {
+        console.error('Error inserting materials:', insertError)
+        throw insertError
       }
-      
-      console.log(`Upserted ${insertedMateriais} materials`)
+
+      insertedMateriais = insertedData?.length || 0
+      console.log(`Inserted ${insertedMateriais} materials`)
     }
 
-    // Step 2: Upsert confection services
-    console.log('Step 2: Upserting confection services...')
+    // Step 3: Insert confection services
+    console.log('Step 3: Inserting confection services...')
     let insertedConfeccao = 0
 
     if (servicosConfeccao && Array.isArray(servicosConfeccao)) {
@@ -114,22 +115,20 @@ Deno.serve(async (req) => {
 
       const { data: insertedData, error: insertError } = await supabaseAdmin
         .from('servicos_confeccao')
-        .upsert(confeccaoToInsert, {
-          onConflict: 'codigo_item'
-        })
+        .insert(confeccaoToInsert)
         .select()
 
       if (insertError) {
-        console.error('Error upserting confection services:', insertError)
+        console.error('Error inserting confection services:', insertError)
         throw insertError
       }
 
       insertedConfeccao = insertedData?.length || 0
-      console.log(`Upserted ${insertedConfeccao} confection services`)
+      console.log(`Inserted ${insertedConfeccao} confection services`)
     }
 
-    // Step 3: Upsert installation services
-    console.log('Step 3: Upserting installation services...')
+    // Step 4: Insert installation services
+    console.log('Step 4: Inserting installation services...')
     let insertedInstalacao = 0
 
     if (servicosInstalacao && Array.isArray(servicosInstalacao)) {
@@ -144,18 +143,16 @@ Deno.serve(async (req) => {
 
       const { data: insertedData, error: insertError } = await supabaseAdmin
         .from('servicos_instalacao')
-        .upsert(instalacaoToInsert, {
-          onConflict: 'codigo_item'
-        })
+        .insert(instalacaoToInsert)
         .select()
 
       if (insertError) {
-        console.error('Error upserting installation services:', insertError)
+        console.error('Error inserting installation services:', insertError)
         throw insertError
       }
 
       insertedInstalacao = insertedData?.length || 0
-      console.log(`Upserted ${insertedInstalacao} installation services`)
+      console.log(`Inserted ${insertedInstalacao} installation services`)
     }
 
     console.log('=== Seed complete! ===')
