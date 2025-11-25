@@ -67,7 +67,18 @@ Deno.serve(async (req) => {
       throw new Error(`Failed to clean tables: ${truncateError.message}`)
     }
 
-    console.log('Cleanup complete!')
+    // Verify tables are empty
+    const { count: materiaisCount } = await supabaseAdmin.from('materiais').select('*', { count: 'exact', head: true })
+    const { count: confeccaoCount } = await supabaseAdmin.from('servicos_confeccao').select('*', { count: 'exact', head: true })
+    const { count: instalacaoCount } = await supabaseAdmin.from('servicos_instalacao').select('*', { count: 'exact', head: true })
+    
+    console.log(`After truncate - materiais: ${materiaisCount ?? 0}, confeccao: ${confeccaoCount ?? 0}, instalacao: ${instalacaoCount ?? 0}`)
+    
+    if ((materiaisCount ?? 0) > 0 || (confeccaoCount ?? 0) > 0 || (instalacaoCount ?? 0) > 0) {
+      throw new Error(`Tables not empty after truncate! materiais: ${materiaisCount}, confeccao: ${confeccaoCount}, instalacao: ${instalacaoCount}`)
+    }
+
+    console.log('Cleanup complete - all tables verified empty!')
 
     // Step 2: Insert materials
     console.log('Step 2: Inserting materials...')
