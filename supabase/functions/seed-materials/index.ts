@@ -56,77 +56,8 @@ Deno.serve(async (req) => {
 
     console.log(`Received: ${materiais?.length || 0} materials, ${servicosConfeccao?.length || 0} confection services, ${servicosInstalacao?.length || 0} installation services`)
 
-    // Step 1: Clean up existing data - use direct deletes with service_role_key
-    console.log('Step 1: Cleaning up existing data...')
-    
-    // First, try using the truncate function
-    console.log('Attempting truncate via RPC...')
-    const { error: truncateError } = await supabaseAdmin.rpc('truncate_materials_and_services')
-    
-    if (truncateError) {
-      console.warn('Truncate RPC failed, will use direct deletes:', truncateError)
-    } else {
-      console.log('Truncate RPC completed')
-    }
-
-    // Verify and clean up any remaining data using direct deletes with service_role_key
-    console.log('Verifying tables are empty...')
-    
-    const { count: materiaisCount } = await supabaseAdmin.from('materiais').select('*', { count: 'exact', head: true })
-    console.log(`Found ${materiaisCount ?? 0} existing materials`)
-    
-    if ((materiaisCount ?? 0) > 0) {
-      console.log('Deleting existing materials directly...')
-      const { error: deleteMatError } = await supabaseAdmin
-        .from('materiais')
-        .delete()
-        .gte('id', '00000000-0000-0000-0000-000000000000') // Match all UUIDs
-      
-      if (deleteMatError) {
-        console.error('Error deleting materials:', deleteMatError)
-        throw new Error(`Failed to delete materials: ${deleteMatError.message}`)
-      }
-      console.log('Materials deleted successfully')
-    }
-
-    const { count: confeccaoCount } = await supabaseAdmin.from('servicos_confeccao').select('*', { count: 'exact', head: true })
-    console.log(`Found ${confeccaoCount ?? 0} existing confection services`)
-    
-    if ((confeccaoCount ?? 0) > 0) {
-      console.log('Deleting existing confection services directly...')
-      const { error: deleteConfError } = await supabaseAdmin
-        .from('servicos_confeccao')
-        .delete()
-        .gte('id', '00000000-0000-0000-0000-000000000000')
-      
-      if (deleteConfError) {
-        console.error('Error deleting confection services:', deleteConfError)
-        throw new Error(`Failed to delete confection services: ${deleteConfError.message}`)
-      }
-      console.log('Confection services deleted successfully')
-    }
-
-    const { count: instalacaoCount } = await supabaseAdmin.from('servicos_instalacao').select('*', { count: 'exact', head: true })
-    console.log(`Found ${instalacaoCount ?? 0} existing installation services`)
-    
-    if ((instalacaoCount ?? 0) > 0) {
-      console.log('Deleting existing installation services directly...')
-      const { error: deleteInstError } = await supabaseAdmin
-        .from('servicos_instalacao')
-        .delete()
-        .gte('id', '00000000-0000-0000-0000-000000000000')
-      
-      if (deleteInstError) {
-        console.error('Error deleting installation services:', deleteInstError)
-        throw new Error(`Failed to delete installation services: ${deleteInstError.message}`)
-      }
-      console.log('Installation services deleted successfully')
-    }
-
-    console.log('Cleanup complete - all tables verified empty!')
-
-    // Step 2: Insert materials with UPSERT to handle any remaining duplicates
-    console.log('Step 2: Inserting materials...')
+    // Step 1: Upsert materials (insert new, update existing)
+    console.log('Step 1: Upserting materials...')
     let insertedMateriais = 0
 
     if (materiais && Array.isArray(materiais)) {
@@ -142,25 +73,32 @@ Deno.serve(async (req) => {
         ativo: m.ativo ?? true
       }))
 
-      const { data: insertedData, error: insertError } = await supabaseAdmin
-        .from('materiais')
-        .upsert(materiaisToInsert, {
-          onConflict: 'codigo_item',
-          ignoreDuplicates: false
-        })
-        .select()
+      // Process in batches to avoid timeouts
+      const batchSize = 100
+      for (let i = 0; i < materiaisToInsert.length; i += batchSize) {
+        const batch = materiaisToInsert.slice(i, i + batchSize)
+        console.log(`Processing materials batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(materiaisToInsert.length/batchSize)}`)
+        
+        const { data: insertedData, error: insertError } = await supabaseAdmin
+          .from('materiais')
+          .upsert(batch, {
+            onConflict: 'codigo_item'
+          })
+          .select()
 
-      if (insertError) {
-        console.error('Error inserting materials:', insertError)
-        throw insertError
+        if (insertError) {
+          console.error('Error upserting materials batch:', insertError)
+          throw insertError
+        }
+
+        insertedMateriais += insertedData?.length || 0
       }
-
-      insertedMateriais = insertedData?.length || 0
-      console.log(`Inserted/Updated ${insertedMateriais} materials`)
+      
+      console.log(`Upserted ${insertedMateriais} materials`)
     }
 
-    // Step 3: Insert confection services with UPSERT
-    console.log('Step 3: Inserting confection services...')
+    // Step 2: Upsert confection services
+    console.log('Step 2: Upserting confection services...')
     let insertedConfeccao = 0
 
     if (servicosConfeccao && Array.isArray(servicosConfeccao)) {
@@ -177,22 +115,21 @@ Deno.serve(async (req) => {
       const { data: insertedData, error: insertError } = await supabaseAdmin
         .from('servicos_confeccao')
         .upsert(confeccaoToInsert, {
-          onConflict: 'codigo_item',
-          ignoreDuplicates: false
+          onConflict: 'codigo_item'
         })
         .select()
 
       if (insertError) {
-        console.error('Error inserting confection services:', insertError)
+        console.error('Error upserting confection services:', insertError)
         throw insertError
       }
 
       insertedConfeccao = insertedData?.length || 0
-      console.log(`Inserted/Updated ${insertedConfeccao} confection services`)
+      console.log(`Upserted ${insertedConfeccao} confection services`)
     }
 
-    // Step 4: Insert installation services with UPSERT
-    console.log('Step 4: Inserting installation services...')
+    // Step 3: Upsert installation services
+    console.log('Step 3: Upserting installation services...')
     let insertedInstalacao = 0
 
     if (servicosInstalacao && Array.isArray(servicosInstalacao)) {
@@ -208,18 +145,17 @@ Deno.serve(async (req) => {
       const { data: insertedData, error: insertError } = await supabaseAdmin
         .from('servicos_instalacao')
         .upsert(instalacaoToInsert, {
-          onConflict: 'codigo_item',
-          ignoreDuplicates: false
+          onConflict: 'codigo_item'
         })
         .select()
 
       if (insertError) {
-        console.error('Error inserting installation services:', insertError)
+        console.error('Error upserting installation services:', insertError)
         throw insertError
       }
 
       insertedInstalacao = insertedData?.length || 0
-      console.log(`Inserted/Updated ${insertedInstalacao} installation services`)
+      console.log(`Upserted ${insertedInstalacao} installation services`)
     }
 
     console.log('=== Seed complete! ===')
