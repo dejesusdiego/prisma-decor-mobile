@@ -42,7 +42,7 @@ export function EtapaResumo({
 
   const resumo = calcularResumoOrcamento(cortinas, margemAtual);
 
-  // Carregar validade e materiais do JSON
+  // Carregar validade e materiais do banco de dados
   useEffect(() => {
     const carregarDados = async () => {
       console.log('🔄 Iniciando carregamento de dados...');
@@ -58,31 +58,20 @@ export function EtapaResumo({
         setValidadeDias(data.validade_dias);
       }
 
-      // Carregar materiais do JSON (mesma fonte que o CortinaCard)
-      try {
-        const response = await fetch('/data/materials.json');
-        const data = await response.json();
+      // Carregar materiais do banco de dados Supabase
+      const { data: materiaisData, error: materiaisError } = await supabase
+        .from('materiais')
+        .select('*')
+        .eq('ativo', true);
 
-        const materiaisFormatados: Material[] = data.map((item: any) => ({
-          id: item.codigoItem,
-          codigo_item: item.codigoItem,
-          nome: item.nome,
-          categoria: item.categoria,
-          unidade: item.unidade || 'M',
-          largura_metro: item.larguraMetro || null,
-          preco_custo: Number(item.precoCusto) / 100,
-          preco_tabela: (Number(item.precoCusto) / 100) * 1.615,
-          margem_tabela_percent: 61.5,
-          perda_percent: 10,
-          ativo: item.ativo !== false,
-          created_at: '',
-          updated_at: '',
-        }));
+      console.log('📦 Materiais carregados do banco:', materiaisData?.length || 0, 'materiais');
+      
+      if (materiaisError) {
+        console.error('❌ Erro ao carregar materiais:', materiaisError);
+      }
 
-        setMateriais(materiaisFormatados);
-        console.log('📦 Materiais carregados do JSON:', materiaisFormatados.length, 'materiais');
-      } catch (error) {
-        console.error('❌ Erro ao carregar materiais do JSON:', error);
+      if (materiaisData) {
+        setMateriais(materiaisData);
       }
       
       // Debug: mostrar IDs das cortinas

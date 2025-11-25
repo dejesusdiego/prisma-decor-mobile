@@ -47,32 +47,31 @@ export function CortinaCard({
   const carregarMateriais = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/data/materials.json');
-      const data = await response.json();
+      // Buscar materiais do banco de dados Supabase
+      const { data: materiaisData, error } = await supabase
+        .from('materiais')
+        .select('*')
+        .eq('ativo', true)
+        .order('nome');
 
-      const tecidosList = data.filter((m: any) => m.categoria === 'tecido');
-      const forrosList = data.filter((m: any) => m.categoria === 'forro');
-      const trilhosList = data.filter((m: any) => m.categoria === 'trilho');
+      if (error) throw error;
 
-      const materiaisFormatados = (items: any[]) => items.map((item: any) => ({
-        id: item.codigoItem,
-        codigo_item: item.codigoItem,
-        nome: item.nome,
-        categoria: item.categoria,
-        unidade: item.unidade || 'M',
-        largura_metro: item.larguraMetro || null,
-        preco_custo: Number(item.precoCusto) / 100,
-        preco_tabela: (Number(item.precoCusto) / 100) * 1.615,
-        margem_tabela_percent: 61.5,
-        perda_percent: 10,
-        ativo: item.ativo !== false,
-        created_at: '',
-        updated_at: '',
-      }));
+      const materiaisList = materiaisData || [];
 
-      setTecidos(materiaisFormatados(tecidosList));
-      setForros(materiaisFormatados(forrosList));
-      setTrilhos(materiaisFormatados(trilhosList));
+      const tecidosList = materiaisList.filter((m: Material) => m.categoria === 'tecido');
+      const forrosList = materiaisList.filter((m: Material) => m.categoria === 'forro');
+      const trilhosList = materiaisList.filter((m: Material) => m.categoria === 'trilho');
+
+      setTecidos(tecidosList);
+      setForros(forrosList);
+      setTrilhos(trilhosList);
+
+      console.log('📦 Materiais carregados do banco:', {
+        tecidos: tecidosList.length,
+        forros: forrosList.length,
+        trilhos: trilhosList.length,
+        total: materiaisList.length
+      });
 
       toast({
         title: 'Materiais carregados',
@@ -116,47 +115,41 @@ export function CortinaCard({
         tipoCortina: cortina.tipoCortina
       });
 
-      // Buscar serviços de confecção do JSON
-      const confeccaoResponse = await fetch('/data/servicos_confeccao.json');
-      const confeccaoData = await confeccaoResponse.json();
-      const servicoConfeccao = confeccaoData[0]; // Pegar primeiro serviço
+      // Buscar serviços de confecção do banco de dados
+      const { data: confeccaoData, error: confeccaoError } = await supabase
+        .from('servicos_confeccao')
+        .select('*')
+        .eq('ativo', true)
+        .limit(1)
+        .single();
 
-      // Buscar serviços de instalação do JSON
-      const instalacaoResponse = await fetch('/data/servicos_instalacao.json');
-      const instalacaoData = await instalacaoResponse.json();
-      const servicoInstalacao = instalacaoData[0]; // Pegar primeiro serviço
+      if (confeccaoError) throw confeccaoError;
+
+      // Buscar serviços de instalação do banco de dados
+      const { data: instalacaoData, error: instalacaoError } = await supabase
+        .from('servicos_instalacao')
+        .select('*')
+        .eq('ativo', true)
+        .limit(1)
+        .maybeSingle();
+
+      if (instalacaoError) throw instalacaoError;
 
       const materiaisSelecionados = [
-        cortina.tecidoId ? tecidos.find(t => t.id === cortina.tecidoId) : null,
-        cortina.forroId ? forros.find(f => f.id === cortina.forroId) : null,
-        cortina.trilhoId ? trilhos.find(t => t.id === cortina.trilhoId) : null
+        cortina.tecidoId ? tecidos.find(t => t.id === cortina.tecidoId || t.codigo_item === cortina.tecidoId) : null,
+        cortina.forroId ? forros.find(f => f.id === cortina.forroId || f.codigo_item === cortina.forroId) : null,
+        cortina.trilhoId ? trilhos.find(t => t.id === cortina.trilhoId || t.codigo_item === cortina.trilhoId) : null
       ].filter(Boolean);
 
       console.log('📦 Materiais selecionados:', materiaisSelecionados.length);
+      console.log('🔧 Serviço de confecção:', confeccaoData?.nome_modelo);
+      console.log('🔨 Serviço de instalação:', instalacaoData?.nome);
 
       const custos = calcularCustosCortina(
         cortina,
         materiaisSelecionados as Material[],
-        {
-          ...servicoConfeccao,
-          id: servicoConfeccao.codigoItem,
-          preco_custo: Number(servicoConfeccao.precoCusto) / 100,
-          preco_tabela: (Number(servicoConfeccao.precoCusto) / 100) * 1.55,
-          margem_tabela_percent: 55,
-          ativo: true,
-          created_at: '',
-          updated_at: '',
-        },
-        servicoInstalacao ? {
-          ...servicoInstalacao,
-          id: servicoInstalacao.codigoItem,
-          preco_custo_por_ponto: Number(servicoInstalacao.precoCustoPorPonto),
-          preco_tabela_por_ponto: Number(servicoInstalacao.precoCustoPorPonto) * 1.615,
-          margem_tabela_percent: 61.5,
-          ativo: true,
-          created_at: '',
-          updated_at: '',
-        } : null
+        confeccaoData,
+        instalacaoData
       );
 
       const dadosCortina = {
