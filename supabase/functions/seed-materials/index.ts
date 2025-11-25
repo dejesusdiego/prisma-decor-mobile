@@ -186,11 +186,26 @@ Deno.serve(async (req) => {
     )
   } catch (error) {
     console.error('Error in seed-materials function:', error)
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    
+    // Extract detailed error information
+    let errorMessage = 'Unknown error'
+    let errorDetails = null
+    
+    if (error instanceof Error) {
+      errorMessage = error.message
+    }
+    
+    // Check if it's a Supabase error with additional details
+    if (error && typeof error === 'object' && 'code' in error) {
+      errorDetails = error
+      console.error('Supabase error details:', JSON.stringify(error, null, 2))
+    }
+    
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: errorMessage 
+        error: errorMessage,
+        details: errorDetails
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
