@@ -56,12 +56,21 @@ Deno.serve(async (req) => {
 
     console.log(`Received: ${materiais?.length || 0} materials, ${servicosConfeccao?.length || 0} confection services, ${servicosInstalacao?.length || 0} installation services`)
 
-    // Step 1: Upsert materials (updates existing, inserts new)
-    console.log('Step 1: Upserting materials...')
+    // Step 1: Deduplicate and upsert materials
+    console.log('Step 1: Processing materials...')
     let insertedMateriais = 0
 
     if (materiais && Array.isArray(materiais)) {
-      const materiaisToInsert = materiais.map((m: Material) => ({
+      // Deduplicate by codigo_item - keep last occurrence
+      const materiaisMap = new Map<string, Material>()
+      materiais.forEach(m => {
+        materiaisMap.set(m.codigoItem, m)
+      })
+      
+      const uniqueMateriais = Array.from(materiaisMap.values())
+      console.log(`Deduplicated materials: ${materiais.length} -> ${uniqueMateriais.length}`)
+      
+      const materiaisToInsert = uniqueMateriais.map((m: Material) => ({
         codigo_item: m.codigoItem,
         nome: m.nome,
         categoria: m.categoria,
@@ -73,12 +82,11 @@ Deno.serve(async (req) => {
         ativo: m.ativo ?? true
       }))
 
-      // Use upsert to handle duplicates - this does INSERT ... ON CONFLICT DO UPDATE
       const { data: insertedData, error: insertError } = await supabaseAdmin
         .from('materiais')
         .upsert(materiaisToInsert, {
           onConflict: 'codigo_item',
-          ignoreDuplicates: false // This means it will UPDATE on conflict
+          ignoreDuplicates: false
         })
         .select()
 
@@ -91,12 +99,20 @@ Deno.serve(async (req) => {
       console.log(`Upserted ${insertedMateriais} materials`)
     }
 
-    // Step 2: Upsert confection services
-    console.log('Step 2: Upserting confection services...')
+    // Step 2: Deduplicate and upsert confection services
+    console.log('Step 2: Processing confection services...')
     let insertedConfeccao = 0
 
     if (servicosConfeccao && Array.isArray(servicosConfeccao)) {
-      const confeccaoToInsert = servicosConfeccao.map((s: ServicoConfeccao) => ({
+      const confeccaoMap = new Map<string, ServicoConfeccao>()
+      servicosConfeccao.forEach(s => {
+        confeccaoMap.set(s.codigoItem, s)
+      })
+      
+      const uniqueConfeccao = Array.from(confeccaoMap.values())
+      console.log(`Deduplicated confection services: ${servicosConfeccao.length} -> ${uniqueConfeccao.length}`)
+      
+      const confeccaoToInsert = uniqueConfeccao.map((s: ServicoConfeccao) => ({
         codigo_item: s.codigoItem,
         nome_modelo: s.nomeModelo,
         unidade: s.unidade,
@@ -123,12 +139,20 @@ Deno.serve(async (req) => {
       console.log(`Upserted ${insertedConfeccao} confection services`)
     }
 
-    // Step 3: Upsert installation services
-    console.log('Step 3: Upserting installation services...')
+    // Step 3: Deduplicate and upsert installation services
+    console.log('Step 3: Processing installation services...')
     let insertedInstalacao = 0
 
     if (servicosInstalacao && Array.isArray(servicosInstalacao)) {
-      const instalacaoToInsert = servicosInstalacao.map((s: ServicoInstalacao) => ({
+      const instalacaoMap = new Map<string, ServicoInstalacao>()
+      servicosInstalacao.forEach(s => {
+        instalacaoMap.set(s.codigoItem, s)
+      })
+      
+      const uniqueInstalacao = Array.from(instalacaoMap.values())
+      console.log(`Deduplicated installation services: ${servicosInstalacao.length} -> ${uniqueInstalacao.length}`)
+      
+      const instalacaoToInsert = uniqueInstalacao.map((s: ServicoInstalacao) => ({
         codigo_item: s.codigoItem,
         nome: s.nome,
         preco_custo_por_ponto: s.precoCustoPorPonto,
