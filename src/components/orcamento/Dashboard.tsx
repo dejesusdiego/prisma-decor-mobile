@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, FileText, Moon, Sun, Calendar, DollarSign } from 'lucide-react';
+import { Plus, FileText, Moon, Sun, Calendar, DollarSign, Database } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
@@ -11,6 +11,7 @@ interface DashboardProps {
   onNovoOrcamento: () => void;
   onMeusOrcamentos: () => void;
   onVisualizarOrcamento: (id: string) => void;
+  onGestaoMateriais?: () => void;
 }
 
 interface RecentOrcamento {
@@ -22,7 +23,7 @@ interface RecentOrcamento {
   status: string;
 }
 
-export function Dashboard({ onNovoOrcamento, onMeusOrcamentos, onVisualizarOrcamento }: DashboardProps) {
+export function Dashboard({ onNovoOrcamento, onMeusOrcamentos, onVisualizarOrcamento, onGestaoMateriais }: DashboardProps) {
   const [isDark, setIsDark] = useState(false);
   const [recentOrcamentos, setRecentOrcamentos] = useState<RecentOrcamento[]>([]);
   const [loading, setLoading] = useState(true);
@@ -116,7 +117,7 @@ export function Dashboard({ onNovoOrcamento, onMeusOrcamentos, onVisualizarOrcam
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-2xl">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-4xl">
           <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={onNovoOrcamento}>
             <CardContent className="flex flex-col items-center justify-center p-8 space-y-4">
               <div className="w-16 h-16 rounded-full bg-lovable-blue/10 flex items-center justify-center">
@@ -140,6 +141,20 @@ export function Dashboard({ onNovoOrcamento, onMeusOrcamentos, onVisualizarOrcam
               </Button>
             </CardContent>
           </Card>
+
+          {onGestaoMateriais && (
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={onGestaoMateriais}>
+              <CardContent className="flex flex-col items-center justify-center p-8 space-y-4">
+                <div className="w-16 h-16 rounded-full bg-accent/10 flex items-center justify-center">
+                  <Database className="w-8 h-8 text-accent-foreground" />
+                </div>
+                <Button variant="outline" size="lg" className="w-full">
+                  <Database className="mr-2 h-5 w-5" />
+                  Gestão de Materiais
+                </Button>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
 
