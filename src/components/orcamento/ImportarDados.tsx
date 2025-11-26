@@ -37,6 +37,7 @@ const CATEGORIAS: Record<string, CategoryConfig> = {
   acessorios: { label: 'Acessórios', file: null, status: 'idle', dividirPrecoPor100: false },
   motorizados: { label: 'Motorizados', file: null, status: 'idle', dividirPrecoPor100: false },
   persianas: { label: 'Persianas', file: null, status: 'idle', dividirPrecoPor100: false },
+  papeis: { label: 'Papéis de Parede', file: null, status: 'idle', dividirPrecoPor100: false },
 };
 
 const SERVICOS: Record<string, ServiceConfig> = {
@@ -416,12 +417,13 @@ export function ImportarDados({ onVoltar }: ImportarDadosProps) {
       </Card>
 
       <Tabs defaultValue="tecidos" className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="tecidos">Tecidos</TabsTrigger>
           <TabsTrigger value="trilhos">Trilhos</TabsTrigger>
           <TabsTrigger value="acessorios">Acessórios</TabsTrigger>
           <TabsTrigger value="motorizados">Motorizados</TabsTrigger>
           <TabsTrigger value="persianas">Persianas</TabsTrigger>
+          <TabsTrigger value="papeis">Papéis</TabsTrigger>
         </TabsList>
 
         {Object.entries(categories).map(([key, config]) => (
@@ -486,6 +488,9 @@ export function ImportarDados({ onVoltar }: ImportarDadosProps) {
                   )}
                   {key === 'persianas' && (
                     <p><strong>Campos específicos:</strong> tipo, areaMinFat</p>
+                  )}
+                  {key === 'papeis' && (
+                    <p><strong>Campos específicos:</strong> tipo, linha, cor</p>
                   )}
                 </div>
               </CardContent>
