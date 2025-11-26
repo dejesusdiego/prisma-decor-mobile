@@ -24,6 +24,13 @@ interface CategoryConfig {
   dividirPrecoPor100: boolean;
 }
 
+interface ServiceConfig {
+  label: string;
+  file: File | null;
+  status: ImportStatus;
+  error?: string;
+}
+
 const CATEGORIAS: Record<string, CategoryConfig> = {
   tecidos: { label: 'Tecidos e Forros', file: null, status: 'idle', dividirPrecoPor100: false },
   trilhos: { label: 'Trilhos', file: null, status: 'idle', dividirPrecoPor100: false },
@@ -32,9 +39,15 @@ const CATEGORIAS: Record<string, CategoryConfig> = {
   persianas: { label: 'Persianas', file: null, status: 'idle', dividirPrecoPor100: false },
 };
 
+const SERVICOS: Record<string, ServiceConfig> = {
+  confeccao: { label: 'Serviços de Confecção', file: null, status: 'idle' },
+  instalacao: { label: 'Serviços de Instalação', file: null, status: 'idle' },
+};
+
 export function ImportarDados({ onVoltar }: ImportarDadosProps) {
   const [fornecedor, setFornecedor] = useState('');
   const [categories, setCategories] = useState<Record<string, CategoryConfig>>(CATEGORIAS);
+  const [services, setServices] = useState<Record<string, ServiceConfig>>(SERVICOS);
   const [importing, setImporting] = useState(false);
   const [clearing, setClearing] = useState(false);
 
@@ -42,6 +55,13 @@ export function ImportarDados({ onVoltar }: ImportarDadosProps) {
     setCategories(prev => ({
       ...prev,
       [categoria]: { ...prev[categoria], file, status: 'idle', error: undefined }
+    }));
+  };
+
+  const handleServiceFileChange = (servico: string, file: File | null) => {
+    setServices(prev => ({
+      ...prev,
+      [servico]: { ...prev[servico], file, status: 'idle', error: undefined }
     }));
   };
 
@@ -184,6 +204,125 @@ export function ImportarDados({ onVoltar }: ImportarDadosProps) {
         setCategories(prev => ({
           ...prev,
           [categoria]: { ...prev[categoria], status: 'error', error: errorMsg }
+        }));
+
+        toast({
+          title: `Erro ao importar ${config.label}`,
+          description: errorMsg,
+          variant: 'destructive',
+        });
+      }
+    }
+
+    setImporting(false);
+  };
+
+  const handleImportServices = async () => {
+    const filesToImport = Object.entries(services).filter(([_, config]) => config.file !== null);
+    
+    if (filesToImport.length === 0) {
+      toast({
+        title: 'Nenhum arquivo selecionado',
+        description: 'Selecione pelo menos um arquivo de serviço para importar',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setImporting(true);
+
+    for (const [tipo, config] of filesToImport) {
+      if (!config.file) continue;
+
+      setServices(prev => ({
+        ...prev,
+        [tipo]: { ...prev[tipo], status: 'loading' }
+      }));
+
+      try {
+        const fileContent = await config.file.text();
+        const servicos = JSON.parse(fileContent);
+
+        if (!Array.isArray(servicos)) {
+          throw new Error('O arquivo deve conter um array de serviços');
+        }
+
+        if (tipo === 'confeccao') {
+          // Importar serviços de confecção
+          const servicosParaInserir = servicos.map((serv: any) => ({
+            codigo_item: serv.codigoItem,
+            nome_modelo: serv.nomeModelo,
+            unidade: serv.unidade || 'mt',
+            preco_custo: serv.precoCusto,
+            preco_tabela: serv.precoCusto * 1.55, // margem padrão 55%
+            margem_tabela_percent: 55,
+            ativo: serv.ativo !== false,
+          }));
+
+          const { data, error } = await supabase
+            .from('servicos_confeccao')
+            .upsert(servicosParaInserir, {
+              onConflict: 'codigo_item',
+              ignoreDuplicates: true
+            })
+            .select();
+
+          if (error) throw error;
+
+          const novosAdicionados = data?.length || 0;
+          const jaExistiam = servicos.length - novosAdicionados;
+
+          toast({
+            title: 'Serviços de Confecção importados',
+            description: `${novosAdicionados} novos adicionados, ${jaExistiam} já existiam`,
+          });
+        } else if (tipo === 'instalacao') {
+          // Importar serviços de instalação
+          const servicosParaInserir = servicos.map((serv: any) => ({
+            codigo_item: serv.codigoItem,
+            nome: serv.nome,
+            preco_custo_por_ponto: serv.precoCustoPorPonto,
+            preco_tabela_por_ponto: serv.precoCustoPorPonto * 1.615, // margem padrão 61.5%
+            margem_tabela_percent: 61.5,
+            ativo: serv.ativo !== false,
+          }));
+
+          const { data, error } = await supabase
+            .from('servicos_instalacao')
+            .upsert(servicosParaInserir, {
+              onConflict: 'codigo_item',
+              ignoreDuplicates: true
+            })
+            .select();
+
+          if (error) throw error;
+
+          const novosAdicionados = data?.length || 0;
+          const jaExistiam = servicos.length - novosAdicionados;
+
+          toast({
+            title: 'Serviços de Instalação importados',
+            description: `${novosAdicionados} novos adicionados, ${jaExistiam} já existiam`,
+          });
+        }
+
+        setServices(prev => ({
+          ...prev,
+          [tipo]: { ...prev[tipo], status: 'success' }
+        }));
+      } catch (error) {
+        console.error(`Erro ao importar ${config.label}:`, error);
+        
+        let errorMsg = 'Erro desconhecido';
+        if (error instanceof Error) {
+          errorMsg = error.message;
+        } else if (typeof error === 'object' && error !== null) {
+          errorMsg = JSON.stringify(error);
+        }
+        
+        setServices(prev => ({
+          ...prev,
+          [tipo]: { ...prev[tipo], status: 'error', error: errorMsg }
         }));
 
         toast({
@@ -378,6 +517,100 @@ export function ImportarDados({ onVoltar }: ImportarDadosProps) {
         </CardContent>
       </Card>
 
+      <div className="border-t pt-6 mt-6">
+        <h3 className="text-2xl font-bold mb-4">Importar Serviços</h3>
+        <p className="text-muted-foreground mb-6">
+          Importe serviços de confecção e instalação (não requer fornecedor)
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          {Object.entries(services).map(([key, config]) => (
+            <Card key={key}>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>{config.label}</CardTitle>
+                    <CardDescription>
+                      Arquivo JSON com serviços
+                    </CardDescription>
+                  </div>
+                  {getStatusIcon(config.status)}
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor={`service-file-${key}`}>Selecionar Arquivo JSON</Label>
+                  <Input
+                    id={`service-file-${key}`}
+                    type="file"
+                    accept=".json"
+                    onChange={(e) => handleServiceFileChange(key, e.target.files?.[0] || null)}
+                    className="mt-1"
+                  />
+                  {config.file && (
+                    <p className="text-sm text-muted-foreground mt-2">
+                      Arquivo: {config.file.name}
+                    </p>
+                  )}
+                </div>
+
+                {config.status === 'error' && config.error && (
+                  <Alert variant="destructive">
+                    <XCircle className="h-4 w-4" />
+                    <AlertDescription>{config.error}</AlertDescription>
+                  </Alert>
+                )}
+
+                {config.status === 'success' && (
+                  <Alert>
+                    <CheckCircle2 className="h-4 w-4" />
+                    <AlertDescription>Importação concluída com sucesso!</AlertDescription>
+                  </Alert>
+                )}
+
+                <div className="text-sm text-muted-foreground space-y-1">
+                  {key === 'confeccao' && (
+                    <>
+                      <p><strong>Campos obrigatórios:</strong> codigoItem, nomeModelo, precoCusto</p>
+                      <p><strong>Campos opcionais:</strong> unidade, ativo</p>
+                    </>
+                  )}
+                  {key === 'instalacao' && (
+                    <>
+                      <p><strong>Campos obrigatórios:</strong> codigoItem, nome, precoCustoPorPonto</p>
+                      <p><strong>Campos opcionais:</strong> ativo</p>
+                    </>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        <Card>
+          <CardContent className="pt-6">
+            <Button
+              onClick={handleImportServices}
+              disabled={importing}
+              className="w-full"
+              size="lg"
+            >
+              {importing ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Importando Serviços...
+                </>
+              ) : (
+                <>
+                  <Upload className="mr-2 h-4 w-4" />
+                  Importar Serviços Selecionados
+                </>
+              )}
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+
       <Card>
         <CardHeader>
           <CardTitle>Como Funciona</CardTitle>
@@ -398,6 +631,10 @@ export function ImportarDados({ onVoltar }: ImportarDadosProps) {
           <div>
             <strong>4. Fornecedor Obrigatório:</strong>
             <p>Permite rastrear a origem de cada lote de materiais importados.</p>
+          </div>
+          <div>
+            <strong>5. Importação de Serviços:</strong>
+            <p>Serviços de confecção e instalação não requerem fornecedor e podem ser importados separadamente.</p>
           </div>
         </CardContent>
       </Card>
