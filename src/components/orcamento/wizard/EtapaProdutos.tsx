@@ -2,6 +2,13 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Plus, GripVertical } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { CortinaCard } from './CortinaCard';
 import { PersianaCard } from './PersianaCard';
 import { OutrosCard } from './OutrosCard';
@@ -110,6 +117,7 @@ export function EtapaProdutos({
 }: EtapaProdutosProps) {
   const [produtos, setProdutos] = useState<Cortina[]>(produtosIniciais);
   const [loading, setLoading] = useState(false);
+  const [dialogOutrosAberto, setDialogOutrosAberto] = useState(false);
 
   useEffect(() => {
     if (orcamentoId && produtosIniciais.length === 0) {
@@ -177,9 +185,9 @@ export function EtapaProdutos({
     setProdutos([...produtos, novaPersiana]);
   };
 
-  const adicionarOutro = () => {
+  const adicionarOutro = (categoria: string) => {
     const novoOutro: Cortina = {
-      nomeIdentificacao: `Outro ${produtos.filter(p => p.tipoProduto === 'outro').length + 1}`,
+      nomeIdentificacao: `${categoria} ${produtos.filter(p => p.tipoProduto === 'outro').length + 1}`,
       largura: 0,
       altura: 0,
       quantidade: 1,
@@ -189,6 +197,7 @@ export function EtapaProdutos({
       precisaInstalacao: false,
     };
     setProdutos([...produtos, novoOutro]);
+    setDialogOutrosAberto(false);
   };
 
   const removerProduto = async (index: number) => {
@@ -332,7 +341,7 @@ export function EtapaProdutos({
           <Button
             type="button"
             variant="outline"
-            onClick={adicionarOutro}
+            onClick={() => setDialogOutrosAberto(true)}
           >
             <Plus className="mr-2 h-4 w-4" />
             Outros
@@ -381,6 +390,51 @@ export function EtapaProdutos({
           Avançar para Resumo
         </Button>
       </div>
+
+      <Dialog open={dialogOutrosAberto} onOpenChange={setDialogOutrosAberto}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Selecionar Categoria de Produto</DialogTitle>
+            <DialogDescription>
+              Escolha a categoria do produto que deseja adicionar
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-4 py-4">
+            <Button
+              variant="outline"
+              className="h-24 flex flex-col gap-2"
+              onClick={() => adicionarOutro('Acessórios')}
+            >
+              <Plus className="h-6 w-6" />
+              <span>Acessórios</span>
+            </Button>
+            <Button
+              variant="outline"
+              className="h-24 flex flex-col gap-2"
+              onClick={() => adicionarOutro('Papel')}
+            >
+              <Plus className="h-6 w-6" />
+              <span>Papel</span>
+            </Button>
+            <Button
+              variant="outline"
+              className="h-24 flex flex-col gap-2"
+              onClick={() => adicionarOutro('Motorizado')}
+            >
+              <Plus className="h-6 w-6" />
+              <span>Motorizado</span>
+            </Button>
+            <Button
+              variant="outline"
+              className="h-24 flex flex-col gap-2"
+              onClick={() => adicionarOutro('Outros')}
+            >
+              <Plus className="h-6 w-6" />
+              <span>Outros</span>
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
