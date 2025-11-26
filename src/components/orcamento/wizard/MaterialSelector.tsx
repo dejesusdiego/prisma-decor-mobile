@@ -1,21 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Check, ChevronsUpDown, X } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
 import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@/components/ui/command';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import { Badge } from '@/components/ui/badge';
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import type { Material } from '@/types/orcamento';
 
 interface MaterialSelectorProps {
@@ -35,233 +26,218 @@ export function MaterialSelector({
   placeholder = 'Selecionar material',
   optional = true,
 }: MaterialSelectorProps) {
-  const [open, setOpen] = useState(false);
-  const [search, setSearch] = useState('');
-  const [filtroTipo, setFiltroTipo] = useState<string | null>(null);
-  const [filtroLinha, setFiltroLinha] = useState<string | null>(null);
-  const [filtroCor, setFiltroCor] = useState<string | null>(null);
+  const [filtroTipo, setFiltroTipo] = useState<string>('');
+  const [filtroLinha, setFiltroLinha] = useState<string>('');
+  const [filtroCor, setFiltroCor] = useState<string>('');
 
   const selectedMaterial = materiais.find((m) => m.id === value);
 
-  // Extrair valores únicos para os filtros
-  const tiposUnicos = Array.from(new Set(materiais.filter(m => m.tipo).map(m => m.tipo))).sort();
-  const linhasUnicas = Array.from(new Set(materiais.filter(m => m.linha).map(m => m.linha))).sort();
-  const coresUnicas = Array.from(new Set(materiais.filter(m => m.cor).map(m => m.cor))).sort();
+  // Quando o material já está selecionado, preencher os filtros automaticamente
+  useEffect(() => {
+    if (selectedMaterial) {
+      if (selectedMaterial.tipo) setFiltroTipo(selectedMaterial.tipo);
+      if (selectedMaterial.linha) setFiltroLinha(selectedMaterial.linha);
+      if (selectedMaterial.cor) setFiltroCor(selectedMaterial.cor);
+    }
+  }, [selectedMaterial]);
 
-  // Aplicar filtros
+  // Extrair valores únicos para cada filtro
+  const tiposUnicos = Array.from(new Set(materiais.filter(m => m.tipo).map(m => m.tipo!))).sort();
+  
+  const linhasDisponiveis = Array.from(
+    new Set(
+      materiais
+        .filter(m => m.linha && (!filtroTipo || m.tipo === filtroTipo))
+        .map(m => m.linha!)
+    )
+  ).sort();
+  
+  const coresDisponiveis = Array.from(
+    new Set(
+      materiais
+        .filter(m => 
+          m.cor && 
+          (!filtroTipo || m.tipo === filtroTipo) &&
+          (!filtroLinha || m.linha === filtroLinha)
+        )
+        .map(m => m.cor!)
+    )
+  ).sort();
+
+  // Materiais filtrados progressivamente
   const materiaisFiltrados = materiais.filter((material) => {
-    const matchSearch = 
-      search === '' ||
-      material.nome.toLowerCase().includes(search.toLowerCase()) ||
-      material.codigo_item?.toLowerCase().includes(search.toLowerCase());
-    
     const matchTipo = !filtroTipo || material.tipo === filtroTipo;
     const matchLinha = !filtroLinha || material.linha === filtroLinha;
     const matchCor = !filtroCor || material.cor === filtroCor;
-
-    return matchSearch && matchTipo && matchLinha && matchCor;
+    return matchTipo && matchLinha && matchCor;
   });
 
-  // Agrupar por linha se houver linhas
-  const materiaisAgrupados = linhasUnicas.length > 0
-    ? linhasUnicas.reduce((acc, linha) => {
-        const materiaisDaLinha = materiaisFiltrados.filter(m => m.linha === linha);
-        if (materiaisDaLinha.length > 0) {
-          acc[linha] = materiaisDaLinha;
-        }
-        return acc;
-      }, {} as Record<string, Material[]>)
-    : { 'Todos': materiaisFiltrados };
-
-  const limparFiltros = () => {
-    setFiltroTipo(null);
-    setFiltroLinha(null);
-    setFiltroCor(null);
-    setSearch('');
+  // Ao mudar tipo, resetar linha e cor
+  const handleTipoChange = (tipo: string) => {
+    setFiltroTipo(tipo);
+    setFiltroLinha('');
+    setFiltroCor('');
+    onSelect(undefined);
   };
 
-  const temFiltrosAtivos = filtroTipo || filtroLinha || filtroCor || search;
+  // Ao mudar linha, resetar cor
+  const handleLinhaChange = (linha: string) => {
+    setFiltroLinha(linha);
+    setFiltroCor('');
+    onSelect(undefined);
+  };
+
+  // Ao mudar cor, resetar seleção
+  const handleCorChange = (cor: string) => {
+    setFiltroCor(cor);
+    onSelect(undefined);
+  };
+
+  const temFiltros = tiposUnicos.length > 0 || linhasDisponiveis.length > 0 || coresDisponiveis.length > 0;
 
   return (
-    <div className="space-y-2">
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            role="combobox"
-            aria-expanded={open}
-            className="w-full justify-between"
-          >
-            {selectedMaterial ? (
-              <span className="truncate">{selectedMaterial.codigo_item} - {selectedMaterial.nome}</span>
-            ) : (
-              <span className="text-muted-foreground">{placeholder}</span>
-            )}
-            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-[500px] p-0" align="start">
-          <Command>
-            <CommandInput
-              placeholder="Buscar por nome ou código..."
-              value={search}
-              onValueChange={setSearch}
-            />
-            
-            {/* Filtros */}
-            <div className="border-b px-3 py-2 space-y-2">
-              {tiposUnicos.length > 0 && (
-                <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground">Tipo:</p>
-                  <div className="flex flex-wrap gap-1">
-                    {tiposUnicos.map((tipo) => {
-                      const count = materiais.filter(m => m.tipo === tipo).length;
-                      return (
-                        <Badge
-                          key={tipo}
-                          variant={filtroTipo === tipo ? "default" : "outline"}
-                          className="cursor-pointer text-xs"
-                          onClick={() => setFiltroTipo(filtroTipo === tipo ? null : tipo)}
-                        >
-                          {tipo} ({count})
-                        </Badge>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {linhasUnicas.length > 0 && (
-                <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground">Linha:</p>
-                  <div className="flex flex-wrap gap-1">
-                    {linhasUnicas.map((linha) => {
-                      const count = materiais.filter(m => m.linha === linha).length;
-                      return (
-                        <Badge
-                          key={linha}
-                          variant={filtroLinha === linha ? "default" : "outline"}
-                          className="cursor-pointer text-xs"
-                          onClick={() => setFiltroLinha(filtroLinha === linha ? null : linha)}
-                        >
-                          {linha} ({count})
-                        </Badge>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {coresUnicas.length > 0 && (
-                <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground">Cor:</p>
-                  <div className="flex flex-wrap gap-1">
-                    {coresUnicas.map((cor) => {
-                      const count = materiais.filter(m => m.cor === cor).length;
-                      return (
-                        <Badge
-                          key={cor}
-                          variant={filtroCor === cor ? "default" : "outline"}
-                          className="cursor-pointer text-xs"
-                          onClick={() => setFiltroCor(filtroCor === cor ? null : cor)}
-                        >
-                          {cor} ({count})
-                        </Badge>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {temFiltrosAtivos && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 text-xs"
-                  onClick={limparFiltros}
-                >
-                  <X className="h-3 w-3 mr-1" />
-                  Limpar filtros
-                </Button>
-              )}
-            </div>
-
-            <CommandList>
-              <CommandEmpty>Nenhum material encontrado.</CommandEmpty>
-              
-              {optional && (
-                <CommandGroup heading="Opções">
-                  <CommandItem
-                    value="none"
-                    onSelect={() => {
-                      onSelect(undefined);
-                      setOpen(false);
-                      limparFiltros();
-                    }}
-                  >
-                    <Check
-                      className={cn(
-                        "mr-2 h-4 w-4",
-                        !value ? "opacity-100" : "opacity-0"
-                      )}
-                    />
-                    Sem {categoria}
-                  </CommandItem>
-                </CommandGroup>
-              )}
-
-              {Object.entries(materiaisAgrupados).map(([grupo, materiais]) => (
-                <CommandGroup key={grupo} heading={grupo !== 'Todos' ? grupo : undefined}>
-                  {materiais.map((material) => (
-                    <CommandItem
-                      key={material.id}
-                      value={`${material.codigo_item} ${material.nome}`}
-                      onSelect={() => {
-                        onSelect(material.id);
-                        setOpen(false);
-                        limparFiltros();
-                      }}
-                    >
-                      <Check
-                        className={cn(
-                          "mr-2 h-4 w-4",
-                          value === material.id ? "opacity-100" : "opacity-0"
-                        )}
-                      />
-                      <div className="flex-1">
-                        <div className="font-medium">{material.codigo_item}</div>
-                        <div className="text-xs text-muted-foreground">{material.nome}</div>
-                      </div>
-                      <div className="text-xs text-muted-foreground ml-2">
-                        R$ {material.preco_custo.toFixed(2)}
-                      </div>
-                    </CommandItem>
+    <div className="space-y-3">
+      {/* Filtros Cascateados */}
+      {temFiltros && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 p-3 bg-muted/50 rounded-lg border border-border">
+          {/* Filtro Tipo */}
+          {tiposUnicos.length > 0 && (
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">1. Tipo</Label>
+              <Select value={filtroTipo} onValueChange={handleTipoChange}>
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="Selecione o tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="_todos">Todos os tipos</SelectItem>
+                  {tiposUnicos.map((tipo) => (
+                    <SelectItem key={tipo} value={tipo}>
+                      {tipo}
+                    </SelectItem>
                   ))}
-                </CommandGroup>
-              ))}
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      </Popover>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
-      {/* Preview do material selecionado */}
+          {/* Filtro Linha */}
+          {linhasDisponiveis.length > 0 && (
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">2. Linha</Label>
+              <Select 
+                value={filtroLinha} 
+                onValueChange={handleLinhaChange}
+                disabled={!filtroTipo || filtroTipo === '_todos'}
+              >
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="Selecione a linha" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="_todos">Todas as linhas</SelectItem>
+                  {linhasDisponiveis.map((linha) => (
+                    <SelectItem key={linha} value={linha}>
+                      {linha}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Filtro Cor */}
+          {coresDisponiveis.length > 0 && (
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">3. Cor</Label>
+              <Select 
+                value={filtroCor} 
+                onValueChange={handleCorChange}
+                disabled={!filtroLinha || filtroLinha === '_todos'}
+              >
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="Selecione a cor" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="_todos">Todas as cores</SelectItem>
+                  {coresDisponiveis.map((cor) => (
+                    <SelectItem key={cor} value={cor}>
+                      {cor}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Seleção do Material */}
+      <div className="space-y-1.5">
+        <Label>
+          {temFiltros ? '4. ' : ''}{placeholder}
+          {materiaisFiltrados.length > 0 && (
+            <span className="text-xs text-muted-foreground ml-2">
+              ({materiaisFiltrados.length} {materiaisFiltrados.length === 1 ? 'opção' : 'opções'})
+            </span>
+          )}
+        </Label>
+        <Select
+          value={value || 'none'}
+          onValueChange={(val) => onSelect(val === 'none' ? undefined : val)}
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {optional && <SelectItem value="none">Sem {categoria}</SelectItem>}
+            
+            {materiaisFiltrados.length === 0 ? (
+              <SelectItem value="_empty" disabled>
+                {temFiltros && (filtroTipo || filtroLinha || filtroCor) 
+                  ? 'Nenhum material encontrado com esses filtros'
+                  : 'Nenhum material disponível'
+                }
+              </SelectItem>
+            ) : (
+              materiaisFiltrados.map((material) => (
+                <SelectItem key={material.id} value={material.id}>
+                  {material.codigo_item} - {material.nome}
+                </SelectItem>
+              ))
+            )}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Preview do Material Selecionado */}
       {selectedMaterial && (
-        <div className="text-sm p-2 bg-muted rounded border border-border space-y-1">
-          <p className="font-medium">{selectedMaterial.nome}</p>
-          <div className="grid grid-cols-2 gap-x-4 text-muted-foreground">
-            <p><strong>Código:</strong> {selectedMaterial.codigo_item}</p>
-            <p><strong>Custo:</strong> R$ {selectedMaterial.preco_custo.toFixed(2)}/{selectedMaterial.unidade}</p>
+        <div className="text-sm p-3 bg-muted rounded-lg border border-border space-y-1">
+          <p className="font-medium text-foreground">{selectedMaterial.nome}</p>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground">
+            <div>
+              <strong className="text-foreground">Código:</strong> {selectedMaterial.codigo_item}
+            </div>
+            <div>
+              <strong className="text-foreground">Custo:</strong> R$ {selectedMaterial.preco_custo.toFixed(2)}/{selectedMaterial.unidade}
+            </div>
             {selectedMaterial.largura_metro && (
-              <p><strong>Largura:</strong> {selectedMaterial.largura_metro}m</p>
+              <div>
+                <strong className="text-foreground">Largura:</strong> {selectedMaterial.largura_metro}m
+              </div>
             )}
             {selectedMaterial.tipo && (
-              <p><strong>Tipo:</strong> {selectedMaterial.tipo}</p>
+              <div>
+                <strong className="text-foreground">Tipo:</strong> {selectedMaterial.tipo}
+              </div>
             )}
             {selectedMaterial.linha && (
-              <p className="col-span-2"><strong>Linha:</strong> {selectedMaterial.linha}</p>
+              <div className="col-span-2">
+                <strong className="text-foreground">Linha:</strong> {selectedMaterial.linha}
+              </div>
             )}
             {selectedMaterial.cor && (
-              <p><strong>Cor:</strong> {selectedMaterial.cor}</p>
+              <div>
+                <strong className="text-foreground">Cor:</strong> {selectedMaterial.cor}
+              </div>
             )}
           </div>
         </div>
