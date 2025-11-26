@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Plus, GripVertical } from 'lucide-react';
+import { Plus, GripVertical, Wrench, Wallpaper, Zap, Package } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -195,6 +195,7 @@ export function EtapaProdutos({
       tipoCortina: 'outro',
       precoUnitario: undefined,
       precisaInstalacao: false,
+      descricao: categoria, // Armazena a categoria na descrição
     };
     setProdutos([...produtos, novoOutro]);
     setDialogOutrosAberto(false);
@@ -405,7 +406,7 @@ export function EtapaProdutos({
               className="h-24 flex flex-col gap-2"
               onClick={() => adicionarOutro('Acessórios')}
             >
-              <Plus className="h-6 w-6" />
+              <Wrench className="h-6 w-6" />
               <span>Acessórios</span>
             </Button>
             <Button
@@ -413,7 +414,7 @@ export function EtapaProdutos({
               className="h-24 flex flex-col gap-2"
               onClick={() => adicionarOutro('Papel')}
             >
-              <Plus className="h-6 w-6" />
+              <Wallpaper className="h-6 w-6" />
               <span>Papel</span>
             </Button>
             <Button
@@ -421,7 +422,7 @@ export function EtapaProdutos({
               className="h-24 flex flex-col gap-2"
               onClick={() => adicionarOutro('Motorizado')}
             >
-              <Plus className="h-6 w-6" />
+              <Zap className="h-6 w-6" />
               <span>Motorizado</span>
             </Button>
             <Button
@@ -429,7 +430,7 @@ export function EtapaProdutos({
               className="h-24 flex flex-col gap-2"
               onClick={() => adicionarOutro('Outros')}
             >
-              <Plus className="h-6 w-6" />
+              <Package className="h-6 w-6" />
               <span>Outros</span>
             </Button>
           </div>
