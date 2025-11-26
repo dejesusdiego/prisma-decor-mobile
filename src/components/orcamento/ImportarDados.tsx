@@ -25,11 +25,11 @@ interface CategoryConfig {
 }
 
 const CATEGORIAS: Record<string, CategoryConfig> = {
-  tecidos: { label: 'Tecidos e Forros', file: null, status: 'idle', dividirPrecoPor100: true },
+  tecidos: { label: 'Tecidos e Forros', file: null, status: 'idle', dividirPrecoPor100: false },
   trilhos: { label: 'Trilhos', file: null, status: 'idle', dividirPrecoPor100: false },
-  acessorios: { label: 'Acessórios', file: null, status: 'idle', dividirPrecoPor100: true },
-  motorizados: { label: 'Motorizados', file: null, status: 'idle', dividirPrecoPor100: true },
-  persianas: { label: 'Persianas', file: null, status: 'idle', dividirPrecoPor100: true },
+  acessorios: { label: 'Acessórios', file: null, status: 'idle', dividirPrecoPor100: false },
+  motorizados: { label: 'Motorizados', file: null, status: 'idle', dividirPrecoPor100: false },
+  persianas: { label: 'Persianas', file: null, status: 'idle', dividirPrecoPor100: false },
 };
 
 export function ImportarDados({ onVoltar }: ImportarDadosProps) {
@@ -388,9 +388,8 @@ export function ImportarDados({ onVoltar }: ImportarDadosProps) {
             <p>Cada categoria possui campos específicos próprios além dos campos base.</p>
           </div>
           <div>
-            <strong>2. Conversão de Preços:</strong>
-            <p>Tecidos, Motorizados e Persianas: preços em centavos (divididos por 100)</p>
-            <p>Trilhos e Acessórios: preços já em reais</p>
+            <strong>2. Formato de Preços:</strong>
+            <p>Todas as categorias: preços em <strong>reais</strong> (não serão convertidos/divididos por 100)</p>
           </div>
           <div>
             <strong>3. Atualização Não-Destrutiva:</strong>
