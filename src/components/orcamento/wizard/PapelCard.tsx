@@ -44,7 +44,7 @@ export function PapelCard({
       const { data } = await supabase
         .from('materiais')
         .select('*')
-        .eq('categoria', 'papeis')
+        .eq('categoria', 'Papel')
         .eq('ativo', true);
       
       if (data) {

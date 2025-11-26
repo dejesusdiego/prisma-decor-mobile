@@ -44,7 +44,7 @@ export function MotorizadoCard({
       const { data } = await supabase
         .from('materiais')
         .select('*')
-        .eq('categoria', 'motorizados')
+        .eq('categoria', 'Motorizado')
         .eq('ativo', true);
       
       if (data) {
