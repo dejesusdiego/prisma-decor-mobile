@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, FileText, Moon, Sun, Calendar, DollarSign, Database, RefreshCcw } from 'lucide-react';
+import { Plus, FileText, Moon, Sun, Calendar, DollarSign, Database } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
@@ -27,7 +27,6 @@ export function Dashboard({ onNovoOrcamento, onMeusOrcamentos, onVisualizarOrcam
   const [isDark, setIsDark] = useState(false);
   const [recentOrcamentos, setRecentOrcamentos] = useState<RecentOrcamento[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isSyncing, setIsSyncing] = useState(false);
 
   useEffect(() => {
     // Check for saved theme preference
@@ -70,36 +69,6 @@ export function Dashboard({ onNovoOrcamento, onMeusOrcamentos, onVisualizarOrcam
     setIsDark(!isDark);
   };
 
-  const handleSyncDatabase = async () => {
-    setIsSyncing(true);
-    try {
-      // Load JSON data
-      const [materialsRes, confeccaoRes, instalacaoRes] = await Promise.all([
-        fetch('/data/materials.json'),
-        fetch('/data/servicos_confeccao.json'),
-        fetch('/data/servicos_instalacao.json')
-      ]);
-
-      const materiais = await materialsRes.json();
-      const servicosConfeccao = await confeccaoRes.json();
-      const servicosInstalacao = await instalacaoRes.json();
-
-      // Call edge function
-      const { data, error } = await supabase.functions.invoke('seed-materials', {
-        body: { materiais, servicosConfeccao, servicosInstalacao }
-      });
-
-      if (error) throw error;
-
-      toast.success(`Base sincronizada! ${data.counts.materiais} materiais, ${data.counts.servicosConfeccao} serviços de confecção, ${data.counts.servicosInstalacao} serviços de instalação`);
-    } catch (error) {
-      console.error('Erro ao sincronizar base:', error);
-      toast.error('Erro ao sincronizar base de dados');
-    } finally {
-      setIsSyncing(false);
-    }
-  };
-
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -124,16 +93,7 @@ export function Dashboard({ onNovoOrcamento, onMeusOrcamentos, onVisualizarOrcam
     <div className="space-y-8 py-8">
       <div className="flex flex-col items-center justify-center space-y-8">
         <div className="text-center space-y-2 relative w-full">
-          <div className="absolute right-4 top-0 flex gap-2">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={handleSyncDatabase}
-              disabled={isSyncing}
-              title="Sincronizar base de dados"
-            >
-              <RefreshCcw className={`h-5 w-5 ${isSyncing ? 'animate-spin' : ''}`} />
-            </Button>
+          <div className="absolute right-4 top-0">
             <Button
               variant="outline"
               size="icon"
