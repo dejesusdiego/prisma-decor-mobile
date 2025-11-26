@@ -27,7 +27,7 @@ interface CategoryConfig {
 const CATEGORIAS: Record<string, CategoryConfig> = {
   tecidos: { label: 'Tecidos e Forros', file: null, status: 'idle', dividirPrecoPor100: true },
   trilhos: { label: 'Trilhos', file: null, status: 'idle', dividirPrecoPor100: false },
-  acessorios: { label: 'Acessórios', file: null, status: 'idle', dividirPrecoPor100: false },
+  acessorios: { label: 'Acessórios', file: null, status: 'idle', dividirPrecoPor100: true },
   motorizados: { label: 'Motorizados', file: null, status: 'idle', dividirPrecoPor100: true },
   persianas: { label: 'Persianas', file: null, status: 'idle', dividirPrecoPor100: true },
 };
