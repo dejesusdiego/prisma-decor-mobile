@@ -12,6 +12,9 @@ import {
 import { CortinaCard } from './CortinaCard';
 import { PersianaCard } from './PersianaCard';
 import { OutrosCard } from './OutrosCard';
+import { AcessoriosCard } from './AcessoriosCard';
+import { PapelCard } from './PapelCard';
+import { MotorizadoCard } from './MotorizadoCard';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import type { Cortina } from '@/types/orcamento';
@@ -94,6 +97,30 @@ function SortableProductItem({
             orcamentoId={orcamentoId}
             onUpdate={(p) => onUpdate(index, p)}
             onRemove={() => onRemove(index)}
+          />
+        ) : produto.descricao === 'Acessórios' ? (
+          <AcessoriosCard
+            acessorio={produto}
+            orcamentoId={orcamentoId}
+            onUpdate={(p) => onUpdate(index, p)}
+            onRemove={() => onRemove(index)}
+            onDuplicate={() => onDuplicate(index)}
+          />
+        ) : produto.descricao === 'Papel' ? (
+          <PapelCard
+            papel={produto}
+            orcamentoId={orcamentoId}
+            onUpdate={(p) => onUpdate(index, p)}
+            onRemove={() => onRemove(index)}
+            onDuplicate={() => onDuplicate(index)}
+          />
+        ) : produto.descricao === 'Motorizado' ? (
+          <MotorizadoCard
+            motorizado={produto}
+            orcamentoId={orcamentoId}
+            onUpdate={(p) => onUpdate(index, p)}
+            onRemove={() => onRemove(index)}
+            onDuplicate={() => onDuplicate(index)}
           />
         ) : (
           <OutrosCard
@@ -290,6 +317,11 @@ export function EtapaProdutos({
         return p.largura <= 0 || p.altura <= 0 || !p.materialPrincipalId;
       }
       if (p.tipoProduto === 'outro') {
+        // Para categorias específicas, exige material selecionado
+        if (p.descricao === 'Acessórios' || p.descricao === 'Papel' || p.descricao === 'Motorizado') {
+          return !p.materialPrincipalId || !p.precoUnitario || p.precoUnitario <= 0;
+        }
+        // Para "Outros" genéricos, só exige preço
         return !p.precoUnitario || p.precoUnitario <= 0;
       }
       return false;
