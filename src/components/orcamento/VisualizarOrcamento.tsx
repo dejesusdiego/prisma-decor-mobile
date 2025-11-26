@@ -249,7 +249,12 @@ export function VisualizarOrcamento({ orcamentoId, onVoltar }: VisualizarOrcamen
                 <div>
                   <p className="font-semibold text-lg">{cortina.nomeIdentificacao}</p>
                   <p className="text-sm text-muted-foreground">
-                    {cortina.tipoProduto === 'cortina' ? 'Cortina' : 'Persiana'} - {getTipoCortina(cortina.tipoCortina)}
+                    {cortina.tipoProduto === 'cortina' 
+                      ? `Cortina - ${getTipoCortina(cortina.tipoCortina)}`
+                      : cortina.tipoProduto === 'persiana' 
+                      ? `Persiana - ${getTipoCortina(cortina.tipoCortina)}`
+                      : cortina.descricao || 'Outros'
+                    }
                   </p>
                 </div>
                 <p className="text-lg font-bold text-primary">
@@ -257,26 +262,49 @@ export function VisualizarOrcamento({ orcamentoId, onVoltar }: VisualizarOrcamen
                 </p>
               </div>
               
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3">
-                <div>
-                  <p className="text-xs text-muted-foreground">Largura</p>
-                  <p className="text-sm font-medium">{cortina.largura.toFixed(2)}m</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Altura</p>
-                  <p className="text-sm font-medium">{cortina.altura.toFixed(2)}m</p>
-                </div>
-                {cortina.barraCm && (
+              {(cortina.tipoProduto === 'cortina' || cortina.tipoProduto === 'persiana') && (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3">
                   <div>
-                    <p className="text-xs text-muted-foreground">Barra</p>
-                    <p className="text-sm font-medium">{cortina.barraCm}cm</p>
+                    <p className="text-xs text-muted-foreground">Largura</p>
+                    <p className="text-sm font-medium">{cortina.largura.toFixed(2)}m</p>
                   </div>
-                )}
-                <div>
-                  <p className="text-xs text-muted-foreground">Quantidade</p>
-                  <p className="text-sm font-medium">{cortina.quantidade}</p>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Altura</p>
+                    <p className="text-sm font-medium">{cortina.altura.toFixed(2)}m</p>
+                  </div>
+                  {cortina.barraCm && (
+                    <div>
+                      <p className="text-xs text-muted-foreground">Barra</p>
+                      <p className="text-sm font-medium">{cortina.barraCm}cm</p>
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-xs text-muted-foreground">Quantidade</p>
+                    <p className="text-sm font-medium">{cortina.quantidade}</p>
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {cortina.tipoProduto === 'outro' && (
+                <div className="grid grid-cols-2 gap-3 mt-3">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Quantidade</p>
+                    <p className="text-sm font-medium">{cortina.quantidade}</p>
+                  </div>
+                  {cortina.precoUnitario && (
+                    <div>
+                      <p className="text-xs text-muted-foreground">Preço Unitário</p>
+                      <p className="text-sm font-medium">{formatCurrency(cortina.precoUnitario)}</p>
+                    </div>
+                  )}
+                  {cortina.ambiente && (
+                    <div>
+                      <p className="text-xs text-muted-foreground">Ambiente</p>
+                      <p className="text-sm font-medium">{cortina.ambiente}</p>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {cortina.tipoProduto === 'cortina' && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
@@ -376,6 +404,24 @@ export function VisualizarOrcamento({ orcamentoId, onVoltar }: VisualizarOrcamen
                 </div>
               )}
 
+              {cortina.tipoProduto === 'outro' && cortina.materialPrincipalId && (() => {
+                const material = obterMaterial(cortina.materialPrincipalId);
+                return material ? (
+                  <div className="bg-muted/30 p-3 rounded-lg border mt-3">
+                    <p className="text-xs font-semibold text-muted-foreground mb-1">Material Selecionado</p>
+                    <p className="text-sm font-medium mb-1">{material.nome}</p>
+                    <div className="space-y-0.5">
+                      <p className="text-xs text-muted-foreground">
+                        Código: {material.codigo_item || '-'}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Preço custo: {formatCurrency(material.preco_custo)}/{material.unidade}
+                      </p>
+                    </div>
+                  </div>
+                ) : null;
+              })()}
+
               {cortina.observacoesInternas && (
                 <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 p-3 rounded-lg mt-3">
                   <p className="text-xs font-semibold text-amber-800 dark:text-amber-400 mb-1">
@@ -386,25 +432,38 @@ export function VisualizarOrcamento({ orcamentoId, onVoltar }: VisualizarOrcamen
               )}
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3 pt-3 border-t">
-                <div>
-                  <p className="text-xs text-muted-foreground">Custo Material</p>
-                  <p className="text-sm font-medium">
-                    {formatCurrency((cortina.custoTecido || 0) + (cortina.custoForro || 0) + (cortina.custoMaterialPrincipal || 0))}
-                  </p>
-                </div>
-                {cortina.tipoProduto === 'cortina' && (
+                {cortina.tipoProduto !== 'outro' && (
+                  <>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Custo Material</p>
+                      <p className="text-sm font-medium">
+                        {formatCurrency((cortina.custoTecido || 0) + (cortina.custoForro || 0) + (cortina.custoMaterialPrincipal || 0))}
+                      </p>
+                    </div>
+                    {cortina.tipoProduto === 'cortina' && (
+                      <div>
+                        <p className="text-xs text-muted-foreground">Custo Costura</p>
+                        <p className="text-sm font-medium">{formatCurrency(cortina.custoCostura)}</p>
+                      </div>
+                    )}
+                    <div>
+                      <p className="text-xs text-muted-foreground">Custo Trilho</p>
+                      <p className="text-sm font-medium">{formatCurrency(cortina.custoTrilho)}</p>
+                    </div>
+                  </>
+                )}
+                {cortina.tipoProduto === 'outro' && cortina.precoUnitario && (
                   <div>
-                    <p className="text-xs text-muted-foreground">Custo Costura</p>
-                    <p className="text-sm font-medium">{formatCurrency(cortina.custoCostura)}</p>
+                    <p className="text-xs text-muted-foreground">Custo Produto</p>
+                    <p className="text-sm font-medium">{formatCurrency(cortina.precoUnitario * cortina.quantidade)}</p>
                   </div>
                 )}
-                <div>
-                  <p className="text-xs text-muted-foreground">Custo Trilho</p>
-                  <p className="text-sm font-medium">{formatCurrency(cortina.custoTrilho)}</p>
-                </div>
                 {cortina.precisaInstalacao && (
                   <div>
-                    <p className="text-xs text-muted-foreground">Custo Instalação ({cortina.pontosInstalacao} pontos)</p>
+                    <p className="text-xs text-muted-foreground">
+                      Custo Instalação
+                      {cortina.pontosInstalacao ? ` (${cortina.pontosInstalacao} pontos)` : ''}
+                    </p>
                     <p className="text-sm font-medium">{formatCurrency(cortina.custoInstalacao)}</p>
                   </div>
                 )}
