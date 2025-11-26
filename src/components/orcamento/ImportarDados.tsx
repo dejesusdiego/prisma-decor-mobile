@@ -124,12 +124,16 @@ export function ImportarDados({ onVoltar }: ImportarDadosProps) {
         const materiaisParaInserir = materiais.map((mat: any) => {
           const precoCusto = config.dividirPrecoPor100 ? mat.precoCusto / 100 : mat.precoCusto;
           
+          // Para motorizados, o campo "largura" vem como string (ex: "1M", "2M")
+          // Para outros materiais, usar larguraMetro se existir
+          const larguraMetro = mat.larguraMetro || null;
+          
           return {
             codigo_item: mat.codigoItem,
             nome: mat.nome,
             categoria: mat.categoria,
             unidade: mat.unidade || 'M',
-            largura_metro: mat.larguraMetro || null,
+            largura_metro: larguraMetro,
             preco_custo: precoCusto,
             preco_tabela: precoCusto * 1.615, // margem padrão 61.5%
             margem_tabela_percent: 61.5,
@@ -169,7 +173,13 @@ export function ImportarDados({ onVoltar }: ImportarDadosProps) {
         });
       } catch (error) {
         console.error(`Erro ao importar ${config.label}:`, error);
-        const errorMsg = error instanceof Error ? error.message : 'Erro desconhecido';
+        
+        let errorMsg = 'Erro desconhecido';
+        if (error instanceof Error) {
+          errorMsg = error.message;
+        } else if (typeof error === 'object' && error !== null) {
+          errorMsg = JSON.stringify(error);
+        }
         
         setCategories(prev => ({
           ...prev,
