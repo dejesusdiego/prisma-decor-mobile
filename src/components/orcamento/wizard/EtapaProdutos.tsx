@@ -329,7 +329,7 @@ export function EtapaProdutos({
         return p.largura <= 0 || p.altura <= 0 || (!p.tecidoId && !p.forroId);
       }
       if (p.tipoProduto === 'persiana') {
-        return p.largura <= 0 || p.altura <= 0 || !p.materialPrincipalId;
+        return !p.tipoCortina || !p.ambiente || p.precoUnitario === undefined || p.precoUnitario === null;
       }
       if (p.tipoProduto === 'outro') {
         // Para categorias específicas, exige material selecionado
