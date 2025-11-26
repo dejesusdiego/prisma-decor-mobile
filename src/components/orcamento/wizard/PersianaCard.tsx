@@ -73,7 +73,7 @@ export function PersianaCard({
       custo_trilho: 0,
       custo_acessorios: 0,
       custo_costura: 0,
-      preco_venda: 0,
+      preco_venda: null, // Será calculado na etapa de resumo com a margem aplicada
     };
 
     try {

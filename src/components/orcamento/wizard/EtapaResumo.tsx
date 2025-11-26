@@ -163,13 +163,39 @@ export function EtapaResumo({
   const handleConfirmarValidade = async (novaValidade: number) => {
     setLoading(true);
     try {
-      // Salvar validade no banco
-      const { error } = await supabase
+      const markup = 1 + margemAtual / 100;
+
+      // Atualizar preços de venda das cortinas/persianas primeiro
+      for (const cortina of cortinas) {
+        if (cortina.id) {
+          const precoVendaItem = (cortina.custoTotal || 0) * markup;
+          const { error } = await supabase
+            .from('cortina_items')
+            .update({
+              preco_venda: precoVendaItem,
+            })
+            .eq('id', cortina.id);
+
+          if (error) throw error;
+        }
+      }
+
+      // Atualizar orçamento com margem, totais e validade
+      const { error: orcError } = await supabase
         .from('orcamentos')
-        .update({ validade_dias: novaValidade })
+        .update({
+          margem_tipo: margemTipo,
+          margem_percent: margemAtual,
+          subtotal_materiais: resumo.subtotalMateriais,
+          subtotal_mao_obra_costura: resumo.subtotalMaoObraCostura,
+          subtotal_instalacao: resumo.subtotalInstalacao,
+          custo_total: resumo.custoTotal,
+          total_geral: resumo.totalGeral,
+          validade_dias: novaValidade,
+        })
         .eq('id', orcamentoId);
 
-      if (error) throw error;
+      if (orcError) throw orcError;
 
       setValidadeDias(novaValidade);
 
