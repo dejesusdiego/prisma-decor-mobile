@@ -6,10 +6,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, Search, Edit, Power, Trash2, Loader2, CheckSquare, Square } from 'lucide-react';
+import { Plus, Search, Edit, Power, Trash2, Loader2, CheckSquare, Square, Edit3 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { DialogMaterial } from './DialogMaterial';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 
 interface Material {
   id: string;
@@ -44,6 +46,9 @@ export function ListaMateriais() {
   const [itensSelecionados, setItensSelecionados] = useState<Set<string>>(new Set());
   const [acaoMassaDialog, setAcaoMassaDialog] = useState<'ativar' | 'desativar' | 'deletar' | null>(null);
   const [processandoAcaoMassa, setProcessandoAcaoMassa] = useState(false);
+  const [dialogEdicaoMassa, setDialogEdicaoMassa] = useState(false);
+  const [campoEdicao, setCampoEdicao] = useState<string>('tipo');
+  const [valorEdicao, setValorEdicao] = useState<string>('');
 
   const carregarMateriais = async () => {
     setLoading(true);
@@ -280,6 +285,49 @@ export function ListaMateriais() {
     }
   };
 
+  const handleEdicaoMassa = async () => {
+    if (itensSelecionados.size === 0 || !valorEdicao.trim()) return;
+
+    setProcessandoAcaoMassa(true);
+
+    try {
+      const ids = Array.from(itensSelecionados);
+      const updateData: any = {};
+      updateData[campoEdicao] = valorEdicao.trim();
+
+      const { data, error } = await supabase
+        .from('materiais')
+        .update(updateData)
+        .in('id', ids)
+        .select();
+
+      if (error) throw error;
+
+      if (!data || data.length === 0) {
+        throw new Error('Nenhum material foi atualizado. Verifique suas permissões.');
+      }
+
+      toast({
+        title: 'Edição em massa concluída',
+        description: `${data.length} material(is) teve(ram) o campo "${campoEdicao}" atualizado`,
+      });
+
+      setDialogEdicaoMassa(false);
+      setValorEdicao('');
+      setItensSelecionados(new Set());
+      await carregarMateriais();
+    } catch (error) {
+      console.error('Erro na edição em massa:', error);
+      toast({
+        title: 'Erro na edição em massa',
+        description: error instanceof Error ? error.message : 'Não foi possível executar a edição',
+        variant: 'destructive',
+      });
+    } finally {
+      setProcessandoAcaoMassa(false);
+    }
+  };
+
   const categorias = ['tecido', 'forro', 'trilho', 'acessorio', 'papel', 'persiana', 'motorizado'];
   
   const fornecedoresUnicos = Array.from(
@@ -297,6 +345,14 @@ export function ListaMateriais() {
             </span>
           </div>
           <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="default"
+              onClick={() => setDialogEdicaoMassa(true)}
+            >
+              <Edit3 className="h-4 w-4 mr-2" />
+              Editar em Massa
+            </Button>
             <Button
               size="sm"
               variant="outline"
@@ -583,6 +639,68 @@ export function ListaMateriais() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={dialogEdicaoMassa} onOpenChange={setDialogEdicaoMassa}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar {itensSelecionados.size} materiais em massa</DialogTitle>
+            <DialogDescription>
+              Selecione o campo que deseja editar e defina o novo valor. Esta alteração será aplicada a todos os itens selecionados.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="campo">Campo a editar</Label>
+              <Select value={campoEdicao} onValueChange={setCampoEdicao}>
+                <SelectTrigger id="campo">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="tipo">Tipo</SelectItem>
+                  <SelectItem value="linha">Linha</SelectItem>
+                  <SelectItem value="cor">Cor</SelectItem>
+                  <SelectItem value="fornecedor">Fornecedor</SelectItem>
+                  <SelectItem value="aplicacao">Aplicação</SelectItem>
+                  <SelectItem value="potencia">Potência</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="valor">Novo valor</Label>
+              <Input
+                id="valor"
+                value={valorEdicao}
+                onChange={(e) => setValorEdicao(e.target.value)}
+                placeholder="Digite o novo valor..."
+              />
+            </div>
+
+            <div className="bg-muted/50 p-3 rounded-lg">
+              <p className="text-sm text-muted-foreground">
+                {itensSelecionados.size} material(is) terá(ão) o campo <strong>{campoEdicao}</strong> alterado para <strong>{valorEdicao || '(vazio)'}</strong>
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogEdicaoMassa(false)} disabled={processandoAcaoMassa}>
+              Cancelar
+            </Button>
+            <Button onClick={handleEdicaoMassa} disabled={processandoAcaoMassa || !valorEdicao.trim()}>
+              {processandoAcaoMassa ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Processando...
+                </>
+              ) : (
+                'Aplicar Alterações'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
