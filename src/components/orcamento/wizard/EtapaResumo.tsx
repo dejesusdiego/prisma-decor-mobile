@@ -373,6 +373,15 @@ export function EtapaResumo({
                     </div>
                   )}
 
+                  {cortina.observacoesInternas && (
+                    <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 p-3 rounded-lg mt-3">
+                      <p className="text-xs font-semibold text-amber-800 dark:text-amber-400 mb-1">
+                        📝 Observações Internas (uso interno - não aparecem no PDF)
+                      </p>
+                      <p className="text-sm text-amber-900 dark:text-amber-300">{cortina.observacoesInternas}</p>
+                    </div>
+                  )}
+
                   <div className="flex justify-between pt-2 border-t text-sm">
                     <span className="text-muted-foreground">Custo Total</span>
                     <span className="font-semibold">{formatCurrency(cortina.custoTotal || 0)}</span>

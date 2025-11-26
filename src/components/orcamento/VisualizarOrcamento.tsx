@@ -80,6 +80,7 @@ export function VisualizarOrcamento({ orcamentoId, onVoltar }: VisualizarOrcamen
             valorInstalacao: item.tipo_produto === 'outro' ? item.custo_instalacao : undefined,
             precisaInstalacao: item.precisa_instalacao,
             pontosInstalacao: item.pontos_instalacao || undefined,
+            observacoesInternas: item.observacoes_internas || undefined,
             custoTecido: item.custo_tecido || undefined,
             custoForro: item.custo_forro || undefined,
             custoTrilho: item.custo_trilho || undefined,
@@ -372,6 +373,15 @@ export function VisualizarOrcamento({ orcamentoId, onVoltar }: VisualizarOrcamen
                 <div className="mt-3">
                   <p className="text-xs text-muted-foreground">Material Principal</p>
                   <p className="text-sm">{obterNomeMaterial(cortina.materialPrincipalId)}</p>
+                </div>
+              )}
+
+              {cortina.observacoesInternas && (
+                <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 p-3 rounded-lg mt-3">
+                  <p className="text-xs font-semibold text-amber-800 dark:text-amber-400 mb-1">
+                    📝 Observações Internas (uso interno - não aparecem no PDF)
+                  </p>
+                  <p className="text-sm text-amber-900 dark:text-amber-300">{cortina.observacoesInternas}</p>
                 </div>
               )}
 

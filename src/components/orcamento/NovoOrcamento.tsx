@@ -80,6 +80,7 @@ export function NovoOrcamento({ onVoltar, orcamentoId }: NovoOrcamentoProps) {
             valorInstalacao: item.tipo_produto === 'outro' ? item.custo_instalacao : undefined,
             precisaInstalacao: item.precisa_instalacao,
             pontosInstalacao: item.pontos_instalacao || undefined,
+            observacoesInternas: item.observacoes_internas || undefined,
             custoTecido: item.custo_tecido || undefined,
             custoForro: item.custo_forro || undefined,
             custoTrilho: item.custo_trilho || undefined,
