@@ -208,56 +208,71 @@ export function ListaMateriais() {
 
       switch (acaoMassaDialog) {
         case 'ativar':
-          const { error: ativarError } = await supabase
+          const { data: ativarData, error: ativarError, count: ativarCount } = await supabase
             .from('materiais')
             .update({ ativo: true })
-            .in('id', ids);
+            .in('id', ids)
+            .select();
           
           if (ativarError) throw ativarError;
           
+          if (!ativarData || ativarData.length === 0) {
+            throw new Error('Nenhum material foi atualizado. Verifique suas permissões.');
+          }
+          
           toast({
             title: 'Materiais ativados',
-            description: `${ids.length} material(is) foi(ram) ativado(s)`,
+            description: `${ativarData.length} material(is) foi(ram) ativado(s)`,
           });
           break;
 
         case 'desativar':
-          const { error: desativarError } = await supabase
+          const { data: desativarData, error: desativarError } = await supabase
             .from('materiais')
             .update({ ativo: false })
-            .in('id', ids);
+            .in('id', ids)
+            .select();
           
           if (desativarError) throw desativarError;
           
+          if (!desativarData || desativarData.length === 0) {
+            throw new Error('Nenhum material foi atualizado. Verifique suas permissões.');
+          }
+          
           toast({
             title: 'Materiais desativados',
-            description: `${ids.length} material(is) foi(ram) desativado(s)`,
+            description: `${desativarData.length} material(is) foi(ram) desativado(s)`,
           });
           break;
 
         case 'deletar':
-          const { error: deletarError } = await supabase
+          const { data: deletarData, error: deletarError } = await supabase
             .from('materiais')
             .delete()
-            .in('id', ids);
+            .in('id', ids)
+            .select();
           
           if (deletarError) throw deletarError;
           
+          if (!deletarData || deletarData.length === 0) {
+            throw new Error('Nenhum material foi excluído. Verifique suas permissões.');
+          }
+          
           toast({
             title: 'Materiais excluídos',
-            description: `${ids.length} material(is) foi(ram) excluído(s)`,
+            description: `${deletarData.length} material(is) foi(ram) excluído(s)`,
           });
           break;
       }
 
       setItensSelecionados(new Set());
       setAcaoMassaDialog(null);
-      carregarMateriais();
+      await carregarMateriais();
     } catch (error) {
       console.error('Erro na ação em massa:', error);
       toast({
         title: 'Erro na ação em massa',
-        description: 'Não foi possível executar a ação',
+        description: error instanceof Error ? error.message : 'Não foi possível executar a ação',
         variant: 'destructive',
       });
     } finally {
