@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Textarea } from '@/components/ui/textarea';
 import { ChevronDown, ChevronUp, Copy, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -61,6 +62,7 @@ export function PersianaCard({
       custo_total: custoTotal,
       precisa_instalacao: persiana.precisaInstalacao,
       custo_instalacao: custoInstalacao,
+      observacoes_internas: persiana.observacoesInternas || null,
       // Campos não utilizados em persianas
       tecido_id: null,
       forro_id: null,
@@ -255,6 +257,16 @@ export function PersianaCard({
             value={persiana.precoUnitario || ''}
             onChange={(e) => setPersiana({ ...persiana, precoUnitario: parseFloat(e.target.value) || 0 })}
             placeholder="Valor do orçamento da fábrica"
+          />
+        </div>
+
+        <div className="col-span-2">
+          <Label>Observações Internas (não aparecem no PDF)</Label>
+          <Textarea
+            value={persiana.observacoesInternas || ''}
+            onChange={(e) => setPersiana({ ...persiana, observacoesInternas: e.target.value })}
+            placeholder="Anotações internas sobre este item..."
+            className="min-h-[80px]"
           />
         </div>
 

@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
 import { Copy, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -62,6 +63,7 @@ export function OutrosCard({
         ambiente: outro.ambiente || null,
         preco_unitario: outro.precoUnitario,
         is_outro: true,
+        observacoes_internas: outro.observacoesInternas || null,
         tecido_id: null,
         forro_id: null,
         trilho_id: null,
@@ -232,6 +234,17 @@ export function OutrosCard({
               onChange={(e) => handleChange('precoUnitario', parseFloat(e.target.value) || 0)}
               required
               placeholder="0.00"
+            />
+          </div>
+
+          <div className="space-y-2 md:col-span-2">
+            <Label htmlFor={`obs-${outro.id}`}>Observações Internas (não aparecem no PDF)</Label>
+            <Textarea
+              id={`obs-${outro.id}`}
+              value={outro.observacoesInternas || ''}
+              onChange={(e) => handleChange('observacoesInternas', e.target.value)}
+              placeholder="Anotações internas sobre este item..."
+              className="min-h-[80px]"
             />
           </div>
 
