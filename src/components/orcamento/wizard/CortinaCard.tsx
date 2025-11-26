@@ -17,6 +17,7 @@ import { toast } from '@/hooks/use-toast';
 import type { Cortina, Material } from '@/types/orcamento';
 import { calcularCustosCortina } from '@/lib/calculosOrcamento';
 import { OPCOES_AMBIENTE } from '@/types/orcamento';
+import { MaterialSelector } from './MaterialSelector';
 
 interface CortinaCardProps {
   cortina: Cortina;
@@ -383,89 +384,38 @@ export function CortinaCard({
 
           <div className="space-y-2">
             <Label htmlFor={`tecido-${cortina.id}`}>Tecido Principal</Label>
-            <Select
-              value={cortina.tecidoId || 'none'}
-              onValueChange={(value) => handleChange('tecidoId', value === 'none' ? undefined : value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o tecido" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Sem tecido</SelectItem>
-                {tecidos.length === 0 ? (
-                  <SelectItem value="loading" disabled>
-                    Carregando tecidos...
-                  </SelectItem>
-                ) : (
-                  tecidos.map((tecido) => (
-                    <SelectItem key={tecido.id} value={tecido.id}>
-                      {tecido.codigo_item} - {tecido.nome}
-                    </SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
-            {cortina.tecidoId && tecidos.find(t => t.id === cortina.tecidoId) && (
-              <div className="text-sm text-muted-foreground p-2 bg-muted rounded">
-                <p><strong>Código:</strong> {tecidos.find(t => t.id === cortina.tecidoId)?.codigo_item}</p>
-                <p><strong>Preço custo:</strong> R$ {tecidos.find(t => t.id === cortina.tecidoId)?.preco_custo.toFixed(2)}/m</p>
-                {tecidos.find(t => t.id === cortina.tecidoId)?.largura_metro && (
-                  <p><strong>Largura rolo:</strong> {tecidos.find(t => t.id === cortina.tecidoId)?.largura_metro}m</p>
-                )}
-              </div>
-            )}
+            <MaterialSelector
+              categoria="tecido"
+              materiais={tecidos}
+              value={cortina.tecidoId}
+              onSelect={(value) => handleChange('tecidoId', value)}
+              placeholder="Selecione o tecido"
+              optional={true}
+            />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor={`forro-${cortina.id}`}>Forro (Opcional)</Label>
-            <Select
-              value={cortina.forroId || 'none'}
-              onValueChange={(value) => handleChange('forroId', value === 'none' ? undefined : value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o forro" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Sem forro</SelectItem>
-                {forros.map((forro) => (
-                  <SelectItem key={forro.id} value={forro.id}>
-                    {forro.codigo_item} - {forro.nome}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {cortina.forroId && forros.find(f => f.id === cortina.forroId) && (
-              <div className="text-sm text-muted-foreground p-2 bg-muted rounded">
-                <p><strong>Código:</strong> {forros.find(f => f.id === cortina.forroId)?.codigo_item}</p>
-                <p><strong>Preço custo:</strong> R$ {forros.find(f => f.id === cortina.forroId)?.preco_custo.toFixed(2)}/m</p>
-              </div>
-            )}
+            <MaterialSelector
+              categoria="forro"
+              materiais={forros}
+              value={cortina.forroId}
+              onSelect={(value) => handleChange('forroId', value)}
+              placeholder="Selecione o forro"
+              optional={true}
+            />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor={`trilho-${cortina.id}`}>Trilho</Label>
-            <Select
-              value={cortina.trilhoId || 'none'}
-              onValueChange={(value) => handleChange('trilhoId', value === 'none' ? undefined : value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o trilho" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Sem trilho</SelectItem>
-                {trilhos.map((trilho) => (
-                  <SelectItem key={trilho.id} value={trilho.id}>
-                    {trilho.codigo_item} - {trilho.nome}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {cortina.trilhoId && trilhos.find(t => t.id === cortina.trilhoId) && (
-              <div className="text-sm text-muted-foreground p-2 bg-muted rounded">
-                <p><strong>Código:</strong> {trilhos.find(t => t.id === cortina.trilhoId)?.codigo_item}</p>
-                <p><strong>Preço custo:</strong> R$ {trilhos.find(t => t.id === cortina.trilhoId)?.preco_custo.toFixed(2)}/m</p>
-              </div>
-            )}
+            <MaterialSelector
+              categoria="trilho"
+              materiais={trilhos}
+              value={cortina.trilhoId}
+              onSelect={(value) => handleChange('trilhoId', value)}
+              placeholder="Selecione o trilho"
+              optional={true}
+            />
           </div>
 
           <div className="space-y-2 flex items-center justify-between md:col-span-2">
