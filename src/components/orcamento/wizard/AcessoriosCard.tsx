@@ -44,7 +44,7 @@ export function AcessoriosCard({
       const { data } = await supabase
         .from('materiais')
         .select('*')
-        .eq('categoria', 'Acessorio')
+        .eq('categoria', 'acessorio')
         .eq('ativo', true);
       
       if (data) {
