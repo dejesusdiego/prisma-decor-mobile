@@ -35,7 +35,7 @@ export function PersianaCard({
   const [expanded, setExpanded] = useState(!persianaInicial.id); // Expandido se for novo item
 
   const salvarPersiana = async () => {
-    if (!persiana.nomeIdentificacao || !persiana.tipoCortina || !persiana.ambiente || !persiana.precoUnitario) {
+    if (!persiana.nomeIdentificacao || !persiana.tipoCortina || !persiana.ambiente || persiana.precoUnitario === undefined || persiana.precoUnitario === null) {
       toast.error("Preencha todos os campos obrigatórios (nome, tipo, ambiente e valor unitário)");
       return;
     }
