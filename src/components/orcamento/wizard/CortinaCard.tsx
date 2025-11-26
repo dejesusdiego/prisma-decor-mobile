@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
 import { Copy, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -166,6 +167,7 @@ export function CortinaCard({
         tecido_id: cortina.tecidoId || null,
         forro_id: cortina.forroId || null,
         trilho_id: cortina.trilhoId || null,
+        observacoes_internas: cortina.observacoesInternas || null,
         material_principal_id: null,
         precisa_instalacao: cortina.precisaInstalacao,
         pontos_instalacao: cortina.pontosInstalacao || 1,
@@ -415,6 +417,17 @@ export function CortinaCard({
               onSelect={(value) => handleChange('trilhoId', value)}
               placeholder="Selecione o trilho"
               optional={true}
+            />
+          </div>
+
+          <div className="space-y-2 md:col-span-2">
+            <Label htmlFor={`obs-${cortina.id}`}>Observações Internas (não aparecem no PDF)</Label>
+            <Textarea
+              id={`obs-${cortina.id}`}
+              value={cortina.observacoesInternas || ''}
+              onChange={(e) => handleChange('observacoesInternas', e.target.value)}
+              placeholder="Anotações internas sobre este item..."
+              className="min-h-[80px]"
             />
           </div>
 

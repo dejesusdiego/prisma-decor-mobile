@@ -33,6 +33,7 @@ export interface Cortina {
   valorInstalacao?: number; // Valor direto de instalação para produtos "Outros"
   precisaInstalacao: boolean;
   pontosInstalacao?: number;
+  observacoesInternas?: string; // Observações internas (não aparecem no PDF)
   
   // Custos
   custoTecido?: number;
