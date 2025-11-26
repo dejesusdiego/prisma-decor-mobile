@@ -36,6 +36,7 @@ export type Database = {
           material_principal_id: string | null
           motorizada: boolean | null
           nome_identificacao: string
+          observacoes_internas: string | null
           orcamento_id: string
           pontos_instalacao: number | null
           precisa_instalacao: boolean
@@ -69,6 +70,7 @@ export type Database = {
           material_principal_id?: string | null
           motorizada?: boolean | null
           nome_identificacao: string
+          observacoes_internas?: string | null
           orcamento_id: string
           pontos_instalacao?: number | null
           precisa_instalacao?: boolean
@@ -102,6 +104,7 @@ export type Database = {
           material_principal_id?: string | null
           motorizada?: boolean | null
           nome_identificacao?: string
+          observacoes_internas?: string | null
           orcamento_id?: string
           pontos_instalacao?: number | null
           precisa_instalacao?: boolean
