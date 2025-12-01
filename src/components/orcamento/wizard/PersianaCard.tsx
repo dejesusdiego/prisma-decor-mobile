@@ -40,8 +40,10 @@ export function PersianaCard({
       return;
     }
 
-    // Calcula custos baseado no preço unitário informado (orçamento da fábrica)
-    const custoTotal = persiana.precoUnitario * persiana.quantidade;
+    // Calcula custos baseado no preço unitário por m² informado (orçamento da fábrica)
+    const areaPorUnidade = persiana.largura * persiana.altura; // m²
+    const areaTotal = areaPorUnidade * persiana.quantidade; // m² total
+    const custoTotal = persiana.precoUnitario * areaTotal; // R$/m² × m² = R$
     const custoInstalacao = persiana.precisaInstalacao && persiana.valorInstalacao 
       ? persiana.valorInstalacao 
       : 0;
@@ -123,7 +125,7 @@ export function PersianaCard({
             {persiana.nomeIdentificacao}
             {!expanded && persiana.id && (
               <span className="text-sm text-muted-foreground font-normal">
-                • {persiana.tipoCortina} • {persiana.largura}x{persiana.altura}m
+                • {persiana.tipoCortina} • {(persiana.largura * persiana.altura).toFixed(2)}m² ({persiana.largura}x{persiana.altura}m)
                 {persiana.custoTotal !== undefined && persiana.custoTotal > 0 && (
                   <span className="ml-2 text-primary font-semibold">
                     • Custo: R$ {persiana.custoTotal.toFixed(2)}
@@ -223,6 +225,19 @@ export function PersianaCard({
         </div>
 
         <div>
+          <Label>Área (m²)</Label>
+          <Input
+            type="text"
+            value={(persiana.largura * persiana.altura).toFixed(2)}
+            disabled
+            className="bg-muted"
+          />
+          <p className="text-xs text-muted-foreground mt-1">
+            Calculado automaticamente: Largura × Altura
+          </p>
+        </div>
+
+        <div>
           <Label>Quantidade</Label>
           <Input
             type="number"
@@ -250,14 +265,17 @@ export function PersianaCard({
         </div>
 
         <div>
-          <Label>Valor Unitário (R$) *</Label>
+          <Label>Valor Unitário (R$/m²) *</Label>
           <Input
             type="number"
             step="0.01"
             value={persiana.precoUnitario || ''}
             onChange={(e) => setPersiana({ ...persiana, precoUnitario: parseFloat(e.target.value) || 0 })}
-            placeholder="Valor do orçamento da fábrica"
+            placeholder="Valor por m² do orçamento da fábrica"
           />
+          <p className="text-xs text-muted-foreground mt-1">
+            Unidade: metro quadrado (m²)
+          </p>
         </div>
 
         <div className="col-span-2">
@@ -314,11 +332,13 @@ export function PersianaCard({
         <div className="text-sm text-muted-foreground">
           {persiana.precoUnitario && (
             <>
-              <div>Subtotal: R$ {(persiana.precoUnitario * persiana.quantidade).toFixed(2)}</div>
+              <div>Área total: {((persiana.largura * persiana.altura) * persiana.quantidade).toFixed(2)} m²</div>
+              <div>Valor por m²: R$ {persiana.precoUnitario.toFixed(2)}</div>
+              <div>Subtotal: R$ {(persiana.precoUnitario * (persiana.largura * persiana.altura) * persiana.quantidade).toFixed(2)}</div>
               {persiana.precisaInstalacao && persiana.valorInstalacao && (
                 <>
                   <div>Instalação: R$ {persiana.valorInstalacao.toFixed(2)}</div>
-                  <div className="font-semibold">Total: R$ {((persiana.precoUnitario * persiana.quantidade) + persiana.valorInstalacao).toFixed(2)}</div>
+                  <div className="font-semibold">Total: R$ {((persiana.precoUnitario * (persiana.largura * persiana.altura) * persiana.quantidade) + persiana.valorInstalacao).toFixed(2)}</div>
                 </>
               )}
             </>
