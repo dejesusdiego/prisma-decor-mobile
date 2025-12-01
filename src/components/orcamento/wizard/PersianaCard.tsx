@@ -35,8 +35,9 @@ export function PersianaCard({
 }: PersianaCardProps) {
   const [persiana, setPersiana] = useState<Cortina>({
     ...persianaInicial,
-    larguraCm: persianaInicial.larguraCm || Math.round((persianaInicial.largura || 0) * 100),
-    alturaCm: persianaInicial.alturaCm || Math.round((persianaInicial.altura || 0) * 100),
+    largura: persianaInicial.largura || 0,
+    altura: persianaInicial.altura || 0,
+    alturaComando: persianaInicial.alturaComando || 0,
   });
   const [expanded, setExpanded] = useState(!persianaInicial.id);
   const [persianas, setPersianas] = useState<Material[]>([]);
@@ -79,24 +80,35 @@ export function PersianaCard({
 
     const materialSelecionado = persianas.find(m => m.id === materialId);
     if (materialSelecionado) {
+      // Mapear tipo do material para valores permitidos no enum
+      let tipoCortina: Cortina['tipoCortina'] = 'rolo';
+      const tipo = materialSelecionado.tipo?.toLowerCase();
+      
+      if (tipo === 'romana') tipoCortina = 'romana';
+      else if (tipo === 'rolo') tipoCortina = 'rolo';
+      else if (tipo === 'horizontal') tipoCortina = 'horizontal';
+      else if (tipo === 'vertical') tipoCortina = 'vertical';
+      else if (tipo === 'celular') tipoCortina = 'celular';
+      else if (tipo === 'madeira') tipoCortina = 'madeira';
+      
       setPersiana({
         ...persiana,
         materialPrincipalId: materialSelecionado.id,
         precoUnitario: materialSelecionado.preco_custo,
-        tipoCortina: (materialSelecionado.tipo as any) || 'rolo',
+        tipoCortina,
       });
     }
   };
 
   // Calcular valores usando a nova função
   const calcularValores = () => {
-    if (!persiana.larguraCm || !persiana.alturaCm || !persiana.precoUnitario) {
+    if (!persiana.largura || !persiana.altura || !persiana.precoUnitario) {
       return null;
     }
 
     return calcularValoresPersiana({
-      larguraCm: persiana.larguraCm,
-      alturaCm: persiana.alturaCm,
+      larguraM: persiana.largura,
+      alturaM: persiana.altura,
       quantidade: persiana.quantidade,
       precoCustoM2: persiana.precoUnitario,
     });
@@ -126,8 +138,8 @@ export function PersianaCard({
       tipo_cortina: persiana.tipoCortina,
       tipo_produto: 'persiana',
       ambiente: persiana.ambiente,
-      altura: valoresCalculados.alturaM, // Convertido para metros
-      largura: valoresCalculados.larguraM, // Convertido para metros
+      altura: persiana.altura,
+      largura: persiana.largura,
       quantidade: persiana.quantidade,
       descricao: persiana.descricao || null,
       motorizada: persiana.motorizada || false,
@@ -172,8 +184,6 @@ export function PersianaCard({
       const persianaAtualizada = {
         ...persiana,
         id: result.data.id,
-        largura: valoresCalculados.larguraM,
-        altura: valoresCalculados.alturaM,
         alturaFaturadaM: valoresCalculados.alturaFaturadaM,
         areaM2: valoresCalculados.areaM2,
         custoTotal,
@@ -199,9 +209,9 @@ export function PersianaCard({
         <div className="flex-1 cursor-pointer" onClick={() => setExpanded(!expanded)}>
           <h3 className="text-lg font-semibold flex items-center gap-2">
             {persiana.nomeIdentificacao || 'Nova Persiana'}
-            {!expanded && persiana.id && materialSelecionado && persiana.larguraCm && persiana.alturaCm && (
+            {!expanded && persiana.id && materialSelecionado && persiana.largura && persiana.altura && (
               <span className="text-sm text-muted-foreground font-normal">
-                • {materialSelecionado.nome} • {persiana.larguraCm}×{persiana.alturaCm}cm
+                • {materialSelecionado.nome} • {persiana.largura}×{persiana.altura}m
                 {persiana.custoTotal !== undefined && persiana.custoTotal > 0 && (
                   <span className="ml-2 text-primary font-semibold">
                     • Custo: R$ {persiana.custoTotal.toFixed(2)}
@@ -283,26 +293,38 @@ export function PersianaCard({
             {/* DIMENSÕES */}
             <div>
               <Label className="text-base font-semibold mb-2 block">Dimensões</Label>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-4 gap-4">
                 <div>
-                  <Label>Largura (cm) *</Label>
+                  <Label>Largura (m) *</Label>
                   <Input
                     type="number"
-                    step="1"
+                    step="0.01"
                     min="0"
-                    value={persiana.larguraCm || ''}
-                    onChange={(e) => setPersiana({ ...persiana, larguraCm: parseInt(e.target.value) || 0 })}
+                    value={persiana.largura || ''}
+                    onChange={(e) => setPersiana({ ...persiana, largura: parseFloat(e.target.value) || 0 })}
                   />
                 </div>
 
                 <div>
-                  <Label>Altura (cm) *</Label>
+                  <Label>Altura (m) *</Label>
                   <Input
                     type="number"
-                    step="1"
+                    step="0.01"
                     min="0"
-                    value={persiana.alturaCm || ''}
-                    onChange={(e) => setPersiana({ ...persiana, alturaCm: parseInt(e.target.value) || 0 })}
+                    value={persiana.altura || ''}
+                    onChange={(e) => setPersiana({ ...persiana, altura: parseFloat(e.target.value) || 0 })}
+                  />
+                </div>
+
+                <div>
+                  <Label>Altura do Comando (m)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={persiana.alturaComando || ''}
+                    onChange={(e) => setPersiana({ ...persiana, alturaComando: parseFloat(e.target.value) || 0 })}
+                    placeholder="Não entra no cálculo"
                   />
                 </div>
 

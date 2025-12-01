@@ -290,8 +290,8 @@ export function EtapaResumo({
                         {cortina.tipoProduto === 'persiana' ? 'Dimensões' : 'Largura'}
                       </p>
                       <p className="font-medium">
-                        {cortina.tipoProduto === 'persiana' && cortina.larguraCm && cortina.alturaCm
-                          ? `${cortina.larguraCm} × ${cortina.alturaCm} cm`
+                        {cortina.tipoProduto === 'persiana'
+                          ? `${cortina.largura} × ${cortina.altura} m`
                           : `${cortina.largura}m`}
                       </p>
                     </div>
@@ -299,6 +299,12 @@ export function EtapaResumo({
                       <div>
                         <p className="text-xs text-muted-foreground">Altura</p>
                         <p className="font-medium">{cortina.altura}m</p>
+                      </div>
+                    )}
+                    {cortina.tipoProduto === 'persiana' && cortina.alturaComando && cortina.alturaComando > 0 && (
+                      <div>
+                        <p className="text-xs text-muted-foreground">Comando</p>
+                        <p className="font-medium">{cortina.alturaComando.toFixed(2)}m</p>
                       </div>
                     )}
                     {cortina.tipoProduto === 'persiana' && cortina.alturaFaturadaM && (

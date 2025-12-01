@@ -17,8 +17,7 @@ export interface Cortina {
   tipoCortina: 'wave' | 'prega' | 'painel' | 'rolo' | 'horizontal' | 'vertical' | 'romana' | 'celular' | 'madeira' | 'outro';
   
   // Campos auxiliares para persianas (cálculo)
-  larguraCm?: number;           // Largura em cm (input do usuário)
-  alturaCm?: number;            // Altura em cm (input do usuário)
+  alturaComando?: number;       // Altura do comando em metros (não entra no cálculo)
   alturaFaturadaM?: number;     // Altura faturada em metros (após arredondamento e mínima)
   areaM2?: number;              // Área em m² (calculada)
   
