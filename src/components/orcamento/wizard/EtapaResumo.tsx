@@ -286,13 +286,33 @@ export function EtapaResumo({
 
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
                     <div>
-                      <p className="text-xs text-muted-foreground">Largura</p>
-                      <p className="font-medium">{cortina.largura}m</p>
+                      <p className="text-xs text-muted-foreground">
+                        {cortina.tipoProduto === 'persiana' ? 'Dimensões' : 'Largura'}
+                      </p>
+                      <p className="font-medium">
+                        {cortina.tipoProduto === 'persiana' && cortina.larguraCm && cortina.alturaCm
+                          ? `${cortina.larguraCm} × ${cortina.alturaCm} cm`
+                          : `${cortina.largura}m`}
+                      </p>
                     </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground">Altura</p>
-                      <p className="font-medium">{cortina.altura}m</p>
-                    </div>
+                    {cortina.tipoProduto !== 'persiana' && (
+                      <div>
+                        <p className="text-xs text-muted-foreground">Altura</p>
+                        <p className="font-medium">{cortina.altura}m</p>
+                      </div>
+                    )}
+                    {cortina.tipoProduto === 'persiana' && cortina.alturaFaturadaM && (
+                      <div>
+                        <p className="text-xs text-muted-foreground">Altura faturada</p>
+                        <p className="font-medium">{cortina.alturaFaturadaM.toFixed(2)}m</p>
+                      </div>
+                    )}
+                    {cortina.tipoProduto === 'persiana' && cortina.areaM2 && (
+                      <div>
+                        <p className="text-xs text-muted-foreground">Área (por peça)</p>
+                        <p className="font-medium">{cortina.areaM2.toFixed(2)} m²</p>
+                      </div>
+                    )}
                     {cortina.barraCm && (
                       <div>
                         <p className="text-xs text-muted-foreground">Barra</p>
