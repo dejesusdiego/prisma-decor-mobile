@@ -13,8 +13,8 @@ export interface CustosCortina {
 // ============= CÁLCULO DE PERSIANAS =============
 
 export interface CalculoPersianaParams {
-  larguraCm: number;
-  alturaCm: number;
+  larguraM: number;
+  alturaM: number;
   quantidade: number;
   precoCustoM2: number; // R$/m² do material
   margemMultiplicador?: number; // ex: 1.615 (opcional, default 1)
@@ -40,28 +40,24 @@ export interface ResultadoPersiana {
  * - Cálculo por área (m²)
  */
 export function calcularValoresPersiana(params: CalculoPersianaParams): ResultadoPersiana {
-  const { larguraCm, alturaCm, quantidade, precoCustoM2, margemMultiplicador = 1 } = params;
+  const { larguraM, alturaM, quantidade, precoCustoM2, margemMultiplicador = 1 } = params;
 
-  // 1. Converter cm → metros
-  const larguraM = larguraCm / 100;
-  const alturaM = alturaCm / 100;
-
-  // 2. Arredondar altura para múltiplo de 5cm (0.05m)
+  // 1. Arredondar altura para múltiplo de 5cm (0.05m)
   const alturaArredondadaM = Math.ceil(alturaM / 0.05) * 0.05;
 
-  // 3. Aplicar altura mínima de faturamento (1.20m)
+  // 2. Aplicar altura mínima de faturamento (1.20m)
   const ALTURA_MIN_FAT_M = 1.20;
   const alturaFaturadaM = Math.max(alturaArredondadaM, ALTURA_MIN_FAT_M);
 
-  // 4. Calcular área faturada
+  // 3. Calcular área faturada
   const areaM2 = larguraM * alturaFaturadaM;
   const areaTotalM2 = areaM2 * quantidade;
 
-  // 5. Calcular custos
+  // 4. Calcular custos
   const custoUnitario = areaM2 * precoCustoM2;
   const custoTotal = custoUnitario * quantidade;
 
-  // 6. Calcular preços com margem (se fornecida)
+  // 5. Calcular preços com margem (se fornecida)
   const precoUnitario = margemMultiplicador > 1 ? custoUnitario * margemMultiplicador : undefined;
   const precoTotal = margemMultiplicador > 1 ? custoTotal * margemMultiplicador : undefined;
 
