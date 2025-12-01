@@ -18,6 +18,7 @@ import { toast } from 'sonner';
 import type { Cortina, Material } from '@/types/orcamento';
 import { OPCOES_AMBIENTE } from '@/types/orcamento';
 import { MaterialSelector } from './MaterialSelector';
+import { calcularValoresPersiana } from '@/lib/calculosOrcamento';
 
 interface PersianaCardProps {
   persiana: Cortina;
@@ -32,7 +33,11 @@ export function PersianaCard({
   onUpdate,
   onRemove,
 }: PersianaCardProps) {
-  const [persiana, setPersiana] = useState<Cortina>(persianaInicial);
+  const [persiana, setPersiana] = useState<Cortina>({
+    ...persianaInicial,
+    larguraCm: persianaInicial.larguraCm || Math.round((persianaInicial.largura || 0) * 100),
+    alturaCm: persianaInicial.alturaCm || Math.round((persianaInicial.altura || 0) * 100),
+  });
   const [expanded, setExpanded] = useState(!persianaInicial.id);
   const [persianas, setPersianas] = useState<Material[]>([]);
   const [loadingMateriais, setLoadingMateriais] = useState(false);
@@ -83,25 +88,37 @@ export function PersianaCard({
     }
   };
 
+  // Calcular valores usando a nova função
+  const calcularValores = () => {
+    if (!persiana.larguraCm || !persiana.alturaCm || !persiana.precoUnitario) {
+      return null;
+    }
+
+    return calcularValoresPersiana({
+      larguraCm: persiana.larguraCm,
+      alturaCm: persiana.alturaCm,
+      quantidade: persiana.quantidade,
+      precoCustoM2: persiana.precoUnitario,
+    });
+  };
+
+  const valoresCalculados = calcularValores();
+
   const salvarPersiana = async () => {
     if (!persiana.nomeIdentificacao || !persiana.materialPrincipalId || !persiana.ambiente) {
       toast.error("Preencha todos os campos obrigatórios (nome, persiana e ambiente)");
       return;
     }
 
-    const materialSelecionado = persianas.find(m => m.id === persiana.materialPrincipalId);
-    const areaMinFat = materialSelecionado?.area_min_fat || 0;
+    if (!valoresCalculados) {
+      toast.error("Erro ao calcular valores da persiana");
+      return;
+    }
 
-    // Calcula área considerando área mínima de faturamento
-    const areaPorUnidade = persiana.largura * persiana.altura;
-    const areaFaturavel = Math.max(areaPorUnidade, areaMinFat);
-    const areaTotalFaturavel = areaFaturavel * persiana.quantidade;
-    
-    const custoMaterial = persiana.precoUnitario * areaTotalFaturavel;
     const custoInstalacao = persiana.precisaInstalacao && persiana.valorInstalacao 
       ? persiana.valorInstalacao 
       : 0;
-    const custoTotal = custoMaterial + custoInstalacao;
+    const custoTotal = valoresCalculados.custoTotal + custoInstalacao;
 
     const dados = {
       orcamento_id: orcamentoId,
@@ -109,12 +126,12 @@ export function PersianaCard({
       tipo_cortina: persiana.tipoCortina,
       tipo_produto: 'persiana',
       ambiente: persiana.ambiente,
-      altura: persiana.altura,
-      largura: persiana.largura,
+      altura: valoresCalculados.alturaM, // Convertido para metros
+      largura: valoresCalculados.larguraM, // Convertido para metros
       quantidade: persiana.quantidade,
       descricao: persiana.descricao || null,
       motorizada: persiana.motorizada || false,
-      preco_unitario: persiana.precoUnitario,
+      preco_unitario: valoresCalculados.custoUnitario, // Custo por peça
       material_principal_id: persiana.materialPrincipalId,
       custo_total: custoTotal,
       precisa_instalacao: persiana.precisaInstalacao,
@@ -155,6 +172,10 @@ export function PersianaCard({
       const persianaAtualizada = {
         ...persiana,
         id: result.data.id,
+        largura: valoresCalculados.larguraM,
+        altura: valoresCalculados.alturaM,
+        alturaFaturadaM: valoresCalculados.alturaFaturadaM,
+        areaM2: valoresCalculados.areaM2,
         custoTotal,
         custoInstalacao,
       };
@@ -171,10 +192,6 @@ export function PersianaCard({
   };
 
   const materialSelecionado = persianas.find(m => m.id === persiana.materialPrincipalId);
-  const areaPorUnidade = persiana.largura * persiana.altura;
-  const areaMinFat = materialSelecionado?.area_min_fat || 0;
-  const areaFaturavel = Math.max(areaPorUnidade, areaMinFat);
-  const areaTotalFaturavel = areaFaturavel * persiana.quantidade;
 
   return (
     <Card className="p-4">
@@ -182,9 +199,9 @@ export function PersianaCard({
         <div className="flex-1 cursor-pointer" onClick={() => setExpanded(!expanded)}>
           <h3 className="text-lg font-semibold flex items-center gap-2">
             {persiana.nomeIdentificacao || 'Nova Persiana'}
-            {!expanded && persiana.id && materialSelecionado && (
+            {!expanded && persiana.id && materialSelecionado && persiana.larguraCm && persiana.alturaCm && (
               <span className="text-sm text-muted-foreground font-normal">
-                • {materialSelecionado.nome} • {areaPorUnidade.toFixed(2)}m² ({persiana.largura}x{persiana.altura}m)
+                • {materialSelecionado.nome} • {persiana.larguraCm}×{persiana.alturaCm}cm
                 {persiana.custoTotal !== undefined && persiana.custoTotal > 0 && (
                   <span className="ml-2 text-primary font-semibold">
                     • Custo: R$ {persiana.custoTotal.toFixed(2)}
@@ -268,22 +285,24 @@ export function PersianaCard({
               <Label className="text-base font-semibold mb-2 block">Dimensões</Label>
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <Label>Largura (m) *</Label>
+                  <Label>Largura (cm) *</Label>
                   <Input
                     type="number"
-                    step="0.01"
-                    value={persiana.largura}
-                    onChange={(e) => setPersiana({ ...persiana, largura: parseFloat(e.target.value) || 0 })}
+                    step="1"
+                    min="0"
+                    value={persiana.larguraCm || ''}
+                    onChange={(e) => setPersiana({ ...persiana, larguraCm: parseInt(e.target.value) || 0 })}
                   />
                 </div>
 
                 <div>
-                  <Label>Altura (m) *</Label>
+                  <Label>Altura (cm) *</Label>
                   <Input
                     type="number"
-                    step="0.01"
-                    value={persiana.altura}
-                    onChange={(e) => setPersiana({ ...persiana, altura: parseFloat(e.target.value) || 0 })}
+                    step="1"
+                    min="0"
+                    value={persiana.alturaCm || ''}
+                    onChange={(e) => setPersiana({ ...persiana, alturaCm: parseInt(e.target.value) || 0 })}
                   />
                 </div>
 
@@ -291,22 +310,26 @@ export function PersianaCard({
                   <Label>Quantidade</Label>
                   <Input
                     type="number"
+                    min="1"
                     value={persiana.quantidade}
                     onChange={(e) => setPersiana({ ...persiana, quantidade: parseInt(e.target.value) || 1 })}
                   />
                 </div>
               </div>
 
-              {materialSelecionado && (
-                <div className="mt-2 p-3 bg-muted/50 rounded-lg text-sm space-y-1">
-                  <div className="font-medium">Área calculada: {areaPorUnidade.toFixed(2)} m²</div>
-                  {areaMinFat > 0 && areaMinFat > areaPorUnidade && (
-                    <div className="text-amber-600 dark:text-amber-400">
-                      ⚠️ Área mínima de faturamento aplicada: {areaMinFat.toFixed(2)} m²
-                    </div>
-                  )}
-                  <div className="text-muted-foreground">
-                    Área faturável total: {areaTotalFaturavel.toFixed(2)} m²
+              {/* Preview de cálculo detalhado */}
+              {valoresCalculados && (
+                <div className="mt-2 p-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg space-y-2">
+                  <p className="text-sm font-semibold text-blue-900 dark:text-blue-300 mb-2">
+                    📐 Cálculo de Área (regra da fábrica)
+                  </p>
+                  <div className="space-y-1 text-sm text-blue-800 dark:text-blue-400">
+                    <p>Largura: {valoresCalculados.larguraM.toFixed(2)} m</p>
+                    <p>Altura informada: {valoresCalculados.alturaM.toFixed(2)} m</p>
+                    <p>Altura arredondada (módulo 5cm): {valoresCalculados.alturaArredondadaM.toFixed(2)} m</p>
+                    <p className="font-semibold">Altura faturada (mín 1.20m): {valoresCalculados.alturaFaturadaM.toFixed(2)} m</p>
+                    <p className="font-semibold">Área por peça: {valoresCalculados.areaM2.toFixed(2)} m²</p>
+                    <p className="font-semibold text-base">Área total (×{persiana.quantidade}): {valoresCalculados.areaTotalM2.toFixed(2)} m²</p>
                   </div>
                 </div>
               )}
@@ -373,21 +396,21 @@ export function PersianaCard({
             </div>
 
             {/* RESUMO DE CUSTOS */}
-            {materialSelecionado && persiana.precoUnitario > 0 && (
+            {valoresCalculados && (
               <div className="p-4 bg-primary/5 rounded-lg border border-primary/20">
                 <Label className="text-base font-semibold mb-2 block">Resumo de Custos</Label>
                 <div className="space-y-1 text-sm">
                   <div className="flex justify-between">
-                    <span>Área total:</span>
-                    <span className="font-medium">{areaTotalFaturavel.toFixed(2)} m²</span>
-                  </div>
-                  <div className="flex justify-between">
                     <span>Custo por m²:</span>
-                    <span className="font-medium">R$ {persiana.precoUnitario.toFixed(2)}</span>
+                    <span className="font-medium">R$ {(persiana.precoUnitario || 0).toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Subtotal material:</span>
-                    <span className="font-medium">R$ {(persiana.precoUnitario * areaTotalFaturavel).toFixed(2)}</span>
+                    <span>Custo unitário (por peça):</span>
+                    <span className="font-medium">R$ {valoresCalculados.custoUnitario.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Subtotal material (×{persiana.quantidade}):</span>
+                    <span className="font-medium">R$ {valoresCalculados.custoTotal.toFixed(2)}</span>
                   </div>
                   {persiana.precisaInstalacao && persiana.valorInstalacao && (
                     <div className="flex justify-between">
@@ -398,7 +421,7 @@ export function PersianaCard({
                   <div className="flex justify-between pt-2 border-t border-primary/20">
                     <span className="font-semibold">CUSTO TOTAL:</span>
                     <span className="font-semibold text-primary">
-                      R$ {((persiana.precoUnitario * areaTotalFaturavel) + (persiana.valorInstalacao || 0)).toFixed(2)}
+                      R$ {(valoresCalculados.custoTotal + (persiana.valorInstalacao || 0)).toFixed(2)}
                     </span>
                   </div>
                 </div>
