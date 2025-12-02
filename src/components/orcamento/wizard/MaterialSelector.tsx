@@ -10,7 +10,7 @@ import {
 import type { Material } from '@/types/orcamento';
 
 interface MaterialSelectorProps {
-  categoria: 'tecido' | 'forro' | 'trilho' | 'acessorio' | 'persiana';
+  categoria: 'tecido' | 'forro' | 'trilho' | 'acessorio' | 'persiana' | 'papel';
   materiais: Material[];
   value?: string;
   onSelect: (materialId: string | undefined) => void;
