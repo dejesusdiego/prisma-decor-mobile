@@ -4,12 +4,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Input } from '@/components/ui/input';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import type { Cortina, DadosOrcamento, Material } from '@/types/orcamento';
 import { OPCOES_MARGEM } from '@/types/orcamento';
-import { calcularResumoOrcamento } from '@/lib/calculosOrcamento';
-import { FileDown, Home, Save } from 'lucide-react';
+import { calcularResumoOrcamento, calcularConsumoDetalhado, calcularResumoConsolidado } from '@/lib/calculosOrcamento';
+import { FileDown, Home, Save, ChevronDown, AlertTriangle, Ruler, Package, Scissors, Wrench } from 'lucide-react';
 import { DialogValidade } from '../DialogValidade';
 import { gerarPdfOrcamento } from '@/lib/gerarPdfOrcamento';
 
@@ -34,6 +35,7 @@ export function EtapaResumo({
   const [dialogValidadeOpen, setDialogValidadeOpen] = useState(false);
   const [validadeDias, setValidadeDias] = useState<number>(7);
   const [materiais, setMateriais] = useState<Material[]>([]);
+  const [expandedCards, setExpandedCards] = useState<Record<number, boolean>>({});
 
   const margemAtual =
     margemTipo === 'personalizada'
@@ -41,12 +43,11 @@ export function EtapaResumo({
       : OPCOES_MARGEM.find((m) => m.label.toLowerCase().includes(margemTipo))?.valor || 61.5;
 
   const resumo = calcularResumoOrcamento(cortinas, margemAtual);
+  const resumoConsolidado = calcularResumoConsolidado(cortinas, materiais);
 
   // Carregar validade e materiais do banco de dados
   useEffect(() => {
     const carregarDados = async () => {
-      console.log('🔄 Iniciando carregamento de dados...');
-      
       // Carregar validade
       const { data, error } = await supabase
         .from('orcamentos')
@@ -64,23 +65,13 @@ export function EtapaResumo({
         .select('*')
         .eq('ativo', true);
 
-      console.log('📦 Materiais carregados do banco:', materiaisData?.length || 0, 'materiais');
-      
       if (materiaisError) {
-        console.error('❌ Erro ao carregar materiais:', materiaisError);
+        console.error('Erro ao carregar materiais:', materiaisError);
       }
 
       if (materiaisData) {
         setMateriais(materiaisData);
       }
-      
-      // Debug: mostrar IDs das cortinas
-      console.log('🎨 Cortinas:', cortinas.map(c => ({
-        nome: c.nomeIdentificacao,
-        tecidoId: c.tecidoId,
-        forroId: c.forroId,
-        trilhoId: c.trilhoId
-      })));
     };
 
     carregarDados();
@@ -88,8 +79,6 @@ export function EtapaResumo({
 
   const obterMaterial = (codigoOuId: string | undefined): Material | null => {
     if (!codigoOuId) return null;
-    
-    // Procura primeiro por codigo_item (para materiais novos) e depois por id (para materiais antigos)
     const material = materiais.find(m => m.codigo_item === codigoOuId || m.id === codigoOuId);
     return material || null;
   };
@@ -101,12 +90,19 @@ export function EtapaResumo({
     }).format(value);
   };
 
+  const formatMeters = (value: number) => {
+    return value.toFixed(2) + 'm';
+  };
+
+  const toggleCard = (index: number) => {
+    setExpandedCards(prev => ({ ...prev, [index]: !prev[index] }));
+  };
+
   const salvarOrcamento = async (status: 'rascunho' | 'finalizado') => {
     setLoading(true);
     try {
       const markup = 1 + margemAtual / 100;
 
-      // Atualizar preços de venda das cortinas primeiro
       for (const cortina of cortinas) {
         if (cortina.id) {
           const precoVendaItem = (cortina.custoTotal || 0) * markup;
@@ -121,7 +117,6 @@ export function EtapaResumo({
         }
       }
 
-      // Atualizar orçamento com margem e totais
       const { error: orcError } = await supabase
         .from('orcamentos')
         .update({
@@ -165,7 +160,6 @@ export function EtapaResumo({
     try {
       const markup = 1 + margemAtual / 100;
 
-      // Atualizar preços de venda das cortinas/persianas primeiro
       for (const cortina of cortinas) {
         if (cortina.id) {
           const precoVendaItem = (cortina.custoTotal || 0) * markup;
@@ -180,7 +174,6 @@ export function EtapaResumo({
         }
       }
 
-      // Atualizar orçamento com margem, totais e validade
       const { error: orcError } = await supabase
         .from('orcamentos')
         .update({
@@ -199,7 +192,6 @@ export function EtapaResumo({
 
       setValidadeDias(novaValidade);
 
-      // Gerar PDF
       await gerarPdfOrcamento(orcamentoId);
 
       toast({
@@ -216,6 +208,130 @@ export function EtapaResumo({
     } finally {
       setLoading(false);
     }
+  };
+
+  // Renderizar detalhes de consumo para cortinas
+  const renderConsumoDetalhado = (cortina: Cortina, index: number) => {
+    if (cortina.tipoProduto !== 'cortina') return null;
+    
+    const consumo = calcularConsumoDetalhado(cortina, materiais);
+    const tecido = obterMaterial(cortina.tecidoId);
+    const forro = obterMaterial(cortina.forroId);
+    const trilho = obterMaterial(cortina.trilhoId);
+
+    return (
+      <Collapsible open={expandedCards[index]} onOpenChange={() => toggleCard(index)}>
+        <CollapsibleTrigger asChild>
+          <Button variant="ghost" size="sm" className="w-full justify-between mt-2 text-muted-foreground hover:text-foreground">
+            <span className="flex items-center gap-2">
+              <Ruler className="h-4 w-4" />
+              Detalhamento de Consumo e Custos
+            </span>
+            <ChevronDown className={`h-4 w-4 transition-transform ${expandedCards[index] ? 'rotate-180' : ''}`} />
+          </Button>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="mt-3 space-y-3">
+          <div className="bg-muted/50 rounded-lg p-3 space-y-2 text-sm">
+            {/* Tecido */}
+            {tecido && consumo.consumoTecido_m > 0 && (
+              <div className="flex justify-between items-start border-b border-border/50 pb-2">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <Package className="h-3 w-3 text-primary" />
+                    <span className="font-medium">Tecido</span>
+                    {consumo.precisaEmendaTecido && (
+                      <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400 text-xs bg-amber-100 dark:bg-amber-900/30 px-1.5 py-0.5 rounded">
+                        <AlertTriangle className="h-3 w-3" />
+                        Emenda
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {formatMeters(consumo.consumoTecido_m)} × {formatCurrency(tecido.preco_custo)}/m
+                    {consumo.larguraRoloTecido_m && ` (rolo: ${consumo.larguraRoloTecido_m}m)`}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Coef: {consumo.coeficienteUsado} • Qtd: {cortina.quantidade}
+                  </p>
+                </div>
+                <span className="font-semibold text-right">{formatCurrency(cortina.custoTecido || 0)}</span>
+              </div>
+            )}
+
+            {/* Forro */}
+            {forro && consumo.consumoForro_m > 0 && (
+              <div className="flex justify-between items-start border-b border-border/50 pb-2">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <Package className="h-3 w-3 text-secondary-foreground" />
+                    <span className="font-medium">Forro</span>
+                    {consumo.precisaEmendaForro && (
+                      <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400 text-xs bg-amber-100 dark:bg-amber-900/30 px-1.5 py-0.5 rounded">
+                        <AlertTriangle className="h-3 w-3" />
+                        Emenda
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {formatMeters(consumo.consumoForro_m)} × {formatCurrency(forro.preco_custo)}/m
+                    {consumo.larguraRoloForro_m && ` (rolo: ${consumo.larguraRoloForro_m}m)`}
+                  </p>
+                </div>
+                <span className="font-semibold text-right">{formatCurrency(cortina.custoForro || 0)}</span>
+              </div>
+            )}
+
+            {/* Trilho */}
+            {trilho && consumo.comprimentoTrilho_m > 0 && (
+              <div className="flex justify-between items-start border-b border-border/50 pb-2">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <Ruler className="h-3 w-3 text-muted-foreground" />
+                    <span className="font-medium">Trilho</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {formatMeters(consumo.comprimentoTrilho_m)} × {formatCurrency(trilho.preco_custo)}/m
+                  </p>
+                </div>
+                <span className="font-semibold text-right">{formatCurrency(cortina.custoTrilho || 0)}</span>
+              </div>
+            )}
+
+            {/* Costura */}
+            {(cortina.custoCostura || 0) > 0 && (
+              <div className="flex justify-between items-start border-b border-border/50 pb-2">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <Scissors className="h-3 w-3 text-muted-foreground" />
+                    <span className="font-medium">Costura</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {formatMeters(consumo.comprimentoCostura_m)} (comprimento)
+                  </p>
+                </div>
+                <span className="font-semibold text-right">{formatCurrency(cortina.custoCostura || 0)}</span>
+              </div>
+            )}
+
+            {/* Instalação */}
+            {cortina.precisaInstalacao && (cortina.custoInstalacao || 0) > 0 && (
+              <div className="flex justify-between items-start">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <Wrench className="h-3 w-3 text-muted-foreground" />
+                    <span className="font-medium">Instalação</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {cortina.pontosInstalacao || 1} ponto(s)
+                  </p>
+                </div>
+                <span className="font-semibold text-right">{formatCurrency(cortina.custoInstalacao || 0)}</span>
+              </div>
+            )}
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
+    );
   };
 
   return (
@@ -263,6 +379,47 @@ export function EtapaResumo({
             )}
           </div>
 
+          {/* Resumo Consolidado de Materiais */}
+          {(resumoConsolidado.totalCortinas > 0 || resumoConsolidado.totalPersianas > 0) && (
+            <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 space-y-3">
+              <h3 className="font-semibold flex items-center gap-2">
+                <Package className="h-4 w-4" />
+                Resumo de Materiais (Todo o Orçamento)
+              </h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                {resumoConsolidado.totalTecido_m > 0 && (
+                  <div className="bg-background rounded p-2">
+                    <p className="text-xs text-muted-foreground">Total Tecidos</p>
+                    <p className="font-bold text-lg">{formatMeters(resumoConsolidado.totalTecido_m)}</p>
+                  </div>
+                )}
+                {resumoConsolidado.totalForro_m > 0 && (
+                  <div className="bg-background rounded p-2">
+                    <p className="text-xs text-muted-foreground">Total Forros</p>
+                    <p className="font-bold text-lg">{formatMeters(resumoConsolidado.totalForro_m)}</p>
+                  </div>
+                )}
+                {resumoConsolidado.totalTrilho_m > 0 && (
+                  <div className="bg-background rounded p-2">
+                    <p className="text-xs text-muted-foreground">Total Trilhos</p>
+                    <p className="font-bold text-lg">{formatMeters(resumoConsolidado.totalTrilho_m)}</p>
+                  </div>
+                )}
+                {resumoConsolidado.totalPontosInstalacao > 0 && (
+                  <div className="bg-background rounded p-2">
+                    <p className="text-xs text-muted-foreground">Pontos Instalação</p>
+                    <p className="font-bold text-lg">{resumoConsolidado.totalPontosInstalacao}</p>
+                  </div>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-3 text-xs text-muted-foreground pt-2 border-t border-border/50">
+                {resumoConsolidado.totalCortinas > 0 && <span>{resumoConsolidado.totalCortinas} cortina(s)</span>}
+                {resumoConsolidado.totalPersianas > 0 && <span>{resumoConsolidado.totalPersianas} persiana(s)</span>}
+                {resumoConsolidado.totalOutros > 0 && <span>{resumoConsolidado.totalOutros} outro(s)</span>}
+              </div>
+            </div>
+          )}
+
           {/* Resumo dos Produtos */}
           <div className="space-y-4">
             <h3 className="font-semibold">Produtos Incluídos ({cortinas.length})</h3>
@@ -277,6 +434,7 @@ export function EtapaResumo({
                       <p className="font-semibold text-lg">{cortina.nomeIdentificacao}</p>
                       <p className="text-sm text-muted-foreground">
                         {cortina.tipoProduto === 'cortina' ? 'Cortina' : cortina.tipoProduto === 'persiana' ? 'Persiana' : 'Outro'} - {cortina.tipoCortina}
+                        {cortina.ambiente && <span className="ml-2">• {cortina.ambiente}</span>}
                       </p>
                     </div>
                     <p className="font-bold text-primary">
@@ -305,7 +463,7 @@ export function EtapaResumo({
                     </div>
                   </div>
 
-                   {cortina.tipoProduto === 'cortina' && (
+                  {cortina.tipoProduto === 'cortina' && (
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                       {/* Tecido */}
                       {(() => {
@@ -383,11 +541,6 @@ export function EtapaResumo({
                                   <p className="text-xs text-muted-foreground">
                                     Preço custo: {formatCurrency(trilho.preco_custo)}/m
                                   </p>
-                                  {trilho.largura_metro && (
-                                    <p className="text-xs text-muted-foreground">
-                                      Largura rolo: {trilho.largura_metro}m
-                                    </p>
-                                  )}
                                 </div>
                               </>
                             ) : (
@@ -398,6 +551,9 @@ export function EtapaResumo({
                       })()}
                     </div>
                   )}
+
+                  {/* Detalhamento de Consumo (colapsável) */}
+                  {renderConsumoDetalhado(cortina, index)}
 
                   {cortina.observacoesInternas && (
                     <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 p-3 rounded-lg mt-3">

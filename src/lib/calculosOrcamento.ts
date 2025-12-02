@@ -1,6 +1,8 @@
 import type { Cortina, Material, ServicoConfeccao, ServicoInstalacao } from '@/types/orcamento';
 import { COEFICIENTES_CORTINA } from '@/types/orcamento';
 
+// ============= INTERFACES =============
+
 export interface CustosCortina {
   custoTecido: number;
   custoForro: number;
@@ -8,6 +10,164 @@ export interface CustosCortina {
   custoCostura: number;
   custoInstalacao: number;
   custoTotal: number;
+}
+
+export interface CustosPersiana {
+  custoMaterialPrincipal: number;
+  custoTrilho: number;
+  custoInstalacao: number;
+  custoTotal: number;
+}
+
+export interface ResumoOrcamento {
+  subtotalMateriais: number;
+  subtotalMaoObraCostura: number;
+  subtotalInstalacao: number;
+  custoTotal: number;
+  totalGeral: number;
+}
+
+export interface ConsumoDetalhado {
+  // Consumo em metros
+  consumoTecido_m: number;
+  consumoForro_m: number;
+  comprimentoTrilho_m: number;
+  comprimentoCostura_m: number;
+  // Indicadores
+  precisaEmendaTecido: boolean;
+  precisaEmendaForro: boolean;
+  coeficienteUsado: number;
+  // Custos unitários (por metro ou por ponto)
+  precoTecido_m: number;
+  precoForro_m: number;
+  precoTrilho_m: number;
+  precoCostura_m: number;
+  precoInstalacao_ponto: number;
+  // Larguras dos rolos
+  larguraRoloTecido_m: number | null;
+  larguraRoloForro_m: number | null;
+}
+
+export interface ResumoConsolidado {
+  totalTecido_m: number;
+  totalForro_m: number;
+  totalTrilho_m: number;
+  totalPontosInstalacao: number;
+  totalCortinas: number;
+  totalPersianas: number;
+  totalOutros: number;
+}
+
+// ============= FUNÇÕES DE CÁLCULO =============
+
+export function calcularConsumoDetalhado(
+  cortina: Cortina,
+  materiais: Material[]
+): ConsumoDetalhado {
+  const tecido = cortina.tecidoId ? materiais.find((m) => m.id === cortina.tecidoId || m.codigo_item === cortina.tecidoId) : null;
+  const forro = cortina.forroId ? materiais.find((m) => m.id === cortina.forroId || m.codigo_item === cortina.forroId) : null;
+  const trilho = cortina.trilhoId ? materiais.find((m) => m.id === cortina.trilhoId || m.codigo_item === cortina.trilhoId) : null;
+
+  // Converter barra de cm para metros
+  const barra_m = (cortina.barraCm || 0) / 100;
+
+  // Obter coeficiente baseado no tipo de cortina
+  const coeficiente = COEFICIENTES_CORTINA[cortina.tipoCortina as keyof typeof COEFICIENTES_CORTINA] || 3.5;
+
+  // Cálculo do consumo de tecido
+  let consumoTecido_m = 0;
+  let precisaEmendaTecido = false;
+  if (tecido) {
+    consumoTecido_m = (cortina.largura * coeficiente) + barra_m;
+    
+    // Verificar se precisa emenda (altura vs largura do rolo)
+    if (tecido.largura_metro && cortina.altura > tecido.largura_metro) {
+      consumoTecido_m *= 2;
+      precisaEmendaTecido = true;
+    }
+    
+    consumoTecido_m *= cortina.quantidade;
+  }
+
+  // Cálculo do consumo de forro
+  let consumoForro_m = 0;
+  let precisaEmendaForro = false;
+  if (forro) {
+    consumoForro_m = (cortina.largura * coeficiente) + barra_m;
+    
+    if (forro.largura_metro && cortina.altura > forro.largura_metro) {
+      consumoForro_m *= 2;
+      precisaEmendaForro = true;
+    }
+    
+    consumoForro_m *= cortina.quantidade;
+  }
+
+  // Comprimento do trilho (10cm de sobra)
+  const comprimentoTrilho_m = trilho ? cortina.largura + 0.1 : 0;
+
+  // Comprimento para costura
+  const comprimentoCostura_m = trilho ? comprimentoTrilho_m : cortina.largura;
+
+  return {
+    consumoTecido_m,
+    consumoForro_m,
+    comprimentoTrilho_m,
+    comprimentoCostura_m,
+    precisaEmendaTecido,
+    precisaEmendaForro,
+    coeficienteUsado: coeficiente,
+    precoTecido_m: tecido?.preco_custo || 0,
+    precoForro_m: forro?.preco_custo || 0,
+    precoTrilho_m: trilho?.preco_custo || 0,
+    precoCostura_m: 0, // Será preenchido com o serviço de confecção
+    precoInstalacao_ponto: 0, // Será preenchido com o serviço de instalação
+    larguraRoloTecido_m: tecido?.largura_metro || null,
+    larguraRoloForro_m: forro?.largura_metro || null,
+  };
+}
+
+export function calcularResumoConsolidado(
+  cortinas: Cortina[],
+  materiais: Material[]
+): ResumoConsolidado {
+  let totalTecido_m = 0;
+  let totalForro_m = 0;
+  let totalTrilho_m = 0;
+  let totalPontosInstalacao = 0;
+  let totalCortinas = 0;
+  let totalPersianas = 0;
+  let totalOutros = 0;
+
+  for (const cortina of cortinas) {
+    // Contagem por tipo
+    if (cortina.tipoProduto === 'cortina') {
+      totalCortinas++;
+      const consumo = calcularConsumoDetalhado(cortina, materiais);
+      totalTecido_m += consumo.consumoTecido_m;
+      totalForro_m += consumo.consumoForro_m;
+      totalTrilho_m += consumo.comprimentoTrilho_m;
+    } else if (cortina.tipoProduto === 'persiana') {
+      totalPersianas++;
+    } else {
+      totalOutros++;
+    }
+
+    // Pontos de instalação
+    if (cortina.precisaInstalacao) {
+      totalPontosInstalacao += cortina.pontosInstalacao || 1;
+    }
+  }
+
+  return {
+    totalTecido_m,
+    totalForro_m,
+    totalTrilho_m,
+    totalPontosInstalacao,
+    totalCortinas,
+    totalPersianas,
+    totalOutros,
+  };
 }
 
 export function calcularCustosCortina(
@@ -83,13 +243,6 @@ export function calcularCustosCortina(
   };
 }
 
-export interface CustosPersiana {
-  custoMaterialPrincipal: number;
-  custoTrilho: number;
-  custoInstalacao: number;
-  custoTotal: number;
-}
-
 export function calcularCustosPersiana(
   persiana: Cortina,
   materiais: Material[],
@@ -129,14 +282,6 @@ export function calcularCustosPersiana(
     custoInstalacao,
     custoTotal,
   };
-}
-
-export interface ResumoOrcamento {
-  subtotalMateriais: number;
-  subtotalMaoObraCostura: number;
-  subtotalInstalacao: number;
-  custoTotal: number;
-  totalGeral: number;
 }
 
 export function calcularResumoOrcamento(
