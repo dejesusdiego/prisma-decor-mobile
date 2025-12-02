@@ -8,12 +8,14 @@ import {
   TrendingUp,
   Clock,
   CheckCircle,
-  ArrowRight
+  ArrowRight,
+  Send
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { getStatusConfig, getStatusLabel } from '@/lib/statusOrcamento';
 
 interface DashboardContentProps {
   onNovoOrcamento: () => void;
@@ -34,12 +36,13 @@ interface Stats {
   totalOrcamentos: number;
   valorTotal: number;
   pendentes: number;
-  finalizados: number;
+  enviados: number;
+  pagos: number;
 }
 
 export function DashboardContent({ onNovoOrcamento, onMeusOrcamentos, onVisualizarOrcamento }: DashboardContentProps) {
   const [recentOrcamentos, setRecentOrcamentos] = useState<RecentOrcamento[]>([]);
-  const [stats, setStats] = useState<Stats>({ totalOrcamentos: 0, valorTotal: 0, pendentes: 0, finalizados: 0 });
+  const [stats, setStats] = useState<Stats>({ totalOrcamentos: 0, valorTotal: 0, pendentes: 0, enviados: 0, pagos: 0 });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -67,10 +70,11 @@ export function DashboardContent({ onNovoOrcamento, onMeusOrcamentos, onVisualiz
 
       const totalOrcamentos = allData?.length || 0;
       const valorTotal = allData?.reduce((sum, orc) => sum + (orc.total_geral || 0), 0) || 0;
-      const pendentes = allData?.filter(orc => orc.status === 'pendente' || orc.status === 'rascunho').length || 0;
-      const finalizados = allData?.filter(orc => orc.status === 'finalizado' || orc.status === 'aprovado').length || 0;
+      const pendentes = allData?.filter(orc => orc.status === 'rascunho' || orc.status === 'finalizado').length || 0;
+      const enviados = allData?.filter(orc => orc.status === 'enviado').length || 0;
+      const pagos = allData?.filter(orc => orc.status === 'pago' || orc.status === 'pago_parcial').length || 0;
 
-      setStats({ totalOrcamentos, valorTotal, pendentes, finalizados });
+      setStats({ totalOrcamentos, valorTotal, pendentes, enviados, pagos });
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
     } finally {
@@ -83,22 +87,6 @@ export function DashboardContent({ onNovoOrcamento, onMeusOrcamentos, onVisualiz
       style: 'currency',
       currency: 'BRL',
     }).format(value);
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'aprovado':
-        return 'text-green-600 bg-green-100 dark:bg-green-950 dark:text-green-400';
-      case 'pendente':
-      case 'rascunho':
-        return 'text-yellow-600 bg-yellow-100 dark:bg-yellow-950 dark:text-yellow-400';
-      case 'rejeitado':
-        return 'text-red-600 bg-red-100 dark:bg-red-950 dark:text-red-400';
-      case 'finalizado':
-        return 'text-blue-600 bg-blue-100 dark:bg-blue-950 dark:text-blue-400';
-      default:
-        return 'text-muted-foreground bg-muted';
-    }
   };
 
   const statsCards = [
@@ -120,15 +108,22 @@ export function DashboardContent({ onNovoOrcamento, onMeusOrcamentos, onVisualiz
       title: 'Pendentes', 
       value: stats.pendentes, 
       icon: Clock, 
-      color: 'text-yellow-600 dark:text-yellow-400',
-      bgColor: 'bg-yellow-100 dark:bg-yellow-950'
+      color: 'text-amber-600 dark:text-amber-400',
+      bgColor: 'bg-amber-100 dark:bg-amber-950'
     },
     { 
-      title: 'Finalizados', 
-      value: stats.finalizados, 
-      icon: CheckCircle, 
+      title: 'Enviados', 
+      value: stats.enviados, 
+      icon: Send, 
       color: 'text-blue-600 dark:text-blue-400',
       bgColor: 'bg-blue-100 dark:bg-blue-950'
+    },
+    { 
+      title: 'Pagos', 
+      value: stats.pagos, 
+      icon: CheckCircle, 
+      color: 'text-emerald-600 dark:text-emerald-400',
+      bgColor: 'bg-emerald-100 dark:bg-emerald-950'
     },
   ];
 
@@ -151,7 +146,7 @@ export function DashboardContent({ onNovoOrcamento, onMeusOrcamentos, onVisualiz
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {statsCards.map((stat, index) => (
           <Card key={index} className="border-0 shadow-sm hover:shadow-md transition-shadow">
             <CardContent className="p-5">
@@ -203,37 +198,40 @@ export function DashboardContent({ onNovoOrcamento, onMeusOrcamentos, onVisualiz
             </div>
           ) : (
             <div className="space-y-2">
-              {recentOrcamentos.map((orc) => (
-                <div
-                  key={orc.id}
-                  onClick={() => onVisualizarOrcamento(orc.id)}
-                  className="flex items-center justify-between p-4 rounded-lg bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/30 dark:hover:bg-blue-950/50 cursor-pointer transition-colors group"
-                >
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3 mb-1">
-                      <span className="font-semibold text-foreground">
-                        {orc.codigo}
-                      </span>
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${getStatusColor(orc.status)}`}>
-                        {orc.status}
-                      </span>
+              {recentOrcamentos.map((orc) => {
+                const statusConfig = getStatusConfig(orc.status);
+                return (
+                  <div
+                    key={orc.id}
+                    onClick={() => onVisualizarOrcamento(orc.id)}
+                    className="flex items-center justify-between p-4 rounded-lg bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/30 dark:hover:bg-blue-950/50 cursor-pointer transition-colors group"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-3 mb-1">
+                        <span className="font-semibold text-foreground">
+                          {orc.codigo}
+                        </span>
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusConfig.color}`}>
+                          {getStatusLabel(orc.status)}
+                        </span>
+                      </div>
+                      <p className="text-sm text-muted-foreground truncate">
+                        {orc.cliente_nome}
+                      </p>
+                      <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
+                        <Calendar className="h-3 w-3" />
+                        {format(new Date(orc.created_at), "dd/MM/yyyy", { locale: ptBR })}
+                      </div>
                     </div>
-                    <p className="text-sm text-muted-foreground truncate">
-                      {orc.cliente_nome}
-                    </p>
-                    <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
-                      <Calendar className="h-3 w-3" />
-                      {format(new Date(orc.created_at), "dd/MM/yyyy", { locale: ptBR })}
+                    <div className="text-right flex items-center gap-3">
+                      <span className="text-lg font-bold text-primary">
+                        {formatCurrency(orc.total_geral || 0)}
+                      </span>
+                      <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
                   </div>
-                  <div className="text-right flex items-center gap-3">
-                    <span className="text-lg font-bold text-primary">
-                      {formatCurrency(orc.total_geral || 0)}
-                    </span>
-                    <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>
