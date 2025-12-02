@@ -247,6 +247,7 @@ export function DialogMaterial({ aberto, material, onClose }: DialogMaterialProp
                   <SelectItem value="UN">Unidade (UN)</SelectItem>
                   <SelectItem value="ML">Metro Linear (ML)</SelectItem>
                   <SelectItem value="M2">Metro Quadrado (m²)</SelectItem>
+                  <SelectItem value="ROLO">Rolo (ROLO)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
