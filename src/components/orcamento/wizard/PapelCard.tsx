@@ -286,20 +286,20 @@ export function PapelCard({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor={`quantidade-${papel.id}`}>Quantidade (m²) *</Label>
+              <Label htmlFor={`quantidade-${papel.id}`}>Quantidade (rolos) *</Label>
               <Input
                 id={`quantidade-${papel.id}`}
                 type="number"
-                min="0.01"
-                step="0.01"
+                min="1"
+                step="1"
                 value={papel.quantidade}
-                onChange={(e) => handleChange('quantidade', parseFloat(e.target.value) || 1)}
+                onChange={(e) => handleChange('quantidade', parseInt(e.target.value) || 1)}
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor={`preco-${papel.id}`}>Preço por m² (R$) *</Label>
+              <Label htmlFor={`preco-${papel.id}`}>Preço por Rolo (R$) *</Label>
               <Input
                 id={`preco-${papel.id}`}
                 type="number"
