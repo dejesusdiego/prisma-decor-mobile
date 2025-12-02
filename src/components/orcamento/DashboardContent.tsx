@@ -207,7 +207,7 @@ export function DashboardContent({ onNovoOrcamento, onMeusOrcamentos, onVisualiz
                 <div
                   key={orc.id}
                   onClick={() => onVisualizarOrcamento(orc.id)}
-                  className="flex items-center justify-between p-4 rounded-lg bg-accent/30 hover:bg-accent/50 cursor-pointer transition-colors group"
+                  className="flex items-center justify-between p-4 rounded-lg bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/30 dark:hover:bg-blue-950/50 cursor-pointer transition-colors group"
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-1">
