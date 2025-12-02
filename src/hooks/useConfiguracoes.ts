@@ -16,11 +16,11 @@ export interface CoeficientesPorTipo {
 }
 
 export interface ServicosPorTipoCortina {
-  wave: string | null;
-  prega: string | null;
-  painel: string | null;
-  rolo: string | null;
-  [key: string]: string | null;
+  wave: string[];
+  prega: string[];
+  painel: string[];
+  rolo: string[];
+  [key: string]: string[];
 }
 
 export interface OpcaoMargem {
@@ -46,7 +46,7 @@ const DEFAULT_CONFIGS: Configuracoes = {
     wave: 2.5, prega: 2.5, painel: 2.5, rolo: 2.5,
     horizontal: 1.0, vertical: 1.0, romana: 1.0, celular: 1.0, madeira: 1.0, outro: 1.0
   },
-  servicosPorTipoCortina: { wave: null, prega: null, painel: null, rolo: null },
+  servicosPorTipoCortina: { wave: [], prega: [], painel: [], rolo: [] },
   servicoForroPadrao: null,
   opcoesMargem: [
     { label: 'Baixa (40%)', valor: 40 },

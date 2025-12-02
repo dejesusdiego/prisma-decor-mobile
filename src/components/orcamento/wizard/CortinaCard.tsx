@@ -12,13 +12,17 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import { Copy, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Copy, Trash2, ChevronDown, ChevronUp, X, Scissors } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import type { Cortina, Material } from '@/types/orcamento';
+import type { Cortina, Material, ServicoConfeccao } from '@/types/orcamento';
 import { calcularCustosCortina } from '@/lib/calculosOrcamento';
 import { OPCOES_AMBIENTE } from '@/types/orcamento';
 import { MaterialSelector } from './MaterialSelector';
+import { useConfiguracoes } from '@/hooks/useConfiguracoes';
 
 interface CortinaCardProps {
   cortina: Cortina;
@@ -38,12 +42,17 @@ export function CortinaCard({
   const [tecidos, setTecidos] = useState<Material[]>([]);
   const [forros, setForros] = useState<Material[]>([]);
   const [trilhos, setTrilhos] = useState<Material[]>([]);
+  const [servicosConfeccao, setServicosConfeccao] = useState<ServicoConfeccao[]>([]);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [expanded, setExpanded] = useState(!cortina.id); // Expandido se for novo item
+  const [expanded, setExpanded] = useState(!cortina.id);
+  const [servicosAdicionaisOpen, setServicosAdicionaisOpen] = useState(false);
+  
+  const { configuracoes } = useConfiguracoes();
 
   useEffect(() => {
     carregarMateriais();
+    carregarServicosConfeccao();
   }, []);
 
   const carregarMateriais = async () => {
@@ -91,9 +100,43 @@ export function CortinaCard({
     }
   };
 
+  const carregarServicosConfeccao = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('servicos_confeccao')
+        .select('*')
+        .eq('ativo', true)
+        .order('nome_modelo');
+
+      if (error) throw error;
+      setServicosConfeccao(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar serviços:', error);
+    }
+  };
+
   const handleChange = (field: keyof Cortina, value: any) => {
     const novosDados = { ...cortina, [field]: value };
     onUpdate(novosDados);
+  };
+
+  const toggleServicoAdicional = (servicoId: string) => {
+    const atuais = cortina.servicosAdicionaisIds || [];
+    if (atuais.includes(servicoId)) {
+      handleChange('servicosAdicionaisIds', atuais.filter(id => id !== servicoId));
+    } else {
+      handleChange('servicosAdicionaisIds', [...atuais, servicoId]);
+    }
+  };
+
+  const removerServicoAdicional = (servicoId: string) => {
+    const atuais = cortina.servicosAdicionaisIds || [];
+    handleChange('servicosAdicionaisIds', atuais.filter(id => id !== servicoId));
+  };
+
+  const getNomeServico = (servicoId: string) => {
+    const servico = servicosConfeccao.find(s => s.id === servicoId);
+    return servico ? servico.nome_modelo : 'Desconhecido';
   };
 
   const salvarCortina = async () => {
@@ -114,18 +157,49 @@ export function CortinaCard({
         tecidoId: cortina.tecidoId,
         forroId: cortina.forroId,
         trilhoId: cortina.trilhoId,
-        tipoCortina: cortina.tipoCortina
+        tipoCortina: cortina.tipoCortina,
+        servicosAdicionais: cortina.servicosAdicionaisIds
       });
 
-      // Buscar serviços de confecção do banco de dados
-      const { data: confeccaoData, error: confeccaoError } = await supabase
-        .from('servicos_confeccao')
-        .select('*')
-        .eq('ativo', true)
-        .limit(1)
-        .single();
+      // Obter serviços configurados para este tipo de cortina
+      const servicosConfigurados = configuracoes.servicosPorTipoCortina[cortina.tipoCortina] || [];
+      const servicosAdicionais = cortina.servicosAdicionaisIds || [];
+      
+      // Combinar serviços configurados + adicionais (sem duplicatas)
+      const todosServicosIds = [...new Set([...servicosConfigurados, ...servicosAdicionais])];
+      
+      // Adicionar serviço de forro se tiver forro e houver serviço configurado
+      if (cortina.forroId && configuracoes.servicoForroPadrao) {
+        if (!todosServicosIds.includes(configuracoes.servicoForroPadrao)) {
+          todosServicosIds.push(configuracoes.servicoForroPadrao);
+        }
+      }
 
-      if (confeccaoError) throw confeccaoError;
+      // Buscar todos os serviços de confecção selecionados
+      let servicosParaCalculo: ServicoConfeccao[] = [];
+      if (todosServicosIds.length > 0) {
+        const { data: servicosData, error: servicosError } = await supabase
+          .from('servicos_confeccao')
+          .select('*')
+          .in('id', todosServicosIds)
+          .eq('ativo', true);
+
+        if (servicosError) throw servicosError;
+        servicosParaCalculo = servicosData || [];
+      }
+
+      // Se não houver serviços configurados, buscar o primeiro ativo como fallback
+      if (servicosParaCalculo.length === 0) {
+        const { data: fallbackServico, error: fallbackError } = await supabase
+          .from('servicos_confeccao')
+          .select('*')
+          .eq('ativo', true)
+          .limit(1)
+          .single();
+
+        if (fallbackError) throw fallbackError;
+        servicosParaCalculo = [fallbackServico];
+      }
 
       // Buscar serviços de instalação do banco de dados
       const { data: instalacaoData, error: instalacaoError } = await supabase
@@ -144,15 +218,30 @@ export function CortinaCard({
       ].filter(Boolean);
 
       console.log('📦 Materiais selecionados:', materiaisSelecionados.length);
-      console.log('🔧 Serviço de confecção:', confeccaoData?.nome_modelo);
+      console.log('🔧 Serviços de confecção:', servicosParaCalculo.map(s => s.nome_modelo));
       console.log('🔨 Serviço de instalação:', instalacaoData?.nome);
 
+      // Calcular custo de costura somando todos os serviços
+      const trilho = cortina.trilhoId ? trilhos.find(t => t.id === cortina.trilhoId || t.codigo_item === cortina.trilhoId) : null;
+      const comprimentoTrilho_m = cortina.largura + 0.1;
+      const comprimentoParaCostura = trilho ? comprimentoTrilho_m : cortina.largura;
+      
+      let custoCosturaTotal = 0;
+      for (const servico of servicosParaCalculo) {
+        custoCosturaTotal += comprimentoParaCostura * servico.preco_custo;
+      }
+
+      // Calcular custos usando o primeiro serviço para estrutura, mas substituir custosCostura
       const custos = calcularCustosCortina(
         cortina,
         materiaisSelecionados as Material[],
-        confeccaoData,
+        servicosParaCalculo[0],
         instalacaoData
       );
+
+      // Substituir custo de costura pelo total calculado
+      custos.custoCostura = custoCosturaTotal;
+      custos.custoTotal = custos.custoTecido + custos.custoForro + custos.custoTrilho + custoCosturaTotal + custos.custoInstalacao;
 
       const dadosCortina = {
         orcamento_id: orcamentoId,
@@ -179,6 +268,7 @@ export function CortinaCard({
         custo_instalacao: custos.custoInstalacao,
         custo_total: custos.custoTotal,
         preco_venda: 0,
+        servicos_adicionais_ids: cortina.servicosAdicionaisIds || [],
       };
 
       let result;
@@ -418,6 +508,72 @@ export function CortinaCard({
               placeholder="Selecione o trilho"
               optional={true}
             />
+          </div>
+
+          {/* Serviços de Confecção Adicionais */}
+          <div className="space-y-2 md:col-span-2">
+            <Collapsible open={servicosAdicionaisOpen} onOpenChange={setServicosAdicionaisOpen}>
+              <CollapsibleTrigger asChild>
+                <Button variant="outline" className="w-full justify-between">
+                  <span className="flex items-center gap-2">
+                    <Scissors className="h-4 w-4" />
+                    Serviços de Confecção Adicionais
+                    {(cortina.servicosAdicionaisIds?.length || 0) > 0 && (
+                      <Badge variant="secondary" className="ml-2">
+                        {cortina.servicosAdicionaisIds?.length} selecionado(s)
+                      </Badge>
+                    )}
+                  </span>
+                  {servicosAdicionaisOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-2">
+                <div className="border rounded-lg p-4 space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    Selecione serviços específicos para esta cortina (além dos configurados no sistema)
+                  </p>
+                  
+                  {/* Serviços selecionados */}
+                  {(cortina.servicosAdicionaisIds?.length || 0) > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {cortina.servicosAdicionaisIds?.map((servicoId) => (
+                        <Badge key={servicoId} variant="secondary" className="flex items-center gap-1">
+                          {getNomeServico(servicoId)}
+                          <button
+                            onClick={() => removerServicoAdicional(servicoId)}
+                            className="ml-1 hover:bg-destructive/20 rounded-full p-0.5"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Lista de serviços disponíveis */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-48 overflow-y-auto">
+                    {servicosConfeccao.map((servico) => (
+                      <div key={servico.id} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`servico-${cortina.id}-${servico.id}`}
+                          checked={(cortina.servicosAdicionaisIds || []).includes(servico.id)}
+                          onCheckedChange={() => toggleServicoAdicional(servico.id)}
+                        />
+                        <label
+                          htmlFor={`servico-${cortina.id}-${servico.id}`}
+                          className="text-sm cursor-pointer flex-1"
+                        >
+                          {servico.nome_modelo}
+                          <span className="text-muted-foreground ml-1">
+                            (R$ {servico.preco_custo.toFixed(2)}/mt)
+                          </span>
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
           </div>
 
           <div className="space-y-2 md:col-span-2">

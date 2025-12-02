@@ -5,11 +5,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Save, Plus, Trash2, Settings, Scissors, Percent, Home } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { ArrowLeft, Save, Plus, Trash2, Settings, Scissors, Percent, Home, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useConfiguracoes, OpcaoMargem } from '@/hooks/useConfiguracoes';
 import type { ServicoConfeccao } from '@/types/orcamento';
+import { Badge } from '@/components/ui/badge';
 
 interface AjustesSistemaProps {
   onVoltar: () => void;
@@ -23,14 +25,14 @@ const TIPOS_CORTINA = [
 ];
 
 export function AjustesSistema({ onVoltar }: AjustesSistemaProps) {
-  const { configuracoes, loading, salvarConfiguracao, carregarConfiguracoes } = useConfiguracoes();
+  const { configuracoes, loading, salvarConfiguracao } = useConfiguracoes();
   const [servicosConfeccao, setServicosConfeccao] = useState<ServicoConfeccao[]>([]);
   const [saving, setSaving] = useState(false);
   
   // Estados locais para edição
   const [coefTecido, setCoefTecido] = useState<Record<string, number>>({});
   const [coefForro, setCoefForro] = useState<Record<string, number>>({});
-  const [servicosPorTipo, setServicosPorTipo] = useState<Record<string, string | null>>({});
+  const [servicosPorTipo, setServicosPorTipo] = useState<Record<string, string[]>>({});
   const [servicoForro, setServicoForro] = useState<string | null>(null);
   const [opcoesMargem, setOpcoesMargem] = useState<OpcaoMargem[]>([]);
   const [opcoesAmbiente, setOpcoesAmbiente] = useState<string[]>([]);
@@ -44,7 +46,20 @@ export function AjustesSistema({ onVoltar }: AjustesSistemaProps) {
     if (!loading) {
       setCoefTecido(configuracoes.coeficientesTecido);
       setCoefForro(configuracoes.coeficientesForro);
-      setServicosPorTipo(configuracoes.servicosPorTipoCortina);
+      // Garantir que servicosPorTipoCortina seja um objeto com arrays
+      const servicos = configuracoes.servicosPorTipoCortina || {};
+      const servicosNormalizados: Record<string, string[]> = {};
+      for (const key of Object.keys(servicos)) {
+        const valor = servicos[key];
+        if (Array.isArray(valor)) {
+          servicosNormalizados[key] = valor;
+        } else if (valor) {
+          servicosNormalizados[key] = [valor];
+        } else {
+          servicosNormalizados[key] = [];
+        }
+      }
+      setServicosPorTipo(servicosNormalizados);
       setServicoForro(configuracoes.servicoForroPadrao);
       setOpcoesMargem(configuracoes.opcoesMargem);
       setOpcoesAmbiente(configuracoes.opcoesAmbiente);
@@ -142,6 +157,35 @@ export function AjustesSistema({ onVoltar }: AjustesSistemaProps) {
 
   const removerAmbiente = (index: number) => {
     setOpcoesAmbiente(opcoesAmbiente.filter((_, i) => i !== index));
+  };
+
+  // Funções para gerenciar múltiplos serviços por tipo
+  const toggleServicoPorTipo = (tipoKey: string, servicoId: string) => {
+    const atuais = servicosPorTipo[tipoKey] || [];
+    if (atuais.includes(servicoId)) {
+      setServicosPorTipo({
+        ...servicosPorTipo,
+        [tipoKey]: atuais.filter(id => id !== servicoId)
+      });
+    } else {
+      setServicosPorTipo({
+        ...servicosPorTipo,
+        [tipoKey]: [...atuais, servicoId]
+      });
+    }
+  };
+
+  const removerServicoPorTipo = (tipoKey: string, servicoId: string) => {
+    const atuais = servicosPorTipo[tipoKey] || [];
+    setServicosPorTipo({
+      ...servicosPorTipo,
+      [tipoKey]: atuais.filter(id => id !== servicoId)
+    });
+  };
+
+  const getNomeServico = (servicoId: string) => {
+    const servico = servicosConfeccao.find(s => s.id === servicoId);
+    return servico ? servico.nome_modelo : 'Desconhecido';
   };
 
   if (loading) {
@@ -243,42 +287,62 @@ export function AjustesSistema({ onVoltar }: AjustesSistemaProps) {
           </Card>
         </TabsContent>
 
-        {/* Serviços */}
+        {/* Serviços - Agora com seleção múltipla */}
         <TabsContent value="servicos">
           <Card>
             <CardHeader>
               <CardTitle>Mapeamento de Serviços de Confecção</CardTitle>
               <CardDescription>
-                Defina qual serviço de confecção usar para cada tipo de cortina
+                Selecione um ou mais serviços de confecção para cada tipo de cortina. Você pode adicionar serviços específicos diretamente no card da cortina.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="space-y-4">
-                {TIPOS_CORTINA.map((tipo) => (
-                  <div key={tipo.key} className="flex items-center gap-4">
-                    <Label className="w-32 font-medium">{tipo.label}:</Label>
-                    <Select
-                      value={servicosPorTipo[tipo.key] || 'none'}
-                      onValueChange={(value) => setServicosPorTipo({ 
-                        ...servicosPorTipo, 
-                        [tipo.key]: value === 'none' ? null : value 
-                      })}
-                    >
-                      <SelectTrigger className="flex-1">
-                        <SelectValue placeholder="Selecione um serviço" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">Nenhum selecionado</SelectItem>
-                        {servicosConfeccao.map((servico) => (
-                          <SelectItem key={servico.id} value={servico.id}>
-                            {servico.nome_modelo} - R$ {servico.preco_custo.toFixed(2)}/mt
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+              {TIPOS_CORTINA.map((tipo) => (
+                <div key={tipo.key} className="space-y-3 p-4 border rounded-lg">
+                  <Label className="text-lg font-semibold">{tipo.label}</Label>
+                  
+                  {/* Serviços selecionados */}
+                  <div className="flex flex-wrap gap-2 min-h-[32px]">
+                    {(servicosPorTipo[tipo.key] || []).length === 0 ? (
+                      <span className="text-sm text-muted-foreground">Nenhum serviço selecionado</span>
+                    ) : (
+                      (servicosPorTipo[tipo.key] || []).map((servicoId) => (
+                        <Badge key={servicoId} variant="secondary" className="flex items-center gap-1">
+                          {getNomeServico(servicoId)}
+                          <button
+                            onClick={() => removerServicoPorTipo(tipo.key, servicoId)}
+                            className="ml-1 hover:bg-destructive/20 rounded-full p-0.5"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      ))
+                    )}
                   </div>
-                ))}
-              </div>
+
+                  {/* Lista de serviços disponíveis */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-48 overflow-y-auto border rounded p-2">
+                    {servicosConfeccao.map((servico) => (
+                      <div key={servico.id} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`${tipo.key}-${servico.id}`}
+                          checked={(servicosPorTipo[tipo.key] || []).includes(servico.id)}
+                          onCheckedChange={() => toggleServicoPorTipo(tipo.key, servico.id)}
+                        />
+                        <label
+                          htmlFor={`${tipo.key}-${servico.id}`}
+                          className="text-sm cursor-pointer flex-1"
+                        >
+                          {servico.nome_modelo}
+                          <span className="text-muted-foreground ml-1">
+                            (R$ {servico.preco_custo.toFixed(2)}/mt)
+                          </span>
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
 
               <div className="border-t pt-6">
                 <div className="flex items-center gap-4">
@@ -303,7 +367,7 @@ export function AjustesSistema({ onVoltar }: AjustesSistemaProps) {
                   </Select>
                 </div>
                 <p className="text-sm text-muted-foreground mt-2 ml-36">
-                  Serviço aplicado quando a cortina tem forro (ex: "Forro Costurado Junto")
+                  Serviço aplicado automaticamente quando a cortina tem forro
                 </p>
               </div>
 

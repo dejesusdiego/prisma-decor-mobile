@@ -20,6 +20,7 @@ export interface Cortina {
   tecidoId?: string;
   forroId?: string;
   trilhoId?: string;
+  servicosAdicionaisIds?: string[]; // IDs dos serviços de confecção adicionais
   
   // Persiana specific (com orçamento de fábrica)
   materialPrincipalId?: string;
