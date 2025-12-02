@@ -23,6 +23,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import { DialogValidade } from './DialogValidade';
 import { gerarPdfOrcamento } from '@/lib/gerarPdfOrcamento';
+import { STATUS_CONFIG, STATUS_LIST, getStatusConfig, getStatusLabel, StatusOrcamento } from '@/lib/statusOrcamento';
 
 interface Orcamento {
   id: string;
@@ -81,9 +82,37 @@ export function ListaOrcamentos({ onVoltar, onEditar, onVisualizar }: ListaOrcam
     }
   };
 
+  const alterarStatus = async (orcamentoId: string, novoStatus: StatusOrcamento) => {
+    try {
+      const { error } = await supabase
+        .from('orcamentos')
+        .update({ status: novoStatus })
+        .eq('id', orcamentoId);
+
+      if (error) throw error;
+
+      setOrcamentos(prev => 
+        prev.map(orc => 
+          orc.id === orcamentoId ? { ...orc, status: novoStatus } : orc
+        )
+      );
+
+      toast({
+        title: 'Status atualizado',
+        description: `Status alterado para "${getStatusLabel(novoStatus)}"`,
+      });
+    } catch (error) {
+      console.error('Erro ao alterar status:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível alterar o status',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const duplicarOrcamento = async (orcamentoId: string) => {
     try {
-      // Buscar orçamento original
       const { data: orcOriginal, error: orcError } = await supabase
         .from('orcamentos')
         .select('*')
@@ -92,7 +121,6 @@ export function ListaOrcamentos({ onVoltar, onEditar, onVisualizar }: ListaOrcam
 
       if (orcError) throw orcError;
 
-      // Buscar cortinas do orçamento original
       const { data: cortinasOriginais, error: cortinasError } = await supabase
         .from('cortina_items')
         .select('*')
@@ -100,7 +128,6 @@ export function ListaOrcamentos({ onVoltar, onEditar, onVisualizar }: ListaOrcam
 
       if (cortinasError) throw cortinasError;
 
-      // Criar novo orçamento
       const { data: novoOrc, error: novoOrcError } = await supabase
         .from('orcamentos')
         .insert({
@@ -112,14 +139,13 @@ export function ListaOrcamentos({ onVoltar, onEditar, onVisualizar }: ListaOrcam
           margem_percent: orcOriginal.margem_percent,
           status: 'rascunho',
           created_by_user_id: user?.id,
-          codigo: '', // Será gerado pelo trigger
+          codigo: '',
         })
         .select()
         .single();
 
       if (novoOrcError) throw novoOrcError;
 
-      // Duplicar cortinas
       if (cortinasOriginais && cortinasOriginais.length > 0) {
         const novasCortinas = cortinasOriginais.map((cortina) => ({
           orcamento_id: novoOrc.id,
@@ -171,7 +197,6 @@ export function ListaOrcamentos({ onVoltar, onEditar, onVisualizar }: ListaOrcam
     }
 
     try {
-      // Primeiro deletar os itens de cortina relacionados
       const { error: cortinasError } = await supabase
         .from('cortina_items')
         .delete()
@@ -179,7 +204,6 @@ export function ListaOrcamentos({ onVoltar, onEditar, onVisualizar }: ListaOrcam
 
       if (cortinasError) throw cortinasError;
 
-      // Depois deletar o orçamento
       const { error: orcError } = await supabase
         .from('orcamentos')
         .delete()
@@ -208,7 +232,6 @@ export function ListaOrcamentos({ onVoltar, onEditar, onVisualizar }: ListaOrcam
     
     if (!orcamento) return;
 
-    // Se validade já está definida, gerar PDF diretamente
     if (orcamento.validade_dias) {
       try {
         setLoading(true);
@@ -228,7 +251,6 @@ export function ListaOrcamentos({ onVoltar, onEditar, onVisualizar }: ListaOrcam
         setLoading(false);
       }
     } else {
-      // Abrir dialog para definir validade
       setOrcamentoSelecionadoId(orcamentoId);
       setValidadeAtual(undefined);
       setDialogValidadeOpen(true);
@@ -239,7 +261,6 @@ export function ListaOrcamentos({ onVoltar, onEditar, onVisualizar }: ListaOrcam
     try {
       setLoading(true);
 
-      // Salvar validade no banco
       const { error } = await supabase
         .from('orcamentos')
         .update({ validade_dias: novaValidade })
@@ -247,7 +268,6 @@ export function ListaOrcamentos({ onVoltar, onEditar, onVisualizar }: ListaOrcam
 
       if (error) throw error;
 
-      // Gerar PDF
       await gerarPdfOrcamento(orcamentoSelecionadoId);
 
       toast({
@@ -255,7 +275,6 @@ export function ListaOrcamentos({ onVoltar, onEditar, onVisualizar }: ListaOrcam
         description: 'PDF gerado com sucesso',
       });
 
-      // Recarregar orçamentos para atualizar a validade
       carregarOrcamentos();
     } catch (error) {
       console.error('Erro ao gerar PDF:', error);
@@ -270,6 +289,12 @@ export function ListaOrcamentos({ onVoltar, onEditar, onVisualizar }: ListaOrcam
     }
   };
 
+  // Contadores por status
+  const contadores = STATUS_LIST.reduce((acc, status) => {
+    acc[status] = orcamentos.filter(o => o.status === status).length;
+    return acc;
+  }, {} as Record<StatusOrcamento, number>);
+
   const orcamentosFiltrados = orcamentos.filter((orc) => {
     const matchNome = orc.cliente_nome.toLowerCase().includes(filtroNome.toLowerCase());
     const matchStatus = filtroStatus === 'todos' || orc.status === filtroStatus;
@@ -283,6 +308,28 @@ export function ListaOrcamentos({ onVoltar, onEditar, onVisualizar }: ListaOrcam
           <ArrowLeft className="mr-2 h-4 w-4" />
           Voltar ao Início
         </Button>
+      </div>
+
+      {/* Contadores de Status */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
+        {STATUS_LIST.map((status) => {
+          const config = getStatusConfig(status);
+          const isActive = filtroStatus === status;
+          return (
+            <button
+              key={status}
+              onClick={() => setFiltroStatus(isActive ? 'todos' : status)}
+              className={`p-3 rounded-lg border transition-all ${
+                isActive 
+                  ? 'ring-2 ring-primary border-primary' 
+                  : 'border-border hover:border-primary/50'
+              } ${config.color}`}
+            >
+              <div className="text-2xl font-bold">{contadores[status]}</div>
+              <div className="text-xs font-medium truncate">{config.label}</div>
+            </button>
+          );
+        })}
       </div>
 
       <Card>
@@ -307,8 +354,11 @@ export function ListaOrcamentos({ onVoltar, onEditar, onVisualizar }: ListaOrcam
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos os status</SelectItem>
-                <SelectItem value="rascunho">Rascunho</SelectItem>
-                <SelectItem value="finalizado">Finalizado</SelectItem>
+                {STATUS_LIST.map((status) => (
+                  <SelectItem key={status} value={status}>
+                    {getStatusLabel(status)}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -337,73 +387,87 @@ export function ListaOrcamentos({ onVoltar, onEditar, onVisualizar }: ListaOrcam
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {orcamentosFiltrados.map((orc) => (
-                    <TableRow key={orc.id}>
-                      <TableCell className="font-medium">{orc.codigo}</TableCell>
-                      <TableCell>{orc.cliente_nome}</TableCell>
-                      <TableCell>{orc.endereco}</TableCell>
-                      <TableCell>
-                        {new Date(orc.created_at).toLocaleDateString('pt-BR')}
-                      </TableCell>
-                      <TableCell>R$ {orc.total_geral.toFixed(2)}</TableCell>
-                      <TableCell>
-                        <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            orc.status === 'finalizado'
-                              ? 'bg-primary/10 text-primary'
-                              : 'bg-muted text-muted-foreground'
-                          }`}
-                        >
-                          {orc.status === 'finalizado' ? 'Finalizado' : 'Rascunho'}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => onVisualizar(orc.id)}
-                            title="Ver Resumo"
+                  {orcamentosFiltrados.map((orc) => {
+                    const statusConfig = getStatusConfig(orc.status);
+                    return (
+                      <TableRow key={orc.id}>
+                        <TableCell className="font-medium">{orc.codigo}</TableCell>
+                        <TableCell>{orc.cliente_nome}</TableCell>
+                        <TableCell>{orc.endereco}</TableCell>
+                        <TableCell>
+                          {new Date(orc.created_at).toLocaleDateString('pt-BR')}
+                        </TableCell>
+                        <TableCell>R$ {orc.total_geral?.toFixed(2) || '0.00'}</TableCell>
+                        <TableCell>
+                          <Select
+                            value={orc.status}
+                            onValueChange={(value) => alterarStatus(orc.id, value as StatusOrcamento)}
                           >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => onEditar(orc.id)}
-                            title="Editar"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => duplicarOrcamento(orc.id)}
-                            title="Duplicar"
-                          >
-                            <Copy className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => baixarPDF(orc.id)}
-                            title="Baixar PDF"
-                          >
-                            <FileDown className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => excluirOrcamento(orc.id, orc.codigo)}
-                            title="Excluir"
-                            className="text-destructive hover:text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                            <SelectTrigger className={`w-[130px] h-8 text-xs ${statusConfig.color}`}>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {STATUS_LIST.map((status) => {
+                                const config = getStatusConfig(status);
+                                return (
+                                  <SelectItem key={status} value={status}>
+                                    <span className={`px-2 py-0.5 rounded text-xs ${config.color}`}>
+                                      {config.label}
+                                    </span>
+                                  </SelectItem>
+                                );
+                              })}
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => onVisualizar(orc.id)}
+                              title="Ver Resumo"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => onEditar(orc.id)}
+                              title="Editar"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => duplicarOrcamento(orc.id)}
+                              title="Duplicar"
+                            >
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => baixarPDF(orc.id)}
+                              title="Baixar PDF"
+                            >
+                              <FileDown className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => excluirOrcamento(orc.id, orc.codigo)}
+                              title="Excluir"
+                              className="text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
