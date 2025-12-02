@@ -186,8 +186,88 @@ export function PersianaCard({
 
       {expanded && (
         <>
-          {/* Seletor de Material (para controle/rastreabilidade) */}
-          <div className="mb-4">
+          {/* Seção 1 - Identificação Básica */}
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            <div>
+              <Label>Nome/Identificação *</Label>
+              <Input
+                value={persiana.nomeIdentificacao}
+                onChange={(e) => setPersiana({ ...persiana, nomeIdentificacao: e.target.value })}
+                placeholder="Ex: Persiana Sala"
+              />
+            </div>
+            
+            <div>
+              <Label>Ambiente *</Label>
+              <Select
+                value={persiana.ambiente}
+                onValueChange={(value) => setPersiana({ ...persiana, ambiente: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o ambiente" />
+                </SelectTrigger>
+                <SelectContent>
+                  {OPCOES_AMBIENTE.map((amb) => (
+                    <SelectItem key={amb} value={amb}>{amb}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="col-span-2">
+              <Label>Descrição</Label>
+              <Input
+                value={persiana.descricao || ''}
+                onChange={(e) => setPersiana({ ...persiana, descricao: e.target.value })}
+                placeholder="Ex: Persiana com blackout total"
+              />
+            </div>
+          </div>
+
+          {/* Seção 2 - Dimensões */}
+          <div className="grid grid-cols-4 gap-4 mb-6">
+            <div>
+              <Label>Largura (m)</Label>
+              <Input
+                type="number"
+                step="0.01"
+                value={persiana.largura}
+                onChange={(e) => setPersiana({ ...persiana, largura: parseFloat(e.target.value) || 0 })}
+              />
+            </div>
+
+            <div>
+              <Label>Altura (m)</Label>
+              <Input
+                type="number"
+                step="0.01"
+                value={persiana.altura}
+                onChange={(e) => setPersiana({ ...persiana, altura: parseFloat(e.target.value) || 0 })}
+              />
+            </div>
+
+            <div>
+              <Label>Área (m²)</Label>
+              <Input
+                type="text"
+                value={area.toFixed(2)}
+                disabled
+                className="bg-muted"
+              />
+            </div>
+
+            <div>
+              <Label>Quantidade</Label>
+              <Input
+                type="number"
+                value={persiana.quantidade}
+                onChange={(e) => setPersiana({ ...persiana, quantidade: parseInt(e.target.value) || 1 })}
+              />
+            </div>
+          </div>
+
+          {/* Seção 3 - Referência do Produto */}
+          <div className="mb-6">
             <Label className="text-base font-medium mb-2 block">Persiana (Referência)</Label>
             <p className="text-xs text-muted-foreground mb-3">
               Selecione a persiana para controle interno. O cálculo é feito pelo orçamento da fábrica.
@@ -204,19 +284,8 @@ export function PersianaCard({
                 optional={true}
               />
             )}
-          </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label>Nome/Identificação *</Label>
-              <Input
-                value={persiana.nomeIdentificacao}
-                onChange={(e) => setPersiana({ ...persiana, nomeIdentificacao: e.target.value })}
-                placeholder="Ex: Persiana Sala"
-              />
-            </div>
-            
-            <div>
+            <div className="mt-4">
               <Label>Tipo *</Label>
               <Select
                 value={persiana.tipoCortina}
@@ -235,75 +304,10 @@ export function PersianaCard({
                 </SelectContent>
               </Select>
             </div>
+          </div>
 
-            <div>
-              <Label>Ambiente *</Label>
-              <Select
-                value={persiana.ambiente}
-                onValueChange={(value) => setPersiana({ ...persiana, ambiente: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o ambiente" />
-                </SelectTrigger>
-                <SelectContent>
-                  {OPCOES_AMBIENTE.map((amb) => (
-                    <SelectItem key={amb} value={amb}>{amb}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label>Altura (m)</Label>
-              <Input
-                type="number"
-                step="0.01"
-                value={persiana.altura}
-                onChange={(e) => setPersiana({ ...persiana, altura: parseFloat(e.target.value) || 0 })}
-              />
-            </div>
-
-            <div>
-              <Label>Largura (m)</Label>
-              <Input
-                type="number"
-                step="0.01"
-                value={persiana.largura}
-                onChange={(e) => setPersiana({ ...persiana, largura: parseFloat(e.target.value) || 0 })}
-              />
-            </div>
-
-            <div>
-              <Label>Área (m²)</Label>
-              <Input
-                type="text"
-                value={area.toFixed(2)}
-                disabled
-                className="bg-muted"
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                Calculado automaticamente: Largura × Altura
-              </p>
-            </div>
-
-            <div>
-              <Label>Quantidade</Label>
-              <Input
-                type="number"
-                value={persiana.quantidade}
-                onChange={(e) => setPersiana({ ...persiana, quantidade: parseInt(e.target.value) || 1 })}
-              />
-            </div>
-
-            <div className="col-span-2">
-              <Label>Descrição</Label>
-              <Input
-                value={persiana.descricao || ''}
-                onChange={(e) => setPersiana({ ...persiana, descricao: e.target.value })}
-                placeholder="Ex: Persiana com blackout total"
-              />
-            </div>
-
+          {/* Seção 4 - Orçamento e Fábrica */}
+          <div className="grid grid-cols-2 gap-4 mb-6">
             <div>
               <Label>Fábrica</Label>
               <Input
@@ -326,41 +330,30 @@ export function PersianaCard({
                 Valor total do orçamento recebido da fábrica
               </p>
             </div>
+          </div>
 
-            <div className="col-span-2">
-              <Label>Observações Internas (não aparecem no PDF)</Label>
-              <Textarea
-                value={persiana.observacoesInternas || ''}
-                onChange={(e) => setPersiana({ ...persiana, observacoesInternas: e.target.value })}
-                placeholder="Anotações internas sobre este item..."
-                className="min-h-[80px]"
+          {/* Seção 5 - Opções Adicionais */}
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id={`motorizada-${persiana.id}`}
+                checked={persiana.motorizada || false}
+                onCheckedChange={(checked) => 
+                  setPersiana({ ...persiana, motorizada: checked as boolean })
+                }
               />
+              <Label htmlFor={`motorizada-${persiana.id}`}>Motorizada</Label>
             </div>
 
-            <div className="col-span-2">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id={`motorizada-${persiana.id}`}
-                  checked={persiana.motorizada || false}
-                  onCheckedChange={(checked) => 
-                    setPersiana({ ...persiana, motorizada: checked as boolean })
-                  }
-                />
-                <Label htmlFor={`motorizada-${persiana.id}`}>Motorizada</Label>
-              </div>
-            </div>
-
-            <div className="col-span-2">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id={`instalacao-${persiana.id}`}
-                  checked={persiana.precisaInstalacao}
-                  onCheckedChange={(checked) => 
-                    setPersiana({ ...persiana, precisaInstalacao: checked as boolean })
-                  }
-                />
-                <Label htmlFor={`instalacao-${persiana.id}`}>Precisa de Instalação</Label>
-              </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id={`instalacao-${persiana.id}`}
+                checked={persiana.precisaInstalacao}
+                onCheckedChange={(checked) => 
+                  setPersiana({ ...persiana, precisaInstalacao: checked as boolean })
+                }
+              />
+              <Label htmlFor={`instalacao-${persiana.id}`}>Precisa de Instalação</Label>
             </div>
 
             {persiana.precisaInstalacao && (
@@ -377,7 +370,19 @@ export function PersianaCard({
             )}
           </div>
 
-          <div className="mt-4 flex justify-between items-center">
+          {/* Seção 6 - Observações */}
+          <div className="mb-6">
+            <Label>Observações Internas (não aparecem no PDF)</Label>
+            <Textarea
+              value={persiana.observacoesInternas || ''}
+              onChange={(e) => setPersiana({ ...persiana, observacoesInternas: e.target.value })}
+              placeholder="Anotações internas sobre este item..."
+              className="min-h-[80px]"
+            />
+          </div>
+
+          {/* Seção 7 - Preview e Ações */}
+          <div className="flex justify-between items-center border-t pt-4">
             <div className="text-sm text-muted-foreground">
               {persiana.precoUnitario !== undefined && persiana.precoUnitario > 0 && (
                 <>
