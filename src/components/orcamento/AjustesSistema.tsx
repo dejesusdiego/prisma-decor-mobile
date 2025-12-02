@@ -344,31 +344,51 @@ export function AjustesSistema({ onVoltar }: AjustesSistemaProps) {
                 </div>
               ))}
 
-              <div className="border-t pt-6">
-                <div className="flex items-center gap-4">
-                  <Label className="w-32 font-medium">Serviço de Forro:</Label>
-                  <Select
-                    value={servicoForro || 'none'}
-                    onValueChange={(value) => setServicoForro(value === 'none' ? null : value)}
-                  >
-                    <SelectTrigger className="flex-1">
-                      <SelectValue placeholder="Selecione o serviço de forro padrão" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Nenhum selecionado</SelectItem>
-                      {servicosConfeccao.filter(s => 
-                        s.nome_modelo.toLowerCase().includes('forro')
-                      ).map((servico) => (
-                        <SelectItem key={servico.id} value={servico.id}>
-                          {servico.nome_modelo} - R$ {servico.preco_custo.toFixed(2)}/mt
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <p className="text-sm text-muted-foreground mt-2 ml-36">
-                  Serviço aplicado automaticamente quando a cortina tem forro
+              {/* Serviço de Forro - mesmo padrão de multi-seleção */}
+              <div className="space-y-3 p-4 border rounded-lg border-dashed">
+                <Label className="text-lg font-semibold">Serviço de Forro (quando cortina tem forro)</Label>
+                <p className="text-sm text-muted-foreground">
+                  Serviço aplicado automaticamente quando a cortina tem forro selecionado
                 </p>
+                
+                {/* Serviço selecionado */}
+                <div className="flex flex-wrap gap-2 min-h-[32px]">
+                  {!servicoForro ? (
+                    <span className="text-sm text-muted-foreground">Nenhum serviço selecionado</span>
+                  ) : (
+                    <Badge variant="secondary" className="flex items-center gap-1">
+                      {getNomeServico(servicoForro)}
+                      <button
+                        onClick={() => setServicoForro(null)}
+                        className="ml-1 hover:bg-destructive/20 rounded-full p-0.5"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  )}
+                </div>
+
+                {/* Lista de serviços disponíveis */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-48 overflow-y-auto border rounded p-2">
+                  {servicosConfeccao.map((servico) => (
+                    <div key={servico.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`forro-${servico.id}`}
+                        checked={servicoForro === servico.id}
+                        onCheckedChange={(checked) => setServicoForro(checked ? servico.id : null)}
+                      />
+                      <label
+                        htmlFor={`forro-${servico.id}`}
+                        className="text-sm cursor-pointer flex-1"
+                      >
+                        {servico.nome_modelo}
+                        <span className="text-muted-foreground ml-1">
+                          (R$ {servico.preco_custo.toFixed(2)}/mt)
+                        </span>
+                      </label>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               <div className="flex justify-end pt-4">
