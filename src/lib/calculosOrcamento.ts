@@ -1,5 +1,6 @@
 import type { Cortina, Material, ServicoConfeccao, ServicoInstalacao } from '@/types/orcamento';
 import { COEFICIENTES_CORTINA, COEFICIENTES_FORRO } from '@/types/orcamento';
+import type { CoeficientesPorTipo } from '@/hooks/useConfiguracoes';
 
 // ============= INTERFACES =============
 
@@ -63,7 +64,9 @@ export interface ResumoConsolidado {
 
 export function calcularConsumoDetalhado(
   cortina: Cortina,
-  materiais: Material[]
+  materiais: Material[],
+  coeficientesTecidoConfig?: CoeficientesPorTipo,
+  coeficientesForroConfig?: CoeficientesPorTipo
 ): ConsumoDetalhado {
   const tecido = cortina.tecidoId ? materiais.find((m) => m.id === cortina.tecidoId || m.codigo_item === cortina.tecidoId) : null;
   const forro = cortina.forroId ? materiais.find((m) => m.id === cortina.forroId || m.codigo_item === cortina.forroId) : null;
@@ -72,9 +75,12 @@ export function calcularConsumoDetalhado(
   // Converter barra de cm para metros
   const barra_m = (cortina.barraCm || 0) / 100;
 
-  // Obter coeficientes separados para tecido e forro
-  const coeficienteTecido = COEFICIENTES_CORTINA[cortina.tipoCortina as keyof typeof COEFICIENTES_CORTINA] || 3.5;
-  const coeficienteForro = COEFICIENTES_FORRO[cortina.tipoCortina as keyof typeof COEFICIENTES_FORRO] || 2.5;
+  // Obter coeficientes - usar configurações dinâmicas se disponíveis, senão fallback para constantes
+  const coeficientesTecido = coeficientesTecidoConfig || COEFICIENTES_CORTINA;
+  const coeficientesForro = coeficientesForroConfig || COEFICIENTES_FORRO;
+  
+  const coeficienteTecido = coeficientesTecido[cortina.tipoCortina as keyof typeof coeficientesTecido] || 3.5;
+  const coeficienteForro = coeficientesForro[cortina.tipoCortina as keyof typeof coeficientesForro] || 2.5;
 
   // Cálculo do consumo de tecido (usa coeficiente de tecido)
   let consumoTecido_m = 0;
@@ -132,7 +138,9 @@ export function calcularConsumoDetalhado(
 
 export function calcularResumoConsolidado(
   cortinas: Cortina[],
-  materiais: Material[]
+  materiais: Material[],
+  coeficientesTecidoConfig?: CoeficientesPorTipo,
+  coeficientesForroConfig?: CoeficientesPorTipo
 ): ResumoConsolidado {
   let totalTecido_m = 0;
   let totalForro_m = 0;
@@ -146,7 +154,7 @@ export function calcularResumoConsolidado(
     // Contagem por tipo
     if (cortina.tipoProduto === 'cortina') {
       totalCortinas++;
-      const consumo = calcularConsumoDetalhado(cortina, materiais);
+      const consumo = calcularConsumoDetalhado(cortina, materiais, coeficientesTecidoConfig, coeficientesForroConfig);
       totalTecido_m += consumo.consumoTecido_m;
       totalForro_m += consumo.consumoForro_m;
       totalTrilho_m += consumo.comprimentoTrilho_m;
@@ -177,7 +185,9 @@ export function calcularCustosCortina(
   cortina: Cortina,
   materiais: Material[],
   servicoConfeccao: ServicoConfeccao,
-  servicoInstalacao?: ServicoInstalacao | null
+  servicoInstalacao?: ServicoInstalacao | null,
+  coeficientesTecidoConfig?: CoeficientesPorTipo,
+  coeficientesForroConfig?: CoeficientesPorTipo
 ): CustosCortina {
   // Validação de entrada - pelo menos tecido OU forro deve estar presente
   if (!cortina.tecidoId && !cortina.forroId) {
@@ -191,9 +201,12 @@ export function calcularCustosCortina(
   // 1) Converter barra de cm para metros
   const barra_m = (cortina.barraCm || 0) / 100;
 
-  // 2) Obter coeficientes separados para tecido e forro
-  const coeficienteTecido = COEFICIENTES_CORTINA[cortina.tipoCortina as keyof typeof COEFICIENTES_CORTINA] || 3.5;
-  const coeficienteForro = COEFICIENTES_FORRO[cortina.tipoCortina as keyof typeof COEFICIENTES_FORRO] || 2.5;
+  // 2) Obter coeficientes - usar configurações dinâmicas se disponíveis
+  const coeficientesTecido = coeficientesTecidoConfig || COEFICIENTES_CORTINA;
+  const coeficientesForro = coeficientesForroConfig || COEFICIENTES_FORRO;
+  
+  const coeficienteTecido = coeficientesTecido[cortina.tipoCortina as keyof typeof coeficientesTecido] || 3.5;
+  const coeficienteForro = coeficientesForro[cortina.tipoCortina as keyof typeof coeficientesForro] || 2.5;
 
   // 3) Cálculo do tecido (se houver) - usa coeficiente de tecido
   let custoTecido = 0;

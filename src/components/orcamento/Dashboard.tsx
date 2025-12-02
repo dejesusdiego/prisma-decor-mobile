@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, FileText, Moon, Sun, Calendar, DollarSign, Database } from 'lucide-react';
+import { Plus, FileText, Moon, Sun, Calendar, DollarSign, Database, Settings } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
@@ -12,6 +12,7 @@ interface DashboardProps {
   onMeusOrcamentos: () => void;
   onVisualizarOrcamento: (id: string) => void;
   onGestaoMateriais?: () => void;
+  onAjustesSistema?: () => void;
 }
 
 interface RecentOrcamento {
@@ -23,7 +24,7 @@ interface RecentOrcamento {
   status: string;
 }
 
-export function Dashboard({ onNovoOrcamento, onMeusOrcamentos, onVisualizarOrcamento, onGestaoMateriais }: DashboardProps) {
+export function Dashboard({ onNovoOrcamento, onMeusOrcamentos, onVisualizarOrcamento, onGestaoMateriais, onAjustesSistema }: DashboardProps) {
   const [isDark, setIsDark] = useState(false);
   const [recentOrcamentos, setRecentOrcamentos] = useState<RecentOrcamento[]>([]);
   const [loading, setLoading] = useState(true);
@@ -111,11 +112,11 @@ export function Dashboard({ onNovoOrcamento, onMeusOrcamentos, onVisualizarOrcam
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-4xl">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full max-w-5xl">
           <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={onNovoOrcamento}>
-            <CardContent className="flex flex-col items-center justify-center p-8 space-y-4">
-              <div className="w-16 h-16 rounded-full bg-lovable-blue/10 flex items-center justify-center">
-                <Plus className="w-8 h-8 text-lovable-blue" />
+            <CardContent className="flex flex-col items-center justify-center p-6 space-y-3">
+              <div className="w-14 h-14 rounded-full bg-lovable-blue/10 flex items-center justify-center">
+                <Plus className="w-7 h-7 text-lovable-blue" />
               </div>
               <Button size="lg" className="w-full bg-lovable-blue hover:bg-lovable-blue/90 text-white">
                 <Plus className="mr-2 h-5 w-5" />
@@ -125,9 +126,9 @@ export function Dashboard({ onNovoOrcamento, onMeusOrcamentos, onVisualizarOrcam
           </Card>
 
           <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={onMeusOrcamentos}>
-            <CardContent className="flex flex-col items-center justify-center p-8 space-y-4">
-              <div className="w-16 h-16 rounded-full bg-foreground/10 flex items-center justify-center">
-                <FileText className="w-8 h-8 text-foreground" />
+            <CardContent className="flex flex-col items-center justify-center p-6 space-y-3">
+              <div className="w-14 h-14 rounded-full bg-foreground/10 flex items-center justify-center">
+                <FileText className="w-7 h-7 text-foreground" />
               </div>
               <Button variant="default" size="lg" className="w-full">
                 <FileText className="mr-2 h-5 w-5" />
@@ -138,13 +139,27 @@ export function Dashboard({ onNovoOrcamento, onMeusOrcamentos, onVisualizarOrcam
 
           {onGestaoMateriais && (
             <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={onGestaoMateriais}>
-              <CardContent className="flex flex-col items-center justify-center p-8 space-y-4">
-                <div className="w-16 h-16 rounded-full bg-accent/10 flex items-center justify-center">
-                  <Database className="w-8 h-8 text-accent-foreground" />
+              <CardContent className="flex flex-col items-center justify-center p-6 space-y-3">
+                <div className="w-14 h-14 rounded-full bg-accent/10 flex items-center justify-center">
+                  <Database className="w-7 h-7 text-accent-foreground" />
                 </div>
                 <Button variant="outline" size="lg" className="w-full">
                   <Database className="mr-2 h-5 w-5" />
                   Gestão de Materiais
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {onAjustesSistema && (
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={onAjustesSistema}>
+              <CardContent className="flex flex-col items-center justify-center p-6 space-y-3">
+                <div className="w-14 h-14 rounded-full bg-orange-500/10 flex items-center justify-center">
+                  <Settings className="w-7 h-7 text-orange-500" />
+                </div>
+                <Button variant="outline" size="lg" className="w-full">
+                  <Settings className="mr-2 h-5 w-5" />
+                  Ajustes do Sistema
                 </Button>
               </CardContent>
             </Card>
