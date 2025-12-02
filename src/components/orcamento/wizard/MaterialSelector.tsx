@@ -10,7 +10,7 @@ import {
 import type { Material } from '@/types/orcamento';
 
 interface MaterialSelectorProps {
-  categoria: 'tecido' | 'forro' | 'trilho' | 'acessorio' | 'persiana';
+  categoria: 'tecido' | 'forro' | 'trilho' | 'acessorio';
   materiais: Material[];
   value?: string;
   onSelect: (materialId: string | undefined) => void;
@@ -222,11 +222,6 @@ export function MaterialSelector({
             {selectedMaterial.largura_metro && (
               <div>
                 <strong className="text-foreground">Largura:</strong> {selectedMaterial.largura_metro}m
-              </div>
-            )}
-            {selectedMaterial.area_min_fat && (
-              <div>
-                <strong className="text-foreground">Área mín. fat.:</strong> {selectedMaterial.area_min_fat} m²
               </div>
             )}
             {selectedMaterial.tipo && (

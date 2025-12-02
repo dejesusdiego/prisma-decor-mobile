@@ -16,11 +16,6 @@ export interface Cortina {
   tipoProduto: 'cortina' | 'persiana' | 'outro';
   tipoCortina: 'wave' | 'prega' | 'painel' | 'rolo' | 'horizontal' | 'vertical' | 'romana' | 'celular' | 'madeira' | 'outro';
   
-  // Campos auxiliares para persianas (cálculo)
-  alturaComando?: number;       // Altura do comando em metros (não entra no cálculo)
-  alturaFaturadaM?: number;     // Altura faturada em metros (após arredondamento e mínima)
-  areaM2?: number;              // Área em m² (calculada)
-  
   // Cortina specific
   tecidoId?: string;
   forroId?: string;
