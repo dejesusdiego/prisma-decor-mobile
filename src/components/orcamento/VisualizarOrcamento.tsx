@@ -62,6 +62,7 @@ export function VisualizarOrcamento({ orcamentoId, onVoltar }: VisualizarOrcamen
         if (itemsError) throw itemsError;
 
         if (items) {
+          console.log('[DEBUG] Items carregados:', items.length, 'com forro_id:', items.filter(i => i.forro_id).map(i => ({ nome: i.nome_identificacao, forro_id: i.forro_id })));
           const cortinasCarregadas: Cortina[] = items.map(item => ({
             id: item.id,
             nomeIdentificacao: item.nome_identificacao,
@@ -103,6 +104,7 @@ export function VisualizarOrcamento({ orcamentoId, onVoltar }: VisualizarOrcamen
           .eq('ativo', true);
 
         if (materiaisError) throw materiaisError;
+        console.log('[DEBUG] Materiais carregados:', materiaisData?.length, 'categoria forro:', materiaisData?.filter(m => m.categoria === 'forro').length);
         setMateriais(materiaisData || []);
 
         // Carregar serviços de confecção
@@ -142,12 +144,15 @@ export function VisualizarOrcamento({ orcamentoId, onVoltar }: VisualizarOrcamen
   const obterNomeMaterial = (id: string | undefined) => {
     if (!id) return '-';
     const material = materiais.find(m => m.id === id || m.codigo_item === id);
+    console.log('[DEBUG obterNomeMaterial] id:', id, 'encontrou:', material?.nome || 'NÃO ENCONTRADO', 'total materiais:', materiais.length);
     return material ? material.nome : '-';
   };
 
   const obterMaterial = (id: string | undefined): Material | null => {
     if (!id) return null;
-    return materiais.find(m => m.id === id || m.codigo_item === id) || null;
+    const material = materiais.find(m => m.id === id || m.codigo_item === id) || null;
+    console.log('[DEBUG obterMaterial] id:', id, 'encontrou:', material?.nome || 'NÃO ENCONTRADO');
+    return material;
   };
 
   const toggleCard = (index: number) => {
