@@ -251,7 +251,7 @@ export function EtapaResumo({
                     {consumo.larguraRoloTecido_m && ` (rolo: ${consumo.larguraRoloTecido_m}m)`}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Coef: {consumo.coeficienteUsado} • Qtd: {cortina.quantidade}
+                    Coef: {consumo.coeficienteTecido} • Qtd: {cortina.quantidade}
                   </p>
                 </div>
                 <span className="font-semibold text-right">{formatCurrency(cortina.custoTecido || 0)}</span>
@@ -275,6 +275,9 @@ export function EtapaResumo({
                   <p className="text-xs text-muted-foreground mt-1">
                     {formatMeters(consumo.consumoForro_m)} × {formatCurrency(forro.preco_custo)}/m
                     {consumo.larguraRoloForro_m && ` (rolo: ${consumo.larguraRoloForro_m}m)`}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Coef: {consumo.coeficienteForro} • Qtd: {cortina.quantidade}
                   </p>
                 </div>
                 <span className="font-semibold text-right">{formatCurrency(cortina.custoForro || 0)}</span>

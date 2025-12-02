@@ -1,5 +1,5 @@
 import type { Cortina, Material, ServicoConfeccao, ServicoInstalacao } from '@/types/orcamento';
-import { COEFICIENTES_CORTINA } from '@/types/orcamento';
+import { COEFICIENTES_CORTINA, COEFICIENTES_FORRO } from '@/types/orcamento';
 
 // ============= INTERFACES =============
 
@@ -36,7 +36,8 @@ export interface ConsumoDetalhado {
   // Indicadores
   precisaEmendaTecido: boolean;
   precisaEmendaForro: boolean;
-  coeficienteUsado: number;
+  coeficienteTecido: number;
+  coeficienteForro: number;
   // Custos unitários (por metro ou por ponto)
   precoTecido_m: number;
   precoForro_m: number;
@@ -71,14 +72,15 @@ export function calcularConsumoDetalhado(
   // Converter barra de cm para metros
   const barra_m = (cortina.barraCm || 0) / 100;
 
-  // Obter coeficiente baseado no tipo de cortina
-  const coeficiente = COEFICIENTES_CORTINA[cortina.tipoCortina as keyof typeof COEFICIENTES_CORTINA] || 3.5;
+  // Obter coeficientes separados para tecido e forro
+  const coeficienteTecido = COEFICIENTES_CORTINA[cortina.tipoCortina as keyof typeof COEFICIENTES_CORTINA] || 3.5;
+  const coeficienteForro = COEFICIENTES_FORRO[cortina.tipoCortina as keyof typeof COEFICIENTES_FORRO] || 2.5;
 
-  // Cálculo do consumo de tecido
+  // Cálculo do consumo de tecido (usa coeficiente de tecido)
   let consumoTecido_m = 0;
   let precisaEmendaTecido = false;
   if (tecido) {
-    consumoTecido_m = (cortina.largura * coeficiente) + barra_m;
+    consumoTecido_m = (cortina.largura * coeficienteTecido) + barra_m;
     
     // Verificar se precisa emenda (altura vs largura do rolo)
     if (tecido.largura_metro && cortina.altura > tecido.largura_metro) {
@@ -89,11 +91,11 @@ export function calcularConsumoDetalhado(
     consumoTecido_m *= cortina.quantidade;
   }
 
-  // Cálculo do consumo de forro
+  // Cálculo do consumo de forro (usa coeficiente de forro - DIFERENTE!)
   let consumoForro_m = 0;
   let precisaEmendaForro = false;
   if (forro) {
-    consumoForro_m = (cortina.largura * coeficiente) + barra_m;
+    consumoForro_m = (cortina.largura * coeficienteForro) + barra_m;
     
     if (forro.largura_metro && cortina.altura > forro.largura_metro) {
       consumoForro_m *= 2;
@@ -116,7 +118,8 @@ export function calcularConsumoDetalhado(
     comprimentoCostura_m,
     precisaEmendaTecido,
     precisaEmendaForro,
-    coeficienteUsado: coeficiente,
+    coeficienteTecido,
+    coeficienteForro,
     precoTecido_m: tecido?.preco_custo || 0,
     precoForro_m: forro?.preco_custo || 0,
     precoTrilho_m: trilho?.preco_custo || 0,
@@ -188,13 +191,14 @@ export function calcularCustosCortina(
   // 1) Converter barra de cm para metros
   const barra_m = (cortina.barraCm || 0) / 100;
 
-  // 2) Obter coeficiente baseado no tipo de cortina
-  const coeficiente = COEFICIENTES_CORTINA[cortina.tipoCortina as keyof typeof COEFICIENTES_CORTINA] || 3.5;
+  // 2) Obter coeficientes separados para tecido e forro
+  const coeficienteTecido = COEFICIENTES_CORTINA[cortina.tipoCortina as keyof typeof COEFICIENTES_CORTINA] || 3.5;
+  const coeficienteForro = COEFICIENTES_FORRO[cortina.tipoCortina as keyof typeof COEFICIENTES_FORRO] || 2.5;
 
-  // 3) Cálculo do tecido (se houver)
+  // 3) Cálculo do tecido (se houver) - usa coeficiente de tecido
   let custoTecido = 0;
   if (tecido) {
-    let consumoPorCortina_m = (cortina.largura * coeficiente) + barra_m;
+    let consumoPorCortina_m = (cortina.largura * coeficienteTecido) + barra_m;
     
     // Verificar se precisa emenda (altura vs largura do rolo)
     if (tecido.largura_metro && cortina.altura > tecido.largura_metro) {
@@ -205,10 +209,10 @@ export function calcularCustosCortina(
     custoTecido = consumoTotalTecido_m * tecido.preco_custo;
   }
 
-  // 4) Cálculo do forro (se houver) - usa mesmo coeficiente do tipo de cortina
+  // 4) Cálculo do forro (se houver) - usa coeficiente de FORRO (diferente!)
   let custoForro = 0;
   if (forro) {
-    let consumoPorCortinaForro_m = (cortina.largura * coeficiente) + barra_m;
+    let consumoPorCortinaForro_m = (cortina.largura * coeficienteForro) + barra_m;
     
     if (forro.largura_metro && cortina.altura > forro.largura_metro) {
       consumoPorCortinaForro_m *= 2;

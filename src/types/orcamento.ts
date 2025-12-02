@@ -92,6 +92,19 @@ export const COEFICIENTES_CORTINA = {
   madeira: 1.0,    // Persianas de madeira
 } as const;
 
+// Coeficientes específicos para forro (menores que tecido para wave e prega)
+export const COEFICIENTES_FORRO = {
+  wave: 2.5,       // Forro usa 2.5, tecido usa 3.5
+  prega: 2.5,      // Forro usa 2.5, tecido usa 3.5
+  painel: 2.5,     // Igual ao tecido
+  rolo: 2.5,
+  horizontal: 1.0,
+  vertical: 1.0,
+  romana: 1.0,
+  celular: 1.0,
+  madeira: 1.0,
+} as const;
+
 export const OPCOES_AMBIENTE = [
   'Sala de Estar',
   'Sala de Jantar',
