@@ -70,6 +70,7 @@ export type Database = {
           preco_unitario: number | null
           preco_venda: number | null
           quantidade: number
+          servicos_adicionais_ids: string[] | null
           tecido_id: string | null
           tipo_cortina: string
           tipo_produto: string | null
@@ -104,6 +105,7 @@ export type Database = {
           preco_unitario?: number | null
           preco_venda?: number | null
           quantidade?: number
+          servicos_adicionais_ids?: string[] | null
           tecido_id?: string | null
           tipo_cortina: string
           tipo_produto?: string | null
@@ -138,6 +140,7 @@ export type Database = {
           preco_unitario?: number | null
           preco_venda?: number | null
           quantidade?: number
+          servicos_adicionais_ids?: string[] | null
           tecido_id?: string | null
           tipo_cortina?: string
           tipo_produto?: string | null
