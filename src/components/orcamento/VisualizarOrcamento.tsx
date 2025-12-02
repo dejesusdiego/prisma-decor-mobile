@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { ArrowLeft, ChevronDown, AlertTriangle, Ruler, Package, Scissors, Wrench } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import type { Cortina, Material, ServicoConfeccao, ServicoInstalacao } from '@/types/orcamento';
+import { calcularConsumoDetalhado, calcularResumoConsolidado } from '@/lib/calculosOrcamento';
 
 interface VisualizarOrcamentoProps {
   orcamentoId: string;
@@ -36,6 +38,7 @@ export function VisualizarOrcamento({ orcamentoId, onVoltar }: VisualizarOrcamen
   const [servicosConfeccao, setServicosConfeccao] = useState<ServicoConfeccao[]>([]);
   const [servicosInstalacao, setServicosInstalacao] = useState<ServicoInstalacao[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expandedCards, setExpandedCards] = useState<Record<number, boolean>>({});
 
   useEffect(() => {
     const carregarDados = async () => {
@@ -138,14 +141,20 @@ export function VisualizarOrcamento({ orcamentoId, onVoltar }: VisualizarOrcamen
 
   const obterNomeMaterial = (id: string | undefined) => {
     if (!id) return '-';
-    const material = materiais.find(m => m.id === id);
+    const material = materiais.find(m => m.id === id || m.codigo_item === id);
     return material ? material.nome : '-';
   };
 
   const obterMaterial = (id: string | undefined): Material | null => {
     if (!id) return null;
-    return materiais.find(m => m.id === id) || null;
+    return materiais.find(m => m.id === id || m.codigo_item === id) || null;
   };
+
+  const toggleCard = (index: number) => {
+    setExpandedCards(prev => ({ ...prev, [index]: !prev[index] }));
+  };
+
+  const resumoConsolidado = calcularResumoConsolidado(cortinas, materiais);
 
   if (loading) {
     return (
@@ -168,6 +177,10 @@ export function VisualizarOrcamento({ orcamentoId, onVoltar }: VisualizarOrcamen
     }).format(value);
   };
 
+  const formatMeters = (value: number) => {
+    return value.toFixed(2) + 'm';
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('pt-BR');
   };
@@ -185,6 +198,130 @@ export function VisualizarOrcamento({ orcamentoId, onVoltar }: VisualizarOrcamen
       madeira: 'Madeira',
     };
     return tipos[tipo] || tipo;
+  };
+
+  // Renderizar detalhes de consumo para cortinas
+  const renderConsumoDetalhado = (cortina: Cortina, index: number) => {
+    if (cortina.tipoProduto !== 'cortina') return null;
+    
+    const consumo = calcularConsumoDetalhado(cortina, materiais);
+    const tecido = obterMaterial(cortina.tecidoId);
+    const forro = obterMaterial(cortina.forroId);
+    const trilho = obterMaterial(cortina.trilhoId);
+
+    return (
+      <Collapsible open={expandedCards[index]} onOpenChange={() => toggleCard(index)}>
+        <CollapsibleTrigger asChild>
+          <Button variant="ghost" size="sm" className="w-full justify-between mt-2 text-muted-foreground hover:text-foreground">
+            <span className="flex items-center gap-2">
+              <Ruler className="h-4 w-4" />
+              Detalhamento de Consumo e Custos
+            </span>
+            <ChevronDown className={`h-4 w-4 transition-transform ${expandedCards[index] ? 'rotate-180' : ''}`} />
+          </Button>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="mt-3 space-y-3">
+          <div className="bg-muted/50 rounded-lg p-3 space-y-2 text-sm">
+            {/* Tecido */}
+            {tecido && consumo.consumoTecido_m > 0 && (
+              <div className="flex justify-between items-start border-b border-border/50 pb-2">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <Package className="h-3 w-3 text-primary" />
+                    <span className="font-medium">Tecido</span>
+                    {consumo.precisaEmendaTecido && (
+                      <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400 text-xs bg-amber-100 dark:bg-amber-900/30 px-1.5 py-0.5 rounded">
+                        <AlertTriangle className="h-3 w-3" />
+                        Emenda
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {formatMeters(consumo.consumoTecido_m)} × {formatCurrency(tecido.preco_custo)}/m
+                    {consumo.larguraRoloTecido_m && ` (rolo: ${consumo.larguraRoloTecido_m}m)`}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Coef: {consumo.coeficienteUsado} • Qtd: {cortina.quantidade}
+                  </p>
+                </div>
+                <span className="font-semibold text-right">{formatCurrency(cortina.custoTecido || 0)}</span>
+              </div>
+            )}
+
+            {/* Forro */}
+            {forro && consumo.consumoForro_m > 0 && (
+              <div className="flex justify-between items-start border-b border-border/50 pb-2">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <Package className="h-3 w-3 text-secondary-foreground" />
+                    <span className="font-medium">Forro</span>
+                    {consumo.precisaEmendaForro && (
+                      <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400 text-xs bg-amber-100 dark:bg-amber-900/30 px-1.5 py-0.5 rounded">
+                        <AlertTriangle className="h-3 w-3" />
+                        Emenda
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {formatMeters(consumo.consumoForro_m)} × {formatCurrency(forro.preco_custo)}/m
+                    {consumo.larguraRoloForro_m && ` (rolo: ${consumo.larguraRoloForro_m}m)`}
+                  </p>
+                </div>
+                <span className="font-semibold text-right">{formatCurrency(cortina.custoForro || 0)}</span>
+              </div>
+            )}
+
+            {/* Trilho */}
+            {trilho && consumo.comprimentoTrilho_m > 0 && (
+              <div className="flex justify-between items-start border-b border-border/50 pb-2">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <Ruler className="h-3 w-3 text-muted-foreground" />
+                    <span className="font-medium">Trilho</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {formatMeters(consumo.comprimentoTrilho_m)} × {formatCurrency(trilho.preco_custo)}/m
+                  </p>
+                </div>
+                <span className="font-semibold text-right">{formatCurrency(cortina.custoTrilho || 0)}</span>
+              </div>
+            )}
+
+            {/* Costura */}
+            {(cortina.custoCostura || 0) > 0 && (
+              <div className="flex justify-between items-start border-b border-border/50 pb-2">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <Scissors className="h-3 w-3 text-muted-foreground" />
+                    <span className="font-medium">Costura</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {formatMeters(consumo.comprimentoCostura_m)} (comprimento)
+                  </p>
+                </div>
+                <span className="font-semibold text-right">{formatCurrency(cortina.custoCostura || 0)}</span>
+              </div>
+            )}
+
+            {/* Instalação */}
+            {cortina.precisaInstalacao && (cortina.custoInstalacao || 0) > 0 && (
+              <div className="flex justify-between items-start">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <Wrench className="h-3 w-3 text-muted-foreground" />
+                    <span className="font-medium">Instalação</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {cortina.pontosInstalacao || 1} ponto(s)
+                  </p>
+                </div>
+                <span className="font-semibold text-right">{formatCurrency(cortina.custoInstalacao || 0)}</span>
+              </div>
+            )}
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
+    );
   };
 
   return (
@@ -237,6 +374,51 @@ export function VisualizarOrcamento({ orcamentoId, onVoltar }: VisualizarOrcamen
         </CardContent>
       </Card>
 
+      {/* Resumo Consolidado de Materiais */}
+      {(resumoConsolidado.totalCortinas > 0 || resumoConsolidado.totalPersianas > 0) && (
+        <Card className="bg-primary/5 border-primary/20">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Package className="h-4 w-4" />
+              Resumo de Materiais (Todo o Orçamento)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+              {resumoConsolidado.totalTecido_m > 0 && (
+                <div className="bg-background rounded p-2">
+                  <p className="text-xs text-muted-foreground">Total Tecidos</p>
+                  <p className="font-bold text-lg">{formatMeters(resumoConsolidado.totalTecido_m)}</p>
+                </div>
+              )}
+              {resumoConsolidado.totalForro_m > 0 && (
+                <div className="bg-background rounded p-2">
+                  <p className="text-xs text-muted-foreground">Total Forros</p>
+                  <p className="font-bold text-lg">{formatMeters(resumoConsolidado.totalForro_m)}</p>
+                </div>
+              )}
+              {resumoConsolidado.totalTrilho_m > 0 && (
+                <div className="bg-background rounded p-2">
+                  <p className="text-xs text-muted-foreground">Total Trilhos</p>
+                  <p className="font-bold text-lg">{formatMeters(resumoConsolidado.totalTrilho_m)}</p>
+                </div>
+              )}
+              {resumoConsolidado.totalPontosInstalacao > 0 && (
+                <div className="bg-background rounded p-2">
+                  <p className="text-xs text-muted-foreground">Pontos Instalação</p>
+                  <p className="font-bold text-lg">{resumoConsolidado.totalPontosInstalacao}</p>
+                </div>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-3 text-xs text-muted-foreground pt-3 mt-3 border-t border-border/50">
+              {resumoConsolidado.totalCortinas > 0 && <span>{resumoConsolidado.totalCortinas} cortina(s)</span>}
+              {resumoConsolidado.totalPersianas > 0 && <span>{resumoConsolidado.totalPersianas} persiana(s)</span>}
+              {resumoConsolidado.totalOutros > 0 && <span>{resumoConsolidado.totalOutros} outro(s)</span>}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Produtos */}
       <Card>
         <CardHeader>
@@ -255,6 +437,7 @@ export function VisualizarOrcamento({ orcamentoId, onVoltar }: VisualizarOrcamen
                       ? `Persiana - ${getTipoCortina(cortina.tipoCortina)}`
                       : cortina.descricao || 'Outros'
                     }
+                    {cortina.ambiente && <span className="ml-2">• {cortina.ambiente}</span>}
                   </p>
                 </div>
                 <p className="text-lg font-bold text-primary">
@@ -421,6 +604,9 @@ export function VisualizarOrcamento({ orcamentoId, onVoltar }: VisualizarOrcamen
                   </div>
                 ) : null;
               })()}
+
+              {/* Detalhamento de Consumo (colapsável) */}
+              {renderConsumoDetalhado(cortina, index)}
 
               {cortina.observacoesInternas && (
                 <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 p-3 rounded-lg mt-3">
