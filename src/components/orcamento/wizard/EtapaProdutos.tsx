@@ -97,6 +97,7 @@ function SortableProductItem({
             orcamentoId={orcamentoId}
             onUpdate={(p) => onUpdate(index, p)}
             onRemove={() => onRemove(index)}
+            onDuplicate={() => onDuplicate(index)}
           />
         ) : produto.descricao === 'Acessórios' ? (
           <AcessoriosCard

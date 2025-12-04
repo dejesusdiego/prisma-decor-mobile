@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
-import { ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronUp, Trash2, Copy } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { Cortina, Material } from '@/types/orcamento';
@@ -24,6 +24,7 @@ interface PersianaCardProps {
   orcamentoId: string;
   onUpdate: (persiana: Cortina) => void;
   onRemove: () => void;
+  onDuplicate?: () => void;
 }
 
 export function PersianaCard({
@@ -31,6 +32,7 @@ export function PersianaCard({
   orcamentoId,
   onUpdate,
   onRemove,
+  onDuplicate,
 }: PersianaCardProps) {
   const [persiana, setPersiana] = useState<Cortina>(persianaInicial);
   const [expanded, setExpanded] = useState(!persianaInicial.id);
@@ -173,6 +175,16 @@ export function PersianaCard({
           >
             {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
           </Button>
+          {onDuplicate && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onDuplicate}
+              title="Duplicar"
+            >
+              <Copy className="h-4 w-4" />
+            </Button>
+          )}
           <Button
             onClick={onRemove}
             variant="destructive"
