@@ -13,7 +13,8 @@ import {
   Send,
   Percent,
   Target,
-  Wallet
+  Wallet,
+  AlertTriangle
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
@@ -24,6 +25,7 @@ import { GraficoFaturamentoMensal } from './charts/GraficoFaturamentoMensal';
 import { GraficoCustos } from './charts/GraficoCustos';
 import { FunilVendas } from './charts/FunilVendas';
 import { RankingProdutos } from './charts/RankingProdutos';
+import { toast } from 'sonner';
 
 interface DashboardContentProps {
   onNovoOrcamento: () => void;
@@ -45,6 +47,7 @@ interface Stats {
   valorTotal: number;
   pendentes: number;
   enviados: number;
+  semResposta: number;
   pagos: number;
   ticketMedio: number;
   taxaConversao: number;
@@ -91,6 +94,7 @@ export function DashboardContent({ onNovoOrcamento, onMeusOrcamentos, onVisualiz
     valorTotal: 0, 
     pendentes: 0, 
     enviados: 0, 
+    semResposta: 0,
     pagos: 0,
     ticketMedio: 0,
     taxaConversao: 0,
@@ -132,19 +136,28 @@ export function DashboardContent({ onNovoOrcamento, onMeusOrcamentos, onVisualiz
       const valorTotal = allData?.reduce((sum, orc) => sum + (orc.total_geral || 0), 0) || 0;
       const pendentes = allData?.filter(orc => orc.status === 'rascunho' || orc.status === 'finalizado').length || 0;
       const enviados = allData?.filter(orc => orc.status === 'enviado').length || 0;
+      const semResposta = allData?.filter(orc => orc.status === 'sem_resposta').length || 0;
       const pagos = allData?.filter(orc => orc.status === 'pago' || orc.status === 'pago_parcial').length || 0;
 
       // Advanced stats
       const ticketMedio = totalOrcamentos > 0 ? valorTotal / totalOrcamentos : 0;
-      const enviadosTotal = allData?.filter(orc => ['enviado', 'aceito', 'recusado', 'pago', 'pago_parcial'].includes(orc.status)).length || 0;
-      const convertidos = allData?.filter(orc => ['aceito', 'pago', 'pago_parcial'].includes(orc.status)).length || 0;
+      const enviadosTotal = allData?.filter(orc => ['enviado', 'sem_resposta', 'recusado', 'pago', 'pago_parcial'].includes(orc.status)).length || 0;
+      const convertidos = allData?.filter(orc => ['pago', 'pago_parcial'].includes(orc.status)).length || 0;
       const taxaConversao = enviadosTotal > 0 ? (convertidos / enviadosTotal) * 100 : 0;
-      const aReceber = allData?.filter(orc => orc.status === 'aceito' || orc.status === 'pago_parcial')
+      const aReceber = allData?.filter(orc => orc.status === 'pago_parcial')
         .reduce((sum, orc) => sum + (orc.total_geral || 0), 0) || 0;
       const margemMedia = allData?.length ? 
         allData.reduce((sum, orc) => sum + (orc.margem_percent || 0), 0) / allData.length : 0;
 
-      setStats({ totalOrcamentos, valorTotal, pendentes, enviados, pagos, ticketMedio, taxaConversao, aReceber, margemMedia });
+      setStats({ totalOrcamentos, valorTotal, pendentes, enviados, semResposta, pagos, ticketMedio, taxaConversao, aReceber, margemMedia });
+
+      // Notificação de orçamentos sem resposta
+      if (semResposta > 0) {
+        toast.warning(`${semResposta} orçamento(s) sem resposta`, {
+          description: 'Clique em "Meus Orçamentos" para visualizar',
+          duration: 5000,
+        });
+      }
 
       // Monthly data for chart (last 6 months)
       const mesesData: DadoMensal[] = [];
@@ -188,7 +201,8 @@ export function DashboardContent({ onNovoOrcamento, onMeusOrcamentos, onVisualiz
         { status: 'rascunho', label: 'Rascunho', cor: 'hsl(0 0% 55%)' },
         { status: 'finalizado', label: 'Finalizado', cor: 'hsl(270 60% 55%)' },
         { status: 'enviado', label: 'Enviado', cor: 'hsl(45 93% 47%)' },
-        { status: 'aceito', label: 'Aceito', cor: 'hsl(142 70% 60%)' },
+        { status: 'sem_resposta', label: 'Sem Resposta', cor: 'hsl(25 95% 53%)' },
+        { status: 'pago_parcial', label: 'Pago 50%', cor: 'hsl(199 89% 48%)' },
         { status: 'pago', label: 'Pago', cor: 'hsl(142 70% 40%)' },
       ];
 
