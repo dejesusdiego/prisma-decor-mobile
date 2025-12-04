@@ -126,6 +126,30 @@ export function SolicitacoesVisita({ onNavigate, onCreateOrcamento }: Solicitaco
     fetchSolicitacoes();
   }, []);
 
+  const formatWhatsAppLink = (telefone: string) => {
+    const cleaned = telefone.replace(/\D/g, "");
+    const withCountry = cleaned.startsWith("55") ? cleaned : `55${cleaned}`;
+    return `https://wa.me/${withCountry}`;
+  };
+
+  const formatWhatsAppConfirmationMessage = (solicitacao: SolicitacaoVisita) => {
+    const dataFormatada = format(parseISO(solicitacao.data_agendada), "dd/MM/yyyy", { locale: ptBR });
+    const message = `Olá ${solicitacao.nome}! 👋
+
+Sua visita técnica da *Prisma Interiores* está *CONFIRMADA*! ✅
+
+📅 *Data:* ${dataFormatada}
+🕐 *Horário:* ${solicitacao.horario_agendado}
+📍 *Local:* ${solicitacao.endereco || solicitacao.cidade}
+
+Nossa equipe entrará em contato próximo ao horário agendado.
+
+Qualquer dúvida, estamos à disposição!
+
+_Prisma Interiores - Transformando ambientes_`;
+    return message;
+  };
+
   const handleStatusChange = async (id: string, newStatus: string) => {
     try {
       const { error } = await supabase
@@ -135,10 +159,26 @@ export function SolicitacoesVisita({ onNavigate, onCreateOrcamento }: Solicitaco
 
       if (error) throw error;
       
+      const solicitacao = solicitacoes.find(s => s.id === id);
+      
       setSolicitacoes(prev => 
         prev.map(s => s.id === id ? { ...s, status: newStatus } : s)
       );
-      toast.success("Status atualizado");
+      
+      // Se status mudou para "confirmada", abrir WhatsApp automaticamente
+      if (newStatus === "confirmada" && solicitacao) {
+        const message = formatWhatsAppConfirmationMessage(solicitacao);
+        const whatsappUrl = `${formatWhatsAppLink(solicitacao.telefone)}?text=${encodeURIComponent(message)}`;
+        
+        toast.success("Status atualizado! Abrindo WhatsApp...");
+        
+        // Pequeno delay para o usuário ver o toast
+        setTimeout(() => {
+          window.open(whatsappUrl, "_blank");
+        }, 500);
+      } else {
+        toast.success("Status atualizado");
+      }
     } catch (error) {
       console.error("Erro ao atualizar status:", error);
       toast.error("Erro ao atualizar status");
@@ -213,12 +253,6 @@ export function SolicitacoesVisita({ onNavigate, onCreateOrcamento }: Solicitaco
     pendentes: solicitacoes.filter(s => s.status === "pendente").length,
     confirmadas: solicitacoes.filter(s => s.status === "confirmada").length,
     hoje: solicitacoes.filter(s => isToday(parseISO(s.data_agendada))).length,
-  };
-
-  const formatWhatsAppLink = (telefone: string) => {
-    const cleaned = telefone.replace(/\D/g, "");
-    const withCountry = cleaned.startsWith("55") ? cleaned : `55${cleaned}`;
-    return `https://wa.me/${withCountry}`;
   };
 
   return (
