@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.seed-materials]
 verify_jwt = false
+
+[functions.save-visit-request]
+verify_jwt = false

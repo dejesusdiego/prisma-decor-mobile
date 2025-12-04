@@ -130,21 +130,21 @@ const BookingDialog = ({
 
     try {
       const leadData = {
-        name: formData.name,
+        nome: formData.name,
         email: formData.email,
-        phone: formData.phone,
-        city: formData.city,
-        address: formData.address,
-        complement: formData.complement,
-        message: formData.message,
-        scheduledDate: selectedDate?.toLocaleDateString('pt-BR') || '',
-        scheduledTime: selectedTime || '',
+        telefone: formData.phone,
+        cidade: formData.city,
+        endereco: formData.address,
+        complemento: formData.complement,
+        mensagem: formData.message,
+        data_agendada: selectedDate?.toISOString().split('T')[0] || '',
+        horario_agendado: selectedTime || '',
       };
 
-      console.log("Enviando lead para Monday.com:", leadData);
+      console.log("Salvando solicitação de visita:", { ...leadData, email: '***' });
 
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-lead-to-monday`,
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/save-visit-request`,
         {
           method: 'POST',
           headers: {
@@ -160,7 +160,7 @@ const BookingDialog = ({
         throw new Error(data.error || 'Erro ao enviar dados');
       }
 
-      console.log("Lead enviado com sucesso ao Monday.com:", data);
+      console.log("Solicitação de visita salva com sucesso:", data.id);
       
       analytics.submitBooking({
         hasMessage: !!formData.message,
@@ -169,12 +169,12 @@ const BookingDialog = ({
       
       setStep("confirmation");
     } catch (error) {
-      console.error("Erro ao enviar lead:", error);
+      console.error("Erro ao salvar solicitação:", error);
       toast({
-        title: "Aviso",
-        description: "Agendamento registrado! Nossa equipe entrará em contato em breve.",
+        title: "Erro",
+        description: "Erro ao agendar visita. Tente novamente ou entre em contato pelo WhatsApp.",
+        variant: "destructive"
       });
-      setStep("confirmation");
     } finally {
       setIsSubmitting(false);
     }
