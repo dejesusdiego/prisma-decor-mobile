@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.save-visit-request]
 verify_jwt = false
+
+[functions.update-overdue-status]
+verify_jwt = false

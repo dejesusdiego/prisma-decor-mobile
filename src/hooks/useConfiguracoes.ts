@@ -35,6 +35,7 @@ export interface Configuracoes {
   servicoForroPadrao: string | null;
   opcoesMargem: OpcaoMargem[];
   opcoesAmbiente: string[];
+  diasSemResposta: number;
 }
 
 const DEFAULT_CONFIGS: Configuracoes = {
@@ -56,7 +57,8 @@ const DEFAULT_CONFIGS: Configuracoes = {
   opcoesAmbiente: [
     'Sala de Estar', 'Sala de Jantar', 'Quarto', 'Cozinha',
     'Escritório', 'Varanda', 'Banheiro', 'Lavanderia', 'Área Externa', 'Outros'
-  ]
+  ],
+  diasSemResposta: 7
 };
 
 // Cache global para evitar múltiplas requisições
@@ -107,6 +109,9 @@ export function useConfiguracoes() {
               break;
             case 'opcoes_ambiente':
               configs.opcoesAmbiente = item.valor as string[];
+              break;
+            case 'dias_sem_resposta':
+              configs.diasSemResposta = Number(item.valor) || 7;
               break;
           }
         }
@@ -209,6 +214,9 @@ export async function fetchConfiguracoes(): Promise<Configuracoes> {
               break;
           case 'opcoes_ambiente':
             configs.opcoesAmbiente = item.valor as string[];
+            break;
+          case 'dias_sem_resposta':
+            configs.diasSemResposta = Number(item.valor) || 7;
             break;
         }
       }

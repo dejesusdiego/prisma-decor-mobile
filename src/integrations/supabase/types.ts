@@ -241,6 +241,7 @@ export type Database = {
           margem_tipo: string
           observacoes: string | null
           status: string
+          status_updated_at: string | null
           subtotal_instalacao: number | null
           subtotal_mao_obra_costura: number | null
           subtotal_materiais: number | null
@@ -262,6 +263,7 @@ export type Database = {
           margem_tipo: string
           observacoes?: string | null
           status?: string
+          status_updated_at?: string | null
           subtotal_instalacao?: number | null
           subtotal_mao_obra_costura?: number | null
           subtotal_materiais?: number | null
@@ -283,6 +285,7 @@ export type Database = {
           margem_tipo?: string
           observacoes?: string | null
           status?: string
+          status_updated_at?: string | null
           subtotal_instalacao?: number | null
           subtotal_mao_obra_costura?: number | null
           subtotal_materiais?: number | null

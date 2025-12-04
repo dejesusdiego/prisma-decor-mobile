@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ArrowLeft, Save, Plus, Trash2, Settings, Scissors, Percent, Home, X } from 'lucide-react';
+import { ArrowLeft, Save, Plus, Trash2, Settings, Scissors, Percent, Home, X, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useConfiguracoes, OpcaoMargem } from '@/hooks/useConfiguracoes';
@@ -37,6 +37,7 @@ export function AjustesSistema({ onVoltar }: AjustesSistemaProps) {
   const [opcoesMargem, setOpcoesMargem] = useState<OpcaoMargem[]>([]);
   const [opcoesAmbiente, setOpcoesAmbiente] = useState<string[]>([]);
   const [novoAmbiente, setNovoAmbiente] = useState('');
+  const [diasSemResposta, setDiasSemResposta] = useState<number>(7);
 
   useEffect(() => {
     carregarServicosConfeccao();
@@ -63,6 +64,7 @@ export function AjustesSistema({ onVoltar }: AjustesSistemaProps) {
       setServicoForro(configuracoes.servicoForroPadrao);
       setOpcoesMargem(configuracoes.opcoesMargem);
       setOpcoesAmbiente(configuracoes.opcoesAmbiente);
+      setDiasSemResposta(configuracoes.diasSemResposta);
     }
   }, [loading, configuracoes]);
 
@@ -125,6 +127,18 @@ export function AjustesSistema({ onVoltar }: AjustesSistemaProps) {
       toast.success('Opções de ambiente salvas com sucesso!');
     } catch (err) {
       toast.error('Erro ao salvar opções de ambiente');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSalvarDiasSemResposta = async () => {
+    setSaving(true);
+    try {
+      await salvarConfiguracao('dias_sem_resposta', diasSemResposta);
+      toast.success('Dias para "Sem Resposta" salvos com sucesso!');
+    } catch (err) {
+      toast.error('Erro ao salvar configuração');
     } finally {
       setSaving(false);
     }
@@ -210,7 +224,7 @@ export function AjustesSistema({ onVoltar }: AjustesSistemaProps) {
       </div>
 
       <Tabs defaultValue="coeficientes" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="coeficientes" className="flex items-center gap-2">
             <Settings className="h-4 w-4" />
             Coeficientes
@@ -226,6 +240,10 @@ export function AjustesSistema({ onVoltar }: AjustesSistemaProps) {
           <TabsTrigger value="ambiente" className="flex items-center gap-2">
             <Home className="h-4 w-4" />
             Ambientes
+          </TabsTrigger>
+          <TabsTrigger value="geral" className="flex items-center gap-2">
+            <Clock className="h-4 w-4" />
+            Geral
           </TabsTrigger>
         </TabsList>
 
@@ -500,6 +518,48 @@ export function AjustesSistema({ onVoltar }: AjustesSistemaProps) {
                 <Button onClick={handleSalvarAmbientes} disabled={saving}>
                   <Save className="mr-2 h-4 w-4" />
                   Salvar Ambientes
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Configurações Gerais */}
+        <TabsContent value="geral">
+          <Card>
+            <CardHeader>
+              <CardTitle>Configurações Gerais do Sistema</CardTitle>
+              <CardDescription>
+                Configure parâmetros gerais que afetam o funcionamento do sistema
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-4 p-4 border rounded-lg">
+                <div>
+                  <Label className="text-lg font-semibold">Dias para "Sem Resposta"</Label>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Após quantos dias um orçamento com status "Enviado" deve ser marcado automaticamente como "Sem Resposta"
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Input
+                    type="number"
+                    min="1"
+                    max="90"
+                    value={diasSemResposta}
+                    onChange={(e) => setDiasSemResposta(Number(e.target.value) || 7)}
+                    className="w-24"
+                  />
+                  <span className="text-muted-foreground">dias após o envio</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Os orçamentos serão atualizados automaticamente todos os dias. Você pode alterar manualmente o status de "Sem Resposta" para "Enviado" caso o cliente responda posteriormente.
+                </p>
+              </div>
+              <div className="flex justify-end pt-4">
+                <Button onClick={handleSalvarDiasSemResposta} disabled={saving}>
+                  <Save className="mr-2 h-4 w-4" />
+                  Salvar Configurações
                 </Button>
               </div>
             </CardContent>
