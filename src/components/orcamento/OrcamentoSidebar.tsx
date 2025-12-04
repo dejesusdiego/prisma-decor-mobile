@@ -8,7 +8,8 @@ import {
   Sun,
   ChevronLeft,
   Users,
-  CalendarCheck
+  CalendarCheck,
+  Bell
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -17,6 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 type View = 'dashboard' | 'novoOrcamento' | 'listaOrcamentos' | 'visualizarOrcamento' | 'gestaoMateriais' | 'ajustesSistema' | 'solicitacoesVisita';
 
@@ -51,7 +53,7 @@ export function OrcamentoSidebar({ currentView, onNavigate }: OrcamentoSidebarPr
     }
   }, []);
 
-  // Buscar contagem de visitas não visualizadas
+  // Buscar contagem de visitas não visualizadas e configurar realtime
   useEffect(() => {
     const fetchVisitasNaoVistas = async () => {
       try {
@@ -70,10 +72,61 @@ export function OrcamentoSidebar({ currentView, onNavigate }: OrcamentoSidebarPr
 
     fetchVisitasNaoVistas();
 
-    // Atualizar a cada 30 segundos
-    const interval = setInterval(fetchVisitasNaoVistas, 30000);
-    return () => clearInterval(interval);
-  }, [currentView]);
+    // Configurar listener de realtime para novas visitas
+    const channel = supabase
+      .channel('solicitacoes-visita-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'solicitacoes_visita'
+        },
+        (payload) => {
+          console.log('Nova solicitação de visita recebida:', payload);
+          
+          // Incrementar contador
+          setVisitasNaoVistas(prev => prev + 1);
+          
+          // Mostrar notificação toast
+          const newVisit = payload.new as { nome: string; cidade: string; data_agendada: string };
+          toast.info(
+            `Nova solicitação de visita!`,
+            {
+              description: `${newVisit.nome} - ${newVisit.cidade}`,
+              icon: <Bell className="h-4 w-4" />,
+              action: {
+                label: 'Ver',
+                onClick: () => onNavigate('solicitacoesVisita')
+              },
+              duration: 10000
+            }
+          );
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'solicitacoes_visita'
+        },
+        (payload) => {
+          // Quando uma visita é marcada como visualizada, atualizar contador
+          const oldVisit = payload.old as { visualizada: boolean };
+          const newVisit = payload.new as { visualizada: boolean };
+          
+          if (!oldVisit.visualizada && newVisit.visualizada) {
+            setVisitasNaoVistas(prev => Math.max(0, prev - 1));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [onNavigate]);
 
   const toggleTheme = () => {
     if (isDark) {
