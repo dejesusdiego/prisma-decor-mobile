@@ -9,21 +9,32 @@ import { ListaOrcamentos } from '@/components/orcamento/ListaOrcamentos';
 import { VisualizarOrcamento } from '@/components/orcamento/VisualizarOrcamento';
 import { GestaoMateriais } from '@/components/orcamento/GestaoMateriais';
 import { AjustesSistema } from '@/components/orcamento/AjustesSistema';
+import { SolicitacoesVisita } from '@/components/orcamento/SolicitacoesVisita';
 
-type View = 'dashboard' | 'novoOrcamento' | 'listaOrcamentos' | 'visualizarOrcamento' | 'gestaoMateriais' | 'ajustesSistema';
+type View = 'dashboard' | 'novoOrcamento' | 'listaOrcamentos' | 'visualizarOrcamento' | 'gestaoMateriais' | 'ajustesSistema' | 'solicitacoesVisita';
+
+interface ClienteDataFromVisita {
+  nome: string;
+  telefone: string;
+  endereco: string;
+  cidade: string;
+}
 
 export default function GerarOrcamento() {
   const { user, signOut } = useAuth();
   const [view, setView] = useState<View>('dashboard');
   const [orcamentoEditandoId, setOrcamentoEditandoId] = useState<string | null>(null);
+  const [clienteDataFromVisita, setClienteDataFromVisita] = useState<ClienteDataFromVisita | null>(null);
 
-  const handleNovoOrcamento = () => {
+  const handleNovoOrcamento = (clienteData?: ClienteDataFromVisita) => {
     setOrcamentoEditandoId(null);
+    setClienteDataFromVisita(clienteData || null);
     setView('novoOrcamento');
   };
 
   const handleEditarOrcamento = (orcamentoId: string) => {
     setOrcamentoEditandoId(orcamentoId);
+    setClienteDataFromVisita(null);
     setView('novoOrcamento');
   };
 
@@ -34,6 +45,7 @@ export default function GerarOrcamento() {
 
   const handleVoltarDashboard = () => {
     setOrcamentoEditandoId(null);
+    setClienteDataFromVisita(null);
     setView('dashboard');
   };
 
@@ -42,6 +54,7 @@ export default function GerarOrcamento() {
       handleNovoOrcamento();
     } else {
       setOrcamentoEditandoId(null);
+      setClienteDataFromVisita(null);
       setView(newView);
     }
   };
@@ -53,6 +66,7 @@ export default function GerarOrcamento() {
       case 'visualizarOrcamento': return 'Visualizar Orçamento';
       case 'gestaoMateriais': return 'Gestão de Materiais';
       case 'ajustesSistema': return 'Ajustes do Sistema';
+      case 'solicitacoesVisita': return 'Solicitações de Visita';
       default: return '';
     }
   };
@@ -117,6 +131,13 @@ export default function GerarOrcamento() {
 
             {view === 'ajustesSistema' && (
               <AjustesSistema onVoltar={handleVoltarDashboard} />
+            )}
+
+            {view === 'solicitacoesVisita' && (
+              <SolicitacoesVisita 
+                onNavigate={handleNavigate}
+                onCreateOrcamento={(clienteData) => handleNovoOrcamento(clienteData)}
+              />
             )}
           </div>
         </main>

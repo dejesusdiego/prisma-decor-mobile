@@ -367,6 +367,66 @@ export type Database = {
         }
         Relationships: []
       }
+      solicitacoes_visita: {
+        Row: {
+          cidade: string
+          complemento: string | null
+          created_at: string
+          data_agendada: string
+          email: string
+          endereco: string | null
+          horario_agendado: string
+          id: string
+          mensagem: string | null
+          nome: string
+          observacoes_internas: string | null
+          status: string
+          telefone: string
+          updated_at: string
+          visualizada: boolean
+          visualizada_em: string | null
+          visualizada_por: string | null
+        }
+        Insert: {
+          cidade: string
+          complemento?: string | null
+          created_at?: string
+          data_agendada: string
+          email: string
+          endereco?: string | null
+          horario_agendado: string
+          id?: string
+          mensagem?: string | null
+          nome: string
+          observacoes_internas?: string | null
+          status?: string
+          telefone: string
+          updated_at?: string
+          visualizada?: boolean
+          visualizada_em?: string | null
+          visualizada_por?: string | null
+        }
+        Update: {
+          cidade?: string
+          complemento?: string | null
+          created_at?: string
+          data_agendada?: string
+          email?: string
+          endereco?: string | null
+          horario_agendado?: string
+          id?: string
+          mensagem?: string | null
+          nome?: string
+          observacoes_internas?: string | null
+          status?: string
+          telefone?: string
+          updated_at?: string
+          visualizada?: boolean
+          visualizada_em?: string | null
+          visualizada_por?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string

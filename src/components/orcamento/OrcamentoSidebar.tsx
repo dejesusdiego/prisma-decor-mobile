@@ -7,15 +7,18 @@ import {
   Moon, 
   Sun,
   ChevronLeft,
-  Users
+  Users,
+  CalendarCheck
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Badge } from '@/components/ui/badge';
+import { supabase } from '@/integrations/supabase/client';
 
-type View = 'dashboard' | 'novoOrcamento' | 'listaOrcamentos' | 'visualizarOrcamento' | 'gestaoMateriais' | 'ajustesSistema';
+type View = 'dashboard' | 'novoOrcamento' | 'listaOrcamentos' | 'visualizarOrcamento' | 'gestaoMateriais' | 'ajustesSistema' | 'solicitacoesVisita';
 
 interface OrcamentoSidebarProps {
   currentView: View;
@@ -26,6 +29,7 @@ const mainNavItems = [
   { id: 'dashboard' as View, label: 'Dashboard', icon: Home },
   { id: 'novoOrcamento' as View, label: 'Novo Orçamento', icon: Plus },
   { id: 'listaOrcamentos' as View, label: 'Meus Orçamentos', icon: FileText },
+  { id: 'solicitacoesVisita' as View, label: 'Solicitações de Visita', icon: CalendarCheck },
 ];
 
 const adminNavItems = [
@@ -37,6 +41,7 @@ export function OrcamentoSidebar({ currentView, onNavigate }: OrcamentoSidebarPr
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
   const [isDark, setIsDark] = useState(false);
+  const [visitasNaoVistas, setVisitasNaoVistas] = useState(0);
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme');
@@ -45,6 +50,30 @@ export function OrcamentoSidebar({ currentView, onNavigate }: OrcamentoSidebarPr
       document.documentElement.classList.add('dark');
     }
   }, []);
+
+  // Buscar contagem de visitas não visualizadas
+  useEffect(() => {
+    const fetchVisitasNaoVistas = async () => {
+      try {
+        const { count, error } = await supabase
+          .from('solicitacoes_visita')
+          .select('*', { count: 'exact', head: true })
+          .eq('visualizada', false);
+        
+        if (!error && count !== null) {
+          setVisitasNaoVistas(count);
+        }
+      } catch (error) {
+        console.error('Erro ao buscar visitas não vistas:', error);
+      }
+    };
+
+    fetchVisitasNaoVistas();
+
+    // Atualizar a cada 30 segundos
+    const interval = setInterval(fetchVisitasNaoVistas, 30000);
+    return () => clearInterval(interval);
+  }, [currentView]);
 
   const toggleTheme = () => {
     if (isDark) {
@@ -58,21 +87,41 @@ export function OrcamentoSidebar({ currentView, onNavigate }: OrcamentoSidebarPr
   };
 
   const NavItem = ({ item, isActive }: { item: typeof mainNavItems[0], isActive: boolean }) => {
+    const showBadge = item.id === 'solicitacoesVisita' && visitasNaoVistas > 0;
+    
     const content = (
       <button
         onClick={() => onNavigate(item.id)}
         className={cn(
-          "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200",
+          "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 relative",
           "hover:bg-accent/50",
           isActive && "bg-primary text-primary-foreground hover:bg-primary/90",
           !isActive && "text-muted-foreground hover:text-foreground"
         )}
       >
-        <item.icon className={cn("h-5 w-5 shrink-0", isActive && "text-primary-foreground")} />
+        <div className="relative">
+          <item.icon className={cn("h-5 w-5 shrink-0", isActive && "text-primary-foreground")} />
+          {showBadge && collapsed && (
+            <Badge 
+              variant="destructive" 
+              className="absolute -top-1 -right-1 h-2 w-2 p-0 rounded-full animate-pulse"
+            />
+          )}
+        </div>
         {!collapsed && (
-          <span className={cn("text-sm font-medium truncate", isActive && "text-primary-foreground")}>
-            {item.label}
-          </span>
+          <>
+            <span className={cn("text-sm font-medium truncate flex-1", isActive && "text-primary-foreground")}>
+              {item.label}
+            </span>
+            {showBadge && (
+              <Badge 
+                variant="destructive" 
+                className="h-5 min-w-[20px] px-1.5 text-xs animate-pulse"
+              >
+                {visitasNaoVistas}
+              </Badge>
+            )}
+          </>
         )}
       </button>
     );
@@ -81,8 +130,13 @@ export function OrcamentoSidebar({ currentView, onNavigate }: OrcamentoSidebarPr
       return (
         <Tooltip delayDuration={0}>
           <TooltipTrigger asChild>{content}</TooltipTrigger>
-          <TooltipContent side="right" className="font-medium">
+          <TooltipContent side="right" className="font-medium flex items-center gap-2">
             {item.label}
+            {showBadge && (
+              <Badge variant="destructive" className="h-5 min-w-[20px] px-1.5 text-xs">
+                {visitasNaoVistas}
+              </Badge>
+            )}
           </TooltipContent>
         </Tooltip>
       );
