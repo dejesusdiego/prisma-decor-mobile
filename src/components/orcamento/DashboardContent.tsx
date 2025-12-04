@@ -6,16 +6,24 @@ import {
   Calendar, 
   DollarSign, 
   TrendingUp,
+  TrendingDown,
   Clock,
   CheckCircle,
   ArrowRight,
-  Send
+  Send,
+  Percent,
+  Target,
+  Wallet
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { format } from 'date-fns';
+import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { getStatusConfig, getStatusLabel } from '@/lib/statusOrcamento';
+import { GraficoFaturamentoMensal } from './charts/GraficoFaturamentoMensal';
+import { GraficoCustos } from './charts/GraficoCustos';
+import { FunilVendas } from './charts/FunilVendas';
+import { RankingProdutos } from './charts/RankingProdutos';
 
 interface DashboardContentProps {
   onNovoOrcamento: () => void;
@@ -38,12 +46,63 @@ interface Stats {
   pendentes: number;
   enviados: number;
   pagos: number;
+  ticketMedio: number;
+  taxaConversao: number;
+  aReceber: number;
+  margemMedia: number;
+}
+
+interface DadoMensal {
+  mes: string;
+  faturamento: number;
+  custoTotal: number;
+}
+
+interface DadoCusto {
+  nome: string;
+  valor: number;
+  cor: string;
+}
+
+interface EtapaFunil {
+  status: string;
+  label: string;
+  quantidade: number;
+  valor: number;
+  cor: string;
+}
+
+interface ProdutoRanking {
+  tipo: string;
+  quantidade: number;
+  faturamento: number;
+}
+
+interface Comparativo {
+  valorAtual: number;
+  valorAnterior: number;
+  percentual: number;
 }
 
 export function DashboardContent({ onNovoOrcamento, onMeusOrcamentos, onVisualizarOrcamento }: DashboardContentProps) {
   const [recentOrcamentos, setRecentOrcamentos] = useState<RecentOrcamento[]>([]);
-  const [stats, setStats] = useState<Stats>({ totalOrcamentos: 0, valorTotal: 0, pendentes: 0, enviados: 0, pagos: 0 });
+  const [stats, setStats] = useState<Stats>({ 
+    totalOrcamentos: 0, 
+    valorTotal: 0, 
+    pendentes: 0, 
+    enviados: 0, 
+    pagos: 0,
+    ticketMedio: 0,
+    taxaConversao: 0,
+    aReceber: 0,
+    margemMedia: 0
+  });
   const [loading, setLoading] = useState(true);
+  const [dadosMensais, setDadosMensais] = useState<DadoMensal[]>([]);
+  const [dadosCustos, setDadosCustos] = useState<DadoCusto[]>([]);
+  const [etapasFunil, setEtapasFunil] = useState<EtapaFunil[]>([]);
+  const [rankingProdutos, setRankingProdutos] = useState<ProdutoRanking[]>([]);
+  const [comparativoFaturamento, setComparativoFaturamento] = useState<Comparativo>({ valorAtual: 0, valorAnterior: 0, percentual: 0 });
 
   useEffect(() => {
     loadData();
@@ -61,20 +120,108 @@ export function DashboardContent({ onNovoOrcamento, onMeusOrcamentos, onVisualiz
       if (recentError) throw recentError;
       setRecentOrcamentos(recentData || []);
 
-      // Load stats
+      // Load all budgets for stats
       const { data: allData, error: allError } = await supabase
         .from('orcamentos')
-        .select('total_geral, status');
+        .select('total_geral, custo_total, status, margem_percent, created_at, subtotal_materiais, subtotal_mao_obra_costura, subtotal_instalacao');
 
       if (allError) throw allError;
 
+      // Basic stats
       const totalOrcamentos = allData?.length || 0;
       const valorTotal = allData?.reduce((sum, orc) => sum + (orc.total_geral || 0), 0) || 0;
       const pendentes = allData?.filter(orc => orc.status === 'rascunho' || orc.status === 'finalizado').length || 0;
       const enviados = allData?.filter(orc => orc.status === 'enviado').length || 0;
       const pagos = allData?.filter(orc => orc.status === 'pago' || orc.status === 'pago_parcial').length || 0;
 
-      setStats({ totalOrcamentos, valorTotal, pendentes, enviados, pagos });
+      // Advanced stats
+      const ticketMedio = totalOrcamentos > 0 ? valorTotal / totalOrcamentos : 0;
+      const enviadosTotal = allData?.filter(orc => ['enviado', 'aceito', 'recusado', 'pago', 'pago_parcial'].includes(orc.status)).length || 0;
+      const convertidos = allData?.filter(orc => ['aceito', 'pago', 'pago_parcial'].includes(orc.status)).length || 0;
+      const taxaConversao = enviadosTotal > 0 ? (convertidos / enviadosTotal) * 100 : 0;
+      const aReceber = allData?.filter(orc => orc.status === 'aceito' || orc.status === 'pago_parcial')
+        .reduce((sum, orc) => sum + (orc.total_geral || 0), 0) || 0;
+      const margemMedia = allData?.length ? 
+        allData.reduce((sum, orc) => sum + (orc.margem_percent || 0), 0) / allData.length : 0;
+
+      setStats({ totalOrcamentos, valorTotal, pendentes, enviados, pagos, ticketMedio, taxaConversao, aReceber, margemMedia });
+
+      // Monthly data for chart (last 6 months)
+      const mesesData: DadoMensal[] = [];
+      for (let i = 5; i >= 0; i--) {
+        const mesDate = subMonths(new Date(), i);
+        const inicio = startOfMonth(mesDate);
+        const fim = endOfMonth(mesDate);
+        
+        const orcamentosMes = allData?.filter(orc => {
+          const dataOrc = new Date(orc.created_at);
+          return dataOrc >= inicio && dataOrc <= fim;
+        }) || [];
+
+        mesesData.push({
+          mes: format(mesDate, 'MMM', { locale: ptBR }),
+          faturamento: orcamentosMes.reduce((sum, orc) => sum + (orc.total_geral || 0), 0),
+          custoTotal: orcamentosMes.reduce((sum, orc) => sum + (orc.custo_total || 0), 0),
+        });
+      }
+      setDadosMensais(mesesData);
+
+      // Comparativo com mês anterior
+      const mesAtual = mesesData[mesesData.length - 1]?.faturamento || 0;
+      const mesAnterior = mesesData[mesesData.length - 2]?.faturamento || 0;
+      const percentualVariacao = mesAnterior > 0 ? ((mesAtual - mesAnterior) / mesAnterior) * 100 : 0;
+      setComparativoFaturamento({ valorAtual: mesAtual, valorAnterior: mesAnterior, percentual: percentualVariacao });
+
+      // Cost breakdown
+      const totalMateriais = allData?.reduce((sum, orc) => sum + (orc.subtotal_materiais || 0), 0) || 0;
+      const totalMaoObra = allData?.reduce((sum, orc) => sum + (orc.subtotal_mao_obra_costura || 0), 0) || 0;
+      const totalInstalacao = allData?.reduce((sum, orc) => sum + (orc.subtotal_instalacao || 0), 0) || 0;
+      
+      setDadosCustos([
+        { nome: 'Materiais', valor: totalMateriais, cor: 'hsl(217 91% 60%)' },
+        { nome: 'Mão de Obra', valor: totalMaoObra, cor: 'hsl(43 74% 52%)' },
+        { nome: 'Instalação', valor: totalInstalacao, cor: 'hsl(142 70% 49%)' },
+      ]);
+
+      // Sales funnel
+      const statusMap = [
+        { status: 'rascunho', label: 'Rascunho', cor: 'hsl(0 0% 55%)' },
+        { status: 'finalizado', label: 'Finalizado', cor: 'hsl(270 60% 55%)' },
+        { status: 'enviado', label: 'Enviado', cor: 'hsl(45 93% 47%)' },
+        { status: 'aceito', label: 'Aceito', cor: 'hsl(142 70% 60%)' },
+        { status: 'pago', label: 'Pago', cor: 'hsl(142 70% 40%)' },
+      ];
+
+      const funilData = statusMap.map(s => ({
+        ...s,
+        quantidade: allData?.filter(orc => orc.status === s.status).length || 0,
+        valor: allData?.filter(orc => orc.status === s.status).reduce((sum, orc) => sum + (orc.total_geral || 0), 0) || 0,
+      }));
+      setEtapasFunil(funilData);
+
+      // Product ranking
+      const { data: produtosData, error: produtosError } = await supabase
+        .from('cortina_items')
+        .select('tipo_cortina, quantidade, preco_venda');
+
+      if (!produtosError && produtosData) {
+        const agrupado: Record<string, { quantidade: number; faturamento: number }> = {};
+        produtosData.forEach(item => {
+          const tipo = item.tipo_cortina || 'outro';
+          if (!agrupado[tipo]) {
+            agrupado[tipo] = { quantidade: 0, faturamento: 0 };
+          }
+          agrupado[tipo].quantidade += item.quantidade || 1;
+          agrupado[tipo].faturamento += item.preco_venda || 0;
+        });
+
+        const ranking = Object.entries(agrupado)
+          .map(([tipo, dados]) => ({ tipo, ...dados }))
+          .sort((a, b) => b.faturamento - a.faturamento);
+        
+        setRankingProdutos(ranking);
+      }
+
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
     } finally {
@@ -91,7 +238,7 @@ export function DashboardContent({ onNovoOrcamento, onMeusOrcamentos, onVisualiz
 
   const statsCards = [
     { 
-      title: 'Total de Orçamentos', 
+      title: 'Total Orçamentos', 
       value: stats.totalOrcamentos, 
       icon: FileText, 
       color: 'text-primary',
@@ -102,33 +249,41 @@ export function DashboardContent({ onNovoOrcamento, onMeusOrcamentos, onVisualiz
       value: formatCurrency(stats.valorTotal), 
       icon: DollarSign, 
       color: 'text-green-600 dark:text-green-400',
-      bgColor: 'bg-green-100 dark:bg-green-950'
+      bgColor: 'bg-green-100 dark:bg-green-950',
+      comparativo: comparativoFaturamento.percentual
     },
     { 
-      title: 'Pendentes', 
-      value: stats.pendentes, 
-      icon: Clock, 
-      color: 'text-amber-600 dark:text-amber-400',
-      bgColor: 'bg-amber-100 dark:bg-amber-950'
-    },
-    { 
-      title: 'Enviados', 
-      value: stats.enviados, 
-      icon: Send, 
+      title: 'Ticket Médio', 
+      value: formatCurrency(stats.ticketMedio), 
+      icon: Target, 
       color: 'text-blue-600 dark:text-blue-400',
       bgColor: 'bg-blue-100 dark:bg-blue-950'
     },
     { 
-      title: 'Pagos', 
-      value: stats.pagos, 
-      icon: CheckCircle, 
+      title: 'Taxa Conversão', 
+      value: `${stats.taxaConversao.toFixed(1)}%`, 
+      icon: Percent, 
+      color: 'text-purple-600 dark:text-purple-400',
+      bgColor: 'bg-purple-100 dark:bg-purple-950'
+    },
+    { 
+      title: 'A Receber', 
+      value: formatCurrency(stats.aReceber), 
+      icon: Wallet, 
+      color: 'text-amber-600 dark:text-amber-400',
+      bgColor: 'bg-amber-100 dark:bg-amber-950'
+    },
+    { 
+      title: 'Margem Média', 
+      value: `${stats.margemMedia.toFixed(1)}%`, 
+      icon: TrendingUp, 
       color: 'text-emerald-600 dark:text-emerald-400',
       bgColor: 'bg-emerald-100 dark:bg-emerald-950'
     },
   ];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Header with CTA */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -146,17 +301,27 @@ export function DashboardContent({ onNovoOrcamento, onMeusOrcamentos, onVisualiz
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
         {statsCards.map((stat, index) => (
           <Card key={index} className="border-0 shadow-sm hover:shadow-md transition-shadow">
-            <CardContent className="p-5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">{stat.title}</p>
-                  <p className="text-2xl font-bold mt-1">{stat.value}</p>
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between">
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-muted-foreground truncate">{stat.title}</p>
+                  <p className="text-lg font-bold mt-1 truncate">{stat.value}</p>
+                  {stat.comparativo !== undefined && stat.comparativo !== 0 && (
+                    <div className={`flex items-center gap-1 text-xs mt-1 ${stat.comparativo > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {stat.comparativo > 0 ? (
+                        <TrendingUp className="h-3 w-3" />
+                      ) : (
+                        <TrendingDown className="h-3 w-3" />
+                      )}
+                      <span>{Math.abs(stat.comparativo).toFixed(0)}% vs mês ant.</span>
+                    </div>
+                  )}
                 </div>
-                <div className={`p-3 rounded-xl ${stat.bgColor}`}>
-                  <stat.icon className={`h-6 w-6 ${stat.color}`} />
+                <div className={`p-2 rounded-lg ${stat.bgColor} flex-shrink-0`}>
+                  <stat.icon className={`h-4 w-4 ${stat.color}`} />
                 </div>
               </div>
             </CardContent>
@@ -164,12 +329,24 @@ export function DashboardContent({ onNovoOrcamento, onMeusOrcamentos, onVisualiz
         ))}
       </div>
 
+      {/* Charts Row 1 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <GraficoFaturamentoMensal dados={dadosMensais} />
+        <FunilVendas etapas={etapasFunil} />
+      </div>
+
+      {/* Charts Row 2 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <GraficoCustos dados={dadosCustos} />
+        <RankingProdutos produtos={rankingProdutos} />
+      </div>
+
       {/* Recent Budgets */}
       <Card className="border-0 shadow-sm">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg font-semibold flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-muted-foreground" />
+              <Clock className="h-5 w-5 text-muted-foreground" />
               Orçamentos Recentes
             </CardTitle>
             <Button variant="ghost" size="sm" onClick={onMeusOrcamentos} className="text-primary">
@@ -204,7 +381,7 @@ export function DashboardContent({ onNovoOrcamento, onMeusOrcamentos, onVisualiz
                   <div
                     key={orc.id}
                     onClick={() => onVisualizarOrcamento(orc.id)}
-                    className="flex items-center justify-between p-4 rounded-lg bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/30 dark:hover:bg-blue-950/50 cursor-pointer transition-colors group"
+                    className="flex items-center justify-between p-4 rounded-lg bg-muted/50 hover:bg-muted cursor-pointer transition-colors group"
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-3 mb-1">
