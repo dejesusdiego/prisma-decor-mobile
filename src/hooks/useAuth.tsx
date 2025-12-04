@@ -41,50 +41,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    let { error } = await supabase.auth.signInWithPassword({
+    const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
-    
-    // Se falhar e for o email admin padrão, tenta criar a conta
-    if (error && email === 'admin.prismadecor@gmail.com' && password === 'Prisma!031125') {
-      const { error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/gerarorcamento`
-        }
-      });
-      
-      if (signUpError) {
-        toast.error(signUpError.message);
-        throw signUpError;
-      }
-      
-      // Tenta login novamente
-      const { error: retryError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      
-      if (retryError) {
-        toast.error(retryError.message);
-        throw retryError;
-      }
-      
-      // Atribui role de admin
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        await supabase.from('user_roles').insert({
-          user_id: user.id,
-          role: 'admin'
-        });
-      }
-      
-      toast.success('Conta admin criada e login realizado!');
-      navigate('/gerarorcamento');
-      return;
-    }
     
     if (error) {
       toast.error(error.message);
