@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { AdminRoute } from "@/components/AdminRoute";
 import Index from "./pages/Index";
 import OurProducts from "./pages/OurProducts";
 import Auth from "./pages/Auth";
@@ -36,9 +37,9 @@ const App = () => (
             <Route 
               path="/gerenciarusuarios" 
               element={
-                <ProtectedRoute>
+                <AdminRoute>
                   <GerenciarUsuarios />
-                </ProtectedRoute>
+                </AdminRoute>
               } 
             />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
