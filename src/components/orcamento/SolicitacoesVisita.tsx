@@ -25,6 +25,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { format, parseISO, isToday, isThisWeek, isThisMonth } from "date-fns";
@@ -44,8 +45,11 @@ import {
   XCircle,
   AlertCircle,
   Sparkles,
+  List,
+  CalendarDays,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { CalendarioVisitas } from "./CalendarioVisitas";
 
 interface SolicitacaoVisita {
   id: string;
@@ -255,6 +259,14 @@ _Prisma Interiores - Transformando ambientes_`;
     hoje: solicitacoes.filter(s => isToday(parseISO(s.data_agendada))).length,
   };
 
+  // Função para selecionar uma visita do calendário
+  const handleSelectVisitaCalendario = (visita: { id: string }) => {
+    const solicitacao = solicitacoes.find(s => s.id === visita.id);
+    if (solicitacao) {
+      openDetails(solicitacao);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -304,6 +316,36 @@ _Prisma Interiores - Transformando ambientes_`;
           </CardContent>
         </Card>
       </div>
+
+      {/* Tabs para alternar entre lista e calendário */}
+      <Tabs defaultValue="lista" className="w-full">
+        <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsTrigger value="lista" className="flex items-center gap-2">
+            <List className="h-4 w-4" />
+            Lista
+          </TabsTrigger>
+          <TabsTrigger value="calendario" className="flex items-center gap-2">
+            <CalendarDays className="h-4 w-4" />
+            Calendário
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="calendario" className="mt-4">
+          <CalendarioVisitas
+            visitas={solicitacoes.map(s => ({
+              id: s.id,
+              nome: s.nome,
+              telefone: s.telefone,
+              cidade: s.cidade,
+              data_agendada: s.data_agendada,
+              horario_agendado: s.horario_agendado,
+              status: s.status,
+            }))}
+            onSelectVisita={handleSelectVisitaCalendario}
+          />
+        </TabsContent>
+
+        <TabsContent value="lista" className="mt-4 space-y-4">
 
       {/* Filtros */}
       <div className="flex flex-col md:flex-row gap-4">
@@ -469,6 +511,8 @@ _Prisma Interiores - Transformando ambientes_`;
           </Table>
         </CardContent>
       </Card>
+        </TabsContent>
+      </Tabs>
 
       {/* Dialog de Detalhes */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
