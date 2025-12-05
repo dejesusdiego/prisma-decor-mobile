@@ -10,12 +10,9 @@ import {
   Clock,
   CheckCircle,
   ArrowRight,
-  Send,
   Percent,
   Target,
-  Wallet,
-  AlertTriangle,
-  MoreHorizontal
+  Wallet
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
@@ -55,6 +52,7 @@ interface Stats {
   aReceber: number;
   recebido: number;
   margemMedia: number;
+  lucroLiquido: number;
 }
 
 interface DadoMensal {
@@ -102,7 +100,8 @@ export function DashboardContent({ onNovoOrcamento, onMeusOrcamentos, onVisualiz
     taxaConversao: 0,
     aReceber: 0,
     recebido: 0,
-    margemMedia: 0
+    margemMedia: 0,
+    lucroLiquido: 0
   });
   const [loading, setLoading] = useState(true);
   const [dadosMensais, setDadosMensais] = useState<DadoMensal[]>([]);
@@ -156,8 +155,15 @@ export function DashboardContent({ onNovoOrcamento, onMeusOrcamentos, onVisualiz
       const totalRecebido = recebido + recebidoParcial;
       const margemMedia = allData?.length ? 
         allData.reduce((sum, orc) => sum + (orc.margem_percent || 0), 0) / allData.length : 0;
+      
+      // Lucro líquido = receita dos pagos - custos dos pagos
+      const custoPagos = allData?.filter(orc => orc.status === 'pago')
+        .reduce((sum, orc) => sum + (orc.custo_total || 0), 0) || 0;
+      const custoPagosParcial = allData?.filter(orc => orc.status === 'pago_parcial')
+        .reduce((sum, orc) => sum + ((orc.custo_total || 0) / 2), 0) || 0;
+      const lucroLiquido = totalRecebido - (custoPagos + custoPagosParcial);
 
-      setStats({ totalOrcamentos, valorTotal, pendentes, enviados, semResposta, pagos, ticketMedio, taxaConversao, aReceber, recebido: totalRecebido, margemMedia });
+      setStats({ totalOrcamentos, valorTotal, pendentes, enviados, semResposta, pagos, ticketMedio, taxaConversao, aReceber, recebido: totalRecebido, margemMedia, lucroLiquido });
 
       // Notificação de orçamentos sem resposta
       if (semResposta > 0) {
@@ -310,12 +316,11 @@ export function DashboardContent({ onNovoOrcamento, onMeusOrcamentos, onVisualiz
       bgColor: 'bg-emerald-100 dark:bg-emerald-950'
     },
     { 
-      title: 'Em breve', 
-      value: '···', 
-      icon: MoreHorizontal, 
-      color: 'text-muted-foreground',
-      bgColor: 'bg-muted',
-      isPlaceholder: true
+      title: 'Lucro Líquido', 
+      value: formatCurrency(stats.lucroLiquido), 
+      icon: TrendingUp, 
+      color: stats.lucroLiquido >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400',
+      bgColor: stats.lucroLiquido >= 0 ? 'bg-green-100 dark:bg-green-950' : 'bg-red-100 dark:bg-red-950'
     },
   ];
 
@@ -342,17 +347,15 @@ export function DashboardContent({ onNovoOrcamento, onMeusOrcamentos, onVisualiz
         {statsCards.map((stat, index) => (
           <Card 
             key={index} 
-            className={`border-0 shadow-sm hover:shadow-md transition-shadow ${
-              stat.isPlaceholder ? 'border-2 border-dashed border-muted-foreground/20' : ''
-            }`}
+            className="border-0 shadow-sm hover:shadow-md transition-shadow"
           >
             <CardContent className="p-4">
               <div className="flex items-start justify-between">
                 <div className="flex-1 min-w-0">
-                  <p className={`text-xs truncate ${stat.isPlaceholder ? 'text-muted-foreground/50' : 'text-muted-foreground'}`}>
+                  <p className="text-xs truncate text-muted-foreground">
                     {stat.title}
                   </p>
-                  <p className={`text-xl font-bold mt-1 truncate ${stat.isPlaceholder ? 'text-muted-foreground/30' : ''}`}>
+                  <p className="text-xl font-bold mt-1 truncate">
                     {stat.value}
                   </p>
                   {stat.comparativo !== undefined && stat.comparativo !== 0 && (
