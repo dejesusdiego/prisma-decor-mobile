@@ -92,6 +92,7 @@ interface SolicitacoesVisitaProps {
 const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
   pendente: { label: "Pendente", color: "bg-yellow-500/20 text-yellow-600 border-yellow-500/30", icon: <AlertCircle className="h-3 w-3" /> },
   confirmada: { label: "Confirmada", color: "bg-blue-500/20 text-blue-600 border-blue-500/30", icon: <CheckCircle className="h-3 w-3" /> },
+  sem_resposta: { label: "Sem Resposta", color: "bg-orange-500/20 text-orange-600 border-orange-500/30", icon: <Clock className="h-3 w-3" /> },
   realizada: { label: "Realizada", color: "bg-green-500/20 text-green-600 border-green-500/30", icon: <CheckCircle className="h-3 w-3" /> },
   cancelada: { label: "Cancelada", color: "bg-red-500/20 text-red-600 border-red-500/30", icon: <XCircle className="h-3 w-3" /> },
 };
