@@ -1,154 +1,100 @@
-import { useEffect, useRef, useState } from "react";
-import { Calendar, Ruler, Calculator, Wrench, CheckCircle2 } from "lucide-react";
+import { useState } from "react";
+import { Calendar, Ruler, Calculator, Wrench } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import BookingDialog from "./BookingDialog";
 
 const steps = [
   {
-    number: "1ª Etapa",
-    label: "Contato",
+    number: "01",
     title: "Agendamento",
-    description: "Preencha o formulário ou entre em contato conosco e um consultor entrará em contato para agendar sua visita.",
+    description: "Preencha o formulário e um consultor entrará em contato para agendar sua visita gratuita.",
     icon: Calendar,
   },
   {
-    number: "2ª Etapa",
-    label: "Visita",
-    title: "Visita sem Compromisso",
-    description: "Nosso consultor apresentará opções de modelos e tecidos, fará as medições e oferecerá a solução ideal para você.",
+    number: "02",
+    title: "Visita Técnica",
+    description: "Nosso consultor apresenta opções, faz medições e oferece a solução ideal para você.",
     icon: Ruler,
   },
   {
-    number: "3ª Etapa",
-    label: "Orçamento",
-    title: "Orçamento e Pagamento",
-    description: "Após definir o projeto, nosso consultor fornecerá o orçamento. Com a aprovação, você poderá realizar o pagamento de forma prática e flexível.",
+    number: "03",
+    title: "Orçamento",
+    description: "Receba o orçamento detalhado e escolha a forma de pagamento mais conveniente.",
     icon: Calculator,
   },
   {
-    number: "4ª Etapa",
-    label: "Instalação",
-    title: "Entrega e Instalação",
-    description: "Nossas persianas e cortinas sob medida são entregues e instaladas gratuitamente. Assim que prontas, entraremos em contato para agendar o melhor dia.",
+    number: "04",
+    title: "Instalação",
+    description: "Entrega e instalação gratuitas. Agendamos o melhor dia assim que estiver pronto.",
     icon: Wrench,
   },
 ];
 
 const ProcessFlow = () => {
-  const [activeStep, setActiveStep] = useState(0);
-  const sectionRef = useRef<HTMLDivElement>(null);
-  const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      if (!sectionRef.current) return;
-
-      const sectionTop = sectionRef.current.offsetTop;
-      const sectionHeight = sectionRef.current.offsetHeight;
-      const scrollPosition = window.scrollY + window.innerHeight / 2;
-
-      if (scrollPosition >= sectionTop && scrollPosition <= sectionTop + sectionHeight) {
-        const relativeScroll = scrollPosition - sectionTop;
-        const stepHeight = sectionHeight / steps.length;
-        const currentStep = Math.min(
-          Math.floor(relativeScroll / stepHeight),
-          steps.length - 1
-        );
-        setActiveStep(currentStep);
-      }
-    };
-
-    window.addEventListener("scroll", handleScroll);
-    handleScroll();
-
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  const [isBookingOpen, setIsBookingOpen] = useState(false);
 
   return (
-    <section
-      ref={sectionRef}
-      className="py-20 bg-gradient-to-b from-background via-muted/20 to-background"
-    >
-      <div className="container mx-auto px-4">
+    <section className="py-16 md:py-24 bg-primary relative overflow-hidden">
+      {/* Subtle background pattern */}
+      <div className="absolute inset-0 opacity-5">
+        <div className="absolute inset-0" style={{
+          backgroundImage: `radial-gradient(circle at 1px 1px, white 1px, transparent 0)`,
+          backgroundSize: '40px 40px'
+        }} />
+      </div>
+
+      <div className="container mx-auto px-4 relative z-10">
         {/* Header */}
-        <div className="text-center mb-16 animate-fade-in">
-          <h2 className="text-4xl md:text-5xl font-bold text-primary mb-4">
-            COMO FUNCIONA O PROCESSO?
+        <div className="text-center mb-12 md:mb-16">
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-primary-foreground mb-4">
+            Seu Projeto em 4 Passos
           </h2>
-          <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto">
-            <span className="bg-primary/10 px-4 py-2 inline-block rounded-md font-medium">
-              Nós Planejamos. Nós Medimos. Nós Instalamos. Você Aproveita.
-            </span>
+          <p className="text-lg text-primary-foreground/70 max-w-2xl mx-auto">
+            Da primeira conversa à instalação, cuidamos de tudo para você.
           </p>
         </div>
 
-        {/* Timeline */}
-        <div className="max-w-5xl mx-auto relative">
-          {/* Vertical Line */}
-          <div className="absolute left-8 md:left-12 top-0 bottom-0 w-0.5 bg-border" />
+        {/* Steps Grid */}
+        <div className="max-w-5xl mx-auto">
+          {/* Desktop: Connecting line */}
+          <div className="hidden md:block relative">
+            <div className="absolute top-12 left-[12.5%] right-[12.5%] h-0.5 bg-gradient-to-r from-accent/30 via-accent to-accent/30" />
+          </div>
 
           {/* Steps */}
-          <div className="space-y-12">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
             {steps.map((step, index) => {
               const Icon = step.icon;
-              const isActive = index <= activeStep;
-
+              
               return (
                 <div
                   key={index}
-                  ref={(el) => (stepRefs.current[index] = el)}
-                  className={`relative transition-all duration-700 ${
-                    isActive ? "opacity-100 translate-x-0" : "opacity-40 translate-x-4"
-                  }`}
+                  className="group relative animate-fade-in"
+                  style={{ animationDelay: `${index * 100}ms` }}
                 >
-                  {/* Timeline Dot */}
-                  <div
-                    className={`absolute left-8 md:left-12 -translate-x-1/2 w-8 h-8 rounded-full border-4 border-background transition-all duration-500 flex items-center justify-center ${
-                      isActive
-                        ? "bg-primary scale-110 shadow-lg shadow-primary/50"
-                        : "bg-muted scale-100"
-                    }`}
-                  >
-                    {isActive && (
-                      <CheckCircle2 className="w-4 h-4 text-primary-foreground" />
-                    )}
-                  </div>
+                  <div className="bg-card/10 backdrop-blur-sm rounded-2xl p-4 md:p-6 border border-white/10 hover:border-accent/30 transition-all duration-300 hover:bg-card/20 hover:scale-105 h-full flex flex-col">
+                    {/* Number */}
+                    <div className="text-center mb-3 md:mb-4">
+                      <span className="text-3xl md:text-4xl font-bold bg-gradient-to-br from-accent to-accent/60 bg-clip-text text-transparent">
+                        {step.number}
+                      </span>
+                    </div>
 
-                  {/* Content Card */}
-                  <div className="ml-20 md:ml-28">
-                    <div
-                      className={`bg-card rounded-2xl p-6 md:p-8 shadow-lg transition-all duration-500 hover:shadow-xl ${
-                        isActive ? "border-2 border-primary/20" : "border-2 border-transparent"
-                      }`}
-                    >
-                      <div className="flex items-start gap-4">
-                        {/* Icon */}
-                        <div
-                          className={`p-3 rounded-xl transition-all duration-500 ${
-                            isActive
-                              ? "bg-primary text-primary-foreground"
-                              : "bg-muted text-muted-foreground"
-                          }`}
-                        >
-                          <Icon className="w-6 h-6" />
-                        </div>
-
-                        {/* Text Content */}
-                        <div className="flex-1">
-                          <div className="mb-2">
-                            <span className="text-sm font-semibold text-muted-foreground">
-                              {step.number}
-                            </span>
-                            <span className="text-sm text-muted-foreground ml-2">
-                              {step.label}
-                            </span>
-                          </div>
-                          <h3 className="text-xl md:text-2xl font-bold text-foreground mb-3">
-                            {step.title}
-                          </h3>
-                          <p className="text-muted-foreground leading-relaxed">
-                            {step.description}
-                          </p>
-                        </div>
+                    {/* Icon */}
+                    <div className="flex justify-center mb-3 md:mb-4">
+                      <div className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-accent/20 flex items-center justify-center group-hover:bg-accent/30 transition-colors duration-300">
+                        <Icon className="w-5 h-5 md:w-6 md:h-6 text-accent" />
                       </div>
+                    </div>
+
+                    {/* Content */}
+                    <div className="text-center flex-1 flex flex-col">
+                      <h3 className="text-base md:text-lg font-semibold text-primary-foreground mb-2">
+                        {step.title}
+                      </h3>
+                      <p className="text-xs md:text-sm text-primary-foreground/60 leading-relaxed">
+                        {step.description}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -156,7 +102,23 @@ const ProcessFlow = () => {
             })}
           </div>
         </div>
+
+        {/* CTA */}
+        <div className="text-center mt-12 md:mt-16">
+          <p className="text-primary-foreground/70 mb-4">
+            Pronto para transformar seu ambiente?
+          </p>
+          <Button 
+            size="lg" 
+            className="bg-accent hover:bg-accent/90 text-accent-foreground font-semibold px-8 py-6 text-lg rounded-full shadow-lg shadow-accent/25 hover:shadow-accent/40 transition-all duration-300"
+            onClick={() => setIsBookingOpen(true)}
+          >
+            Agendar Minha Visita Gratuita
+          </Button>
+        </div>
       </div>
+
+      <BookingDialog open={isBookingOpen} onOpenChange={setIsBookingOpen} />
     </section>
   );
 };
