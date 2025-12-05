@@ -4,7 +4,6 @@ import StatsSection from "@/components/StatsSection";
 import Products from "@/components/Products";
 import ProcessFlow from "@/components/ProcessFlow";
 import Benefits from "@/components/Benefits";
-import PartnersLogos from "@/components/PartnersLogos";
 import SocialProof from "@/components/SocialProof";
 import FAQ from "@/components/FAQ";
 import ContactForm from "@/components/ContactForm";
@@ -21,7 +20,6 @@ const Index = () => {
       <Products />
       <ProcessFlow />
       <Benefits />
-      <PartnersLogos />
       <SocialProof />
       <FAQ />
       <ContactForm />

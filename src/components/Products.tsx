@@ -11,6 +11,7 @@ const products = [
     title: "Cortinas Blackout",
     description: "Controle total de luminosidade e privacidade para ambientes que exigem escuridão completa.",
     image: blackoutImage,
+    altText: "Cortina blackout cinza instalada em quarto moderno com bloqueio total de luz em Balneário Camboriú",
     features: [
       "Bloqueia 100% da luz",
       "Isolamento térmico e acústico",
@@ -22,6 +23,7 @@ const products = [
     title: "Cortinas de Linho",
     description: "Elegância natural com tecidos nobres que trazem sofisticação e leveza aos seus ambientes.",
     image: linenImage,
+    altText: "Cortina de linho natural branco em sala de estar elegante com luz filtrada suavemente",
     features: [
       "Tecido natural e sustentável",
       "Filtragem suave da luz",
@@ -33,6 +35,7 @@ const products = [
     title: "Persianas",
     description: "Praticidade e modernidade com controle preciso de luminosidade para qualquer ambiente.",
     image: blindsImage,
+    altText: "Persiana horizontal de alumínio em escritório com controle preciso de luminosidade",
     features: [
       "Controle preciso de luz",
       "Design minimalista",
@@ -64,8 +67,9 @@ const Products = () => {
               <div className="relative h-64 overflow-hidden">
                 <img 
                   src={product.image} 
-                  alt={product.title}
+                  alt={product.altText}
                   className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
+                  loading="lazy"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                 <h3 className="absolute bottom-4 left-4 text-2xl font-bold text-white">
