@@ -10,7 +10,7 @@ import { toast } from '@/hooks/use-toast';
 import type { Cortina, DadosOrcamento, Material } from '@/types/orcamento';
 import { OPCOES_MARGEM } from '@/types/orcamento';
 import { calcularResumoOrcamento, calcularConsumoDetalhado, calcularResumoConsolidado } from '@/lib/calculosOrcamento';
-import { FileDown, Home, Save, ChevronDown, AlertTriangle, Ruler, Package, Scissors, Wrench } from 'lucide-react';
+import { FileDown, Home, Save, ChevronDown, Ruler, Package, Scissors, Wrench } from 'lucide-react';
 import { DialogValidade } from '../DialogValidade';
 import { gerarPdfOrcamento } from '@/lib/gerarPdfOrcamento';
 
@@ -218,6 +218,7 @@ export function EtapaResumo({
     const tecido = obterMaterial(cortina.tecidoId);
     const forro = obterMaterial(cortina.forroId);
     const trilho = obterMaterial(cortina.trilhoId);
+    const barra_m = (cortina.barraCm || 0) / 100;
 
     return (
       <Collapsible open={expandedCards[index]} onOpenChange={() => toggleCard(index)}>
@@ -236,23 +237,44 @@ export function EtapaResumo({
             {tecido && consumo.consumoTecido_m > 0 && (
               <div className="flex justify-between items-start border-b border-border/50 pb-2">
                 <div className="flex-1">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <Package className="h-3 w-3 text-primary" />
                     <span className="font-medium">Tecido</span>
-                    {consumo.precisaEmendaTecido && (
-                      <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400 text-xs bg-amber-100 dark:bg-amber-900/30 px-1.5 py-0.5 rounded">
-                        <AlertTriangle className="h-3 w-3" />
-                        Emenda
+                    {consumo.calculoPorAlturaTecido ? (
+                      <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded">
+                        Cálculo por Altura
+                      </span>
+                    ) : (
+                      <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-1.5 py-0.5 rounded">
+                        Metro Linear
                       </span>
                     )}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
                     {formatMeters(consumo.consumoTecido_m)} × {formatCurrency(tecido.preco_custo)}/m
-                    {consumo.larguraRoloTecido_m && ` (rolo: ${consumo.larguraRoloTecido_m}m)`}
+                    {` (rolo: ${consumo.larguraRoloTecido_m}m)`}
                   </p>
-                  <p className="text-xs text-muted-foreground">
-                    Coef: {consumo.coeficienteTecido} • Qtd: {cortina.quantidade}
-                  </p>
+                  {consumo.calculoPorAlturaTecido ? (
+                    <div className="text-xs text-muted-foreground bg-background/50 p-1.5 rounded mt-1 space-y-0.5">
+                      <p><strong>Fórmula:</strong> Nº panos × Altura pano × Qtd</p>
+                      <p>
+                        Altura pano: {cortina.altura}m + 0.16m (costura) + {barra_m.toFixed(2)}m (barra) = <strong>{consumo.alturaPanoTecido.toFixed(2)}m</strong>
+                      </p>
+                      <p>
+                        Nº panos: ⌈({cortina.largura}m × {consumo.coeficienteTecido}) ÷ {consumo.larguraRoloTecido_m}m⌉ = <strong>{consumo.numeroPanosTecido}</strong>
+                      </p>
+                      <p>
+                        Consumo: {consumo.numeroPanosTecido} × {consumo.alturaPanoTecido.toFixed(2)}m × {cortina.quantidade} = <strong>{consumo.consumoTecido_m.toFixed(2)}m</strong>
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="text-xs text-muted-foreground bg-background/50 p-1.5 rounded mt-1 space-y-0.5">
+                      <p><strong>Fórmula:</strong> Largura × Coeficiente × Qtd</p>
+                      <p>
+                        Consumo: {cortina.largura}m × {consumo.coeficienteTecido} × {cortina.quantidade} = <strong>{consumo.consumoTecido_m.toFixed(2)}m</strong>
+                      </p>
+                    </div>
+                  )}
                 </div>
                 <span className="font-semibold text-right">{formatCurrency(cortina.custoTecido || 0)}</span>
               </div>
@@ -262,23 +284,44 @@ export function EtapaResumo({
             {forro && consumo.consumoForro_m > 0 && (
               <div className="flex justify-between items-start border-b border-border/50 pb-2">
                 <div className="flex-1">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <Package className="h-3 w-3 text-secondary-foreground" />
                     <span className="font-medium">Forro</span>
-                    {consumo.precisaEmendaForro && (
-                      <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400 text-xs bg-amber-100 dark:bg-amber-900/30 px-1.5 py-0.5 rounded">
-                        <AlertTriangle className="h-3 w-3" />
-                        Emenda
+                    {consumo.calculoPorAlturaForro ? (
+                      <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded">
+                        Cálculo por Altura
+                      </span>
+                    ) : (
+                      <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-1.5 py-0.5 rounded">
+                        Metro Linear
                       </span>
                     )}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
                     {formatMeters(consumo.consumoForro_m)} × {formatCurrency(forro.preco_custo)}/m
-                    {consumo.larguraRoloForro_m && ` (rolo: ${consumo.larguraRoloForro_m}m)`}
+                    {` (rolo: ${consumo.larguraRoloForro_m}m)`}
                   </p>
-                  <p className="text-xs text-muted-foreground">
-                    Coef: {consumo.coeficienteForro} • Qtd: {cortina.quantidade}
-                  </p>
+                  {consumo.calculoPorAlturaForro ? (
+                    <div className="text-xs text-muted-foreground bg-background/50 p-1.5 rounded mt-1 space-y-0.5">
+                      <p><strong>Fórmula:</strong> Nº panos × Altura pano × Qtd</p>
+                      <p>
+                        Altura pano: {cortina.altura}m + 0.16m (costura) + {barra_m.toFixed(2)}m (barra) = <strong>{consumo.alturaPanoForro.toFixed(2)}m</strong>
+                      </p>
+                      <p>
+                        Nº panos: ⌈({cortina.largura}m × {consumo.coeficienteForro}) ÷ {consumo.larguraRoloForro_m}m⌉ = <strong>{consumo.numeroPanosForro}</strong>
+                      </p>
+                      <p>
+                        Consumo: {consumo.numeroPanosForro} × {consumo.alturaPanoForro.toFixed(2)}m × {cortina.quantidade} = <strong>{consumo.consumoForro_m.toFixed(2)}m</strong>
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="text-xs text-muted-foreground bg-background/50 p-1.5 rounded mt-1 space-y-0.5">
+                      <p><strong>Fórmula:</strong> Largura × Coeficiente × Qtd</p>
+                      <p>
+                        Consumo: {cortina.largura}m × {consumo.coeficienteForro} × {cortina.quantidade} = <strong>{consumo.consumoForro_m.toFixed(2)}m</strong>
+                      </p>
+                    </div>
+                  )}
                 </div>
                 <span className="font-semibold text-right">{formatCurrency(cortina.custoForro || 0)}</span>
               </div>
