@@ -116,6 +116,7 @@ export function CortinaCard({
   };
 
   const handleChange = (field: keyof Cortina, value: any) => {
+    console.log(`📝 handleChange: ${field} = ${value} (tipo: ${typeof value})`);
     const novosDados = { ...cortina, [field]: value };
     onUpdate(novosDados);
   };
@@ -161,6 +162,13 @@ export function CortinaCard({
         servicosAdicionais: cortina.servicosAdicionaisIds,
         barraCm: cortina.barraCm,
         barraForroCm: cortina.barraForroCm
+      });
+
+      console.log('📊 Valores da barra no momento do save:', {
+        'cortina.barraCm': cortina.barraCm,
+        'cortina.barraForroCm': cortina.barraForroCm,
+        'tipo barraCm': typeof cortina.barraCm,
+        'tipo barraForroCm': typeof cortina.barraForroCm
       });
 
       // Obter serviços configurados para este tipo de cortina
@@ -274,6 +282,11 @@ export function CortinaCard({
         servicos_adicionais_ids: cortina.servicosAdicionaisIds || [],
       };
 
+      console.log('💾 dadosCortina a enviar para DB:', {
+        barra_cm: dadosCortina.barra_cm,
+        barra_forro_cm: dadosCortina.barra_forro_cm
+      });
+
       let result;
       if (cortina.id) {
         result = await supabase
@@ -296,6 +309,10 @@ export function CortinaCard({
       }
 
       console.log('✅ Cortina salva com sucesso:', result.data.id);
+      console.log('📥 Dados retornados do DB:', {
+        barra_cm: result.data.barra_cm,
+        barra_forro_cm: result.data.barra_forro_cm
+      });
 
       onUpdate({ ...cortina, id: result.data.id, tipoProduto: 'cortina', ...custos });
 
@@ -460,7 +477,10 @@ export function CortinaCard({
               type="number"
               step="1"
               value={cortina.barraCm || ''}
-              onChange={(e) => handleChange('barraCm', parseFloat(e.target.value) || 0)}
+              onChange={(e) => {
+                console.log(`🔢 Input barraCm: raw="${e.target.value}", parsed=${parseFloat(e.target.value)}`);
+                handleChange('barraCm', parseFloat(e.target.value) || 0);
+              }}
               placeholder="0"
             />
           </div>
@@ -472,7 +492,10 @@ export function CortinaCard({
               type="number"
               step="1"
               value={cortina.barraForroCm || ''}
-              onChange={(e) => handleChange('barraForroCm', parseFloat(e.target.value) || 0)}
+              onChange={(e) => {
+                console.log(`🔢 Input barraForroCm: raw="${e.target.value}", parsed=${parseFloat(e.target.value)}`);
+                handleChange('barraForroCm', parseFloat(e.target.value) || 0);
+              }}
               placeholder="0"
             />
           </div>
