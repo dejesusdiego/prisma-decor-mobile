@@ -14,7 +14,8 @@ import {
   Percent,
   Target,
   Wallet,
-  AlertTriangle
+  AlertTriangle,
+  MoreHorizontal
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
@@ -308,6 +309,14 @@ export function DashboardContent({ onNovoOrcamento, onMeusOrcamentos, onVisualiz
       color: 'text-emerald-600 dark:text-emerald-400',
       bgColor: 'bg-emerald-100 dark:bg-emerald-950'
     },
+    { 
+      title: 'Em breve', 
+      value: '···', 
+      icon: MoreHorizontal, 
+      color: 'text-muted-foreground',
+      bgColor: 'bg-muted',
+      isPlaceholder: true
+    },
   ];
 
   return (
@@ -328,15 +337,24 @@ export function DashboardContent({ onNovoOrcamento, onMeusOrcamentos, onVisualiz
         </Button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-4">
+      {/* Stats Cards - 2 rows of 4 */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {statsCards.map((stat, index) => (
-          <Card key={index} className="border-0 shadow-sm hover:shadow-md transition-shadow">
+          <Card 
+            key={index} 
+            className={`border-0 shadow-sm hover:shadow-md transition-shadow ${
+              stat.isPlaceholder ? 'border-2 border-dashed border-muted-foreground/20' : ''
+            }`}
+          >
             <CardContent className="p-4">
               <div className="flex items-start justify-between">
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-muted-foreground truncate">{stat.title}</p>
-                  <p className="text-lg font-bold mt-1 truncate">{stat.value}</p>
+                  <p className={`text-xs truncate ${stat.isPlaceholder ? 'text-muted-foreground/50' : 'text-muted-foreground'}`}>
+                    {stat.title}
+                  </p>
+                  <p className={`text-xl font-bold mt-1 truncate ${stat.isPlaceholder ? 'text-muted-foreground/30' : ''}`}>
+                    {stat.value}
+                  </p>
                   {stat.comparativo !== undefined && stat.comparativo !== 0 && (
                     <div className={`flex items-center gap-1 text-xs mt-1 ${stat.comparativo > 0 ? 'text-green-600' : 'text-red-600'}`}>
                       {stat.comparativo > 0 ? (
