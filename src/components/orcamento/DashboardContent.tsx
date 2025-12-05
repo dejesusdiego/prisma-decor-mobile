@@ -52,6 +52,7 @@ interface Stats {
   ticketMedio: number;
   taxaConversao: number;
   aReceber: number;
+  recebido: number;
   margemMedia: number;
 }
 
@@ -99,6 +100,7 @@ export function DashboardContent({ onNovoOrcamento, onMeusOrcamentos, onVisualiz
     ticketMedio: 0,
     taxaConversao: 0,
     aReceber: 0,
+    recebido: 0,
     margemMedia: 0
   });
   const [loading, setLoading] = useState(true);
@@ -145,11 +147,16 @@ export function DashboardContent({ onNovoOrcamento, onMeusOrcamentos, onVisualiz
       const convertidos = allData?.filter(orc => ['pago', 'pago_parcial'].includes(orc.status)).length || 0;
       const taxaConversao = enviadosTotal > 0 ? (convertidos / enviadosTotal) * 100 : 0;
       const aReceber = allData?.filter(orc => orc.status === 'pago_parcial')
+        .reduce((sum, orc) => sum + ((orc.total_geral || 0) / 2), 0) || 0;
+      const recebido = allData?.filter(orc => orc.status === 'pago')
         .reduce((sum, orc) => sum + (orc.total_geral || 0), 0) || 0;
+      const recebidoParcial = allData?.filter(orc => orc.status === 'pago_parcial')
+        .reduce((sum, orc) => sum + ((orc.total_geral || 0) / 2), 0) || 0;
+      const totalRecebido = recebido + recebidoParcial;
       const margemMedia = allData?.length ? 
         allData.reduce((sum, orc) => sum + (orc.margem_percent || 0), 0) / allData.length : 0;
 
-      setStats({ totalOrcamentos, valorTotal, pendentes, enviados, semResposta, pagos, ticketMedio, taxaConversao, aReceber, margemMedia });
+      setStats({ totalOrcamentos, valorTotal, pendentes, enviados, semResposta, pagos, ticketMedio, taxaConversao, aReceber, recebido: totalRecebido, margemMedia });
 
       // Notificação de orçamentos sem resposta
       if (semResposta > 0) {
@@ -281,6 +288,13 @@ export function DashboardContent({ onNovoOrcamento, onMeusOrcamentos, onVisualiz
       bgColor: 'bg-purple-100 dark:bg-purple-950'
     },
     { 
+      title: 'Recebido', 
+      value: formatCurrency(stats.recebido), 
+      icon: CheckCircle, 
+      color: 'text-green-600 dark:text-green-400',
+      bgColor: 'bg-green-100 dark:bg-green-950'
+    },
+    { 
       title: 'A Receber', 
       value: formatCurrency(stats.aReceber), 
       icon: Wallet, 
@@ -315,7 +329,7 @@ export function DashboardContent({ onNovoOrcamento, onMeusOrcamentos, onVisualiz
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-4">
         {statsCards.map((stat, index) => (
           <Card key={index} className="border-0 shadow-sm hover:shadow-md transition-shadow">
             <CardContent className="p-4">
