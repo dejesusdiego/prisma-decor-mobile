@@ -10,7 +10,7 @@ const diferenciais = [
   },
   {
     tipo: 'normal',
-    titulo: '3 Anos de Garantia',
+    titulo: '1 Ano de Garantia',
     descricao: 'Cobertura total em produtos e instalação',
     icon: Shield
   },
