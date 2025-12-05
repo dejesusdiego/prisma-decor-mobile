@@ -68,22 +68,22 @@ const StatsSection = () => {
   }, [hasAnimated]);
 
   return (
-    <section id="stats-section" className="py-16 bg-primary">
+    <section id="stats-section" className="py-10 md:py-16 bg-primary">
       <div className="container mx-auto px-4">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
           {stats.map((stat, index) => (
             <div
               key={index}
               className="text-center group"
             >
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-accent/20 mb-4 group-hover:scale-110 transition-transform">
-                <stat.icon className="h-8 w-8 text-accent" />
+              <div className="inline-flex items-center justify-center w-12 h-12 md:w-16 md:h-16 rounded-full bg-accent/20 mb-3 md:mb-4 group-hover:scale-110 transition-transform">
+                <stat.icon className="h-6 w-6 md:h-8 md:w-8 text-accent" />
               </div>
-              <div className="text-4xl md:text-5xl font-bold text-primary-foreground mb-2">
+              <div className="text-2xl sm:text-3xl md:text-5xl font-bold text-primary-foreground mb-1 md:mb-2">
                 {stat.isDecimal ? counters[index].toFixed(1) : counters[index]}
                 {stat.suffix}
               </div>
-              <div className="text-primary-foreground/70 text-sm md:text-base">
+              <div className="text-primary-foreground/70 text-xs sm:text-sm md:text-base leading-tight">
                 {stat.label}
               </div>
             </div>

@@ -20,19 +20,19 @@ const Hero = () => {
       {/* Content */}
       <div className="container mx-auto px-4 relative z-10">
         <div className="max-w-2xl">
-          {/* Trust Badges */}
-          <div className="flex flex-wrap items-center gap-3 mb-6">
-            <div className="inline-flex items-center gap-1.5 bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/20">
-              <Star className="h-4 w-4 text-accent fill-accent" />
+          {/* Trust Badges - Mobile optimized */}
+          <div className="grid grid-cols-1 gap-2 mb-6 sm:flex sm:flex-wrap sm:gap-3">
+            <div className="inline-flex items-center gap-1.5 bg-white/10 backdrop-blur-sm px-3 py-2 rounded-full border border-white/20">
+              <Star className="h-4 w-4 text-accent fill-accent flex-shrink-0" />
               <span className="text-white text-sm font-medium">4.9 no Google</span>
               <span className="text-white/60 text-xs">(127 avaliações)</span>
             </div>
-            <div className="inline-flex items-center gap-1.5 bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/20">
-              <Shield className="h-4 w-4 text-accent" />
+            <div className="inline-flex items-center gap-1.5 bg-white/10 backdrop-blur-sm px-3 py-2 rounded-full border border-white/20">
+              <Shield className="h-4 w-4 text-accent flex-shrink-0" />
               <span className="text-white text-sm font-medium">Garantia de 3 anos</span>
             </div>
-            <div className="inline-flex items-center gap-1.5 bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/20">
-              <Award className="h-4 w-4 text-accent" />
+            <div className="inline-flex items-center gap-1.5 bg-white/10 backdrop-blur-sm px-3 py-2 rounded-full border border-white/20">
+              <Award className="h-4 w-4 text-accent flex-shrink-0" />
               <span className="text-white text-sm font-medium">500+ projetos</span>
             </div>
           </div>
@@ -43,16 +43,9 @@ const Hero = () => {
           </h1>
           
           <div className="mb-8">
-            <p className="text-lg md:text-xl text-white/90 mb-4 leading-relaxed">
+            <p className="text-lg md:text-xl text-white/90 leading-relaxed">
               Transforme seus ambientes com elegância e funcionalidade. Soluções personalizadas em cortinas e persianas que combinam design sofisticado com qualidade superior.
             </p>
-            <div className="flex items-center gap-2 text-accent font-medium">
-              <span className="relative flex h-3 w-3">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-accent"></span>
-              </span>
-              <span>Apenas 3 vagas disponíveis esta semana!</span>
-            </div>
           </div>
           
           <div className="flex flex-col sm:flex-row gap-4">
