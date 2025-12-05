@@ -52,7 +52,7 @@ const WhatsAppButton = () => {
   return (
     <button
       onClick={handleWhatsAppClick}
-      className={`fixed bottom-0 left-0 right-0 z-50 bg-whatsapp hover:bg-whatsapp-hover text-whatsapp-foreground font-semibold py-4 px-6 shadow-lg transition-all duration-300 flex items-center justify-center gap-3 ${
+      className={`fixed bottom-0 left-0 right-0 z-50 bg-whatsapp hover:bg-whatsapp-hover text-whatsapp-foreground font-semibold py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] px-4 shadow-lg transition-all duration-300 flex items-center justify-center gap-2 sm:gap-3 ${
         isVisible && !isFooterVisible ? "translate-y-0 opacity-100" : "translate-y-full opacity-0"
       }`}
       aria-label="Chamar no WhatsApp"
