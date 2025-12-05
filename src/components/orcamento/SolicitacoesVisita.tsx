@@ -25,6 +25,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
@@ -47,6 +57,7 @@ import {
   Sparkles,
   List,
   CalendarDays,
+  Trash2,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { CalendarioVisitas } from "./CalendarioVisitas";
@@ -92,6 +103,8 @@ export function SolicitacoesVisita({ onNavigate, onCreateOrcamento }: Solicitaco
   const [selectedSolicitacao, setSelectedSolicitacao] = useState<SolicitacaoVisita | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [observacoes, setObservacoes] = useState("");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [solicitacaoToDelete, setSolicitacaoToDelete] = useState<SolicitacaoVisita | null>(null);
 
   const fetchSolicitacoes = async () => {
     setLoading(true);
@@ -225,6 +238,33 @@ _Prisma Interiores - Transformando ambientes_`;
     setSelectedSolicitacao(solicitacao);
     setObservacoes(solicitacao.observacoes_internas || "");
     setDialogOpen(true);
+  };
+
+  const handleDeleteClick = (solicitacao: SolicitacaoVisita) => {
+    setSolicitacaoToDelete(solicitacao);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!solicitacaoToDelete) return;
+    
+    try {
+      const { error } = await supabase
+        .from("solicitacoes_visita")
+        .delete()
+        .eq("id", solicitacaoToDelete.id);
+
+      if (error) throw error;
+      
+      setSolicitacoes(prev => prev.filter(s => s.id !== solicitacaoToDelete.id));
+      toast.success("Solicitação excluída com sucesso");
+    } catch (error) {
+      console.error("Erro ao excluir solicitação:", error);
+      toast.error("Erro ao excluir solicitação");
+    } finally {
+      setDeleteDialogOpen(false);
+      setSolicitacaoToDelete(null);
+    }
   };
 
   // Filtros
@@ -502,6 +542,15 @@ _Prisma Interiores - Transformando ambientes_`;
                         >
                           <FileText className="h-4 w-4" />
                         </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDeleteClick(solicitacao)}
+                          title="Excluir solicitação"
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -629,6 +678,28 @@ _Prisma Interiores - Transformando ambientes_`;
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Dialog de Confirmação de Exclusão */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir Solicitação</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir a solicitação de visita de{" "}
+              <strong>{solicitacaoToDelete?.nome}</strong>? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
