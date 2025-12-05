@@ -150,20 +150,39 @@ export function SolicitacoesVisita({ onNavigate, onCreateOrcamento }: Solicitaco
   };
 
   const formatWhatsAppConfirmationMessage = (solicitacao: SolicitacaoVisita) => {
-    const dataFormatada = format(parseISO(solicitacao.data_agendada), "dd/MM/yyyy", { locale: ptBR });
-    const message = `Olá ${solicitacao.nome}! 👋
+    const dataFormatada = format(parseISO(solicitacao.data_agendada), "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR });
+    
+    // Montar endereço completo
+    let enderecoCompleto = solicitacao.endereco || "";
+    if (solicitacao.complemento) {
+      enderecoCompleto += `, ${solicitacao.complemento}`;
+    }
+    if (solicitacao.cidade) {
+      enderecoCompleto += enderecoCompleto ? ` - ${solicitacao.cidade}` : solicitacao.cidade;
+    }
 
-Sua visita técnica da *Prisma Interiores* está *CONFIRMADA*! ✅
+    const message = `Olá *${solicitacao.nome}*! 👋
+
+Somos da *Prisma Interiores* e recebemos sua solicitação de visita técnica. 🏠
+
+Por favor, *confirme se as informações abaixo estão corretas*:
 
 📅 *Data:* ${dataFormatada}
 🕐 *Horário:* ${solicitacao.horario_agendado}
-📍 *Local:* ${solicitacao.endereco || solicitacao.cidade}
+📍 *Endereço:* ${enderecoCompleto}
+📱 *Telefone:* ${solicitacao.telefone}${solicitacao.mensagem ? `
 
-Nossa equipe entrará em contato próximo ao horário agendado.
+💬 *Sua mensagem:* "${solicitacao.mensagem}"` : ""}
 
-Qualquer dúvida, estamos à disposição!
+━━━━━━━━━━━━━━━━━━━━━
 
-_Prisma Interiores - Transformando ambientes_`;
+✅ *Responda com "CONFIRMO"* se tudo estiver correto.
+
+❌ Se precisar alterar algo, nos informe qual informação deve ser corrigida.
+
+Aguardamos sua confirmação para finalizar o agendamento!
+
+_Prisma Interiores - Transformando ambientes_ ✨`;
     return message;
   };
 
