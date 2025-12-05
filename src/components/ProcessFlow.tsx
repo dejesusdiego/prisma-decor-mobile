@@ -34,7 +34,7 @@ const ProcessFlow = () => {
   const [isBookingOpen, setIsBookingOpen] = useState(false);
 
   return (
-    <section className="py-16 md:py-24 bg-primary relative overflow-hidden">
+    <section className="pt-16 md:pt-24 pb-8 md:pb-12 bg-primary relative overflow-hidden">
       {/* Subtle background pattern */}
       <div className="absolute inset-0 opacity-5">
         <div className="absolute inset-0" style={{
