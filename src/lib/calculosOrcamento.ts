@@ -2,6 +2,11 @@ import type { Cortina, Material, ServicoConfeccao, ServicoInstalacao } from '@/t
 import { COEFICIENTES_CORTINA, COEFICIENTES_FORRO } from '@/types/orcamento';
 import type { CoeficientesPorTipo } from '@/hooks/useConfiguracoes';
 
+// ============= CONSTANTES =============
+
+const MARGEM_COSTURA_SUPERIOR = 0.16; // 16cm de margem superior para costura
+const LARGURA_ROLO_PADRAO = 2.80; // 2.80m quando não tem largura cadastrada
+
 // ============= INTERFACES =============
 
 export interface CustosCortina {
@@ -34,7 +39,15 @@ export interface ConsumoDetalhado {
   consumoForro_m: number;
   comprimentoTrilho_m: number;
   comprimentoCostura_m: number;
-  // Indicadores
+  // Indicadores de cálculo por altura
+  calculoPorAlturaTecido: boolean;
+  calculoPorAlturaForro: boolean;
+  // Detalhes do cálculo por altura (quando aplicável)
+  numeroPanosTecido: number;
+  numeroPanosForro: number;
+  alturaPanoTecido: number;
+  alturaPanoForro: number;
+  // Indicadores de emenda (mantido para compatibilidade)
   precisaEmendaTecido: boolean;
   precisaEmendaForro: boolean;
   coeficienteTecido: number;
@@ -46,8 +59,8 @@ export interface ConsumoDetalhado {
   precoCostura_m: number;
   precoInstalacao_ponto: number;
   // Larguras dos rolos
-  larguraRoloTecido_m: number | null;
-  larguraRoloForro_m: number | null;
+  larguraRoloTecido_m: number;
+  larguraRoloForro_m: number;
 }
 
 export interface ResumoConsolidado {
@@ -58,6 +71,55 @@ export interface ResumoConsolidado {
   totalCortinas: number;
   totalPersianas: number;
   totalOutros: number;
+}
+
+// ============= FUNÇÕES AUXILIARES =============
+
+/**
+ * Calcula o consumo de material (tecido ou forro) com a lógica correta:
+ * - Se (altura + barra) > largura do rolo → cálculo por ALTURA (panos)
+ * - Se (altura + barra) <= largura do rolo → cálculo por METRO LINEAR
+ */
+function calcularConsumoMaterial(
+  largura: number, // largura da cortina em metros
+  altura: number, // altura da cortina em metros
+  barra_m: number, // barra em metros
+  coeficiente: number,
+  larguraRolo: number, // largura do rolo em metros
+  quantidade: number
+): { consumo_m: number; calculoPorAltura: boolean; numeroPanos: number; alturaPano: number } {
+  const alturaComBarra = altura + barra_m;
+  
+  // Verifica se precisa calcular por altura (quando altura + barra ultrapassa a largura do rolo)
+  if (alturaComBarra > larguraRolo) {
+    // Cálculo por ALTURA (número de panos)
+    // altura_pano = altura + margem_costura_superior + barra
+    const alturaPano = altura + MARGEM_COSTURA_SUPERIOR + barra_m;
+    
+    // numero_panos = arredondamento para cima de (largura × coeficiente) / largura_rolo
+    const numeroPanos = Math.ceil((largura * coeficiente) / larguraRolo);
+    
+    // consumo_total = numero_panos × altura_pano × quantidade
+    const consumo_m = numeroPanos * alturaPano * quantidade;
+    
+    return {
+      consumo_m,
+      calculoPorAltura: true,
+      numeroPanos,
+      alturaPano
+    };
+  } else {
+    // Cálculo por METRO LINEAR (simples)
+    // consumo_total = largura × coeficiente × quantidade
+    const consumo_m = largura * coeficiente * quantidade;
+    
+    return {
+      consumo_m,
+      calculoPorAltura: false,
+      numeroPanos: 0,
+      alturaPano: 0
+    };
+  }
 }
 
 // ============= FUNÇÕES DE CÁLCULO =============
@@ -82,33 +144,50 @@ export function calcularConsumoDetalhado(
   const coeficienteTecido = coeficientesTecido[cortina.tipoCortina as keyof typeof coeficientesTecido] || 3.5;
   const coeficienteForro = coeficientesForro[cortina.tipoCortina as keyof typeof coeficientesForro] || 2.5;
 
-  // Cálculo do consumo de tecido (usa coeficiente de tecido)
+  // Larguras dos rolos (usar padrão 2.80m se não cadastrado)
+  const larguraRoloTecido = tecido?.largura_metro || LARGURA_ROLO_PADRAO;
+  const larguraRoloForro = forro?.largura_metro || LARGURA_ROLO_PADRAO;
+
+  // Cálculo do consumo de tecido
   let consumoTecido_m = 0;
-  let precisaEmendaTecido = false;
+  let calculoPorAlturaTecido = false;
+  let numeroPanosTecido = 0;
+  let alturaPanoTecido = 0;
+  
   if (tecido) {
-    consumoTecido_m = (cortina.largura * coeficienteTecido) + barra_m;
-    
-    // Verificar se precisa emenda (altura vs largura do rolo)
-    if (tecido.largura_metro && cortina.altura > tecido.largura_metro) {
-      consumoTecido_m *= 2;
-      precisaEmendaTecido = true;
-    }
-    
-    consumoTecido_m *= cortina.quantidade;
+    const resultadoTecido = calcularConsumoMaterial(
+      cortina.largura,
+      cortina.altura,
+      barra_m,
+      coeficienteTecido,
+      larguraRoloTecido,
+      cortina.quantidade
+    );
+    consumoTecido_m = resultadoTecido.consumo_m;
+    calculoPorAlturaTecido = resultadoTecido.calculoPorAltura;
+    numeroPanosTecido = resultadoTecido.numeroPanos;
+    alturaPanoTecido = resultadoTecido.alturaPano;
   }
 
   // Cálculo do consumo de forro (usa coeficiente de forro - DIFERENTE!)
   let consumoForro_m = 0;
-  let precisaEmendaForro = false;
+  let calculoPorAlturaForro = false;
+  let numeroPanosForro = 0;
+  let alturaPanoForro = 0;
+  
   if (forro) {
-    consumoForro_m = (cortina.largura * coeficienteForro) + barra_m;
-    
-    if (forro.largura_metro && cortina.altura > forro.largura_metro) {
-      consumoForro_m *= 2;
-      precisaEmendaForro = true;
-    }
-    
-    consumoForro_m *= cortina.quantidade;
+    const resultadoForro = calcularConsumoMaterial(
+      cortina.largura,
+      cortina.altura,
+      barra_m,
+      coeficienteForro,
+      larguraRoloForro,
+      cortina.quantidade
+    );
+    consumoForro_m = resultadoForro.consumo_m;
+    calculoPorAlturaForro = resultadoForro.calculoPorAltura;
+    numeroPanosForro = resultadoForro.numeroPanos;
+    alturaPanoForro = resultadoForro.alturaPano;
   }
 
   // Comprimento do trilho (10cm de sobra)
@@ -122,8 +201,14 @@ export function calcularConsumoDetalhado(
     consumoForro_m,
     comprimentoTrilho_m,
     comprimentoCostura_m,
-    precisaEmendaTecido,
-    precisaEmendaForro,
+    calculoPorAlturaTecido,
+    calculoPorAlturaForro,
+    numeroPanosTecido,
+    numeroPanosForro,
+    alturaPanoTecido,
+    alturaPanoForro,
+    precisaEmendaTecido: calculoPorAlturaTecido, // Agora indica se é cálculo por altura
+    precisaEmendaForro: calculoPorAlturaForro,
     coeficienteTecido,
     coeficienteForro,
     precoTecido_m: tecido?.preco_custo || 0,
@@ -131,8 +216,8 @@ export function calcularConsumoDetalhado(
     precoTrilho_m: trilho?.preco_custo || 0,
     precoCostura_m: 0, // Será preenchido com o serviço de confecção
     precoInstalacao_ponto: 0, // Será preenchido com o serviço de instalação
-    larguraRoloTecido_m: tecido?.largura_metro || null,
-    larguraRoloForro_m: forro?.largura_metro || null,
+    larguraRoloTecido_m: larguraRoloTecido,
+    larguraRoloForro_m: larguraRoloForro,
   };
 }
 
@@ -208,31 +293,36 @@ export function calcularCustosCortina(
   const coeficienteTecido = coeficientesTecido[cortina.tipoCortina as keyof typeof coeficientesTecido] || 3.5;
   const coeficienteForro = coeficientesForro[cortina.tipoCortina as keyof typeof coeficientesForro] || 2.5;
 
+  // Larguras dos rolos (usar padrão 2.80m se não cadastrado)
+  const larguraRoloTecido = tecido?.largura_metro || LARGURA_ROLO_PADRAO;
+  const larguraRoloForro = forro?.largura_metro || LARGURA_ROLO_PADRAO;
+
   // 3) Cálculo do tecido (se houver) - usa coeficiente de tecido
   let custoTecido = 0;
   if (tecido) {
-    let consumoPorCortina_m = (cortina.largura * coeficienteTecido) + barra_m;
-    
-    // Verificar se precisa emenda (altura vs largura do rolo)
-    if (tecido.largura_metro && cortina.altura > tecido.largura_metro) {
-      consumoPorCortina_m *= 2;
-    }
-    
-    const consumoTotalTecido_m = consumoPorCortina_m * cortina.quantidade;
-    custoTecido = consumoTotalTecido_m * tecido.preco_custo;
+    const resultadoTecido = calcularConsumoMaterial(
+      cortina.largura,
+      cortina.altura,
+      barra_m,
+      coeficienteTecido,
+      larguraRoloTecido,
+      cortina.quantidade
+    );
+    custoTecido = resultadoTecido.consumo_m * tecido.preco_custo;
   }
 
   // 4) Cálculo do forro (se houver) - usa coeficiente de FORRO (diferente!)
   let custoForro = 0;
   if (forro) {
-    let consumoPorCortinaForro_m = (cortina.largura * coeficienteForro) + barra_m;
-    
-    if (forro.largura_metro && cortina.altura > forro.largura_metro) {
-      consumoPorCortinaForro_m *= 2;
-    }
-    
-    const consumoTotalForro_m = consumoPorCortinaForro_m * cortina.quantidade;
-    custoForro = consumoTotalForro_m * forro.preco_custo;
+    const resultadoForro = calcularConsumoMaterial(
+      cortina.largura,
+      cortina.altura,
+      barra_m,
+      coeficienteForro,
+      larguraRoloForro,
+      cortina.quantidade
+    );
+    custoForro = resultadoForro.consumo_m * forro.preco_custo;
   }
 
   // 5) Cálculo do trilho (10cm de sobra, SEM multiplicar por quantidade) - opcional
