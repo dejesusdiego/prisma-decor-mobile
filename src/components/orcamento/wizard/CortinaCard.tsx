@@ -158,7 +158,9 @@ export function CortinaCard({
         forroId: cortina.forroId,
         trilhoId: cortina.trilhoId,
         tipoCortina: cortina.tipoCortina,
-        servicosAdicionais: cortina.servicosAdicionaisIds
+        servicosAdicionais: cortina.servicosAdicionaisIds,
+        barraCm: cortina.barraCm,
+        barraForroCm: cortina.barraForroCm
       });
 
       // Obter serviços configurados para este tipo de cortina
