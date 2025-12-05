@@ -12,7 +12,7 @@ const benefits = [
   },
   {
     icon: ShieldCheck,
-    text: "Garantia de 3 anos"
+    text: "Garantia de 1 ano"
   },
   {
     icon: Wrench,
