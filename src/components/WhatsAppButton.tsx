@@ -57,14 +57,24 @@ const WhatsAppButton = () => {
       }`}
       aria-label="Chamar no WhatsApp"
     >
+      {/* Avatar da atendente */}
       <div className="relative">
-        <MessageCircle className="h-6 w-6" />
-        <span className="absolute -top-1 -right-1 flex h-3 w-3">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
-          <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+        <div className="w-10 h-10 rounded-full bg-whatsapp-foreground/20 flex items-center justify-center overflow-hidden border-2 border-whatsapp-foreground/30">
+          <span className="text-lg font-bold">A</span>
+        </div>
+        {/* Status Online */}
+        <span className="absolute bottom-0 right-0 flex h-3 w-3">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-300 opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-3 w-3 bg-green-300 border border-whatsapp"></span>
         </span>
       </div>
-      <span className="text-lg">Chamar no WhatsApp</span>
+      
+      <div className="flex flex-col items-start">
+        <span className="text-base font-semibold leading-tight">Fale com a Ana</span>
+        <span className="text-xs opacity-80">Responde em até 5 min</span>
+      </div>
+      
+      <MessageCircle className="h-6 w-6 ml-2" />
     </button>
   );
 };
