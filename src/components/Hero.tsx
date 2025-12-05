@@ -27,7 +27,7 @@ const Hero = () => {
             </div>
             <div className="inline-flex items-center gap-1.5 bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/20">
               <Shield className="h-4 w-4 text-accent" />
-              <span className="text-white text-sm font-medium">Garantia de 3 anos</span>
+              <span className="text-white text-sm font-medium">Garantia de 1 ano</span>
             </div>
             <div className="inline-flex items-center gap-1.5 bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/20">
               <Award className="h-4 w-4 text-accent" />
