@@ -58,7 +58,9 @@ import {
   List,
   CalendarDays,
   Trash2,
+  Plus,
 } from "lucide-react";
+import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import { CalendarioVisitas } from "./CalendarioVisitas";
 
@@ -105,6 +107,21 @@ export function SolicitacoesVisita({ onNavigate, onCreateOrcamento }: Solicitaco
   const [observacoes, setObservacoes] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [solicitacaoToDelete, setSolicitacaoToDelete] = useState<SolicitacaoVisita | null>(null);
+  
+  // Estado para criação manual
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [creatingVisit, setCreatingVisit] = useState(false);
+  const [newVisit, setNewVisit] = useState({
+    nome: "",
+    email: "",
+    telefone: "",
+    cidade: "Balneário Camboriú",
+    endereco: "",
+    complemento: "",
+    mensagem: "",
+    data_agendada: "",
+    horario_agendado: "",
+  });
 
   const fetchSolicitacoes = async () => {
     setLoading(true);
@@ -326,6 +343,59 @@ _Prisma Interiores - Transformando ambientes_ ✨`;
     }
   };
 
+  // Criar visita manual
+  const handleCreateVisit = async () => {
+    if (!newVisit.nome || !newVisit.telefone || !newVisit.data_agendada || !newVisit.horario_agendado || !newVisit.cidade) {
+      toast.error("Preencha os campos obrigatórios: Nome, Telefone, Cidade, Data e Horário");
+      return;
+    }
+
+    setCreatingVisit(true);
+    try {
+      const { data, error } = await supabase
+        .from("solicitacoes_visita")
+        .insert({
+          nome: newVisit.nome,
+          email: newVisit.email || `${newVisit.telefone.replace(/\D/g, "")}@whatsapp.manual`,
+          telefone: newVisit.telefone,
+          cidade: newVisit.cidade,
+          endereco: newVisit.endereco || null,
+          complemento: newVisit.complemento || null,
+          mensagem: newVisit.mensagem || null,
+          data_agendada: newVisit.data_agendada,
+          horario_agendado: newVisit.horario_agendado,
+          status: "pendente",
+          visualizada: true,
+          visualizada_em: new Date().toISOString(),
+          visualizada_por: user?.id,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setSolicitacoes(prev => [data as unknown as SolicitacaoVisita, ...prev]);
+      toast.success("Visita criada com sucesso!");
+      setCreateDialogOpen(false);
+      setNewVisit({
+        nome: "",
+        email: "",
+        telefone: "",
+        cidade: "Balneário Camboriú",
+        endereco: "",
+        complemento: "",
+        mensagem: "",
+        data_agendada: "",
+        horario_agendado: "",
+      });
+    } catch (error) {
+      console.error("Erro ao criar visita:", error);
+      toast.error("Erro ao criar visita");
+    } finally {
+      setCreatingVisit(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -334,10 +404,16 @@ _Prisma Interiores - Transformando ambientes_ ✨`;
           <h1 className="text-2xl font-bold">Solicitações de Visita</h1>
           <p className="text-muted-foreground">Gerencie as solicitações de visita do site</p>
         </div>
-        <Button onClick={fetchSolicitacoes} variant="outline" size="sm">
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Atualizar
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => setCreateDialogOpen(true)} size="sm">
+            <Plus className="h-4 w-4 mr-2" />
+            Nova Visita
+          </Button>
+          <Button onClick={fetchSolicitacoes} variant="outline" size="sm">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Atualizar
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -719,6 +795,154 @@ _Prisma Interiores - Transformando ambientes_ ✨`;
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Dialog de Criação Manual de Visita */}
+      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Plus className="h-5 w-5" />
+              Nova Visita Manual
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="nome">Nome do Cliente *</Label>
+              <Input
+                id="nome"
+                placeholder="Nome completo"
+                value={newVisit.nome}
+                onChange={(e) => setNewVisit(prev => ({ ...prev, nome: e.target.value }))}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="telefone">Telefone *</Label>
+                <Input
+                  id="telefone"
+                  placeholder="(47) 99999-9999"
+                  value={newVisit.telefone}
+                  onChange={(e) => setNewVisit(prev => ({ ...prev, telefone: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="email@exemplo.com"
+                  value={newVisit.email}
+                  onChange={(e) => setNewVisit(prev => ({ ...prev, email: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="cidade">Cidade *</Label>
+              <Select 
+                value={newVisit.cidade} 
+                onValueChange={(value) => setNewVisit(prev => ({ ...prev, cidade: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione a cidade" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Balneário Camboriú">Balneário Camboriú</SelectItem>
+                  <SelectItem value="Itajaí">Itajaí</SelectItem>
+                  <SelectItem value="Camboriú">Camboriú</SelectItem>
+                  <SelectItem value="Itapema">Itapema</SelectItem>
+                  <SelectItem value="Navegantes">Navegantes</SelectItem>
+                  <SelectItem value="Blumenau">Blumenau</SelectItem>
+                  <SelectItem value="Florianópolis">Florianópolis</SelectItem>
+                  <SelectItem value="Outra">Outra</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="endereco">Endereço</Label>
+              <Input
+                id="endereco"
+                placeholder="Rua, número"
+                value={newVisit.endereco}
+                onChange={(e) => setNewVisit(prev => ({ ...prev, endereco: e.target.value }))}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="complemento">Complemento</Label>
+              <Input
+                id="complemento"
+                placeholder="Apartamento, bloco..."
+                value={newVisit.complemento}
+                onChange={(e) => setNewVisit(prev => ({ ...prev, complemento: e.target.value }))}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="data">Data *</Label>
+                <Input
+                  id="data"
+                  type="date"
+                  value={newVisit.data_agendada}
+                  onChange={(e) => setNewVisit(prev => ({ ...prev, data_agendada: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="horario">Horário *</Label>
+                <Select 
+                  value={newVisit.horario_agendado} 
+                  onValueChange={(value) => setNewVisit(prev => ({ ...prev, horario_agendado: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="09:00 - 10:00">09:00 - 10:00</SelectItem>
+                    <SelectItem value="10:00 - 11:00">10:00 - 11:00</SelectItem>
+                    <SelectItem value="11:00 - 12:00">11:00 - 12:00</SelectItem>
+                    <SelectItem value="13:00 - 14:00">13:00 - 14:00</SelectItem>
+                    <SelectItem value="14:00 - 15:00">14:00 - 15:00</SelectItem>
+                    <SelectItem value="15:00 - 16:00">15:00 - 16:00</SelectItem>
+                    <SelectItem value="16:00 - 17:00">16:00 - 17:00</SelectItem>
+                    <SelectItem value="17:00 - 18:00">17:00 - 18:00</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="mensagem">Observações</Label>
+              <Textarea
+                id="mensagem"
+                placeholder="Informações adicionais sobre a visita..."
+                value={newVisit.mensagem}
+                onChange={(e) => setNewVisit(prev => ({ ...prev, mensagem: e.target.value }))}
+                rows={2}
+              />
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => setCreateDialogOpen(false)}
+              >
+                Cancelar
+              </Button>
+              <Button
+                className="flex-1"
+                onClick={handleCreateVisit}
+                disabled={creatingVisit}
+              >
+                {creatingVisit ? "Salvando..." : "Criar Visita"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
