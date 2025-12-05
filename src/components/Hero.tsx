@@ -4,10 +4,8 @@ import { Calendar, MessageCircle, Star, Shield, Award } from "lucide-react";
 import heroImage from "@/assets/hero-curtains.jpg";
 import BookingDialog from "./BookingDialog";
 import { analytics } from "@/lib/analytics";
-
 const Hero = () => {
   const [bookingOpen, setBookingOpen] = useState(false);
-  
   return <>
     <BookingDialog open={bookingOpen} onOpenChange={setBookingOpen} />
     <section className="relative min-h-screen flex items-center">
@@ -77,7 +75,7 @@ const Hero = () => {
           {/* Quick Benefit List */}
           <div className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-white/70 text-sm">
             <span>✓ Orçamento gratuito</span>
-            <span>✓ Visita sem compromisso</span>
+            <span>✓ Visita flexível </span>
             <span>✓ Instalação inclusa</span>
           </div>
         </div>
@@ -92,5 +90,4 @@ const Hero = () => {
     </section>
   </>;
 };
-
 export default Hero;
