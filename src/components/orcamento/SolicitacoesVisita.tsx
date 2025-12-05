@@ -59,6 +59,7 @@ import {
   CalendarDays,
   Trash2,
   Plus,
+  Pencil,
 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
@@ -108,9 +109,11 @@ export function SolicitacoesVisita({ onNavigate, onCreateOrcamento }: Solicitaco
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [solicitacaoToDelete, setSolicitacaoToDelete] = useState<SolicitacaoVisita | null>(null);
   
-  // Estado para criação manual
+  // Estado para criação/edição manual
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [creatingVisit, setCreatingVisit] = useState(false);
+  const [editingVisitId, setEditingVisitId] = useState<string | null>(null);
+  const [cidadeOutra, setCidadeOutra] = useState("");
   const [newVisit, setNewVisit] = useState({
     nome: "",
     email: "",
@@ -122,6 +125,66 @@ export function SolicitacoesVisita({ onNavigate, onCreateOrcamento }: Solicitaco
     data_agendada: "",
     horario_agendado: "",
   });
+
+  const cidadesPreDefinidas = [
+    "Balneário Camboriú",
+    "Itajaí",
+    "Camboriú",
+    "Itapema",
+    "Navegantes",
+    "Blumenau",
+    "Florianópolis",
+  ];
+
+  const isCidadeCustom = !cidadesPreDefinidas.includes(newVisit.cidade) && newVisit.cidade !== "Outra";
+
+  const resetForm = () => {
+    setNewVisit({
+      nome: "",
+      email: "",
+      telefone: "",
+      cidade: "Balneário Camboriú",
+      endereco: "",
+      complemento: "",
+      mensagem: "",
+      data_agendada: "",
+      horario_agendado: "",
+    });
+    setCidadeOutra("");
+    setEditingVisitId(null);
+  };
+
+  const handleOpenCreateDialog = () => {
+    resetForm();
+    setCreateDialogOpen(true);
+  };
+
+  const handleEditVisit = (solicitacao: SolicitacaoVisita) => {
+    const cidadeValue = cidadesPreDefinidas.includes(solicitacao.cidade) 
+      ? solicitacao.cidade 
+      : "Outra";
+    
+    setNewVisit({
+      nome: solicitacao.nome,
+      email: solicitacao.email.includes("@whatsapp.manual") ? "" : solicitacao.email,
+      telefone: solicitacao.telefone,
+      cidade: cidadeValue,
+      endereco: solicitacao.endereco || "",
+      complemento: solicitacao.complemento || "",
+      mensagem: solicitacao.mensagem || "",
+      data_agendada: solicitacao.data_agendada,
+      horario_agendado: solicitacao.horario_agendado,
+    });
+    
+    if (cidadeValue === "Outra") {
+      setCidadeOutra(solicitacao.cidade);
+    } else {
+      setCidadeOutra("");
+    }
+    
+    setEditingVisitId(solicitacao.id);
+    setCreateDialogOpen(true);
+  };
 
   const fetchSolicitacoes = async () => {
     setLoading(true);
@@ -343,54 +406,69 @@ _Prisma Interiores - Transformando ambientes_ ✨`;
     }
   };
 
-  // Criar visita manual
+  // Criar ou editar visita
   const handleCreateVisit = async () => {
-    if (!newVisit.nome || !newVisit.telefone || !newVisit.data_agendada || !newVisit.horario_agendado || !newVisit.cidade) {
+    const cidadeFinal = newVisit.cidade === "Outra" ? cidadeOutra : newVisit.cidade;
+    
+    if (!newVisit.nome || !newVisit.telefone || !newVisit.data_agendada || !newVisit.horario_agendado || !cidadeFinal) {
       toast.error("Preencha os campos obrigatórios: Nome, Telefone, Cidade, Data e Horário");
       return;
     }
 
     setCreatingVisit(true);
     try {
-      const { data, error } = await supabase
-        .from("solicitacoes_visita")
-        .insert({
-          nome: newVisit.nome,
-          email: newVisit.email || `${newVisit.telefone.replace(/\D/g, "")}@whatsapp.manual`,
-          telefone: newVisit.telefone,
-          cidade: newVisit.cidade,
-          endereco: newVisit.endereco || null,
-          complemento: newVisit.complemento || null,
-          mensagem: newVisit.mensagem || null,
-          data_agendada: newVisit.data_agendada,
-          horario_agendado: newVisit.horario_agendado,
-          status: "pendente",
-          visualizada: true,
-          visualizada_em: new Date().toISOString(),
-          visualizada_por: user?.id,
-        })
-        .select()
-        .single();
+      const visitData = {
+        nome: newVisit.nome,
+        email: newVisit.email || `${newVisit.telefone.replace(/\D/g, "")}@whatsapp.manual`,
+        telefone: newVisit.telefone,
+        cidade: cidadeFinal,
+        endereco: newVisit.endereco || null,
+        complemento: newVisit.complemento || null,
+        mensagem: newVisit.mensagem || null,
+        data_agendada: newVisit.data_agendada,
+        horario_agendado: newVisit.horario_agendado,
+      };
 
-      if (error) throw error;
+      if (editingVisitId) {
+        // Atualizar visita existente
+        const { data, error } = await supabase
+          .from("solicitacoes_visita")
+          .update(visitData)
+          .eq("id", editingVisitId)
+          .select()
+          .single();
 
-      setSolicitacoes(prev => [data as unknown as SolicitacaoVisita, ...prev]);
-      toast.success("Visita criada com sucesso!");
+        if (error) throw error;
+
+        setSolicitacoes(prev => 
+          prev.map(s => s.id === editingVisitId ? (data as unknown as SolicitacaoVisita) : s)
+        );
+        toast.success("Visita atualizada com sucesso!");
+      } else {
+        // Criar nova visita
+        const { data, error } = await supabase
+          .from("solicitacoes_visita")
+          .insert({
+            ...visitData,
+            status: "pendente",
+            visualizada: true,
+            visualizada_em: new Date().toISOString(),
+            visualizada_por: user?.id,
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        setSolicitacoes(prev => [data as unknown as SolicitacaoVisita, ...prev]);
+        toast.success("Visita criada com sucesso!");
+      }
+
       setCreateDialogOpen(false);
-      setNewVisit({
-        nome: "",
-        email: "",
-        telefone: "",
-        cidade: "Balneário Camboriú",
-        endereco: "",
-        complemento: "",
-        mensagem: "",
-        data_agendada: "",
-        horario_agendado: "",
-      });
+      resetForm();
     } catch (error) {
-      console.error("Erro ao criar visita:", error);
-      toast.error("Erro ao criar visita");
+      console.error("Erro ao salvar visita:", error);
+      toast.error(editingVisitId ? "Erro ao atualizar visita" : "Erro ao criar visita");
     } finally {
       setCreatingVisit(false);
     }
@@ -405,7 +483,7 @@ _Prisma Interiores - Transformando ambientes_ ✨`;
           <p className="text-muted-foreground">Gerencie as solicitações de visita do site</p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={() => setCreateDialogOpen(true)} size="sm">
+          <Button onClick={handleOpenCreateDialog} size="sm">
             <Plus className="h-4 w-4 mr-2" />
             Nova Visita
           </Button>
@@ -632,6 +710,14 @@ _Prisma Interiores - Transformando ambientes_ ✨`;
                         <Button
                           variant="ghost"
                           size="icon"
+                          onClick={() => handleEditVisit(solicitacao)}
+                          title="Editar visita"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           onClick={() => handleCreateOrcamento(solicitacao)}
                           title="Criar orçamento"
                         >
@@ -796,13 +882,16 @@ _Prisma Interiores - Transformando ambientes_ ✨`;
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Dialog de Criação Manual de Visita */}
-      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+      {/* Dialog de Criação/Edição de Visita */}
+      <Dialog open={createDialogOpen} onOpenChange={(open) => {
+        if (!open) resetForm();
+        setCreateDialogOpen(open);
+      }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Plus className="h-5 w-5" />
-              Nova Visita Manual
+              {editingVisitId ? <Pencil className="h-5 w-5" /> : <Plus className="h-5 w-5" />}
+              {editingVisitId ? "Editar Visita" : "Nova Visita Manual"}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
@@ -841,24 +930,37 @@ _Prisma Interiores - Transformando ambientes_ ✨`;
             <div className="space-y-2">
               <Label htmlFor="cidade">Cidade *</Label>
               <Select 
-                value={newVisit.cidade} 
-                onValueChange={(value) => setNewVisit(prev => ({ ...prev, cidade: value }))}
+                value={cidadesPreDefinidas.includes(newVisit.cidade) ? newVisit.cidade : "Outra"} 
+                onValueChange={(value) => {
+                  setNewVisit(prev => ({ ...prev, cidade: value }));
+                  if (value !== "Outra") {
+                    setCidadeOutra("");
+                  }
+                }}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione a cidade" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Balneário Camboriú">Balneário Camboriú</SelectItem>
-                  <SelectItem value="Itajaí">Itajaí</SelectItem>
-                  <SelectItem value="Camboriú">Camboriú</SelectItem>
-                  <SelectItem value="Itapema">Itapema</SelectItem>
-                  <SelectItem value="Navegantes">Navegantes</SelectItem>
-                  <SelectItem value="Blumenau">Blumenau</SelectItem>
-                  <SelectItem value="Florianópolis">Florianópolis</SelectItem>
+                  {cidadesPreDefinidas.map(cidade => (
+                    <SelectItem key={cidade} value={cidade}>{cidade}</SelectItem>
+                  ))}
                   <SelectItem value="Outra">Outra</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+
+            {(newVisit.cidade === "Outra" || isCidadeCustom) && (
+              <div className="space-y-2">
+                <Label htmlFor="cidadeOutra">Nome da Cidade *</Label>
+                <Input
+                  id="cidadeOutra"
+                  placeholder="Digite o nome da cidade"
+                  value={cidadeOutra}
+                  onChange={(e) => setCidadeOutra(e.target.value)}
+                />
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="endereco">Endereço</Label>
@@ -928,7 +1030,10 @@ _Prisma Interiores - Transformando ambientes_ ✨`;
               <Button
                 variant="outline"
                 className="flex-1"
-                onClick={() => setCreateDialogOpen(false)}
+                onClick={() => {
+                  setCreateDialogOpen(false);
+                  resetForm();
+                }}
               >
                 Cancelar
               </Button>
@@ -937,7 +1042,7 @@ _Prisma Interiores - Transformando ambientes_ ✨`;
                 onClick={handleCreateVisit}
                 disabled={creatingVisit}
               >
-                {creatingVisit ? "Salvando..." : "Criar Visita"}
+                {creatingVisit ? "Salvando..." : editingVisitId ? "Salvar Alterações" : "Criar Visita"}
               </Button>
             </div>
           </div>
