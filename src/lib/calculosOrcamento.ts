@@ -134,8 +134,9 @@ export function calcularConsumoDetalhado(
   const forro = cortina.forroId ? materiais.find((m) => m.id === cortina.forroId || m.codigo_item === cortina.forroId) : null;
   const trilho = cortina.trilhoId ? materiais.find((m) => m.id === cortina.trilhoId || m.codigo_item === cortina.trilhoId) : null;
 
-  // Converter barra de cm para metros
-  const barra_m = (cortina.barraCm || 0) / 100;
+  // Converter barra de cm para metros - separar barra do tecido e barra do forro
+  const barraTecido_m = (cortina.barraCm || 0) / 100;
+  const barraForro_m = (cortina.barraForroCm ?? cortina.barraCm ?? 0) / 100; // Usar barra do forro se definida, senão usar barra do tecido
 
   // Obter coeficientes - usar configurações dinâmicas se disponíveis, senão fallback para constantes
   const coeficientesTecido = coeficientesTecidoConfig || COEFICIENTES_CORTINA;
@@ -158,7 +159,7 @@ export function calcularConsumoDetalhado(
     const resultadoTecido = calcularConsumoMaterial(
       cortina.largura,
       cortina.altura,
-      barra_m,
+      barraTecido_m,
       coeficienteTecido,
       larguraRoloTecido,
       cortina.quantidade
@@ -169,7 +170,7 @@ export function calcularConsumoDetalhado(
     alturaPanoTecido = resultadoTecido.alturaPano;
   }
 
-  // Cálculo do consumo de forro (usa coeficiente de forro - DIFERENTE!)
+  // Cálculo do consumo de forro (usa coeficiente de forro E barra do forro separada)
   let consumoForro_m = 0;
   let calculoPorAlturaForro = false;
   let numeroPanosForro = 0;
@@ -179,7 +180,7 @@ export function calcularConsumoDetalhado(
     const resultadoForro = calcularConsumoMaterial(
       cortina.largura,
       cortina.altura,
-      barra_m,
+      barraForro_m, // Usar barra do forro separada
       coeficienteForro,
       larguraRoloForro,
       cortina.quantidade
@@ -283,8 +284,9 @@ export function calcularCustosCortina(
   const forro = cortina.forroId ? materiais.find((m) => m.id === cortina.forroId) : null;
   const trilho = cortina.trilhoId ? materiais.find((m) => m.id === cortina.trilhoId) : null;
 
-  // 1) Converter barra de cm para metros
-  const barra_m = (cortina.barraCm || 0) / 100;
+  // 1) Converter barra de cm para metros - separar barra do tecido e barra do forro
+  const barraTecido_m = (cortina.barraCm || 0) / 100;
+  const barraForro_m = (cortina.barraForroCm ?? cortina.barraCm ?? 0) / 100;
 
   // 2) Obter coeficientes - usar configurações dinâmicas se disponíveis
   const coeficientesTecido = coeficientesTecidoConfig || COEFICIENTES_CORTINA;
@@ -303,7 +305,7 @@ export function calcularCustosCortina(
     const resultadoTecido = calcularConsumoMaterial(
       cortina.largura,
       cortina.altura,
-      barra_m,
+      barraTecido_m,
       coeficienteTecido,
       larguraRoloTecido,
       cortina.quantidade
@@ -311,13 +313,13 @@ export function calcularCustosCortina(
     custoTecido = resultadoTecido.consumo_m * tecido.preco_custo;
   }
 
-  // 4) Cálculo do forro (se houver) - usa coeficiente de FORRO (diferente!)
+  // 4) Cálculo do forro (se houver) - usa coeficiente de FORRO E barra do forro separada
   let custoForro = 0;
   if (forro) {
     const resultadoForro = calcularConsumoMaterial(
       cortina.largura,
       cortina.altura,
-      barra_m,
+      barraForro_m, // Usar barra do forro separada
       coeficienteForro,
       larguraRoloForro,
       cortina.quantidade

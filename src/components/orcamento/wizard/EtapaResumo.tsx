@@ -218,7 +218,8 @@ export function EtapaResumo({
     const tecido = obterMaterial(cortina.tecidoId);
     const forro = obterMaterial(cortina.forroId);
     const trilho = obterMaterial(cortina.trilhoId);
-    const barra_m = (cortina.barraCm || 0) / 100;
+    const barraTecido_m = (cortina.barraCm || 0) / 100;
+    const barraForro_m = (cortina.barraForroCm ?? cortina.barraCm ?? 0) / 100;
 
     return (
       <Collapsible open={expandedCards[index]} onOpenChange={() => toggleCard(index)}>
@@ -258,7 +259,7 @@ export function EtapaResumo({
                     <div className="text-xs text-muted-foreground bg-background/50 p-1.5 rounded mt-1 space-y-0.5">
                       <p><strong>Fórmula:</strong> Nº panos × Altura pano × Qtd</p>
                       <p>
-                        Altura pano: {cortina.altura}m + 0.16m (costura) + {barra_m.toFixed(2)}m (barra) = <strong>{consumo.alturaPanoTecido.toFixed(2)}m</strong>
+                        Altura pano: {cortina.altura}m + 0.16m (costura) + {barraTecido_m.toFixed(2)}m (barra) = <strong>{consumo.alturaPanoTecido.toFixed(2)}m</strong>
                       </p>
                       <p>
                         Nº panos: ⌈({cortina.largura}m × {consumo.coeficienteTecido}) ÷ {consumo.larguraRoloTecido_m}m⌉ = <strong>{consumo.numeroPanosTecido}</strong>
@@ -305,7 +306,7 @@ export function EtapaResumo({
                     <div className="text-xs text-muted-foreground bg-background/50 p-1.5 rounded mt-1 space-y-0.5">
                       <p><strong>Fórmula:</strong> Nº panos × Altura pano × Qtd</p>
                       <p>
-                        Altura pano: {cortina.altura}m + 0.16m (costura) + {barra_m.toFixed(2)}m (barra) = <strong>{consumo.alturaPanoForro.toFixed(2)}m</strong>
+                        Altura pano: {cortina.altura}m + 0.16m (costura) + {barraForro_m.toFixed(2)}m (barra forro) = <strong>{consumo.alturaPanoForro.toFixed(2)}m</strong>
                       </p>
                       <p>
                         Nº panos: ⌈({cortina.largura}m × {consumo.coeficienteForro}) ÷ {consumo.larguraRoloForro_m}m⌉ = <strong>{consumo.numeroPanosForro}</strong>

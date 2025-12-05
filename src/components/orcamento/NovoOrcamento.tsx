@@ -65,6 +65,7 @@ export function NovoOrcamento({ onVoltar, orcamentoId }: NovoOrcamentoProps) {
             largura: item.largura,
             altura: item.altura,
             barraCm: item.barra_cm || undefined,
+            barraForroCm: item.barra_forro_cm || undefined,
             quantidade: item.quantidade,
             tipoProduto: (item.tipo_produto as 'cortina' | 'persiana' | 'outro') || 'cortina',
             tipoCortina: item.tipo_cortina as any,
