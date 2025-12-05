@@ -49,7 +49,7 @@ const Benefits = () => {
   const normais = diferenciais.filter(d => d.tipo === 'normal');
   
   return (
-    <section className="py-16 md:py-24 bg-primary relative overflow-hidden">
+    <section className="pt-8 md:pt-12 pb-16 md:pb-24 bg-primary relative overflow-hidden">
       {/* Subtle background pattern - same as ProcessFlow */}
       <div className="absolute inset-0 opacity-5">
         <div className="absolute inset-0" style={{
