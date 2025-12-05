@@ -11,7 +11,8 @@ export interface Cortina {
   nomeIdentificacao: string;
   largura: number;
   altura: number;
-  barraCm?: number; // Barra da cortina em centímetros
+  barraCm?: number; // Barra do tecido em centímetros
+  barraForroCm?: number; // Barra do forro em centímetros
   quantidade: number;
   tipoProduto: 'cortina' | 'persiana' | 'outro';
   tipoCortina: 'wave' | 'prega' | 'painel' | 'rolo' | 'horizontal' | 'vertical' | 'romana' | 'celular' | 'madeira' | 'outro';

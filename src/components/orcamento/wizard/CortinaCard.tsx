@@ -249,6 +249,7 @@ export function CortinaCard({
         largura: cortina.largura,
         altura: cortina.altura,
         barra_cm: cortina.barraCm || 0,
+        barra_forro_cm: cortina.barraForroCm || 0,
         quantidade: cortina.quantidade,
         tipo_produto: 'cortina',
         tipo_cortina: cortina.tipoCortina,
@@ -451,13 +452,25 @@ export function CortinaCard({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor={`barra-${cortina.id}`}>Barra (cm)</Label>
+            <Label htmlFor={`barra-${cortina.id}`}>Barra Tecido (cm)</Label>
             <Input
               id={`barra-${cortina.id}`}
               type="number"
               step="1"
               value={cortina.barraCm || ''}
               onChange={(e) => handleChange('barraCm', parseFloat(e.target.value) || 0)}
+              placeholder="0"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor={`barra-forro-${cortina.id}`}>Barra Forro (cm)</Label>
+            <Input
+              id={`barra-forro-${cortina.id}`}
+              type="number"
+              step="1"
+              value={cortina.barraForroCm || ''}
+              onChange={(e) => handleChange('barraForroCm', parseFloat(e.target.value) || 0)}
               placeholder="0"
             />
           </div>

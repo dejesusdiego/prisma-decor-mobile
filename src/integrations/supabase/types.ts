@@ -46,6 +46,7 @@ export type Database = {
           altura: number
           ambiente: string | null
           barra_cm: number | null
+          barra_forro_cm: number | null
           created_at: string
           custo_acessorios: number | null
           custo_costura: number | null
@@ -81,6 +82,7 @@ export type Database = {
           altura: number
           ambiente?: string | null
           barra_cm?: number | null
+          barra_forro_cm?: number | null
           created_at?: string
           custo_acessorios?: number | null
           custo_costura?: number | null
@@ -116,6 +118,7 @@ export type Database = {
           altura?: number
           ambiente?: string | null
           barra_cm?: number | null
+          barra_forro_cm?: number | null
           created_at?: string
           custo_acessorios?: number | null
           custo_costura?: number | null
