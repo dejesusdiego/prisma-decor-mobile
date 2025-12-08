@@ -245,33 +245,56 @@ export async function gerarPdfOrcamento(orcamentoId: string): Promise<void> {
     yPos += 5;
 
     // Preparar dados da tabela
-    const tableData = cortinas.map((cortina: CortinaItemData) => {
-      // Montar descrição
-      let descricao = `Cortina ${cortina.tipo_cortina}`;
+    const tableData = cortinas.map((cortina: any) => {
+      // Determinar nome do produto baseado no tipo_produto
+      let descricao = '';
+      const tipoProduto = cortina.tipo_produto || 'cortina';
       
-      // Adicionar tecido
-      if (cortina.tecido_id) {
+      switch (tipoProduto) {
+        case 'persiana':
+          descricao = `Persiana ${cortina.tipo_cortina || ''}`.trim();
+          break;
+        case 'motorizado':
+          descricao = `Sistema Motorizado${cortina.tipo_cortina ? ` - ${cortina.tipo_cortina}` : ''}`.trim();
+          break;
+        case 'acessorio':
+          descricao = `Acessório${cortina.tipo_cortina ? ` - ${cortina.tipo_cortina}` : ''}`.trim();
+          break;
+        case 'papel':
+          descricao = `Papel de Parede${cortina.tipo_cortina ? ` - ${cortina.tipo_cortina}` : ''}`.trim();
+          break;
+        case 'outro':
+          descricao = cortina.nome_identificacao || 'Item adicional';
+          break;
+        default:
+          descricao = `Cortina ${cortina.tipo_cortina || ''}`.trim();
+      }
+      
+      // Adicionar tecido (apenas para cortinas)
+      if (tipoProduto === 'cortina' && cortina.tecido_id) {
         const tecido = materiais.find((m: MaterialData) => m.id === cortina.tecido_id);
         if (tecido) descricao += ` em ${tecido.nome}`;
       }
       
-      // Adicionar forro
-      if (cortina.forro_id) {
+      // Adicionar forro (apenas para cortinas)
+      if (tipoProduto === 'cortina' && cortina.forro_id) {
         const forro = materiais.find((m: MaterialData) => m.id === cortina.forro_id);
         if (forro) descricao += `, com forro ${forro.nome}`;
       }
       
-      // Adicionar trilho
-      if (cortina.trilho_id) {
+      // Adicionar trilho (apenas para cortinas)
+      if (tipoProduto === 'cortina' && cortina.trilho_id) {
         const trilho = materiais.find((m: MaterialData) => m.id === cortina.trilho_id);
         if (trilho) descricao += `, trilho ${trilho.nome}`;
       }
       
-      // Adicionar medidas
-      descricao += `, ${cortina.largura}m (L) x ${cortina.altura}m (A)`;
+      // Adicionar medidas (exceto para itens "outro" sem dimensões)
+      if (tipoProduto !== 'outro' && (cortina.largura > 0 || cortina.altura > 0)) {
+        descricao += `, ${cortina.largura}m (L) x ${cortina.altura}m (A)`;
+      }
       
-      // Adicionar barra
-      if (cortina.barra_cm) {
+      // Adicionar barra (apenas para cortinas)
+      if (tipoProduto === 'cortina' && cortina.barra_cm) {
         descricao += `, barra ${cortina.barra_cm}cm`;
       }
       
