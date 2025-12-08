@@ -115,8 +115,12 @@ export function MotorizadoCard({
   const salvarMotorizado = async () => {
     setSaving(true);
     try {
-      if (!motorizado.nomeIdentificacao || !motorizado.quantidade || !motorizado.materialPrincipalId) {
-        throw new Error('Preencha todos os campos obrigatórios');
+      if (!motorizado.nomeIdentificacao || !motorizado.quantidade) {
+        throw new Error('Preencha nome e quantidade');
+      }
+      
+      if (!motorizado.precoUnitario || motorizado.precoUnitario <= 0) {
+        throw new Error('Preencha o preço unitário');
       }
 
       const custoInstalacao = motorizado.precisaInstalacao ? (motorizado.valorInstalacao || 0) : 0;
@@ -245,12 +249,12 @@ export function MotorizadoCard({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2 md:col-span-2">
               <MaterialSelector
-                categoria={'acessorio' as any}
+                categoria="motorizado"
                 materiais={materiais}
                 value={motorizado.materialPrincipalId}
                 onSelect={handleMaterialSelect}
                 placeholder="Selecionar Motor/Sistema"
-                optional={false}
+                optional={true}
               />
             </div>
 
