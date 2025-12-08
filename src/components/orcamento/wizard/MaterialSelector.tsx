@@ -64,17 +64,18 @@ export function MaterialSelector({
     )
   ).sort();
 
-  // Materiais filtrados progressivamente
+  // Materiais filtrados progressivamente - ignorar filtros vazios/não aplicáveis
   const materiaisFiltrados = materiais.filter((material) => {
-    const matchTipo = !filtroTipo || material.tipo === filtroTipo;
-    const matchLinha = !filtroLinha || material.linha === filtroLinha;
-    const matchCor = !filtroCor || material.cor === filtroCor;
+    const matchTipo = !filtroTipo || filtroTipo === '_todos' || material.tipo === filtroTipo;
+    const matchLinha = !filtroLinha || filtroLinha === '_todos' || material.linha === filtroLinha;
+    const matchCor = !filtroCor || filtroCor === '_todos' || material.cor === filtroCor;
     return matchTipo && matchLinha && matchCor;
   });
 
   // Ao mudar tipo, resetar linha e cor
   const handleTipoChange = (tipo: string) => {
-    setFiltroTipo(tipo);
+    const novoTipo = tipo === '_todos' ? '' : tipo;
+    setFiltroTipo(novoTipo);
     setFiltroLinha('');
     setFiltroCor('');
     onSelect(undefined);
@@ -82,14 +83,16 @@ export function MaterialSelector({
 
   // Ao mudar linha, resetar cor
   const handleLinhaChange = (linha: string) => {
-    setFiltroLinha(linha);
+    const novaLinha = linha === '_todos' ? '' : linha;
+    setFiltroLinha(novaLinha);
     setFiltroCor('');
     onSelect(undefined);
   };
 
   // Ao mudar cor, resetar seleção
   const handleCorChange = (cor: string) => {
-    setFiltroCor(cor);
+    const novaCor = cor === '_todos' ? '' : cor;
+    setFiltroCor(novaCor);
     onSelect(undefined);
   };
 
@@ -104,7 +107,7 @@ export function MaterialSelector({
           {tiposUnicos.length > 0 && (
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">1. Tipo</Label>
-              <Select value={filtroTipo} onValueChange={handleTipoChange}>
+              <Select value={filtroTipo || '_todos'} onValueChange={handleTipoChange}>
                 <SelectTrigger className="h-9">
                   <SelectValue placeholder="Selecione o tipo" />
                 </SelectTrigger>
@@ -124,10 +127,10 @@ export function MaterialSelector({
           {linhasDisponiveis.length > 0 && (
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">2. Linha</Label>
-              <Select 
-                value={filtroLinha} 
+            <Select 
+                value={filtroLinha || '_todos'} 
                 onValueChange={handleLinhaChange}
-                disabled={!filtroTipo || filtroTipo === '_todos'}
+                disabled={tiposUnicos.length > 0 && !filtroTipo}
               >
                 <SelectTrigger className="h-9">
                   <SelectValue placeholder="Selecione a linha" />
@@ -148,10 +151,10 @@ export function MaterialSelector({
           {coresDisponiveis.length > 0 && (
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">3. Cor</Label>
-              <Select 
-                value={filtroCor} 
+            <Select 
+                value={filtroCor || '_todos'} 
                 onValueChange={handleCorChange}
-                disabled={!filtroLinha || filtroLinha === '_todos'}
+                disabled={linhasDisponiveis.length > 0 && !filtroLinha}
               >
                 <SelectTrigger className="h-9">
                   <SelectValue placeholder="Selecione a cor" />
