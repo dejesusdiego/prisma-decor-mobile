@@ -8,6 +8,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import type { Cortina, DadosOrcamento, Material } from '@/types/orcamento';
+import { fetchMateriaisPaginados } from '@/lib/fetchMateriaisPaginados';
 import { OPCOES_MARGEM } from '@/types/orcamento';
 import { calcularResumoOrcamento, calcularConsumoDetalhado, calcularResumoConsolidado } from '@/lib/calculosOrcamento';
 import { FileDown, Home, Save, ChevronDown, Ruler, Package, Scissors, Wrench } from 'lucide-react';
@@ -59,18 +60,13 @@ export function EtapaResumo({
         setValidadeDias(data.validade_dias);
       }
 
-      // Carregar materiais do banco de dados Supabase
-      const { data: materiaisData, error: materiaisError } = await supabase
-        .from('materiais')
-        .select('*')
-        .eq('ativo', true);
-
-      if (materiaisError) {
-        console.error('Erro ao carregar materiais:', materiaisError);
-      }
-
-      if (materiaisData) {
+      // Carregar materiais do banco de dados Supabase com paginação
+      try {
+        const materiaisData = await fetchMateriaisPaginados(undefined, true);
+        console.log('[EtapaResumo] Materiais carregados:', materiaisData.length);
         setMateriais(materiaisData);
+      } catch (materiaisError) {
+        console.error('Erro ao carregar materiais:', materiaisError);
       }
     };
 

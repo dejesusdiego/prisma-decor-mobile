@@ -280,9 +280,9 @@ export function calcularCustosCortina(
     throw new Error('É necessário informar pelo menos tecido ou forro');
   }
 
-  const tecido = cortina.tecidoId ? materiais.find((m) => m.id === cortina.tecidoId) : null;
-  const forro = cortina.forroId ? materiais.find((m) => m.id === cortina.forroId) : null;
-  const trilho = cortina.trilhoId ? materiais.find((m) => m.id === cortina.trilhoId) : null;
+  const tecido = cortina.tecidoId ? materiais.find((m) => m.id === cortina.tecidoId || m.codigo_item === cortina.tecidoId) : null;
+  const forro = cortina.forroId ? materiais.find((m) => m.id === cortina.forroId || m.codigo_item === cortina.forroId) : null;
+  const trilho = cortina.trilhoId ? materiais.find((m) => m.id === cortina.trilhoId || m.codigo_item === cortina.trilhoId) : null;
 
   // 1) Converter barra de cm para metros - separar barra do tecido e barra do forro
   const barraTecido_m = (cortina.barraCm || 0) / 100;
