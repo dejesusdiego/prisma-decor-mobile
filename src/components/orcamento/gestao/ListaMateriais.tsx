@@ -59,6 +59,12 @@ export function ListaMateriais() {
         .order('nome', { ascending: true });
 
       if (error) throw error;
+      
+      // DEBUG: Log total materials loaded
+      console.log('[DEBUG] Total materiais carregados:', data?.length);
+      const trilhos = data?.filter(m => m.categoria === 'trilho');
+      console.log('[DEBUG] Trilhos encontrados:', trilhos?.length, trilhos?.map(t => t.nome));
+      
       setMateriais(data || []);
       setMateriaisFiltrados(data || []);
     } catch (error) {
@@ -79,6 +85,10 @@ export function ListaMateriais() {
 
   useEffect(() => {
     let resultado = materiais;
+    
+    // DEBUG: Log filter state
+    console.log('[DEBUG] Filtros - categoria:', categoriaFiltro, 'fornecedor:', fornecedorFiltro, 'status:', statusFiltro);
+    console.log('[DEBUG] Total materiais antes do filtro:', resultado.length);
 
     // Filtro de busca
     if (busca) {
@@ -91,7 +101,9 @@ export function ListaMateriais() {
 
     // Filtro de categoria
     if (categoriaFiltro !== 'todas') {
+      const antesCategoria = resultado.length;
       resultado = resultado.filter((m) => m.categoria === categoriaFiltro);
+      console.log('[DEBUG] Filtro categoria "' + categoriaFiltro + '": ' + antesCategoria + ' -> ' + resultado.length);
     }
 
     // Filtro de status
@@ -106,6 +118,7 @@ export function ListaMateriais() {
       resultado = resultado.filter((m) => m.fornecedor === fornecedorFiltro);
     }
 
+    console.log('[DEBUG] Total após todos os filtros:', resultado.length);
     setMateriaisFiltrados(resultado);
     
     // Limpar seleções quando os filtros mudarem
