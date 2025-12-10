@@ -61,6 +61,8 @@ export function ListaMateriais() {
 
       if (error) throw error;
       
+      console.log('[CARREGOU] Total materiais:', data?.length, '| Trilhos:', data?.filter(m => m.categoria === 'trilho').length);
+      
       setMateriais(data || []);
       setMateriaisFiltrados(data || []);
     } catch (error) {
