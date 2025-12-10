@@ -53,18 +53,34 @@ export function ListaMateriais() {
   const carregarMateriais = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('materiais')
-        .select('*')
-        .order('nome', { ascending: true })
-        .limit(5000); // Aumentar limite para buscar todos os materiais
+      // Buscar todos os materiais usando paginação para contornar o limite de 1000
+      let allMateriais: Material[] = [];
+      let from = 0;
+      const pageSize = 1000;
+      let hasMore = true;
 
-      if (error) throw error;
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from('materiais')
+          .select('*')
+          .order('nome', { ascending: true })
+          .range(from, from + pageSize - 1);
+
+        if (error) throw error;
+        
+        if (data && data.length > 0) {
+          allMateriais = [...allMateriais, ...data];
+          from += pageSize;
+          hasMore = data.length === pageSize;
+        } else {
+          hasMore = false;
+        }
+      }
+
+      console.log('[CARREGOU] Total materiais:', allMateriais.length, '| Trilhos:', allMateriais.filter(m => m.categoria === 'trilho').length);
       
-      console.log('[CARREGOU] Total materiais:', data?.length, '| Trilhos:', data?.filter(m => m.categoria === 'trilho').length);
-      
-      setMateriais(data || []);
-      setMateriaisFiltrados(data || []);
+      setMateriais(allMateriais);
+      setMateriaisFiltrados(allMateriais);
     } catch (error) {
       console.error('Erro ao carregar materiais:', error);
       toast({
