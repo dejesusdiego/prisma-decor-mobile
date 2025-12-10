@@ -23,6 +23,7 @@ import { calcularCustosCortina } from '@/lib/calculosOrcamento';
 import { OPCOES_AMBIENTE } from '@/types/orcamento';
 import { MaterialSelector } from './MaterialSelector';
 import { useConfiguracoes } from '@/hooks/useConfiguracoes';
+import { fetchMateriaisPaginados } from '@/lib/fetchMateriaisPaginados';
 
 interface CortinaCardProps {
   cortina: Cortina;
@@ -58,20 +59,12 @@ export function CortinaCard({
   const carregarMateriais = async () => {
     setLoading(true);
     try {
-      // Buscar materiais do banco de dados Supabase
-      const { data: materiaisData, error } = await supabase
-        .from('materiais')
-        .select('*')
-        .eq('ativo', true)
-        .order('nome');
-
-      if (error) throw error;
-
-      const materiaisList = materiaisData || [];
-
-      const tecidosList = materiaisList.filter((m: Material) => m.categoria === 'tecido');
-      const forrosList = materiaisList.filter((m: Material) => m.categoria === 'forro');
-      const trilhosList = materiaisList.filter((m: Material) => m.categoria === 'trilho');
+      // Buscar materiais com paginação para contornar limite de 1000
+      const [tecidosList, forrosList, trilhosList] = await Promise.all([
+        fetchMateriaisPaginados('tecido', true),
+        fetchMateriaisPaginados('forro', true),
+        fetchMateriaisPaginados('trilho', true),
+      ]);
 
       setTecidos(tecidosList);
       setForros(forrosList);
@@ -81,7 +74,7 @@ export function CortinaCard({
         tecidos: tecidosList.length,
         forros: forrosList.length,
         trilhos: trilhosList.length,
-        total: materiaisList.length
+        total: tecidosList.length + forrosList.length + trilhosList.length
       });
 
       toast({
