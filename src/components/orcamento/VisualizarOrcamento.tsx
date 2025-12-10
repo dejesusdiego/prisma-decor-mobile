@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import type { Cortina, Material, ServicoConfeccao, ServicoInstalacao } from '@/types/orcamento';
 import { calcularConsumoDetalhado, calcularResumoConsolidado } from '@/lib/calculosOrcamento';
+import { fetchMateriaisPaginados } from '@/lib/fetchMateriaisPaginados';
 
 interface VisualizarOrcamentoProps {
   orcamentoId: string;
@@ -98,15 +99,15 @@ export function VisualizarOrcamento({ orcamentoId, onVoltar }: VisualizarOrcamen
           setCortinas(cortinasCarregadas);
         }
 
-        // Carregar materiais
-        const { data: materiaisData, error: materiaisError } = await supabase
-          .from('materiais')
-          .select('*')
-          .eq('ativo', true);
-
-        if (materiaisError) throw materiaisError;
-        console.log('[DEBUG] Materiais carregados:', materiaisData?.length, 'categoria forro:', materiaisData?.filter(m => m.categoria === 'forro').length);
-        setMateriais(materiaisData || []);
+        // Carregar materiais com paginação
+        try {
+          const materiaisData = await fetchMateriaisPaginados(undefined, true);
+          console.log('[VisualizarOrcamento] Materiais carregados:', materiaisData.length, 
+            'categoria forro:', materiaisData.filter(m => m.categoria === 'forro').length);
+          setMateriais(materiaisData);
+        } catch (materiaisError) {
+          console.error('Erro ao carregar materiais:', materiaisError);
+        }
 
         // Carregar serviços de confecção
         const { data: confeccaoData, error: confeccaoError } = await supabase
