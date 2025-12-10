@@ -18,6 +18,7 @@ import { toast } from 'sonner';
 import type { Cortina, Material } from '@/types/orcamento';
 import { OPCOES_AMBIENTE } from '@/types/orcamento';
 import { MaterialSelector } from './MaterialSelector';
+import { fetchMateriaisPaginados } from '@/lib/fetchMateriaisPaginados';
 
 interface PersianaCardProps {
   persiana: Cortina;
@@ -39,19 +40,12 @@ export function PersianaCard({
   const [materiais, setMateriais] = useState<Material[]>([]);
   const [loadingMateriais, setLoadingMateriais] = useState(true);
 
-  // Carregar materiais da categoria persiana
+  // Carregar materiais da categoria persiana com paginação
   useEffect(() => {
     const carregarMateriais = async () => {
       try {
-        const { data, error } = await supabase
-          .from('materiais')
-          .select('*')
-          .eq('categoria', 'persiana')
-          .eq('ativo', true)
-          .order('nome');
-
-        if (error) throw error;
-        setMateriais(data || []);
+        const materiaisList = await fetchMateriaisPaginados('persiana', true);
+        setMateriais(materiaisList);
       } catch (error) {
         console.error('Erro ao carregar materiais de persiana:', error);
       } finally {

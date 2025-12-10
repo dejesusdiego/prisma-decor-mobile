@@ -18,6 +18,7 @@ import { toast } from '@/hooks/use-toast';
 import type { Cortina, Material } from '@/types/orcamento';
 import { OPCOES_AMBIENTE } from '@/types/orcamento';
 import { MaterialSelector } from './MaterialSelector';
+import { fetchMateriaisPaginados } from '@/lib/fetchMateriaisPaginados';
 
 interface AcessoriosCardProps {
   acessorio: Cortina;
@@ -41,27 +42,11 @@ export function AcessoriosCard({
 
   useEffect(() => {
     const carregarMateriais = async () => {
-      const { data } = await supabase
-        .from('materiais')
-        .select('*')
-        .eq('categoria', 'acessorio')
-        .eq('ativo', true);
-      
-      if (data) {
-        setMateriais(data.map(m => ({
-          id: m.id,
-          codigo_item: m.codigo_item || '',
-          nome: m.nome,
-          categoria: m.categoria,
-          unidade: m.unidade,
-          largura_metro: m.largura_metro || undefined,
-          preco_custo: m.preco_custo,
-          preco_tabela: m.preco_tabela,
-          ativo: m.ativo,
-          tipo: m.tipo || undefined,
-          linha: m.linha || undefined,
-          cor: m.cor || undefined,
-        })));
+      try {
+        const materiaisList = await fetchMateriaisPaginados('acessorio', true);
+        setMateriais(materiaisList);
+      } catch (error) {
+        console.error('Erro ao carregar materiais de acessórios:', error);
       }
     };
     carregarMateriais();
