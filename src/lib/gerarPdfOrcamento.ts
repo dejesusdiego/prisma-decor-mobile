@@ -71,12 +71,9 @@ export async function gerarPdfOrcamento(orcamentoId: string): Promise<void> {
 
     if (cortinasError) throw cortinasError;
 
-    // Buscar materiais para nome dos tecidos, forros e trilhos
-    const { data: materiais, error: materiaisError } = await supabase
-      .from('materiais')
-      .select('id, nome');
-
-    if (materiaisError) throw materiaisError;
+    // Buscar materiais para nome dos tecidos, forros e trilhos (com paginação)
+    const { fetchMateriaisPaginados } = await import('@/lib/fetchMateriaisPaginados');
+    const materiais = await fetchMateriaisPaginados(undefined, true);
 
     // Criar PDF
     const doc = new jsPDF();
@@ -272,19 +269,19 @@ export async function gerarPdfOrcamento(orcamentoId: string): Promise<void> {
       
       // Adicionar tecido (apenas para cortinas)
       if (tipoProduto === 'cortina' && cortina.tecido_id) {
-        const tecido = materiais.find((m: MaterialData) => m.id === cortina.tecido_id);
+        const tecido = materiais.find((m: any) => m.id === cortina.tecido_id || m.codigo_item === cortina.tecido_id);
         if (tecido) descricao += ` em ${tecido.nome}`;
       }
       
       // Adicionar forro (apenas para cortinas)
       if (tipoProduto === 'cortina' && cortina.forro_id) {
-        const forro = materiais.find((m: MaterialData) => m.id === cortina.forro_id);
+        const forro = materiais.find((m: any) => m.id === cortina.forro_id || m.codigo_item === cortina.forro_id);
         if (forro) descricao += `, com forro ${forro.nome}`;
       }
       
       // Adicionar trilho (apenas para cortinas)
       if (tipoProduto === 'cortina' && cortina.trilho_id) {
-        const trilho = materiais.find((m: MaterialData) => m.id === cortina.trilho_id);
+        const trilho = materiais.find((m: any) => m.id === cortina.trilho_id || m.codigo_item === cortina.trilho_id);
         if (trilho) descricao += `, trilho ${trilho.nome}`;
       }
       
