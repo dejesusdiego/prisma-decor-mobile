@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserRole } from '@/hooks/useUserRole';
 import { Button } from '@/components/ui/button';
 import { LogOut } from 'lucide-react';
 import { OrcamentoSidebar } from '@/components/orcamento/OrcamentoSidebar';
@@ -20,11 +21,22 @@ interface ClienteDataFromVisita {
   cidade: string;
 }
 
+// Views restritas apenas para admins
+const ADMIN_ONLY_VIEWS: View[] = ['gestaoMateriais', 'ajustesSistema', 'solicitacoesVisita'];
+
 export default function GerarOrcamento() {
   const { user, signOut } = useAuth();
+  const { isAdmin, isLoading: isLoadingRole } = useUserRole();
   const [view, setView] = useState<View>('dashboard');
   const [orcamentoEditandoId, setOrcamentoEditandoId] = useState<string | null>(null);
   const [clienteDataFromVisita, setClienteDataFromVisita] = useState<ClienteDataFromVisita | null>(null);
+
+  // Redirecionar para dashboard se usuário não-admin tentar acessar view restrita
+  useEffect(() => {
+    if (!isLoadingRole && !isAdmin && ADMIN_ONLY_VIEWS.includes(view)) {
+      setView('dashboard');
+    }
+  }, [isAdmin, isLoadingRole, view]);
 
   const handleNovoOrcamento = (clienteData?: ClienteDataFromVisita) => {
     setOrcamentoEditandoId(null);
@@ -50,6 +62,11 @@ export default function GerarOrcamento() {
   };
 
   const handleNavigate = (newView: View) => {
+    // Bloquear navegação para views restritas se não for admin
+    if (!isAdmin && ADMIN_ONLY_VIEWS.includes(newView)) {
+      return;
+    }
+    
     if (newView === 'novoOrcamento') {
       handleNovoOrcamento();
     } else {

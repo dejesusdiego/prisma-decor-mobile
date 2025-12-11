@@ -19,6 +19,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useUserRole } from '@/hooks/useUserRole';
 
 type View = 'dashboard' | 'novoOrcamento' | 'listaOrcamentos' | 'visualizarOrcamento' | 'gestaoMateriais' | 'ajustesSistema' | 'solicitacoesVisita';
 
@@ -27,23 +28,35 @@ interface OrcamentoSidebarProps {
   onNavigate: (view: View) => void;
 }
 
-const mainNavItems = [
+// Itens visíveis para todos os usuários
+const baseNavItems = [
   { id: 'dashboard' as View, label: 'Dashboard', icon: Home },
   { id: 'novoOrcamento' as View, label: 'Novo Orçamento', icon: Plus },
   { id: 'listaOrcamentos' as View, label: 'Meus Orçamentos', icon: FileText },
+];
+
+// Itens visíveis apenas para admins (seção principal)
+const adminMainNavItems = [
   { id: 'solicitacoesVisita' as View, label: 'Solicitações de Visita', icon: CalendarCheck },
 ];
 
-const adminNavItems = [
+// Itens da seção de administração (apenas admins)
+const adminSectionItems = [
   { id: 'gestaoMateriais' as View, label: 'Gestão de Materiais', icon: Database },
   { id: 'ajustesSistema' as View, label: 'Ajustes do Sistema', icon: Settings },
 ];
 
 export function OrcamentoSidebar({ currentView, onNavigate }: OrcamentoSidebarProps) {
   const navigate = useNavigate();
+  const { isAdmin } = useUserRole();
   const [collapsed, setCollapsed] = useState(false);
   const [isDark, setIsDark] = useState(false);
   const [visitasNaoVistas, setVisitasNaoVistas] = useState(0);
+
+  // Construir lista de itens de navegação baseado no role
+  const mainNavItems = isAdmin 
+    ? [...baseNavItems, ...adminMainNavItems]
+    : baseNavItems;
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme');
@@ -243,42 +256,46 @@ export function OrcamentoSidebar({ currentView, onNavigate }: OrcamentoSidebarPr
           ))}
         </div>
 
-        {/* Admin Section */}
-        <div className="pt-4 space-y-1">
-          {!collapsed && (
-            <span className="text-xs font-semibold text-muted-foreground px-3 py-2 block uppercase tracking-wider">
-              Administração
-            </span>
-          )}
-          {collapsed && <div className="border-t my-2" />}
-          {adminNavItems.map((item) => (
-            <NavItem key={item.id} item={item} isActive={currentView === item.id} />
-          ))}
-        </div>
+        {/* Admin Section - Apenas para admins */}
+        {isAdmin && (
+          <div className="pt-4 space-y-1">
+            {!collapsed && (
+              <span className="text-xs font-semibold text-muted-foreground px-3 py-2 block uppercase tracking-wider">
+                Administração
+              </span>
+            )}
+            {collapsed && <div className="border-t my-2" />}
+            {adminSectionItems.map((item) => (
+              <NavItem key={item.id} item={item} isActive={currentView === item.id} />
+            ))}
+          </div>
+        )}
       </nav>
 
       {/* Footer */}
       <div className="p-3 border-t space-y-2">
-        {/* Users button */}
-        <Tooltip delayDuration={0}>
-          <TooltipTrigger asChild>
-            <button
-              onClick={() => navigate('/gerenciarusuarios')}
-              className={cn(
-                "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all",
-                "text-muted-foreground hover:text-foreground hover:bg-accent/50"
-              )}
-            >
-              <Users className="h-5 w-5 shrink-0" />
-              {!collapsed && <span className="text-sm font-medium">Usuários</span>}
-            </button>
-          </TooltipTrigger>
-          {collapsed && (
-            <TooltipContent side="right" className="font-medium">
-              Usuários
-            </TooltipContent>
-          )}
-        </Tooltip>
+        {/* Users button - Apenas para admins */}
+        {isAdmin && (
+          <Tooltip delayDuration={0}>
+            <TooltipTrigger asChild>
+              <button
+                onClick={() => navigate('/gerenciarusuarios')}
+                className={cn(
+                  "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all",
+                  "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                )}
+              >
+                <Users className="h-5 w-5 shrink-0" />
+                {!collapsed && <span className="text-sm font-medium">Usuários</span>}
+              </button>
+            </TooltipTrigger>
+            {collapsed && (
+              <TooltipContent side="right" className="font-medium">
+                Usuários
+              </TooltipContent>
+            )}
+          </Tooltip>
+        )}
 
         {/* Theme toggle */}
         <Tooltip delayDuration={0}>
