@@ -311,7 +311,7 @@ export function ListaOrcamentos({ onVoltar, onEditar, onVisualizar }: ListaOrcam
       </div>
 
       {/* Contadores de Status */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
+      <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-2">
         {STATUS_LIST.map((status) => {
           const config = getStatusConfig(status);
           const isActive = filtroStatus === status;
