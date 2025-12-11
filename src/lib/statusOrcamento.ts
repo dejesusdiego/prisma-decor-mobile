@@ -26,9 +26,19 @@ export const STATUS_CONFIG = {
     color: 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300',
     badgeVariant: 'destructive' as const,
   },
+  pago_40: {
+    label: 'Pago 40%',
+    color: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/50 dark:text-cyan-300',
+    badgeVariant: 'default' as const,
+  },
   pago_parcial: {
     label: 'Pago 50%',
     color: 'bg-sky-100 text-sky-700 dark:bg-sky-900/50 dark:text-sky-300',
+    badgeVariant: 'default' as const,
+  },
+  pago_60: {
+    label: 'Pago 60%',
+    color: 'bg-teal-100 text-teal-700 dark:bg-teal-900/50 dark:text-teal-300',
     badgeVariant: 'default' as const,
   },
   pago: {
@@ -46,7 +56,9 @@ export const STATUS_LIST: StatusOrcamento[] = [
   'enviado',
   'sem_resposta',
   'recusado',
+  'pago_40',
   'pago_parcial',
+  'pago_60',
   'pago',
 ];
 
