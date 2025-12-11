@@ -11,3 +11,9 @@ verify_jwt = false
 
 [functions.update-overdue-status]
 verify_jwt = false
+
+[functions.list-users]
+verify_jwt = false
+
+[functions.update-user-password]
+verify_jwt = false
