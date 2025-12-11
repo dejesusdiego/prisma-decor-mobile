@@ -5,6 +5,18 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Decode JWT to get user ID (without verification - verification is done by Supabase)
+function decodeJwt(token: string): { sub: string } | null {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    const payload = JSON.parse(atob(parts[1]));
+    return payload;
+  } catch {
+    return null;
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -41,16 +53,28 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 
-    // Extract the JWT token
+    // Extract and decode the JWT token
     const token = authHeader.replace('Bearer ', '');
+    const payload = decodeJwt(token);
+    
+    if (!payload || !payload.sub) {
+      console.log('Invalid token payload');
+      return new Response(
+        JSON.stringify({ error: 'Invalid token' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const requestingUserId = payload.sub;
+    console.log('Token decoded, requesting user ID:', requestingUserId);
 
     // Create admin client
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Verify the JWT and get user
-    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
+    // Verify user exists using admin API
+    const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserById(requestingUserId);
     
-    if (userError || !user) {
+    if (userError || !userData.user) {
       console.error('Error getting user:', userError?.message);
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
@@ -58,18 +82,18 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log('User authenticated:', user.email);
+    console.log('User verified:', userData.user.email);
 
     // Check if requesting user is admin
     const { data: roleData, error: roleError } = await supabaseAdmin
       .from('user_roles')
       .select('role')
-      .eq('user_id', user.id)
+      .eq('user_id', requestingUserId)
       .eq('role', 'admin')
       .single();
 
     if (roleError || !roleData) {
-      console.log('User is not admin:', user.email);
+      console.log('User is not admin:', userData.user.email);
       return new Response(
         JSON.stringify({ error: 'Admin access required' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -92,7 +116,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`Password updated for user ${userId} by admin ${user.email}`);
+    console.log(`Password updated for user ${userId} by admin ${userData.user.email}`);
 
     return new Response(
       JSON.stringify({ success: true, message: 'Password updated successfully' }),

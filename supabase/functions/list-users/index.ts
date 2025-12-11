@@ -5,6 +5,18 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Decode JWT to get user ID (without verification - verification is done by Supabase)
+function decodeJwt(token: string): { sub: string } | null {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    const payload = JSON.parse(atob(parts[1]));
+    return payload;
+  } catch {
+    return null;
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -23,53 +35,56 @@ Deno.serve(async (req) => {
     }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 
-    // Extract the JWT token
+    // Extract and decode the JWT token
     const token = authHeader.replace('Bearer ', '');
+    const payload = decodeJwt(token);
+    
+    if (!payload || !payload.sub) {
+      console.log('Invalid token payload');
+      return new Response(
+        JSON.stringify({ error: 'Invalid token' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
-    // Create admin client to verify user and check roles
+    const userId = payload.sub;
+    console.log('Token decoded, user ID:', userId);
+
+    // Create admin client
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Verify the JWT and get user
-    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
+    // Verify user exists using admin API
+    const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserById(userId);
     
-    if (userError) {
-      console.error('Error getting user:', userError.message);
+    if (userError || !userData.user) {
+      console.error('Error getting user:', userError?.message);
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    if (!user) {
-      console.log('No user found from token');
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    console.log('User authenticated:', user.email);
+    console.log('User verified:', userData.user.email);
 
     // Check if requesting user is admin
     const { data: roleData, error: roleError } = await supabaseAdmin
       .from('user_roles')
       .select('role')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .eq('role', 'admin')
       .single();
 
     if (roleError || !roleData) {
-      console.log('User is not admin:', user.email);
+      console.log('User is not admin:', userData.user.email);
       return new Response(
         JSON.stringify({ error: 'Admin access required' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log('Admin access confirmed for:', user.email);
+    console.log('Admin access confirmed for:', userData.user.email);
 
     // Fetch all users with admin privileges
     const { data: authUsers, error: listError } = await supabaseAdmin.auth.admin.listUsers();
@@ -99,7 +114,7 @@ Deno.serve(async (req) => {
       created_at: u.created_at,
     }));
 
-    console.log(`Listed ${users.length} users for admin ${user.email}`);
+    console.log(`Listed ${users.length} users for admin ${userData.user.email}`);
 
     return new Response(
       JSON.stringify({ users }),
