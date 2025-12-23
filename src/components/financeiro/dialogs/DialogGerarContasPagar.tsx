@@ -164,9 +164,7 @@ export function DialogGerarContasPagar({
         status: 'pendente',
         created_by_user_id: user.id,
         recorrente: false,
-        // Usar o campo observacoes para armazenar a referência ao orçamento
-        // já que não há coluna orcamento_id na tabela contas_pagar
-        observacoes: `Orçamento: ${orcamento.codigo} | ID: ${orcamento.id}`
+        orcamento_id: orcamento.id
       }));
 
       const { error } = await supabase
