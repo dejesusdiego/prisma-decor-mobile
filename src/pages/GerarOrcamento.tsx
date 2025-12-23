@@ -24,7 +24,7 @@ import { Comissoes } from '@/components/financeiro/Comissoes';
 import { PainelCRM } from '@/components/crm/PainelCRM';
 import { ListaContatos } from '@/components/crm/ListaContatos';
 import { DetalheContato } from '@/components/crm/DetalheContato';
-import { PipelineUnificado } from '@/components/crm/PipelineUnificado';
+import { PipelineOrcamentos } from '@/components/crm/PipelineOrcamentos';
 import { RelatoriosCRM } from '@/components/crm/RelatoriosCRM';
 import { ListaAtividades } from '@/components/crm/ListaAtividades';
 
@@ -250,7 +250,10 @@ export default function GerarOrcamento() {
               />
             )}
             {view === 'crmPipeline' && (
-              <PipelineUnificado onVerOrcamento={handleVisualizarOrcamento} />
+              <PipelineOrcamentos 
+                onVerOrcamento={handleVisualizarOrcamento} 
+                onVerContato={handleVerContato}
+              />
             )}
             {view === 'crmRelatorios' && <RelatoriosCRM />}
             {view === 'crmAtividades' && <ListaAtividades />}
