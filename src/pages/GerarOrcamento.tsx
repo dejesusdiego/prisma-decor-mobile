@@ -11,8 +11,9 @@ import { VisualizarOrcamento } from '@/components/orcamento/VisualizarOrcamento'
 import { GestaoMateriais } from '@/components/orcamento/GestaoMateriais';
 import { AjustesSistema } from '@/components/orcamento/AjustesSistema';
 import { SolicitacoesVisita } from '@/components/orcamento/SolicitacoesVisita';
+import { DashboardFinanceiro } from '@/components/financeiro/DashboardFinanceiro';
 
-type View = 'dashboard' | 'novoOrcamento' | 'listaOrcamentos' | 'visualizarOrcamento' | 'gestaoMateriais' | 'ajustesSistema' | 'solicitacoesVisita';
+type View = 'dashboard' | 'novoOrcamento' | 'listaOrcamentos' | 'visualizarOrcamento' | 'gestaoMateriais' | 'ajustesSistema' | 'solicitacoesVisita' | 'financeiro';
 
 interface ClienteDataFromVisita {
   nome: string;
@@ -22,7 +23,7 @@ interface ClienteDataFromVisita {
 }
 
 // Views restritas apenas para admins
-const ADMIN_ONLY_VIEWS: View[] = ['gestaoMateriais', 'ajustesSistema', 'solicitacoesVisita'];
+const ADMIN_ONLY_VIEWS: View[] = ['gestaoMateriais', 'ajustesSistema', 'solicitacoesVisita', 'financeiro'];
 
 export default function GerarOrcamento() {
   const { user, signOut } = useAuth();
@@ -84,6 +85,7 @@ export default function GerarOrcamento() {
       case 'gestaoMateriais': return 'Gestão de Materiais';
       case 'ajustesSistema': return 'Ajustes do Sistema';
       case 'solicitacoesVisita': return 'Solicitações de Visita';
+      case 'financeiro': return '';
       default: return '';
     }
   };
@@ -156,6 +158,10 @@ export default function GerarOrcamento() {
                 onNavigate={handleNavigate}
                 onCreateOrcamento={(clienteData) => handleNovoOrcamento(clienteData)}
               />
+            )}
+
+            {view === 'financeiro' && (
+              <DashboardFinanceiro />
             )}
           </div>
         </main>
