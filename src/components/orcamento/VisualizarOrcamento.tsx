@@ -9,6 +9,10 @@ import type { Cortina, Material, ServicoConfeccao, ServicoInstalacao } from '@/t
 import { calcularConsumoDetalhado, calcularResumoConsolidado } from '@/lib/calculosOrcamento';
 import { fetchMateriaisPaginados } from '@/lib/fetchMateriaisPaginados';
 import { ResumoFinanceiroOrcamento } from './ResumoFinanceiroOrcamento';
+import { TimelineOrcamento } from './TimelineOrcamento';
+import { DialogGerarContaReceber } from './dialogs/DialogGerarContaReceber';
+import { DialogGerarCustos } from './dialogs/DialogGerarCustos';
+import { useOrcamentoFinanceiro } from '@/hooks/useOrcamentoFinanceiro';
 
 interface VisualizarOrcamentoProps {
   orcamentoId: string;
@@ -27,10 +31,12 @@ interface OrcamentoCompleto {
   margem_percent: number;
   custo_total: number | null;
   total_geral: number | null;
+  total_com_desconto?: number | null;
   subtotal_materiais: number | null;
   subtotal_mao_obra_costura: number | null;
   subtotal_instalacao: number | null;
   created_at: string;
+  status_updated_at?: string | null;
 }
 
 export function VisualizarOrcamento({ orcamentoId, onVoltar }: VisualizarOrcamentoProps) {
@@ -41,6 +47,21 @@ export function VisualizarOrcamento({ orcamentoId, onVoltar }: VisualizarOrcamen
   const [servicosInstalacao, setServicosInstalacao] = useState<ServicoInstalacao[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedCards, setExpandedCards] = useState<Record<number, boolean>>({});
+  
+  // Diálogos
+  const [dialogContaReceberOpen, setDialogContaReceberOpen] = useState(false);
+  const [dialogCustosOpen, setDialogCustosOpen] = useState(false);
+
+  // Hook de integração financeira
+  const {
+    valorRecebido,
+    rentabilidade,
+    gerarContaReceber,
+    gerarContasPagar,
+    isGerandoContaReceber,
+    isGerandoContasPagar,
+    refetch: refetchFinanceiro
+  } = useOrcamentoFinanceiro(orcamentoId);
 
   useEffect(() => {
     const carregarDados = async () => {
@@ -335,6 +356,33 @@ export function VisualizarOrcamento({ orcamentoId, onVoltar }: VisualizarOrcamen
     );
   };
 
+  // Handlers para diálogos
+  const handleGerarContaReceber = (data: { 
+    numeroParcelas: number; 
+    dataPrimeiraParcela: Date;
+    formaPagamentoId?: string;
+    observacoes?: string;
+  }) => {
+    gerarContaReceber(data, {
+      onSuccess: () => {
+        setDialogContaReceberOpen(false);
+        refetchFinanceiro();
+      }
+    });
+  };
+
+  const handleGerarCustos = (data: { 
+    custos: { descricao: string; valor: number; categoriaId?: string }[]; 
+    dataVencimento: Date;
+  }) => {
+    gerarContasPagar(data, {
+      onSuccess: () => {
+        setDialogCustosOpen(false);
+        refetchFinanceiro();
+      }
+    });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -343,6 +391,24 @@ export function VisualizarOrcamento({ orcamentoId, onVoltar }: VisualizarOrcamen
           Voltar
         </Button>
       </div>
+
+      {/* Timeline do Fluxo */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Fluxo do Orçamento</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <TimelineOrcamento
+            status={orcamento.status}
+            createdAt={orcamento.created_at}
+            statusUpdatedAt={orcamento.status_updated_at}
+            valorTotal={orcamento.total_com_desconto ?? orcamento.total_geral ?? 0}
+            valorRecebido={valorRecebido}
+            custoTotal={orcamento.custo_total ?? 0}
+            custosPagos={rentabilidade?.custosPagos ?? 0}
+          />
+        </CardContent>
+      </Card>
 
       {/* Dados do Cliente */}
       <Card>
@@ -680,6 +746,8 @@ export function VisualizarOrcamento({ orcamentoId, onVoltar }: VisualizarOrcamen
       {/* Resumo Financeiro Integrado */}
       <ResumoFinanceiroOrcamento 
         orcamentoId={orcamentoId}
+        onGerarContaReceber={() => setDialogContaReceberOpen(true)}
+        onGerarContasPagar={() => setDialogCustosOpen(true)}
         onVerDetalhes={() => {
           toast({
             title: 'Em breve',
@@ -724,6 +792,26 @@ export function VisualizarOrcamento({ orcamentoId, onVoltar }: VisualizarOrcamen
           </div>
         </CardContent>
       </Card>
+
+      {/* Diálogos */}
+      {orcamento && (
+        <>
+          <DialogGerarContaReceber
+            open={dialogContaReceberOpen}
+            onOpenChange={setDialogContaReceberOpen}
+            orcamento={orcamento}
+            onConfirm={handleGerarContaReceber}
+            isLoading={isGerandoContaReceber}
+          />
+          <DialogGerarCustos
+            open={dialogCustosOpen}
+            onOpenChange={setDialogCustosOpen}
+            orcamento={orcamento}
+            onConfirm={handleGerarCustos}
+            isLoading={isGerandoContasPagar}
+          />
+        </>
+      )}
     </div>
   );
 }
