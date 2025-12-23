@@ -154,7 +154,7 @@ export function DialogGerarContasPagar({
         throw new Error('Selecione pelo menos uma conta');
       }
 
-      // Criar contas a pagar
+      // Criar contas a pagar vinculadas ao orçamento
       const contasParaInserir = contasSelecionadas.map(conta => ({
         descricao: conta.descricao,
         valor: conta.valor,
@@ -163,7 +163,10 @@ export function DialogGerarContasPagar({
         data_vencimento: conta.data_vencimento,
         status: 'pendente',
         created_by_user_id: user.id,
-        recorrente: false
+        recorrente: false,
+        // Usar o campo observacoes para armazenar a referência ao orçamento
+        // já que não há coluna orcamento_id na tabela contas_pagar
+        observacoes: `Orçamento: ${orcamento.codigo} | ID: ${orcamento.id}`
       }));
 
       const { error } = await supabase

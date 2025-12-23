@@ -60,12 +60,13 @@ interface ListaOrcamentosProps {
   onVoltar: () => void;
   onEditar: (orcamentoId: string) => void;
   onVisualizar: (orcamentoId: string) => void;
+  onVerFinanceiro?: () => void;
 }
 
 // Status que devem abrir o dialog de condições de pagamento
 const STATUS_PAGAMENTO: StatusOrcamento[] = ['pago_40', 'pago_parcial', 'pago_60', 'pago'];
 
-export function ListaOrcamentos({ onVoltar, onEditar, onVisualizar }: ListaOrcamentosProps) {
+export function ListaOrcamentos({ onVoltar, onEditar, onVisualizar, onVerFinanceiro }: ListaOrcamentosProps) {
   const { user } = useAuth();
   const [orcamentos, setOrcamentos] = useState<Orcamento[]>([]);
   const [filtroNome, setFiltroNome] = useState('');
@@ -425,6 +426,12 @@ export function ListaOrcamentos({ onVoltar, onEditar, onVisualizar }: ListaOrcam
           <ArrowLeft className="mr-2 h-4 w-4" />
           Voltar ao Início
         </Button>
+        {onVerFinanceiro && (
+          <Button variant="outline" onClick={onVerFinanceiro}>
+            <Receipt className="mr-2 h-4 w-4" />
+            Ver Financeiro
+          </Button>
+        )}
       </div>
 
       {/* Contadores de Status */}
