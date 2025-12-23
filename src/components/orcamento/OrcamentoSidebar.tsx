@@ -16,7 +16,8 @@ import {
   Receipt,
   BarChart3,
   CreditCard,
-  Tags
+  Tags,
+  TrendingUp
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -41,6 +42,7 @@ export type View =
   | 'finContasReceber'
   | 'finLancamentos'
   | 'finRelatorios'
+  | 'finFluxoPrevisto'
   | 'categoriasFormas';
 
 interface OrcamentoSidebarProps {
@@ -59,6 +61,7 @@ const principalNavItems = [
 // Itens da seção FINANCEIRO (admin only)
 const financeiroNavItems = [
   { id: 'finDashboard' as View, label: 'Visão Geral', icon: LayoutDashboard },
+  { id: 'finFluxoPrevisto' as View, label: 'Fluxo Previsto', icon: TrendingUp },
   { id: 'finContasPagar' as View, label: 'Contas a Pagar', icon: ArrowUpCircle },
   { id: 'finContasReceber' as View, label: 'Contas a Receber', icon: ArrowDownCircle },
   { id: 'finLancamentos' as View, label: 'Lançamentos', icon: Receipt },
