@@ -10,8 +10,10 @@ import {
   DollarSign,
   Repeat,
   ChevronRight,
-  History
+  History,
+  Percent
 } from 'lucide-react';
+import { RelatorioDescontos } from './RelatorioDescontos';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -322,7 +324,7 @@ export function RelatoriosBI() {
       </div>
 
       <Tabs defaultValue="dre" className="space-y-6">
-        <TabsList className="grid grid-cols-6 w-full max-w-[800px]">
+        <TabsList className="grid grid-cols-7 w-full max-w-[900px]">
           <TabsTrigger value="dre" className="gap-2">
             <DollarSign className="h-4 w-4" />
             <span className="hidden sm:inline">DRE</span>
@@ -342,6 +344,10 @@ export function RelatoriosBI() {
           <TabsTrigger value="recorrentes" className="gap-2">
             <Repeat className="h-4 w-4" />
             <span className="hidden sm:inline">Recorrentes</span>
+          </TabsTrigger>
+          <TabsTrigger value="descontos" className="gap-2">
+            <Percent className="h-4 w-4" />
+            <span className="hidden sm:inline">Descontos</span>
           </TabsTrigger>
           <TabsTrigger value="historico" className="gap-2">
             <History className="h-4 w-4" />
@@ -696,6 +702,11 @@ export function RelatoriosBI() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Relatório de Descontos */}
+        <TabsContent value="descontos" className="space-y-6">
+          <RelatorioDescontos />
         </TabsContent>
 
         {/* Histórico de Contas Geradas */}
