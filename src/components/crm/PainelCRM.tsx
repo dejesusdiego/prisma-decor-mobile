@@ -10,12 +10,17 @@ import {
   Mail,
   Calendar,
   MessageSquare,
-  AlertCircle
+  AlertCircle,
+  FileText,
+  DollarSign
 } from 'lucide-react';
 import { useCRMMetrics, useAtividades } from '@/hooks/useCRMData';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { STATUS_PIPELINE_CONFIG } from '@/lib/mapearStatusEtapa';
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('pt-BR', {
@@ -44,9 +49,43 @@ const TIPO_ATIVIDADE_ICONS: Record<string, React.ReactNode> = {
   outro: <Clock className="h-4 w-4" />
 };
 
+// Status relevantes para o resumo do pipeline
+const STATUS_RESUMO = ['rascunho', 'enviado', 'sem_resposta', 'pago_40', 'pago'];
+
 export function PainelCRM() {
   const { data: metrics, isLoading: loadingMetrics } = useCRMMetrics();
   const { data: atividadesRecentes, isLoading: loadingAtividades } = useAtividades();
+  
+  // Buscar resumo de orçamentos por status
+  const { data: resumoOrcamentos, isLoading: loadingOrcamentos } = useQuery({
+    queryKey: ['orcamentos-resumo-crm'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('orcamentos')
+        .select('status, total_com_desconto, total_geral');
+      
+      if (error) throw error;
+      
+      // Agrupar por status
+      const resumo = STATUS_RESUMO.map(statusId => {
+        const orcamentosStatus = data.filter(o => o.status === statusId);
+        const config = STATUS_PIPELINE_CONFIG.find(s => s.id === statusId);
+        return {
+          id: statusId,
+          label: config?.label || statusId,
+          color: config?.color || '#6b7280',
+          bgClass: config?.bgClass || 'bg-gray-500',
+          quantidade: orcamentosStatus.length,
+          valor: orcamentosStatus.reduce((sum, o) => sum + (o.total_com_desconto || o.total_geral || 0), 0)
+        };
+      });
+      
+      const total = data.reduce((sum, o) => sum + (o.total_com_desconto || o.total_geral || 0), 0);
+      const totalQtd = data.length;
+      
+      return { resumo, total, totalQtd };
+    }
+  });
 
   if (loadingMetrics) {
     return (
@@ -199,6 +238,71 @@ export function PainelCRM() {
           </CardContent>
         </Card>
 
+        {/* Resumo Pipeline de Orçamentos */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              Pipeline de Orçamentos
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loadingOrcamentos ? (
+              <div className="space-y-3">
+                {[...Array(5)].map((_, i) => (
+                  <Skeleton key={i} className="h-8 w-full" />
+                ))}
+              </div>
+            ) : resumoOrcamentos ? (
+              <div className="space-y-3">
+                {resumoOrcamentos.resumo.map((status) => {
+                  const maxQtd = Math.max(...resumoOrcamentos.resumo.map(s => s.quantidade), 1);
+                  const widthPercent = (status.quantidade / maxQtd) * 100;
+                  
+                  return (
+                    <div key={status.id} className="space-y-1">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="font-medium">{status.label}</span>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="secondary" className="text-xs">
+                            {status.quantidade}
+                          </Badge>
+                          <span className="text-muted-foreground text-xs">
+                            {formatCurrency(status.valor)}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="h-2 bg-muted rounded-full overflow-hidden">
+                        <div 
+                          className={cn("h-full rounded-full transition-all", status.bgClass)}
+                          style={{ width: `${widthPercent}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+                
+                {/* Total */}
+                <div className="pt-4 border-t flex justify-between text-sm">
+                  <span className="font-medium flex items-center gap-1">
+                    <DollarSign className="h-3 w-3" />
+                    Total no Pipeline
+                  </span>
+                  <span className="font-semibold text-emerald-600">
+                    {formatCurrency(resumoOrcamentos.total)}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                Nenhum orçamento encontrado
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
         {/* Atividades Recentes */}
         <Card>
           <CardHeader>

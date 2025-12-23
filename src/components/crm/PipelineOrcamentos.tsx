@@ -4,6 +4,14 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -26,7 +34,9 @@ import {
   DollarSign,
   User,
   Phone,
-  MapPin
+  MapPin,
+  Filter,
+  X
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -34,9 +44,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { format, formatDistanceToNow } from 'date-fns';
+import { format, formatDistanceToNow, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import {
@@ -69,6 +84,7 @@ interface OrcamentoPipeline {
   created_at: string;
   updated_at: string;
   contato_id: string | null;
+  created_by_user_id: string;
   contato?: {
     id: string;
     nome: string;
@@ -82,6 +98,15 @@ const STATUS_PIPELINE_VISIVEL = STATUS_PIPELINE_CONFIG.filter(s =>
   ['rascunho', 'finalizado', 'enviado', 'sem_resposta', 'pago_40', 'pago_60', 'pago', 'recusado'].includes(s.id)
 );
 
+// Períodos predefinidos
+const PERIODOS = [
+  { id: 'todos', label: 'Todos os períodos' },
+  { id: 'mes_atual', label: 'Mês Atual' },
+  { id: 'mes_passado', label: 'Mês Passado' },
+  { id: 'ultimos_3_meses', label: 'Últimos 3 meses' },
+  { id: 'ultimos_6_meses', label: 'Últimos 6 meses' },
+];
+
 interface PipelineOrcamentosProps {
   onVerOrcamento?: (orcamentoId: string) => void;
   onVerContato?: (contatoId: string) => void;
@@ -90,6 +115,11 @@ interface PipelineOrcamentosProps {
 export function PipelineOrcamentos({ onVerOrcamento, onVerContato }: PipelineOrcamentosProps) {
   const [viewType, setViewType] = useState<ViewType>('kanban');
   const [draggedId, setDraggedId] = useState<string | null>(null);
+  
+  // Filtros
+  const [periodoFilter, setPeriodoFilter] = useState<string>('todos');
+  const [cidadeFilter, setCidadeFilter] = useState<string>('todas');
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   // Buscar orçamentos com contato vinculado
   const { data: orcamentos, isLoading, refetch } = useQuery({
@@ -109,6 +139,7 @@ export function PipelineOrcamentos({ onVerOrcamento, onVerContato }: PipelineOrc
           created_at,
           updated_at,
           contato_id,
+          created_by_user_id,
           contato:contatos(id, nome, telefone, cidade)
         `)
         .order('updated_at', { ascending: false });
@@ -118,14 +149,64 @@ export function PipelineOrcamentos({ onVerOrcamento, onVerContato }: PipelineOrc
     }
   });
 
-  // Agrupar orçamentos por status
+  // Extrair cidades únicas para filtro
+  const cidadesUnicas = useMemo(() => {
+    if (!orcamentos) return [];
+    const cidades = orcamentos
+      .map(o => o.cidade)
+      .filter((c): c is string => !!c);
+    return [...new Set(cidades)].sort();
+  }, [orcamentos]);
+
+  // Aplicar filtros
+  const orcamentosFiltrados = useMemo(() => {
+    if (!orcamentos) return [];
+    
+    return orcamentos.filter(o => {
+      // Filtro de período
+      if (periodoFilter !== 'todos') {
+        const dataOrcamento = new Date(o.created_at);
+        const hoje = new Date();
+        
+        switch (periodoFilter) {
+          case 'mes_atual':
+            if (dataOrcamento < startOfMonth(hoje) || dataOrcamento > endOfMonth(hoje)) return false;
+            break;
+          case 'mes_passado':
+            const mesPassado = subMonths(hoje, 1);
+            if (dataOrcamento < startOfMonth(mesPassado) || dataOrcamento > endOfMonth(mesPassado)) return false;
+            break;
+          case 'ultimos_3_meses':
+            if (dataOrcamento < subMonths(hoje, 3)) return false;
+            break;
+          case 'ultimos_6_meses':
+            if (dataOrcamento < subMonths(hoje, 6)) return false;
+            break;
+        }
+      }
+      
+      // Filtro de cidade
+      if (cidadeFilter !== 'todas' && o.cidade !== cidadeFilter) return false;
+      
+      return true;
+    });
+  }, [orcamentos, periodoFilter, cidadeFilter]);
+
+  // Agrupar orçamentos filtrados por status
   const orcamentosPorStatus = useMemo(() => {
-    if (!orcamentos) return {};
     return STATUS_PIPELINE_VISIVEL.reduce((acc, status) => {
-      acc[status.id] = orcamentos.filter(o => o.status === status.id);
+      acc[status.id] = orcamentosFiltrados.filter(o => o.status === status.id);
       return acc;
     }, {} as Record<string, OrcamentoPipeline[]>);
-  }, [orcamentos]);
+  }, [orcamentosFiltrados]);
+
+  // Verificar se há filtros ativos
+  const temFiltrosAtivos = periodoFilter !== 'todos' || cidadeFilter !== 'todas';
+
+  const limparFiltros = () => {
+    setPeriodoFilter('todos');
+    setCidadeFilter('todas');
+  };
 
   // Drag and drop - atualiza status do orçamento
   const handleDragStart = (e: React.DragEvent, orcamentoId: string) => {
@@ -181,9 +262,9 @@ export function PipelineOrcamentos({ onVerOrcamento, onVerContato }: PipelineOrc
     };
   });
 
-  // Totais
-  const totalPipeline = orcamentos?.reduce((sum, o) => sum + (o.total_com_desconto || o.total_geral || 0), 0) || 0;
-  const totalOrcamentos = orcamentos?.length || 0;
+  // Totais (usando orçamentos filtrados)
+  const totalPipeline = orcamentosFiltrados.reduce((sum, o) => sum + (o.total_com_desconto || o.total_geral || 0), 0);
+  const totalOrcamentos = orcamentosFiltrados.length;
 
   const renderOrcamentoCard = (orcamento: OrcamentoPipeline, draggable = false) => {
     const valor = orcamento.total_com_desconto || orcamento.total_geral || 0;
@@ -276,7 +357,7 @@ export function PipelineOrcamentos({ onVerOrcamento, onVerContato }: PipelineOrc
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
+      <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-4">
         <div>
           <CardTitle className="flex items-center gap-2">
             <Target className="h-5 w-5" />
@@ -284,9 +365,70 @@ export function PipelineOrcamentos({ onVerOrcamento, onVerContato }: PipelineOrc
           </CardTitle>
           <p className="text-sm text-muted-foreground mt-1">
             {totalOrcamentos} orçamentos • {formatCurrency(totalPipeline)} no pipeline
+            {temFiltrosAtivos && (
+              <span className="text-primary"> (filtrado)</span>
+            )}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Filtros */}
+          <Popover open={filtersOpen} onOpenChange={setFiltersOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-2">
+                <Filter className="h-4 w-4" />
+                Filtros
+                {temFiltrosAtivos && (
+                  <Badge variant="secondary" className="ml-1 h-5 w-5 p-0 flex items-center justify-center">
+                    {(periodoFilter !== 'todos' ? 1 : 0) + (cidadeFilter !== 'todas' ? 1 : 0)}
+                  </Badge>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80" align="end">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-medium">Filtros</h4>
+                  {temFiltrosAtivos && (
+                    <Button variant="ghost" size="sm" onClick={limparFiltros}>
+                      <X className="h-4 w-4 mr-1" />
+                      Limpar
+                    </Button>
+                  )}
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Período</label>
+                  <Select value={periodoFilter} onValueChange={setPeriodoFilter}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PERIODOS.map(p => (
+                        <SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Cidade</label>
+                  <Select value={cidadeFilter} onValueChange={setCidadeFilter}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todas">Todas as cidades</SelectItem>
+                      {cidadesUnicas.map(cidade => (
+                        <SelectItem key={cidade} value={cidade}>{cidade}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
+
+          {/* Seletor de visualização */}
           <div className="flex items-center border rounded-lg p-1">
             <Button 
               variant={viewType === 'kanban' ? 'secondary' : 'ghost'} 
