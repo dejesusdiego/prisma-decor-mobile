@@ -14,6 +14,76 @@ export type Database = {
   }
   public: {
     Tables: {
+      atividades_crm: {
+        Row: {
+          concluida: boolean
+          contato_id: string | null
+          created_at: string
+          created_by_user_id: string
+          data_atividade: string
+          data_lembrete: string | null
+          descricao: string | null
+          id: string
+          oportunidade_id: string | null
+          orcamento_id: string | null
+          tipo: string
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          concluida?: boolean
+          contato_id?: string | null
+          created_at?: string
+          created_by_user_id: string
+          data_atividade?: string
+          data_lembrete?: string | null
+          descricao?: string | null
+          id?: string
+          oportunidade_id?: string | null
+          orcamento_id?: string | null
+          tipo: string
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          concluida?: boolean
+          contato_id?: string | null
+          created_at?: string
+          created_by_user_id?: string
+          data_atividade?: string
+          data_lembrete?: string | null
+          descricao?: string | null
+          id?: string
+          oportunidade_id?: string | null
+          orcamento_id?: string | null
+          tipo?: string
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "atividades_crm_contato_id_fkey"
+            columns: ["contato_id"]
+            isOneToOne: false
+            referencedRelation: "contatos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "atividades_crm_oportunidade_id_fkey"
+            columns: ["oportunidade_id"]
+            isOneToOne: false
+            referencedRelation: "oportunidades"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "atividades_crm_orcamento_id_fkey"
+            columns: ["orcamento_id"]
+            isOneToOne: false
+            referencedRelation: "orcamentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       categorias_financeiras: {
         Row: {
           ativo: boolean
@@ -341,6 +411,60 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      contatos: {
+        Row: {
+          cidade: string | null
+          created_at: string
+          created_by_user_id: string
+          email: string | null
+          endereco: string | null
+          id: string
+          nome: string
+          observacoes: string | null
+          origem: string | null
+          tags: string[] | null
+          telefone: string | null
+          telefone_secundario: string | null
+          tipo: string
+          updated_at: string
+          valor_total_gasto: number | null
+        }
+        Insert: {
+          cidade?: string | null
+          created_at?: string
+          created_by_user_id: string
+          email?: string | null
+          endereco?: string | null
+          id?: string
+          nome: string
+          observacoes?: string | null
+          origem?: string | null
+          tags?: string[] | null
+          telefone?: string | null
+          telefone_secundario?: string | null
+          tipo?: string
+          updated_at?: string
+          valor_total_gasto?: number | null
+        }
+        Update: {
+          cidade?: string | null
+          created_at?: string
+          created_by_user_id?: string
+          email?: string | null
+          endereco?: string | null
+          id?: string
+          nome?: string
+          observacoes?: string | null
+          origem?: string | null
+          tags?: string[] | null
+          telefone?: string | null
+          telefone_secundario?: string | null
+          tipo?: string
+          updated_at?: string
+          valor_total_gasto?: number | null
+        }
+        Relationships: []
       }
       cortina_items: {
         Row: {
@@ -693,12 +817,76 @@ export type Database = {
         }
         Relationships: []
       }
+      oportunidades: {
+        Row: {
+          contato_id: string | null
+          created_at: string
+          created_by_user_id: string
+          data_previsao_fechamento: string | null
+          etapa: string
+          id: string
+          motivo_perda: string | null
+          observacoes: string | null
+          orcamento_id: string | null
+          temperatura: string | null
+          titulo: string
+          updated_at: string
+          valor_estimado: number | null
+        }
+        Insert: {
+          contato_id?: string | null
+          created_at?: string
+          created_by_user_id: string
+          data_previsao_fechamento?: string | null
+          etapa?: string
+          id?: string
+          motivo_perda?: string | null
+          observacoes?: string | null
+          orcamento_id?: string | null
+          temperatura?: string | null
+          titulo: string
+          updated_at?: string
+          valor_estimado?: number | null
+        }
+        Update: {
+          contato_id?: string | null
+          created_at?: string
+          created_by_user_id?: string
+          data_previsao_fechamento?: string | null
+          etapa?: string
+          id?: string
+          motivo_perda?: string | null
+          observacoes?: string | null
+          orcamento_id?: string | null
+          temperatura?: string | null
+          titulo?: string
+          updated_at?: string
+          valor_estimado?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "oportunidades_contato_id_fkey"
+            columns: ["contato_id"]
+            isOneToOne: false
+            referencedRelation: "contatos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oportunidades_orcamento_id_fkey"
+            columns: ["orcamento_id"]
+            isOneToOne: false
+            referencedRelation: "orcamentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       orcamentos: {
         Row: {
           cidade: string | null
           cliente_nome: string
           cliente_telefone: string
           codigo: string
+          contato_id: string | null
           created_at: string
           created_by_user_id: string
           custo_total: number | null
@@ -724,6 +912,7 @@ export type Database = {
           cliente_nome: string
           cliente_telefone: string
           codigo: string
+          contato_id?: string | null
           created_at?: string
           created_by_user_id: string
           custo_total?: number | null
@@ -749,6 +938,7 @@ export type Database = {
           cliente_nome?: string
           cliente_telefone?: string
           codigo?: string
+          contato_id?: string | null
           created_at?: string
           created_by_user_id?: string
           custo_total?: number | null
@@ -769,7 +959,15 @@ export type Database = {
           updated_at?: string
           validade_dias?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "orcamentos_contato_id_fkey"
+            columns: ["contato_id"]
+            isOneToOne: false
+            referencedRelation: "contatos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       parcelas_receber: {
         Row: {
