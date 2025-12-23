@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
+import { Upload, X, FileText, Loader2 } from 'lucide-react';
 
 interface DialogRegistrarRecebimentoProps {
   open: boolean;
@@ -31,6 +32,8 @@ interface DialogRegistrarRecebimentoProps {
 export function DialogRegistrarRecebimento({ open, onOpenChange, parcela }: DialogRegistrarRecebimentoProps) {
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const [uploading, setUploading] = useState(false);
+  const [arquivo, setArquivo] = useState<File | null>(null);
   
   const { register, handleSubmit, reset, setValue, watch } = useForm({
     defaultValues: {
@@ -58,6 +61,7 @@ export function DialogRegistrarRecebimento({ open, onOpenChange, parcela }: Dial
         data_pagamento: format(new Date(), 'yyyy-MM-dd'),
         forma_pagamento_id: ''
       });
+      setArquivo(null);
     }
   }, [open, reset]);
 
@@ -89,7 +93,7 @@ export function DialogRegistrarRecebimento({ open, onOpenChange, parcela }: Dial
         .filter((p: any) => p.status === 'pago' || p.id === parcela.id)
         .reduce((acc: number, p: any) => acc + Number(p.valor), 0);
 
-      // 4. Atualizar conta a receber
+      // 4. Atualizar conta a receber (trigger sincronizará o orçamento)
       const todasPagas = conta.parcelas.every(
         (p: any) => p.status === 'pago' || p.id === parcela.id
       );
@@ -105,7 +109,7 @@ export function DialogRegistrarRecebimento({ open, onOpenChange, parcela }: Dial
       if (errorUpdateConta) throw errorUpdateConta;
 
       // 5. Criar lançamento financeiro
-      const { error: errorLancamento } = await supabase
+      const { data: lancamento, error: errorLancamento } = await supabase
         .from('lancamentos_financeiros')
         .insert({
           descricao: `Recebimento parcela ${parcela.numero_parcela} - ${conta.cliente_nome}`,
@@ -115,14 +119,49 @@ export function DialogRegistrarRecebimento({ open, onOpenChange, parcela }: Dial
           parcela_receber_id: parcela.id,
           forma_pagamento_id: data.forma_pagamento_id || null,
           created_by_user_id: user?.id
-        });
+        })
+        .select()
+        .single();
       
       if (errorLancamento) throw errorLancamento;
+
+      // 6. Upload de comprovante se houver arquivo
+      if (arquivo && user) {
+        const fileExt = arquivo.name.split('.').pop();
+        const fileName = `${user.id}/${parcela.id}_${Date.now()}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('comprovantes')
+          .upload(fileName, arquivo);
+        
+        if (uploadError) {
+          console.error('Erro no upload:', uploadError);
+          // Não bloqueia o fluxo, apenas loga
+        } else {
+          // Criar registro do comprovante
+          const { data: urlData } = supabase.storage
+            .from('comprovantes')
+            .getPublicUrl(fileName);
+          
+          await supabase
+            .from('comprovantes_pagamento')
+            .insert({
+              parcela_receber_id: parcela.id,
+              lancamento_id: lancamento?.id,
+              nome_arquivo: arquivo.name,
+              tipo_arquivo: arquivo.type,
+              tamanho_bytes: arquivo.size,
+              arquivo_url: urlData.publicUrl,
+              uploaded_by_user_id: user.id
+            });
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['contas-receber'] });
       queryClient.invalidateQueries({ queryKey: ['lancamentos'] });
-      toast.success('Recebimento registrado');
+      queryClient.invalidateQueries({ queryKey: ['orcamentos'] });
+      toast.success('Recebimento registrado com sucesso');
       onOpenChange(false);
     },
     onError: (error) => {
@@ -135,6 +174,21 @@ export function DialogRegistrarRecebimento({ open, onOpenChange, parcela }: Dial
     mutation.mutate(data);
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 10 * 1024 * 1024) { // 10MB
+        toast.error('Arquivo muito grande. Máximo 10MB');
+        return;
+      }
+      setArquivo(file);
+    }
+  };
+
+  const removerArquivo = () => {
+    setArquivo(null);
+  };
+
   if (!parcela) return null;
 
   const formatCurrency = (value: number) => {
@@ -143,7 +197,7 @@ export function DialogRegistrarRecebimento({ open, onOpenChange, parcela }: Dial
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm">
+      <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Registrar Recebimento</DialogTitle>
         </DialogHeader>
@@ -181,12 +235,51 @@ export function DialogRegistrarRecebimento({ open, onOpenChange, parcela }: Dial
             </Select>
           </div>
 
-          <div className="flex justify-end gap-2">
+          {/* Upload de Comprovante */}
+          <div className="space-y-2">
+            <Label>Comprovante (opcional)</Label>
+            {arquivo ? (
+              <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+                <FileText className="h-5 w-5 text-muted-foreground" />
+                <span className="flex-1 text-sm truncate">{arquivo.name}</span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={removerArquivo}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ) : (
+              <div className="relative">
+                <Input
+                  type="file"
+                  accept="image/*,.pdf"
+                  onChange={handleFileChange}
+                  className="cursor-pointer"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Imagens ou PDF até 10MB
+                </p>
+              </div>
+            )}
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancelar
             </Button>
             <Button type="submit" disabled={mutation.isPending}>
-              {mutation.isPending ? 'Salvando...' : 'Confirmar'}
+              {mutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Salvando...
+                </>
+              ) : (
+                'Confirmar'
+              )}
             </Button>
           </div>
         </form>
