@@ -19,7 +19,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { ArrowLeft, Edit, Copy, FileDown, Search, Trash2, Eye, Receipt, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Edit, Copy, FileDown, Search, Trash2, Eye, Receipt, CheckCircle2, Clock, AlertCircle, Banknote } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
@@ -27,6 +27,7 @@ import { DialogValidade } from './DialogValidade';
 import { gerarPdfOrcamento } from '@/lib/gerarPdfOrcamento';
 import { STATUS_CONFIG, STATUS_LIST, getStatusConfig, getStatusLabel, StatusOrcamento } from '@/lib/statusOrcamento';
 import { DialogCondicoesPagamento } from '@/components/financeiro/dialogs/DialogCondicoesPagamento';
+import { DialogGerarContasPagar } from '@/components/financeiro/dialogs/DialogGerarContasPagar';
 
 interface ContaReceberInfo {
   id: string;
@@ -48,6 +49,11 @@ interface Orcamento {
   status: string;
   validade_dias?: number;
   conta_receber?: ContaReceberInfo;
+  // Custos para contas a pagar
+  subtotal_materiais?: number;
+  subtotal_mao_obra_costura?: number;
+  subtotal_instalacao?: number;
+  custo_total?: number;
 }
 
 interface ListaOrcamentosProps {
@@ -73,6 +79,10 @@ export function ListaOrcamentos({ onVoltar, onEditar, onVisualizar }: ListaOrcam
   const [dialogPagamentoOpen, setDialogPagamentoOpen] = useState(false);
   const [orcamentoParaPagamento, setOrcamentoParaPagamento] = useState<Orcamento | null>(null);
   const [novoStatusPendente, setNovoStatusPendente] = useState<StatusOrcamento | null>(null);
+  
+  // Estado para o dialog de contas a pagar
+  const [dialogContasPagarOpen, setDialogContasPagarOpen] = useState(false);
+  const [orcamentoParaContasPagar, setOrcamentoParaContasPagar] = useState<Orcamento | null>(null);
 
   useEffect(() => {
     carregarOrcamentos();
@@ -197,9 +207,25 @@ export function ListaOrcamentos({ onVoltar, onEditar, onVisualizar }: ListaOrcam
           orc.id === orcamentoParaPagamento.id ? { ...orc, status: novoStatusPendente } : orc
         )
       );
+      
+      // Após criar conta a receber, oferecer criar contas a pagar
+      if (orcamentoParaPagamento.custo_total && orcamentoParaPagamento.custo_total > 0) {
+        setOrcamentoParaContasPagar(orcamentoParaPagamento);
+        setDialogContasPagarOpen(true);
+      }
     }
     setOrcamentoParaPagamento(null);
     setNovoStatusPendente(null);
+  };
+
+  const handleContasPagarSuccess = () => {
+    setOrcamentoParaContasPagar(null);
+    carregarOrcamentos();
+  };
+  
+  const abrirDialogContasPagar = (orcamento: Orcamento) => {
+    setOrcamentoParaContasPagar(orcamento);
+    setDialogContasPagarOpen(true);
   };
 
   const duplicarOrcamento = async (orcamentoId: string) => {
@@ -577,6 +603,16 @@ export function ListaOrcamentos({ onVoltar, onEditar, onVisualizar }: ListaOrcam
                             >
                               <Edit className="h-4 w-4" />
                             </Button>
+                            {(orc.custo_total || 0) > 0 && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => abrirDialogContasPagar(orc)}
+                                title="Gerar Contas a Pagar"
+                              >
+                                <Banknote className="h-4 w-4" />
+                              </Button>
+                            )}
                             <Button
                               variant="ghost"
                               size="icon"
@@ -627,6 +663,13 @@ export function ListaOrcamentos({ onVoltar, onEditar, onVisualizar }: ListaOrcam
         orcamento={orcamentoParaPagamento}
         novoStatus={novoStatusPendente || ''}
         onSuccess={handlePagamentoSuccess}
+      />
+
+      <DialogGerarContasPagar
+        open={dialogContasPagarOpen}
+        onOpenChange={setDialogContasPagarOpen}
+        orcamento={orcamentoParaContasPagar}
+        onSuccess={handleContasPagarSuccess}
       />
     </div>
   );
