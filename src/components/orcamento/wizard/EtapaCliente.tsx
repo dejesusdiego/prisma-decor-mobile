@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,6 +16,9 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import type { DadosOrcamento } from '@/types/orcamento';
 import { OPCOES_AMBIENTE } from '@/types/orcamento';
+import { useContatoByTelefone } from '@/hooks/useCRMData';
+import { User, Loader2 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 interface EtapaClienteProps {
   dados: DadosOrcamento;
@@ -28,6 +31,46 @@ export function EtapaCliente({ dados, orcamentoId, onAvancar, onCancelar }: Etap
   const { user } = useAuth();
   const [formData, setFormData] = useState<DadosOrcamento>(dados);
   const [loading, setLoading] = useState(false);
+  const [telefoneDebounced, setTelefoneDebounced] = useState('');
+  const [contatoVinculadoId, setContatoVinculadoId] = useState<string | null>(null);
+  
+  // Hook para buscar contato pelo telefone
+  const { data: contatoEncontrado, isLoading: buscandoContato } = useContatoByTelefone(telefoneDebounced);
+
+  // Debounce do telefone para não fazer muitas requisições
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const telefoneLimpo = formData.clienteTelefone.replace(/\D/g, '');
+      if (telefoneLimpo.length >= 10) {
+        setTelefoneDebounced(formData.clienteTelefone);
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [formData.clienteTelefone]);
+
+  // Auto-preencher dados quando encontrar contato
+  useEffect(() => {
+    if (contatoEncontrado && !contatoVinculadoId) {
+      setFormData(prev => ({
+        ...prev,
+        clienteNome: contatoEncontrado.nome || prev.clienteNome,
+        cidade: contatoEncontrado.cidade || prev.cidade,
+        endereco: contatoEncontrado.endereco || prev.endereco,
+      }));
+      setContatoVinculadoId(contatoEncontrado.id);
+      toast({
+        title: 'Contato encontrado!',
+        description: `Dados de ${contatoEncontrado.nome} preenchidos automaticamente.`,
+      });
+    }
+  }, [contatoEncontrado]);
+
+  // Limpar vínculo se telefone mudar significativamente
+  useEffect(() => {
+    if (contatoVinculadoId && contatoEncontrado && contatoEncontrado.telefone !== formData.clienteTelefone) {
+      setContatoVinculadoId(null);
+    }
+  }, [formData.clienteTelefone]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -125,13 +168,40 @@ export function EtapaCliente({ dados, orcamentoId, onAvancar, onCancelar }: Etap
 
           <div className="space-y-2">
             <Label htmlFor="clienteTelefone">Telefone / WhatsApp *</Label>
-            <Input
-              id="clienteTelefone"
-              value={formData.clienteTelefone}
-              onChange={(e) => setFormData({ ...formData, clienteTelefone: e.target.value })}
-              required
-              placeholder="(00) 00000-0000"
-            />
+            <div className="relative">
+              <Input
+                id="clienteTelefone"
+                value={formData.clienteTelefone}
+                onChange={(e) => {
+                  setFormData({ ...formData, clienteTelefone: e.target.value });
+                  setContatoVinculadoId(null); // Reset ao digitar novo telefone
+                }}
+                required
+                placeholder="(00) 00000-0000"
+                className={contatoEncontrado ? 'pr-10 border-green-500' : ''}
+              />
+              {buscandoContato && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                </div>
+              )}
+              {contatoEncontrado && !buscandoContato && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <User className="h-4 w-4 text-green-500" />
+                </div>
+              )}
+            </div>
+            {contatoEncontrado && (
+              <div className="flex items-center gap-2 mt-1">
+                <Badge variant="secondary" className="text-xs">
+                  <User className="h-3 w-3 mr-1" />
+                  Contato existente: {contatoEncontrado.nome}
+                </Badge>
+                <span className="text-xs text-muted-foreground">
+                  (dados preenchidos automaticamente)
+                </span>
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">
