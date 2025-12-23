@@ -3,7 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Button } from '@/components/ui/button';
 import { LogOut } from 'lucide-react';
-import { OrcamentoSidebar } from '@/components/orcamento/OrcamentoSidebar';
+import { OrcamentoSidebar, type View } from '@/components/orcamento/OrcamentoSidebar';
 import { DashboardContent } from '@/components/orcamento/DashboardContent';
 import { NovoOrcamento } from '@/components/orcamento/NovoOrcamento';
 import { ListaOrcamentos } from '@/components/orcamento/ListaOrcamentos';
@@ -12,8 +12,11 @@ import { GestaoMateriais } from '@/components/orcamento/GestaoMateriais';
 import { AjustesSistema } from '@/components/orcamento/AjustesSistema';
 import { SolicitacoesVisita } from '@/components/orcamento/SolicitacoesVisita';
 import { DashboardFinanceiro } from '@/components/financeiro/DashboardFinanceiro';
-
-type View = 'dashboard' | 'novoOrcamento' | 'listaOrcamentos' | 'visualizarOrcamento' | 'gestaoMateriais' | 'ajustesSistema' | 'solicitacoesVisita' | 'financeiro';
+import { ContasPagar } from '@/components/financeiro/ContasPagar';
+import { ContasReceber } from '@/components/financeiro/ContasReceber';
+import { Lancamentos } from '@/components/financeiro/Lancamentos';
+import { RelatoriosBI } from '@/components/financeiro/RelatoriosBI';
+import { CategoriasFormas } from '@/components/financeiro/CategoriasFormas';
 
 interface ClienteDataFromVisita {
   nome: string;
@@ -23,7 +26,17 @@ interface ClienteDataFromVisita {
 }
 
 // Views restritas apenas para admins
-const ADMIN_ONLY_VIEWS: View[] = ['gestaoMateriais', 'ajustesSistema', 'solicitacoesVisita', 'financeiro'];
+const ADMIN_ONLY_VIEWS: View[] = [
+  'gestaoMateriais', 
+  'ajustesSistema', 
+  'solicitacoesVisita',
+  'finDashboard',
+  'finContasPagar',
+  'finContasReceber',
+  'finLancamentos',
+  'finRelatorios',
+  'categoriasFormas'
+];
 
 export default function GerarOrcamento() {
   const { user, signOut } = useAuth();
@@ -85,7 +98,11 @@ export default function GerarOrcamento() {
       case 'gestaoMateriais': return 'Gestão de Materiais';
       case 'ajustesSistema': return 'Ajustes do Sistema';
       case 'solicitacoesVisita': return 'Solicitações de Visita';
-      case 'financeiro': return '';
+      case 'finContasPagar': return 'Contas a Pagar';
+      case 'finContasReceber': return 'Contas a Receber';
+      case 'finLancamentos': return 'Lançamentos';
+      case 'finRelatorios': return 'Relatórios';
+      case 'categoriasFormas': return 'Categorias e Formas de Pagamento';
       default: return '';
     }
   };
@@ -98,7 +115,7 @@ export default function GerarOrcamento() {
         {/* Top bar */}
         <header className="h-16 border-b bg-card/50 backdrop-blur-sm flex items-center justify-between px-6 sticky top-0 z-10">
           <div>
-            {view !== 'dashboard' && (
+            {view !== 'dashboard' && view !== 'finDashboard' && (
               <h2 className="text-lg font-semibold text-foreground">{getPageTitle()}</h2>
             )}
           </div>
@@ -160,9 +177,15 @@ export default function GerarOrcamento() {
               />
             )}
 
-            {view === 'financeiro' && (
-              <DashboardFinanceiro />
-            )}
+            {/* Seção Financeiro */}
+            {view === 'finDashboard' && <DashboardFinanceiro />}
+            {view === 'finContasPagar' && <ContasPagar />}
+            {view === 'finContasReceber' && <ContasReceber />}
+            {view === 'finLancamentos' && <Lancamentos />}
+            {view === 'finRelatorios' && <RelatoriosBI />}
+
+            {/* Administração */}
+            {view === 'categoriasFormas' && <CategoriasFormas />}
           </div>
         </main>
       </div>
