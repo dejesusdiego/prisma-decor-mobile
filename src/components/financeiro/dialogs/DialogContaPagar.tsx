@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
 import {
   Select,
   SelectContent,
@@ -21,6 +22,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
+import { RefreshCw, Calendar, Repeat } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface DialogContaPagarProps {
   open: boolean;
@@ -28,9 +31,21 @@ interface DialogContaPagarProps {
   conta?: any;
 }
 
+const FREQUENCIAS = [
+  { value: 'semanal', label: 'Semanal', icon: '7d', description: 'A cada 7 dias' },
+  { value: 'quinzenal', label: 'Quinzenal', icon: '15d', description: 'A cada 15 dias' },
+  { value: 'mensal', label: 'Mensal', icon: '1m', description: 'Todo mês' },
+  { value: 'bimestral', label: 'Bimestral', icon: '2m', description: 'A cada 2 meses' },
+  { value: 'trimestral', label: 'Trimestral', icon: '3m', description: 'A cada 3 meses' },
+  { value: 'semestral', label: 'Semestral', icon: '6m', description: 'A cada 6 meses' },
+  { value: 'anual', label: 'Anual', icon: '1a', description: 'Todo ano' },
+];
+
 export function DialogContaPagar({ open, onOpenChange, conta }: DialogContaPagarProps) {
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const [recorrente, setRecorrente] = useState(false);
+  const [frequencia, setFrequencia] = useState('mensal');
   
   const { register, handleSubmit, reset, setValue, watch } = useForm({
     defaultValues: {
@@ -67,6 +82,8 @@ export function DialogContaPagar({ open, onOpenChange, conta }: DialogContaPagar
         categoria_id: conta.categoria_id || '',
         observacoes: conta.observacoes || ''
       });
+      setRecorrente(conta.recorrente || false);
+      setFrequencia(conta.frequencia_recorrencia || 'mensal');
     } else {
       reset({
         descricao: '',
@@ -76,8 +93,10 @@ export function DialogContaPagar({ open, onOpenChange, conta }: DialogContaPagar
         categoria_id: '',
         observacoes: ''
       });
+      setRecorrente(false);
+      setFrequencia('mensal');
     }
-  }, [conta, reset]);
+  }, [conta, reset, open]);
 
   const mutation = useMutation({
     mutationFn: async (data: any) => {
@@ -88,6 +107,8 @@ export function DialogContaPagar({ open, onOpenChange, conta }: DialogContaPagar
         data_vencimento: data.data_vencimento,
         categoria_id: data.categoria_id || null,
         observacoes: data.observacoes || null,
+        recorrente,
+        frequencia_recorrencia: recorrente ? frequencia : null,
         created_by_user_id: user?.id
       };
 
@@ -120,7 +141,7 @@ export function DialogContaPagar({ open, onOpenChange, conta }: DialogContaPagar
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>{conta ? 'Editar Conta a Pagar' : 'Nova Conta a Pagar'}</DialogTitle>
         </DialogHeader>
@@ -180,9 +201,72 @@ export function DialogContaPagar({ open, onOpenChange, conta }: DialogContaPagar
             </Select>
           </div>
 
+          {/* Seção de Recorrência */}
+          <div className="border rounded-lg p-4 space-y-4 bg-muted/30">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Repeat className="h-4 w-4 text-muted-foreground" />
+                <Label htmlFor="recorrente" className="font-medium cursor-pointer">
+                  Conta Recorrente
+                </Label>
+              </div>
+              <Switch
+                id="recorrente"
+                checked={recorrente}
+                onCheckedChange={setRecorrente}
+              />
+            </div>
+            
+            {recorrente && (
+              <div className="space-y-3 pt-2">
+                <Label className="text-sm text-muted-foreground">Frequência de repetição</Label>
+                <div className="grid grid-cols-4 gap-2">
+                  {FREQUENCIAS.slice(0, 4).map((freq) => (
+                    <button
+                      key={freq.value}
+                      type="button"
+                      onClick={() => setFrequencia(freq.value)}
+                      className={cn(
+                        "flex flex-col items-center p-3 rounded-lg border-2 transition-all",
+                        frequencia === freq.value
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border hover:border-primary/50 hover:bg-muted"
+                      )}
+                    >
+                      <span className="text-xs font-bold">{freq.icon}</span>
+                      <span className="text-xs mt-1">{freq.label}</span>
+                    </button>
+                  ))}
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {FREQUENCIAS.slice(4).map((freq) => (
+                    <button
+                      key={freq.value}
+                      type="button"
+                      onClick={() => setFrequencia(freq.value)}
+                      className={cn(
+                        "flex flex-col items-center p-3 rounded-lg border-2 transition-all",
+                        frequencia === freq.value
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border hover:border-primary/50 hover:bg-muted"
+                      )}
+                    >
+                      <span className="text-xs font-bold">{freq.icon}</span>
+                      <span className="text-xs mt-1">{freq.label}</span>
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Calendar className="h-3 w-3" />
+                  Novas contas serão geradas automaticamente no dia 25 de cada mês
+                </p>
+              </div>
+            )}
+          </div>
+
           <div className="space-y-2">
             <Label>Observações</Label>
-            <Textarea {...register('observacoes')} rows={3} />
+            <Textarea {...register('observacoes')} rows={2} />
           </div>
 
           <div className="flex justify-end gap-2">
