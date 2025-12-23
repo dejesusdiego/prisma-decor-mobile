@@ -79,10 +79,10 @@ export function DialogRegistrarRecebimento({ open, onOpenChange, parcela }: Dial
       
       if (errorParcela) throw errorParcela;
 
-      // 2. Buscar conta a receber
+      // 2. Buscar conta a receber com dados do orçamento
       const { data: conta, error: errorConta } = await supabase
         .from('contas_receber')
-        .select('*, parcelas:parcelas_receber(*)')
+        .select('*, parcelas:parcelas_receber(*), orcamento:orcamentos(id, codigo, cliente_nome, total_geral)')
         .eq('id', parcela.conta_receber_id)
         .single();
       
@@ -125,7 +125,39 @@ export function DialogRegistrarRecebimento({ open, onOpenChange, parcela }: Dial
       
       if (errorLancamento) throw errorLancamento;
 
-      // 6. Upload de comprovante se houver arquivo
+      // 6. Criar comissão automaticamente se houver orçamento vinculado
+      if (conta.orcamento_id && conta.orcamento && user) {
+        // Buscar configuração de comissão padrão (5%)
+        const percentualComissao = 5;
+        const valorParcelaRecebida = Number(parcela.valor);
+        const valorComissao = (valorParcelaRecebida * percentualComissao) / 100;
+
+        // Verificar se já existe comissão para este orçamento/parcela
+        const { data: comissaoExistente } = await supabase
+          .from('comissoes')
+          .select('id')
+          .eq('orcamento_id', conta.orcamento_id)
+          .eq('observacoes', `Parcela ${parcela.numero_parcela}`)
+          .maybeSingle();
+
+        // Criar comissão apenas se não existir
+        if (!comissaoExistente) {
+          await supabase
+            .from('comissoes')
+            .insert({
+              orcamento_id: conta.orcamento_id,
+              vendedor_nome: 'Vendedor Padrão', // Pode ser configurado posteriormente
+              percentual: percentualComissao,
+              valor_base: valorParcelaRecebida,
+              valor_comissao: valorComissao,
+              status: 'pendente',
+              observacoes: `Parcela ${parcela.numero_parcela}`,
+              created_by_user_id: user.id
+            });
+        }
+      }
+
+      // 7. Upload de comprovante se houver arquivo
       if (arquivo && user) {
         const fileExt = arquivo.name.split('.').pop();
         const fileName = `${user.id}/${parcela.id}_${Date.now()}.${fileExt}`;
@@ -161,6 +193,7 @@ export function DialogRegistrarRecebimento({ open, onOpenChange, parcela }: Dial
       queryClient.invalidateQueries({ queryKey: ['contas-receber'] });
       queryClient.invalidateQueries({ queryKey: ['lancamentos'] });
       queryClient.invalidateQueries({ queryKey: ['orcamentos'] });
+      queryClient.invalidateQueries({ queryKey: ['comissoes'] });
       toast.success('Recebimento registrado com sucesso');
       onOpenChange(false);
     },

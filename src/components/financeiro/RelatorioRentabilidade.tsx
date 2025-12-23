@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
@@ -10,7 +10,8 @@ import {
   Eye,
   ChevronDown,
   ChevronUp,
-  BarChart3
+  BarChart3,
+  Users
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -66,6 +67,7 @@ interface RentabilidadeOrcamento {
   comissoes: number;
   lucroLiquido: number;
   margemLucro: number;
+  vendedores: string[];
 }
 
 interface NavigateProps {
@@ -75,6 +77,7 @@ interface NavigateProps {
 export function RelatorioRentabilidade({ onVisualizarOrcamento }: NavigateProps) {
   const [periodo, setPeriodo] = useState<Periodo>('6m');
   const [searchTerm, setSearchTerm] = useState('');
+  const [vendedorFilter, setVendedorFilter] = useState<string>('todos');
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
   const meses = periodo === '3m' ? 3 : periodo === '6m' ? 6 : periodo === '12m' ? 12 : 120;
@@ -150,6 +153,9 @@ export function RelatorioRentabilidade({ onVisualizarOrcamento }: NavigateProps)
     const valorPendente = contaReceber ? (Number(contaReceber.valor_total) - Number(contaReceber.valor_pago)) || 0 : receita;
     const totalComissoes = comissoesOrc.reduce((acc, c) => acc + Number(c.valor_comissao), 0);
     
+    // Vendedores vinculados a este orçamento
+    const vendedoresOrc = [...new Set(comissoesOrc.map(c => c.vendedor_nome))];
+    
     const lucroLiquido = receita - custoTotal - totalComissoes;
     const margemLucro = receita > 0 ? (lucroLiquido / receita) * 100 : 0;
 
@@ -168,15 +174,26 @@ export function RelatorioRentabilidade({ onVisualizarOrcamento }: NavigateProps)
       valorPendente,
       comissoes: totalComissoes,
       lucroLiquido,
-      margemLucro
+      margemLucro,
+      vendedores: vendedoresOrc
     };
   });
 
-  // Filtrar por busca
-  const rentabilidadeFiltrada = rentabilidade.filter(r => 
-    r.cliente_nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    r.codigo.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Lista de todos os vendedores
+  const todosVendedores = useMemo(() => {
+    const nomes = new Set(comissoes.map(c => c.vendedor_nome));
+    return Array.from(nomes).sort();
+  }, [comissoes]);
+
+  // Filtrar por busca e vendedor
+  const rentabilidadeFiltrada = rentabilidade.filter(r => {
+    const matchesSearch = r.cliente_nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      r.codigo.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesVendedor = vendedorFilter === 'todos' || r.vendedores.includes(vendedorFilter);
+    
+    return matchesSearch && matchesVendedor;
+  });
 
   // Totais
   const totais = rentabilidadeFiltrada.reduce((acc, r) => ({
@@ -226,17 +243,33 @@ export function RelatorioRentabilidade({ onVisualizarOrcamento }: NavigateProps)
           <h1 className="text-2xl font-bold text-foreground">Rentabilidade por Orçamento</h1>
           <p className="text-muted-foreground">Análise de lucro: Receita - Custos - Comissões</p>
         </div>
-        <Select value={periodo} onValueChange={(v) => setPeriodo(v as Periodo)}>
-          <SelectTrigger className="w-[160px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="3m">Últimos 3 meses</SelectItem>
-            <SelectItem value="6m">Últimos 6 meses</SelectItem>
-            <SelectItem value="12m">Últimos 12 meses</SelectItem>
-            <SelectItem value="all">Todos</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex gap-2">
+          {todosVendedores.length > 0 && (
+            <Select value={vendedorFilter} onValueChange={setVendedorFilter}>
+              <SelectTrigger className="w-[160px]">
+                <Users className="h-4 w-4 mr-2" />
+                <SelectValue placeholder="Vendedor" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos vendedores</SelectItem>
+                {todosVendedores.map(v => (
+                  <SelectItem key={v} value={v}>{v}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+          <Select value={periodo} onValueChange={(v) => setPeriodo(v as Periodo)}>
+            <SelectTrigger className="w-[160px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="3m">Últimos 3 meses</SelectItem>
+              <SelectItem value="6m">Últimos 6 meses</SelectItem>
+              <SelectItem value="12m">Últimos 12 meses</SelectItem>
+              <SelectItem value="all">Todos</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Cards de resumo */}
