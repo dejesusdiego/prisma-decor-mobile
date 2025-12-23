@@ -13,6 +13,9 @@ interface OrcamentoData {
   created_at: string;
   total_geral: number;
   validade_dias?: number;
+  desconto_tipo?: string | null;
+  desconto_valor?: number | null;
+  total_com_desconto?: number | null;
 }
 
 interface CortinaItemData {
@@ -306,28 +309,77 @@ export async function gerarPdfOrcamento(orcamentoId: string): Promise<void> {
     yPos = (doc as any).lastAutoTable.finalY + 15;
 
     // ============================================================
-    // 6. VALOR TOTAL (DESTAQUE)
+    // 6. VALOR TOTAL E DESCONTO (SE HOUVER)
     // ============================================================
     
-    // Box de destaque para valor total
-    const totalBoxWidth = 70;
-    const totalBoxX = 210 - cardX - totalBoxWidth;
+    const temDesconto = orcamento.desconto_tipo && orcamento.desconto_valor && orcamento.desconto_valor > 0;
     
-    doc.setFillColor(248, 248, 248);
-    doc.roundedRect(totalBoxX, yPos - 3, totalBoxWidth, 12, 2, 2, 'F');
-    
-    doc.setFontSize(13);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(34, 34, 34);
-    doc.text('VALOR TOTAL:', totalBoxX + 3, yPos + 4);
-    
-    doc.setFontSize(14);
-    doc.setTextColor(0, 102, 51); // Verde escuro para valor
-    doc.text(`R$ ${formatarValor(orcamento.total_geral)}`, totalBoxX + totalBoxWidth - 3, yPos + 4, { align: 'right' });
+    if (temDesconto) {
+      // Calcular valor do desconto
+      const valorDesconto = orcamento.desconto_tipo === 'percentual'
+        ? (orcamento.total_geral * orcamento.desconto_valor) / 100
+        : Math.min(orcamento.desconto_valor, orcamento.total_geral);
+      
+      const totalComDesconto = orcamento.total_com_desconto || (orcamento.total_geral - valorDesconto);
+      
+      // Box maior para mostrar subtotal, desconto e total
+      const totalBoxWidth = 90;
+      const totalBoxX = 210 - cardX - totalBoxWidth;
+      const totalBoxHeight = 30;
+      
+      doc.setFillColor(248, 248, 248);
+      doc.roundedRect(totalBoxX, yPos - 3, totalBoxWidth, totalBoxHeight, 2, 2, 'F');
+      
+      // Subtotal (riscado)
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(120, 120, 120);
+      doc.text('Subtotal:', totalBoxX + 3, yPos + 3);
+      doc.text(`R$ ${formatarValor(orcamento.total_geral)}`, totalBoxX + totalBoxWidth - 3, yPos + 3, { align: 'right' });
+      
+      // Linha de risco no subtotal
+      const subtotalTextWidth = doc.getTextWidth(`R$ ${formatarValor(orcamento.total_geral)}`);
+      doc.setDrawColor(120, 120, 120);
+      doc.setLineWidth(0.3);
+      doc.line(totalBoxX + totalBoxWidth - 3 - subtotalTextWidth, yPos + 2, totalBoxX + totalBoxWidth - 3, yPos + 2);
+      
+      // Desconto
+      doc.setTextColor(0, 153, 51); // Verde
+      doc.text(`Desconto (${orcamento.desconto_tipo === 'percentual' ? orcamento.desconto_valor + '%' : 'fixo'}):`, totalBoxX + 3, yPos + 11);
+      doc.text(`- R$ ${formatarValor(valorDesconto)}`, totalBoxX + totalBoxWidth - 3, yPos + 11, { align: 'right' });
+      
+      // Total final
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(34, 34, 34);
+      doc.text('TOTAL FINAL:', totalBoxX + 3, yPos + 21);
+      
+      doc.setFontSize(13);
+      doc.setTextColor(0, 102, 51); // Verde escuro
+      doc.text(`R$ ${formatarValor(totalComDesconto)}`, totalBoxX + totalBoxWidth - 3, yPos + 21, { align: 'right' });
+      
+      yPos += totalBoxHeight + 10;
+    } else {
+      // Box simples sem desconto
+      const totalBoxWidth = 70;
+      const totalBoxX = 210 - cardX - totalBoxWidth;
+      
+      doc.setFillColor(248, 248, 248);
+      doc.roundedRect(totalBoxX, yPos - 3, totalBoxWidth, 12, 2, 2, 'F');
+      
+      doc.setFontSize(13);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(34, 34, 34);
+      doc.text('VALOR TOTAL:', totalBoxX + 3, yPos + 4);
+      
+      doc.setFontSize(14);
+      doc.setTextColor(0, 102, 51); // Verde escuro para valor
+      doc.text(`R$ ${formatarValor(orcamento.total_geral)}`, totalBoxX + totalBoxWidth - 3, yPos + 4, { align: 'right' });
+      
+      yPos += 20;
+    }
     
     doc.setTextColor(0, 0, 0); // Reset cor
-    
-    yPos += 20;
     
     // ============================================================
     // 7. FORMAS DE PAGAMENTO (MAIS PROFISSIONAL)

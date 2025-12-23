@@ -497,6 +497,53 @@ export type Database = {
         }
         Relationships: []
       }
+      historico_descontos: {
+        Row: {
+          created_at: string
+          desconto_tipo_anterior: string | null
+          desconto_tipo_novo: string | null
+          desconto_valor_anterior: number | null
+          desconto_valor_novo: number | null
+          id: string
+          motivo: string | null
+          orcamento_id: string
+          usuario_id: string
+          usuario_nome: string
+        }
+        Insert: {
+          created_at?: string
+          desconto_tipo_anterior?: string | null
+          desconto_tipo_novo?: string | null
+          desconto_valor_anterior?: number | null
+          desconto_valor_novo?: number | null
+          id?: string
+          motivo?: string | null
+          orcamento_id: string
+          usuario_id: string
+          usuario_nome: string
+        }
+        Update: {
+          created_at?: string
+          desconto_tipo_anterior?: string | null
+          desconto_tipo_novo?: string | null
+          desconto_valor_anterior?: number | null
+          desconto_valor_novo?: number | null
+          id?: string
+          motivo?: string | null
+          orcamento_id?: string
+          usuario_id?: string
+          usuario_nome?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "historico_descontos_orcamento_id_fkey"
+            columns: ["orcamento_id"]
+            isOneToOne: false
+            referencedRelation: "orcamentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lancamentos_financeiros: {
         Row: {
           categoria_id: string | null
