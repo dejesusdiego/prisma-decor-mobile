@@ -20,7 +20,8 @@ import {
   TrendingUp,
   DollarSign,
   Wallet,
-  Wrench
+  Wrench,
+  ClipboardList
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -56,11 +57,14 @@ interface OrcamentoSidebarProps {
   onNavigate: (view: View) => void;
 }
 
-// Itens da seção PRINCIPAL (visíveis para todos)
+// Itens da seção PRINCIPAL - Dashboards e visões gerais
 const principalNavItems = [
   { id: 'dashboardUnificado' as View, label: 'Visão Geral', icon: LayoutDashboard, adminOnly: true },
-  { id: 'dashboard' as View, label: 'Dashboard Orçamentos', icon: Home },
-  { id: 'novoOrcamento' as View, label: 'Novo Orçamento', icon: Plus },
+  { id: 'dashboard' as View, label: 'Dashboard', icon: Home },
+];
+
+// Itens da seção ORÇAMENTOS
+const orcamentosNavItems = [
   { id: 'listaOrcamentos' as View, label: 'Meus Orçamentos', icon: FileText },
   { id: 'solicitacoesVisita' as View, label: 'Solicitações de Visita', icon: CalendarCheck, adminOnly: true },
 ];
@@ -103,7 +107,7 @@ const getInitialSections = (): Record<string, boolean> => {
   } catch (e) {
     console.error('Error reading sidebar sections from localStorage:', e);
   }
-  return { principal: true, financeiro: true, administracao: false };
+  return { principal: true, orcamentos: true, financeiro: true, administracao: false };
 };
 
 const getInitialCollapsed = (): boolean => {
@@ -128,6 +132,7 @@ export function OrcamentoSidebar({ currentView, onNavigate }: OrcamentoSidebarPr
 
   const sections: SectionConfig[] = [
     { id: 'principal', title: 'Principal', icon: Home, items: principalNavItems },
+    { id: 'orcamentos', title: 'Orçamentos', icon: ClipboardList, items: orcamentosNavItems },
     { id: 'financeiro', title: 'Financeiro', icon: Wallet, items: financeiroNavItems, adminOnly: true },
     { id: 'administracao', title: 'Administração', icon: Wrench, items: administracaoNavItems, adminOnly: true },
   ];
@@ -375,6 +380,37 @@ export function OrcamentoSidebar({ currentView, onNavigate }: OrcamentoSidebarPr
     );
   };
 
+  // Botão de novo orçamento (fixo, destacado)
+  const renderNovoOrcamentoButton = () => {
+    if (collapsed) {
+      return (
+        <Tooltip delayDuration={0}>
+          <TooltipTrigger asChild>
+            <button
+              onClick={() => onNavigate('novoOrcamento')}
+              className="w-full flex items-center justify-center p-2.5 rounded-lg bg-foreground text-background hover:bg-foreground/90 transition-all shadow-md"
+            >
+              <Plus className="h-5 w-5" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="right" className="font-medium bg-popover border z-50">
+            Novo Orçamento
+          </TooltipContent>
+        </Tooltip>
+      );
+    }
+
+    return (
+      <button
+        onClick={() => onNavigate('novoOrcamento')}
+        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-foreground text-background hover:bg-foreground/90 transition-all font-medium shadow-md"
+      >
+        <Plus className="h-4 w-4" />
+        <span>Novo Orçamento</span>
+      </button>
+    );
+  };
+
   return (
     <aside
       className={cn(
@@ -406,10 +442,15 @@ export function OrcamentoSidebar({ currentView, onNavigate }: OrcamentoSidebarPr
         </Button>
       </div>
 
+      {/* Botão Novo Orçamento - Fixo no topo */}
+      <div className="p-3 shrink-0">
+        {renderNovoOrcamentoButton()}
+      </div>
+
       {/* Navigation - Scroll invisível */}
       <nav 
         className={cn(
-          "flex-1 p-3 space-y-2 overflow-y-auto",
+          "flex-1 px-3 pb-3 space-y-2 overflow-y-auto",
           "[&::-webkit-scrollbar]:w-0 [&::-webkit-scrollbar]:h-0",
           "[-ms-overflow-style:none] [scrollbar-width:none]"
         )}
