@@ -11,6 +11,7 @@ import OurProducts from "./pages/OurProducts";
 import Auth from "./pages/Auth";
 import GerarOrcamento from "./pages/GerarOrcamento";
 import GerenciarUsuarios from "./pages/GerenciarUsuarios";
+import Documentacao from "./pages/Documentacao";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -42,6 +43,7 @@ const App = () => (
                 </AdminRoute>
               } 
             />
+            <Route path="/documentacao" element={<Documentacao />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
