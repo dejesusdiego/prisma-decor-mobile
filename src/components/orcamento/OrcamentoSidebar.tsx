@@ -10,7 +10,13 @@ import {
   Users,
   CalendarCheck,
   Bell,
-  Wallet
+  LayoutDashboard,
+  ArrowUpCircle,
+  ArrowDownCircle,
+  Receipt,
+  BarChart3,
+  CreditCard,
+  Tags
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -22,29 +28,47 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useUserRole } from '@/hooks/useUserRole';
 
-type View = 'dashboard' | 'novoOrcamento' | 'listaOrcamentos' | 'visualizarOrcamento' | 'gestaoMateriais' | 'ajustesSistema' | 'solicitacoesVisita' | 'financeiro';
+export type View = 
+  | 'dashboard' 
+  | 'novoOrcamento' 
+  | 'listaOrcamentos' 
+  | 'visualizarOrcamento' 
+  | 'gestaoMateriais' 
+  | 'ajustesSistema' 
+  | 'solicitacoesVisita'
+  | 'finDashboard'
+  | 'finContasPagar'
+  | 'finContasReceber'
+  | 'finLancamentos'
+  | 'finRelatorios'
+  | 'categoriasFormas';
 
 interface OrcamentoSidebarProps {
   currentView: View;
   onNavigate: (view: View) => void;
 }
 
-// Itens visíveis para todos os usuários
-const baseNavItems = [
+// Itens da seção PRINCIPAL (visíveis para todos)
+const principalNavItems = [
   { id: 'dashboard' as View, label: 'Dashboard', icon: Home },
   { id: 'novoOrcamento' as View, label: 'Novo Orçamento', icon: Plus },
   { id: 'listaOrcamentos' as View, label: 'Meus Orçamentos', icon: FileText },
+  { id: 'solicitacoesVisita' as View, label: 'Solicitações de Visita', icon: CalendarCheck, adminOnly: true },
 ];
 
-// Itens visíveis apenas para admins (seção principal)
-const adminMainNavItems = [
-  { id: 'solicitacoesVisita' as View, label: 'Solicitações de Visita', icon: CalendarCheck },
-  { id: 'financeiro' as View, label: 'Financeiro', icon: Wallet },
+// Itens da seção FINANCEIRO (admin only)
+const financeiroNavItems = [
+  { id: 'finDashboard' as View, label: 'Visão Geral', icon: LayoutDashboard },
+  { id: 'finContasPagar' as View, label: 'Contas a Pagar', icon: ArrowUpCircle },
+  { id: 'finContasReceber' as View, label: 'Contas a Receber', icon: ArrowDownCircle },
+  { id: 'finLancamentos' as View, label: 'Lançamentos', icon: Receipt },
+  { id: 'finRelatorios' as View, label: 'Relatórios', icon: BarChart3 },
 ];
 
-// Itens da seção de administração (apenas admins)
-const adminSectionItems = [
+// Itens da seção ADMINISTRAÇÃO (admin only)
+const administracaoNavItems = [
   { id: 'gestaoMateriais' as View, label: 'Gestão de Materiais', icon: Database },
+  { id: 'categoriasFormas' as View, label: 'Categorias e Pagamentos', icon: Tags },
   { id: 'ajustesSistema' as View, label: 'Ajustes do Sistema', icon: Settings },
 ];
 
@@ -54,11 +78,6 @@ export function OrcamentoSidebar({ currentView, onNavigate }: OrcamentoSidebarPr
   const [collapsed, setCollapsed] = useState(false);
   const [isDark, setIsDark] = useState(false);
   const [visitasNaoVistas, setVisitasNaoVistas] = useState(0);
-
-  // Construir lista de itens de navegação baseado no role
-  const mainNavItems = isAdmin 
-    ? [...baseNavItems, ...adminMainNavItems]
-    : baseNavItems;
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme');
@@ -70,6 +89,8 @@ export function OrcamentoSidebar({ currentView, onNavigate }: OrcamentoSidebarPr
 
   // Buscar contagem de visitas não visualizadas e configurar realtime
   useEffect(() => {
+    if (!isAdmin) return;
+    
     const fetchVisitasNaoVistas = async () => {
       try {
         const { count, error } = await supabase
@@ -99,11 +120,8 @@ export function OrcamentoSidebar({ currentView, onNavigate }: OrcamentoSidebarPr
         },
         (payload) => {
           console.log('Nova solicitação de visita recebida:', payload);
-          
-          // Incrementar contador
           setVisitasNaoVistas(prev => prev + 1);
           
-          // Mostrar notificação toast
           const newVisit = payload.new as { nome: string; cidade: string; data_agendada: string };
           toast.info(
             `Nova solicitação de visita!`,
@@ -127,7 +145,6 @@ export function OrcamentoSidebar({ currentView, onNavigate }: OrcamentoSidebarPr
           table: 'solicitacoes_visita'
         },
         (payload) => {
-          // Quando uma visita é marcada como visualizada, atualizar contador
           const oldVisit = payload.old as { visualizada: boolean };
           const newVisit = payload.new as { visualizada: boolean };
           
@@ -141,7 +158,7 @@ export function OrcamentoSidebar({ currentView, onNavigate }: OrcamentoSidebarPr
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [onNavigate]);
+  }, [onNavigate, isAdmin]);
 
   const toggleTheme = () => {
     if (isDark) {
@@ -154,7 +171,7 @@ export function OrcamentoSidebar({ currentView, onNavigate }: OrcamentoSidebarPr
     setIsDark(!isDark);
   };
 
-  const NavItem = ({ item, isActive }: { item: typeof mainNavItems[0], isActive: boolean }) => {
+  const NavItem = ({ item, isActive }: { item: { id: View; label: string; icon: React.ElementType; adminOnly?: boolean }, isActive: boolean }) => {
     const showBadge = item.id === 'solicitacoesVisita' && visitasNaoVistas > 0;
     
     const content = (
@@ -178,7 +195,7 @@ export function OrcamentoSidebar({ currentView, onNavigate }: OrcamentoSidebarPr
         </div>
         {!collapsed && (
           <>
-            <span className={cn("text-sm font-medium truncate flex-1", isActive && "text-primary-foreground")}>
+            <span className={cn("text-sm font-medium truncate flex-1 text-left", isActive && "text-primary-foreground")}>
               {item.label}
             </span>
             {showBadge && (
@@ -213,6 +230,26 @@ export function OrcamentoSidebar({ currentView, onNavigate }: OrcamentoSidebarPr
     return content;
   };
 
+  const renderSection = (title: string, items: typeof principalNavItems) => {
+    const filteredItems = items.filter(item => !item.adminOnly || isAdmin);
+    
+    if (filteredItems.length === 0) return null;
+    
+    return (
+      <div className="space-y-1">
+        {!collapsed && (
+          <span className="text-xs font-semibold text-muted-foreground px-3 py-2 block uppercase tracking-wider">
+            {title}
+          </span>
+        )}
+        {collapsed && title !== 'Principal' && <div className="border-t my-2" />}
+        {filteredItems.map((item) => (
+          <NavItem key={item.id} item={item} isActive={currentView === item.id} />
+        ))}
+      </div>
+    );
+  };
+
   return (
     <aside
       className={cn(
@@ -245,33 +282,15 @@ export function OrcamentoSidebar({ currentView, onNavigate }: OrcamentoSidebarPr
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-        {/* Main Section */}
-        <div className="space-y-1">
-          {!collapsed && (
-            <span className="text-xs font-semibold text-muted-foreground px-3 py-2 block uppercase tracking-wider">
-              Principal
-            </span>
-          )}
-          {mainNavItems.map((item) => (
-            <NavItem key={item.id} item={item} isActive={currentView === item.id} />
-          ))}
-        </div>
+      <nav className="flex-1 p-3 space-y-4 overflow-y-auto">
+        {/* Seção Principal */}
+        {renderSection('Principal', principalNavItems)}
 
-        {/* Admin Section - Apenas para admins */}
-        {isAdmin && (
-          <div className="pt-4 space-y-1">
-            {!collapsed && (
-              <span className="text-xs font-semibold text-muted-foreground px-3 py-2 block uppercase tracking-wider">
-                Administração
-              </span>
-            )}
-            {collapsed && <div className="border-t my-2" />}
-            {adminSectionItems.map((item) => (
-              <NavItem key={item.id} item={item} isActive={currentView === item.id} />
-            ))}
-          </div>
-        )}
+        {/* Seção Financeiro - Apenas para admins */}
+        {isAdmin && renderSection('Financeiro', financeiroNavItems)}
+
+        {/* Seção Administração - Apenas para admins */}
+        {isAdmin && renderSection('Administração', administracaoNavItems)}
       </nav>
 
       {/* Footer */}

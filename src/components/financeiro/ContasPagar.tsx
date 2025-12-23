@@ -1,0 +1,304 @@
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { 
+  Plus, 
+  Search, 
+  Filter,
+  Edit,
+  Trash2,
+  CheckCircle,
+  AlertCircle,
+  Clock
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { toast } from 'sonner';
+import { DialogContaPagar } from './dialogs/DialogContaPagar';
+
+type StatusFilter = 'todos' | 'pendente' | 'pago' | 'atrasado';
+
+const formatCurrency = (value: number) => {
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+};
+
+const getStatusBadge = (status: string, dataVencimento: string) => {
+  const hoje = new Date();
+  const vencimento = new Date(dataVencimento);
+  const isAtrasado = status === 'pendente' && vencimento < hoje;
+  
+  if (status === 'pago') {
+    return <Badge className="bg-green-500/10 text-green-600 hover:bg-green-500/20"><CheckCircle className="h-3 w-3 mr-1" />Pago</Badge>;
+  }
+  if (isAtrasado || status === 'atrasado') {
+    return <Badge variant="destructive"><AlertCircle className="h-3 w-3 mr-1" />Atrasado</Badge>;
+  }
+  return <Badge variant="secondary"><Clock className="h-3 w-3 mr-1" />Pendente</Badge>;
+};
+
+export function ContasPagar() {
+  const queryClient = useQueryClient();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('todos');
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [contaEditando, setContaEditando] = useState<any>(null);
+
+  const { data: contas = [], isLoading } = useQuery({
+    queryKey: ['contas-pagar'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('contas_pagar')
+        .select(`
+          *,
+          categoria:categorias_financeiras(nome, cor),
+          forma_pagamento:formas_pagamento(nome)
+        `)
+        .order('data_vencimento', { ascending: true });
+      
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('contas_pagar').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contas-pagar'] });
+      toast.success('Conta excluída com sucesso');
+    },
+    onError: () => {
+      toast.error('Erro ao excluir conta');
+    }
+  });
+
+  const baixarMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('contas_pagar')
+        .update({ status: 'pago', data_pagamento: new Date().toISOString().split('T')[0] })
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contas-pagar'] });
+      toast.success('Conta baixada com sucesso');
+    },
+    onError: () => {
+      toast.error('Erro ao baixar conta');
+    }
+  });
+
+  const filteredContas = contas.filter(conta => {
+    const matchesSearch = conta.descricao.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      conta.fornecedor?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    if (statusFilter === 'todos') return matchesSearch;
+    if (statusFilter === 'atrasado') {
+      const hoje = new Date();
+      const vencimento = new Date(conta.data_vencimento);
+      return matchesSearch && conta.status === 'pendente' && vencimento < hoje;
+    }
+    return matchesSearch && conta.status === statusFilter;
+  });
+
+  const totais = {
+    pendente: filteredContas.filter(c => c.status === 'pendente').reduce((acc, c) => acc + Number(c.valor), 0),
+    pago: filteredContas.filter(c => c.status === 'pago').reduce((acc, c) => acc + Number(c.valor), 0),
+    atrasado: filteredContas.filter(c => {
+      const hoje = new Date();
+      const vencimento = new Date(c.data_vencimento);
+      return c.status === 'pendente' && vencimento < hoje;
+    }).reduce((acc, c) => acc + Number(c.valor), 0),
+  };
+
+  const handleEdit = (conta: any) => {
+    setContaEditando(conta);
+    setDialogOpen(true);
+  };
+
+  const handleNew = () => {
+    setContaEditando(null);
+    setDialogOpen(true);
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Contas a Pagar</h1>
+          <p className="text-muted-foreground">Gerencie suas despesas e pagamentos</p>
+        </div>
+        <Button onClick={handleNew}>
+          <Plus className="h-4 w-4 mr-2" />
+          Nova Conta
+        </Button>
+      </div>
+
+      {/* Resumo */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Pendente</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold text-yellow-600">{formatCurrency(totais.pendente)}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Atrasado</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold text-destructive">{formatCurrency(totais.atrasado)}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Pago</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold text-green-600">{formatCurrency(totais.pago)}</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Filtros */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por descrição ou fornecedor..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
+          <SelectTrigger className="w-full sm:w-[180px]">
+            <Filter className="h-4 w-4 mr-2" />
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todos">Todos</SelectItem>
+            <SelectItem value="pendente">Pendente</SelectItem>
+            <SelectItem value="atrasado">Atrasado</SelectItem>
+            <SelectItem value="pago">Pago</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Tabela */}
+      <Card>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Descrição</TableHead>
+                <TableHead>Fornecedor</TableHead>
+                <TableHead>Categoria</TableHead>
+                <TableHead>Vencimento</TableHead>
+                <TableHead>Valor</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    Carregando...
+                  </TableCell>
+                </TableRow>
+              ) : filteredContas.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    Nenhuma conta encontrada
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredContas.map((conta) => (
+                  <TableRow key={conta.id}>
+                    <TableCell className="font-medium">{conta.descricao}</TableCell>
+                    <TableCell>{conta.fornecedor || '-'}</TableCell>
+                    <TableCell>
+                      {conta.categoria ? (
+                        <Badge 
+                          variant="outline" 
+                          style={{ borderColor: conta.categoria.cor, color: conta.categoria.cor }}
+                        >
+                          {conta.categoria.nome}
+                        </Badge>
+                      ) : '-'}
+                    </TableCell>
+                    <TableCell>
+                      {format(new Date(conta.data_vencimento), 'dd/MM/yyyy', { locale: ptBR })}
+                    </TableCell>
+                    <TableCell className="font-medium">{formatCurrency(Number(conta.valor))}</TableCell>
+                    <TableCell>{getStatusBadge(conta.status, conta.data_vencimento)}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-1">
+                        {conta.status === 'pendente' && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => baixarMutation.mutate(conta.id)}
+                            title="Baixar"
+                          >
+                            <CheckCircle className="h-4 w-4 text-green-600" />
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleEdit(conta)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => deleteMutation.mutate(conta.id)}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      <DialogContaPagar
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        conta={contaEditando}
+      />
+    </div>
+  );
+}
