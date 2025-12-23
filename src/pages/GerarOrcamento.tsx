@@ -21,6 +21,11 @@ import { RelatoriosBI } from '@/components/financeiro/RelatoriosBI';
 import { CategoriasFormas } from '@/components/financeiro/CategoriasFormas';
 import { RelatorioRentabilidade } from '@/components/financeiro/RelatorioRentabilidade';
 import { Comissoes } from '@/components/financeiro/Comissoes';
+import { PainelCRM } from '@/components/crm/PainelCRM';
+import { ListaContatos } from '@/components/crm/ListaContatos';
+import { DetalheContato } from '@/components/crm/DetalheContato';
+import { KanbanOportunidades } from '@/components/crm/KanbanOportunidades';
+import { ListaAtividades } from '@/components/crm/ListaAtividades';
 
 interface ClienteDataFromVisita {
   nome: string;
@@ -52,6 +57,7 @@ export default function GerarOrcamento() {
   const [view, setView] = useState<View>('dashboard');
   const [orcamentoEditandoId, setOrcamentoEditandoId] = useState<string | null>(null);
   const [clienteDataFromVisita, setClienteDataFromVisita] = useState<ClienteDataFromVisita | null>(null);
+  const [contatoSelecionadoId, setContatoSelecionadoId] = useState<string | null>(null);
 
   // Redirecionar para dashboard se usuário não-admin tentar acessar view restrita
   useEffect(() => {
@@ -80,7 +86,18 @@ export default function GerarOrcamento() {
   const handleVoltarDashboard = () => {
     setOrcamentoEditandoId(null);
     setClienteDataFromVisita(null);
+    setContatoSelecionadoId(null);
     setView('dashboard');
+  };
+
+  const handleVerContato = (contatoId: string) => {
+    setContatoSelecionadoId(contatoId);
+    setView('crmDetalheContato');
+  };
+
+  const handleVoltarContatos = () => {
+    setContatoSelecionadoId(null);
+    setView('crmContatos');
   };
 
   const handleNavigate = (newView: View) => {
@@ -115,6 +132,11 @@ export default function GerarOrcamento() {
       case 'finRentabilidade': return 'Rentabilidade por Orçamento';
       case 'finComissoes': return 'Comissões';
       case 'categoriasFormas': return 'Categorias e Formas de Pagamento';
+      case 'crmPainel': return 'Painel CRM';
+      case 'crmContatos': return 'Contatos';
+      case 'crmDetalheContato': return '';
+      case 'crmOportunidades': return 'Oportunidades';
+      case 'crmAtividades': return 'Atividades';
       default: return '';
     }
   };
@@ -212,6 +234,21 @@ export default function GerarOrcamento() {
 
             {/* Administração */}
             {view === 'categoriasFormas' && <CategoriasFormas />}
+
+            {/* CRM */}
+            {view === 'crmPainel' && <PainelCRM />}
+            {view === 'crmContatos' && (
+              <ListaContatos onVerContato={handleVerContato} />
+            )}
+            {view === 'crmDetalheContato' && contatoSelecionadoId && (
+              <DetalheContato 
+                contatoId={contatoSelecionadoId} 
+                onVoltar={handleVoltarContatos}
+                onVisualizarOrcamento={handleVisualizarOrcamento}
+              />
+            )}
+            {view === 'crmOportunidades' && <KanbanOportunidades />}
+            {view === 'crmAtividades' && <ListaAtividades />}
           </div>
         </main>
       </div>
