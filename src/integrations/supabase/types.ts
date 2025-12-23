@@ -655,6 +655,8 @@ export type Database = {
           created_at: string
           created_by_user_id: string
           custo_total: number | null
+          desconto_tipo: string | null
+          desconto_valor: number | null
           endereco: string
           id: string
           margem_percent: number
@@ -665,6 +667,7 @@ export type Database = {
           subtotal_instalacao: number | null
           subtotal_mao_obra_costura: number | null
           subtotal_materiais: number | null
+          total_com_desconto: number | null
           total_geral: number | null
           updated_at: string
           validade_dias: number | null
@@ -677,6 +680,8 @@ export type Database = {
           created_at?: string
           created_by_user_id: string
           custo_total?: number | null
+          desconto_tipo?: string | null
+          desconto_valor?: number | null
           endereco?: string
           id?: string
           margem_percent: number
@@ -687,6 +692,7 @@ export type Database = {
           subtotal_instalacao?: number | null
           subtotal_mao_obra_costura?: number | null
           subtotal_materiais?: number | null
+          total_com_desconto?: number | null
           total_geral?: number | null
           updated_at?: string
           validade_dias?: number | null
@@ -699,6 +705,8 @@ export type Database = {
           created_at?: string
           created_by_user_id?: string
           custo_total?: number | null
+          desconto_tipo?: string | null
+          desconto_valor?: number | null
           endereco?: string
           id?: string
           margem_percent?: number
@@ -709,6 +717,7 @@ export type Database = {
           subtotal_instalacao?: number | null
           subtotal_mao_obra_costura?: number | null
           subtotal_materiais?: number | null
+          total_com_desconto?: number | null
           total_geral?: number | null
           updated_at?: string
           validade_dias?: number | null
