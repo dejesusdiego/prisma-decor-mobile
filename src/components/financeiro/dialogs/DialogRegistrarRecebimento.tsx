@@ -82,7 +82,7 @@ export function DialogRegistrarRecebimento({ open, onOpenChange, parcela }: Dial
       // 2. Buscar conta a receber com dados do orçamento
       const { data: conta, error: errorConta } = await supabase
         .from('contas_receber')
-        .select('*, parcelas:parcelas_receber(*), orcamento:orcamentos(id, codigo, cliente_nome, total_geral)')
+        .select('*, parcelas:parcelas_receber(*), orcamento:orcamentos(id, codigo, cliente_nome, total_geral, total_com_desconto)')
         .eq('id', parcela.conta_receber_id)
         .single();
       
@@ -93,7 +93,7 @@ export function DialogRegistrarRecebimento({ open, onOpenChange, parcela }: Dial
         .filter((p: any) => p.status === 'pago' || p.id === parcela.id)
         .reduce((acc: number, p: any) => acc + Number(p.valor), 0);
 
-      // 4. Atualizar conta a receber (trigger sincronizará o orçamento)
+      // 4. Atualizar conta a receber
       const todasPagas = conta.parcelas.every(
         (p: any) => p.status === 'pago' || p.id === parcela.id
       );
@@ -107,6 +107,39 @@ export function DialogRegistrarRecebimento({ open, onOpenChange, parcela }: Dial
         .eq('id', parcela.conta_receber_id);
       
       if (errorUpdateConta) throw errorUpdateConta;
+
+      // 5. SINCRONIZAR STATUS DO ORÇAMENTO baseado no percentual pago
+      if (conta.orcamento_id) {
+        const valorTotalOrcamento = Number(conta.orcamento?.total_com_desconto ?? conta.orcamento?.total_geral ?? conta.valor_total) || 0;
+        const percentualPago = valorTotalOrcamento > 0 ? (novoValorPago / valorTotalOrcamento) * 100 : 0;
+
+        let novoStatusOrcamento: string | null = null;
+        
+        if (percentualPago >= 100) {
+          novoStatusOrcamento = 'pago';
+        } else if (percentualPago >= 60) {
+          novoStatusOrcamento = 'pago_60';
+        } else if (percentualPago >= 50) {
+          novoStatusOrcamento = 'pago_parcial';
+        } else if (percentualPago >= 40) {
+          novoStatusOrcamento = 'pago_40';
+        }
+
+        if (novoStatusOrcamento) {
+          // Não sobrescrever se já está cancelado ou com status mais avançado
+          const { error: errorSyncStatus } = await supabase
+            .from('orcamentos')
+            .update({ status: novoStatusOrcamento })
+            .eq('id', conta.orcamento_id)
+            .not('status', 'in', '("cancelado","pago")');
+          
+          if (errorSyncStatus) {
+            console.error('Erro ao sincronizar status do orçamento:', errorSyncStatus);
+          } else {
+            console.log(`Status do orçamento ${conta.orcamento_id} atualizado para: ${novoStatusOrcamento} (${percentualPago.toFixed(1)}%)`);
+          }
+        }
+      }
 
       // 5. Criar lançamento financeiro
       const { data: lancamento, error: errorLancamento } = await supabase
