@@ -7,13 +7,16 @@ import { Input } from '@/components/ui/input';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import type { Cortina, DadosOrcamento, Material } from '@/types/orcamento';
+import type { Cortina, DadosOrcamento, Material, ServicoConfeccao, ServicoInstalacao } from '@/types/orcamento';
 import { fetchMateriaisPaginados } from '@/lib/fetchMateriaisPaginados';
 import { OPCOES_MARGEM } from '@/types/orcamento';
 import { calcularResumoOrcamento, calcularConsumoDetalhado, calcularResumoConsolidado } from '@/lib/calculosOrcamento';
 import { FileDown, Home, Save, ChevronDown, Ruler, Package, Scissors, Wrench } from 'lucide-react';
 import { DialogValidade } from '../DialogValidade';
 import { gerarPdfOrcamento } from '@/lib/gerarPdfOrcamento';
+import { DescontoSection, calcularDesconto } from './DescontoSection';
+import { MateriaisAgrupados } from './MateriaisAgrupados';
+import { DebugCalculos } from './DebugCalculos';
 
 interface EtapaResumoProps {
   orcamentoId: string;
@@ -37,6 +40,10 @@ export function EtapaResumo({
   const [validadeDias, setValidadeDias] = useState<number>(7);
   const [materiais, setMateriais] = useState<Material[]>([]);
   const [expandedCards, setExpandedCards] = useState<Record<number, boolean>>({});
+  const [descontoTipo, setDescontoTipo] = useState<'percentual' | 'valor_fixo' | null>(null);
+  const [descontoValor, setDescontoValor] = useState<number>(0);
+  const [servicoConfeccao, setServicoConfeccao] = useState<ServicoConfeccao | null>(null);
+  const [servicoInstalacao, setServicoInstalacao] = useState<ServicoInstalacao | null>(null);
 
   const margemAtual =
     margemTipo === 'personalizada'
@@ -46,18 +53,20 @@ export function EtapaResumo({
   const resumo = calcularResumoOrcamento(cortinas, margemAtual);
   const resumoConsolidado = calcularResumoConsolidado(cortinas, materiais);
 
-  // Carregar validade e materiais do banco de dados
+  // Carregar validade, materiais e serviços do banco de dados
   useEffect(() => {
     const carregarDados = async () => {
-      // Carregar validade
+      // Carregar validade e dados de desconto
       const { data, error } = await supabase
         .from('orcamentos')
-        .select('validade_dias')
+        .select('validade_dias, desconto_tipo, desconto_valor')
         .eq('id', orcamentoId)
         .single();
 
-      if (!error && data?.validade_dias) {
-        setValidadeDias(data.validade_dias);
+      if (!error && data) {
+        if (data.validade_dias) setValidadeDias(data.validade_dias);
+        if (data.desconto_tipo) setDescontoTipo(data.desconto_tipo as 'percentual' | 'valor_fixo');
+        if (data.desconto_valor) setDescontoValor(data.desconto_valor);
       }
 
       // Carregar materiais do banco de dados Supabase com paginação
@@ -67,6 +76,36 @@ export function EtapaResumo({
         setMateriais(materiaisData);
       } catch (materiaisError) {
         console.error('Erro ao carregar materiais:', materiaisError);
+      }
+
+      // Carregar serviço de confecção
+      try {
+        const { data: confeccaoData } = await supabase
+          .from('servicos_confeccao')
+          .select('*')
+          .eq('ativo', true)
+          .limit(1)
+          .single();
+        if (confeccaoData) {
+          setServicoConfeccao(confeccaoData as unknown as ServicoConfeccao);
+        }
+      } catch (e) {
+        console.error('Erro ao carregar serviço de confecção:', e);
+      }
+
+      // Carregar serviço de instalação
+      try {
+        const { data: instalacaoData } = await supabase
+          .from('servicos_instalacao')
+          .select('*')
+          .eq('ativo', true)
+          .limit(1)
+          .single();
+        if (instalacaoData) {
+          setServicoInstalacao(instalacaoData as unknown as ServicoInstalacao);
+        }
+      } catch (e) {
+        console.error('Erro ao carregar serviço de instalação:', e);
       }
     };
 
@@ -93,6 +132,13 @@ export function EtapaResumo({
   const toggleCard = (index: number) => {
     setExpandedCards(prev => ({ ...prev, [index]: !prev[index] }));
   };
+
+  const handleDescontoChange = (tipo: 'percentual' | 'valor_fixo' | null, valor: number) => {
+    setDescontoTipo(tipo);
+    setDescontoValor(valor);
+  };
+
+  const { valorDesconto, totalComDesconto } = calcularDesconto(resumo.totalGeral, descontoTipo, descontoValor);
 
   const salvarOrcamento = async (status: 'rascunho' | 'finalizado') => {
     setLoading(true);
@@ -123,6 +169,9 @@ export function EtapaResumo({
           subtotal_instalacao: resumo.subtotalInstalacao,
           custo_total: resumo.custoTotal,
           total_geral: resumo.totalGeral,
+          desconto_tipo: descontoTipo,
+          desconto_valor: descontoValor,
+          total_com_desconto: totalComDesconto,
           status,
         })
         .eq('id', orcamentoId);
@@ -422,6 +471,25 @@ export function EtapaResumo({
             )}
           </div>
 
+          {/* Seção de Desconto */}
+          <DescontoSection
+            descontoTipo={descontoTipo}
+            descontoValor={descontoValor}
+            totalGeral={resumo.totalGeral}
+            onDescontoChange={handleDescontoChange}
+          />
+
+          {/* Materiais Agrupados por Código */}
+          <MateriaisAgrupados cortinas={cortinas} materiais={materiais} />
+
+          {/* Validação de Cálculos (Admin) */}
+          <DebugCalculos
+            cortinas={cortinas}
+            materiais={materiais}
+            servicoConfeccao={servicoConfeccao}
+            servicoInstalacao={servicoInstalacao}
+          />
+
           {/* Resumo Consolidado de Materiais */}
           {(resumoConsolidado.totalCortinas > 0 || resumoConsolidado.totalPersianas > 0) && (
             <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 space-y-3">
@@ -683,11 +751,33 @@ export function EtapaResumo({
                 <span className="text-muted-foreground">{margemAtual.toFixed(1)}%</span>
               </div>
               <div className="flex justify-between pt-2 border-t">
-                <span className="text-lg font-bold">Total para o Cliente:</span>
-                <span className="text-lg font-bold text-primary">
+                <span className="font-medium">Subtotal Cliente:</span>
+                <span className={`font-medium ${descontoValor > 0 ? 'line-through text-muted-foreground' : 'text-primary'}`}>
                   R$ {resumo.totalGeral.toFixed(2)}
                 </span>
               </div>
+              {descontoValor > 0 && (
+                <>
+                  <div className="flex justify-between text-green-600 dark:text-green-400">
+                    <span>Desconto ({descontoTipo === 'percentual' ? `${descontoValor}%` : 'fixo'}):</span>
+                    <span>- R$ {valorDesconto.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between pt-2 border-t">
+                    <span className="text-lg font-bold">Total Final:</span>
+                    <span className="text-lg font-bold text-primary">
+                      R$ {totalComDesconto.toFixed(2)}
+                    </span>
+                  </div>
+                </>
+              )}
+              {descontoValor === 0 && (
+                <div className="flex justify-between pt-2 border-t">
+                  <span className="text-lg font-bold">Total para o Cliente:</span>
+                  <span className="text-lg font-bold text-primary">
+                    R$ {resumo.totalGeral.toFixed(2)}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </CardContent>
