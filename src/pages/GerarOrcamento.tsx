@@ -18,6 +18,7 @@ import { ContasReceber } from '@/components/financeiro/ContasReceber';
 import { Lancamentos } from '@/components/financeiro/Lancamentos';
 import { RelatoriosBI } from '@/components/financeiro/RelatoriosBI';
 import { CategoriasFormas } from '@/components/financeiro/CategoriasFormas';
+import { RelatorioRentabilidade } from '@/components/financeiro/RelatorioRentabilidade';
 
 interface ClienteDataFromVisita {
   nome: string;
@@ -33,6 +34,7 @@ const ADMIN_ONLY_VIEWS: View[] = [
   'solicitacoesVisita',
   'finDashboard',
   'finFluxoPrevisto',
+  'finRentabilidade',
   'finContasPagar',
   'finContasReceber',
   'finLancamentos',
@@ -105,6 +107,7 @@ export default function GerarOrcamento() {
       case 'finLancamentos': return 'Lançamentos';
       case 'finRelatorios': return 'Relatórios';
       case 'finFluxoPrevisto': return 'Fluxo de Caixa Previsto';
+      case 'finRentabilidade': return 'Rentabilidade por Orçamento';
       case 'categoriasFormas': return 'Categorias e Formas de Pagamento';
       default: return '';
     }
@@ -155,6 +158,7 @@ export default function GerarOrcamento() {
                 onVoltar={handleVoltarDashboard}
                 onEditar={handleEditarOrcamento}
                 onVisualizar={handleVisualizarOrcamento}
+                onVerFinanceiro={isAdmin ? () => setView('finRentabilidade') : undefined}
               />
             )}
 
@@ -183,6 +187,9 @@ export default function GerarOrcamento() {
             {/* Seção Financeiro */}
             {view === 'finDashboard' && <DashboardFinanceiro />}
             {view === 'finFluxoPrevisto' && <FluxoCaixaPrevisto />}
+            {view === 'finRentabilidade' && (
+              <RelatorioRentabilidade onVisualizarOrcamento={handleVisualizarOrcamento} />
+            )}
             {view === 'finContasPagar' && <ContasPagar />}
             {view === 'finContasReceber' && <ContasReceber />}
             {view === 'finLancamentos' && <Lancamentos />}
