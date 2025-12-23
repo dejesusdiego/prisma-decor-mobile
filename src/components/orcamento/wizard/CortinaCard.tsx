@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,7 +15,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Copy, Trash2, ChevronDown, ChevronUp, X, Scissors } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Copy, Trash2, ChevronDown, ChevronUp, X, Scissors, Loader2, Check, RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import type { Cortina, Material, ServicoConfeccao } from '@/types/orcamento';
@@ -24,6 +25,9 @@ import { OPCOES_AMBIENTE } from '@/types/orcamento';
 import { MaterialSelector } from './MaterialSelector';
 import { useConfiguracoes } from '@/hooks/useConfiguracoes';
 import { fetchMateriaisPaginados } from '@/lib/fetchMateriaisPaginados';
+import { CardStatusBadge, getCardStatus, getCardStatusClass } from '@/components/ui/CardStatusBadge';
+import { CharacterCounter } from '@/components/ui/CharacterCounter';
+import { cn } from '@/lib/utils';
 
 interface CortinaCardProps {
   cortina: Cortina;
@@ -45,11 +49,16 @@ export function CortinaCard({
   const [trilhos, setTrilhos] = useState<Material[]>([]);
   const [servicosConfeccao, setServicosConfeccao] = useState<ServicoConfeccao[]>([]);
   const [saving, setSaving] = useState(false);
+  const [justSaved, setJustSaved] = useState(false);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState(!cortina.id);
   const [servicosAdicionaisOpen, setServicosAdicionaisOpen] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
   
   const { configuracoes } = useConfiguracoes();
+  const cardStatus = getCardStatus(cortina.id, hasChanges);
+  const MAX_OBS_LENGTH = 500;
 
   useEffect(() => {
     carregarMateriais();
@@ -111,6 +120,7 @@ export function CortinaCard({
   const handleChange = (field: keyof Cortina, value: any) => {
     console.log(`📝 handleChange: ${field} = ${value} (tipo: ${typeof value})`);
     const novosDados = { ...cortina, [field]: value };
+    setHasChanges(true);
     onUpdate(novosDados);
   };
 
@@ -315,6 +325,16 @@ export function CortinaCard({
         description: 'Cortina salva com sucesso',
       });
       
+      setHasChanges(false);
+      setJustSaved(true);
+      setTimeout(() => setJustSaved(false), 2000);
+      
+      // Flash de sucesso no card
+      if (cardRef.current) {
+        cardRef.current.classList.add('success-flash');
+        setTimeout(() => cardRef.current?.classList.remove('success-flash'), 600);
+      }
+      
       // Colapsar após salvar
       setExpanded(false);
     } catch (error: any) {
@@ -330,11 +350,13 @@ export function CortinaCard({
   };
 
   return (
-    <Card>
+    <TooltipProvider>
+    <Card ref={cardRef} className={cn('transition-all duration-200', getCardStatusClass(cardStatus))}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
         <div className="flex-1 cursor-pointer" onClick={() => setExpanded(!expanded)}>
           <CardTitle className="text-lg flex items-center gap-2">
             {cortina.nomeIdentificacao}
+            <CardStatusBadge status={cardStatus} />
             {!expanded && cortina.id && (
               <span className="text-sm text-muted-foreground font-normal">
                 • {cortina.tipoCortina} • {cortina.largura}x{cortina.altura}m • Qtd: {cortina.quantidade}
@@ -348,49 +370,70 @@ export function CortinaCard({
           </CardTitle>
         </div>
         <div className="flex gap-2">
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            onClick={() => setExpanded(!expanded)}
-            title={expanded ? "Recolher" : "Expandir"}
-          >
-            {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => setExpanded(!expanded)}
+                className="btn-hover-scale"
+              >
+                {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{expanded ? 'Recolher' : 'Expandir'}</TooltipContent>
+          </Tooltip>
           {expanded && (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={carregarMateriais}
-              disabled={loading}
-              title="Recarregar materiais"
-            >
-              {loading ? 'Carregando...' : 'Recarregar'}
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={carregarMateriais}
+                  disabled={loading}
+                  className="btn-hover-scale"
+                >
+                  <RefreshCw className={cn('h-4 w-4 mr-1', loading && 'spinner')} />
+                  {loading ? 'Carregando...' : 'Recarregar'}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Recarregar lista de materiais</TooltipContent>
+            </Tooltip>
           )}
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            onClick={onDuplicate}
-            title="Duplicar"
-          >
-            <Copy className="h-4 w-4" />
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            onClick={onRemove}
-            title="Remover"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={onDuplicate}
+                className="btn-hover-scale"
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Duplicar cortina</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={onRemove}
+                className="btn-hover-scale hover:bg-destructive hover:text-destructive-foreground"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Remover cortina</TooltipContent>
+          </Tooltip>
         </div>
       </CardHeader>
       {expanded && (
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 card-content-animated">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor={`nome-${cortina.id}`}>Nome/Identificação *</Label>
@@ -613,14 +656,24 @@ export function CortinaCard({
             <Textarea
               id={`obs-${cortina.id}`}
               value={cortina.observacoesInternas || ''}
-              onChange={(e) => handleChange('observacoesInternas', e.target.value)}
+              onChange={(e) => handleChange('observacoesInternas', e.target.value.slice(0, MAX_OBS_LENGTH))}
               placeholder="Anotações internas sobre este item..."
               className="min-h-[80px]"
+              maxLength={MAX_OBS_LENGTH}
             />
+            <CharacterCounter current={(cortina.observacoesInternas || '').length} max={MAX_OBS_LENGTH} />
           </div>
 
           <div className="space-y-2 flex items-center justify-between md:col-span-2">
-            <Label htmlFor={`instalacao-${cortina.id}`}>Precisa de Instalação?</Label>
+            <div className="flex items-center gap-2">
+              <Label htmlFor={`instalacao-${cortina.id}`}>Precisa de Instalação?</Label>
+              <Tooltip>
+                <TooltipTrigger>
+                  <span className="text-muted-foreground text-xs">(i)</span>
+                </TooltipTrigger>
+                <TooltipContent>Marque se este item precisa de serviço de instalação</TooltipContent>
+              </Tooltip>
+            </div>
             <Switch
               id={`instalacao-${cortina.id}`}
               checked={cortina.precisaInstalacao}
@@ -649,12 +702,28 @@ export function CortinaCard({
           type="button"
           onClick={salvarCortina}
           disabled={saving}
-          className="w-full"
+          className={cn(
+            'w-full transition-all duration-200',
+            justSaved && 'bg-green-600 hover:bg-green-700'
+          )}
         >
-          {saving ? 'Salvando...' : 'Salvar Cortina'}
+          {saving ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 spinner" />
+              Salvando...
+            </>
+          ) : justSaved ? (
+            <>
+              <Check className="h-4 w-4 mr-2" />
+              Salvo!
+            </>
+          ) : (
+            'Salvar Cortina'
+          )}
         </Button>
       </CardContent>
       )}
     </Card>
+    </TooltipProvider>
   );
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,13 +12,17 @@ import {
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
-import { ChevronDown, ChevronUp, Trash2, Copy } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { ChevronDown, ChevronUp, Trash2, Copy, Loader2, Check } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { Cortina, Material } from '@/types/orcamento';
 import { OPCOES_AMBIENTE } from '@/types/orcamento';
 import { MaterialSelector } from './MaterialSelector';
 import { fetchMateriaisPaginados } from '@/lib/fetchMateriaisPaginados';
+import { CardStatusBadge, getCardStatus, getCardStatusClass } from '@/components/ui/CardStatusBadge';
+import { CharacterCounter } from '@/components/ui/CharacterCounter';
+import { cn } from '@/lib/utils';
 
 interface PersianaCardProps {
   persiana: Cortina;
@@ -39,6 +43,13 @@ export function PersianaCard({
   const [expanded, setExpanded] = useState(!persianaInicial.id);
   const [materiais, setMateriais] = useState<Material[]>([]);
   const [loadingMateriais, setLoadingMateriais] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [justSaved, setJustSaved] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
+  
+  const cardStatus = getCardStatus(persiana.id, hasChanges);
+  const MAX_OBS_LENGTH = 500;
 
   // Carregar materiais da categoria persiana com paginação
   useEffect(() => {
@@ -58,11 +69,18 @@ export function PersianaCard({
 
   const materialSelecionado = materiais.find(m => m.id === persiana.materialPrincipalId);
 
+  const handleChange = (updates: Partial<Cortina>) => {
+    setHasChanges(true);
+    setPersiana(prev => ({ ...prev, ...updates }));
+  };
+
   const salvarPersiana = async () => {
     if (!persiana.nomeIdentificacao || !persiana.tipoCortina || !persiana.ambiente || persiana.precoUnitario === undefined || persiana.precoUnitario === null) {
       toast.error("Preencha todos os campos obrigatórios (nome, tipo, ambiente e orçamento fábrica)");
       return;
     }
+
+    setSaving(true);
 
     // custoTotal = orçamento fábrica (valor total) + instalação
     const custoTotal = persiana.precoUnitario;
@@ -82,13 +100,12 @@ export function PersianaCard({
       descricao: persiana.descricao || null,
       fabrica: persiana.fabrica || null,
       motorizada: persiana.motorizada || false,
-      preco_unitario: persiana.precoUnitario, // Orçamento fábrica (valor total)
+      preco_unitario: persiana.precoUnitario,
       custo_total: custoTotal + custoInstalacao,
       precisa_instalacao: persiana.precisaInstalacao,
       custo_instalacao: custoInstalacao,
       observacoes_internas: persiana.observacoesInternas || null,
-      material_principal_id: persiana.materialPrincipalId || null, // Para rastreabilidade
-      // Campos não utilizados em persianas
+      material_principal_id: persiana.materialPrincipalId || null,
       tecido_id: null,
       forro_id: null,
       trilho_id: null,
@@ -128,23 +145,36 @@ export function PersianaCard({
       
       setPersiana(persianaAtualizada);
       onUpdate(persianaAtualizada);
+      setHasChanges(false);
+      setJustSaved(true);
+      setTimeout(() => setJustSaved(false), 2000);
+      
+      // Flash de sucesso
+      if (cardRef.current) {
+        cardRef.current.classList.add('success-flash');
+        setTimeout(() => cardRef.current?.classList.remove('success-flash'), 600);
+      }
       
       toast.success('Persiana salva com sucesso!');
       setExpanded(false);
     } catch (error) {
       console.error('Erro ao salvar persiana:', error);
       toast.error('Erro ao salvar persiana');
+    } finally {
+      setSaving(false);
     }
   };
 
   const area = persiana.largura * persiana.altura;
 
   return (
-    <Card className="p-4">
+    <TooltipProvider>
+    <Card ref={cardRef} className={cn('p-4 transition-all duration-200', getCardStatusClass(cardStatus))}>
       <div className="flex items-center justify-between mb-4">
         <div className="flex-1 cursor-pointer" onClick={() => setExpanded(!expanded)}>
           <h3 className="text-lg font-semibold flex items-center gap-2">
             {persiana.nomeIdentificacao}
+            <CardStatusBadge status={cardStatus} />
             {!expanded && persiana.id && (
               <span className="text-sm text-muted-foreground font-normal">
                 • {persiana.tipoCortina} • {area.toFixed(2)}m² ({persiana.largura}x{persiana.altura}m)
@@ -161,44 +191,59 @@ export function PersianaCard({
           </h3>
         </div>
         <div className="flex gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setExpanded(!expanded)}
-            title={expanded ? "Recolher" : "Expandir"}
-          >
-            {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setExpanded(!expanded)}
+                className="btn-hover-scale"
+              >
+                {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{expanded ? 'Recolher' : 'Expandir'}</TooltipContent>
+          </Tooltip>
           {onDuplicate && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onDuplicate}
-              title="Duplicar"
-            >
-              <Copy className="h-4 w-4" />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={onDuplicate}
+                  className="btn-hover-scale"
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Duplicar persiana</TooltipContent>
+            </Tooltip>
           )}
-          <Button
-            onClick={onRemove}
-            variant="destructive"
-            size="icon"
-            title="Remover"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                onClick={onRemove}
+                variant="destructive"
+                size="icon"
+                className="btn-hover-scale"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Remover persiana</TooltipContent>
+          </Tooltip>
         </div>
       </div>
 
       {expanded && (
-        <>
+        <div className="card-content-animated">
           {/* Seção 1 - Identificação Básica */}
           <div className="grid grid-cols-2 gap-4 mb-6">
             <div>
               <Label>Nome/Identificação *</Label>
               <Input
                 value={persiana.nomeIdentificacao}
-                onChange={(e) => setPersiana({ ...persiana, nomeIdentificacao: e.target.value })}
+                onChange={(e) => handleChange({ nomeIdentificacao: e.target.value })}
                 placeholder="Ex: Persiana Sala"
               />
             </div>
@@ -207,7 +252,7 @@ export function PersianaCard({
               <Label>Ambiente *</Label>
               <Select
                 value={persiana.ambiente}
-                onValueChange={(value) => setPersiana({ ...persiana, ambiente: value })}
+                onValueChange={(value) => handleChange({ ambiente: value })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione o ambiente" />
@@ -224,7 +269,7 @@ export function PersianaCard({
               <Label>Descrição</Label>
               <Input
                 value={persiana.descricao || ''}
-                onChange={(e) => setPersiana({ ...persiana, descricao: e.target.value })}
+                onChange={(e) => handleChange({ descricao: e.target.value })}
                 placeholder="Ex: Persiana com blackout total"
               />
             </div>
@@ -233,22 +278,34 @@ export function PersianaCard({
           {/* Seção 2 - Dimensões */}
           <div className="grid grid-cols-4 gap-4 mb-6">
             <div>
-              <Label>Largura (m)</Label>
+              <div className="flex items-center gap-1">
+                <Label>Largura (m)</Label>
+                <Tooltip>
+                  <TooltipTrigger><span className="text-muted-foreground text-xs">(i)</span></TooltipTrigger>
+                  <TooltipContent>Medida horizontal da persiana em metros</TooltipContent>
+                </Tooltip>
+              </div>
               <Input
                 type="number"
                 step="0.01"
                 value={persiana.largura}
-                onChange={(e) => setPersiana({ ...persiana, largura: parseFloat(e.target.value) || 0 })}
+                onChange={(e) => handleChange({ largura: parseFloat(e.target.value) || 0 })}
               />
             </div>
 
             <div>
-              <Label>Altura (m)</Label>
+              <div className="flex items-center gap-1">
+                <Label>Altura (m)</Label>
+                <Tooltip>
+                  <TooltipTrigger><span className="text-muted-foreground text-xs">(i)</span></TooltipTrigger>
+                  <TooltipContent>Medida vertical da persiana em metros</TooltipContent>
+                </Tooltip>
+              </div>
               <Input
                 type="number"
                 step="0.01"
                 value={persiana.altura}
-                onChange={(e) => setPersiana({ ...persiana, altura: parseFloat(e.target.value) || 0 })}
+                onChange={(e) => handleChange({ altura: parseFloat(e.target.value) || 0 })}
               />
             </div>
 
@@ -267,7 +324,7 @@ export function PersianaCard({
               <Input
                 type="number"
                 value={persiana.quantidade}
-                onChange={(e) => setPersiana({ ...persiana, quantidade: parseInt(e.target.value) || 1 })}
+                onChange={(e) => handleChange({ quantidade: parseInt(e.target.value) || 1 })}
               />
             </div>
           </div>
@@ -279,13 +336,16 @@ export function PersianaCard({
               Selecione a persiana para controle interno. O cálculo é feito pelo orçamento da fábrica.
             </p>
             {loadingMateriais ? (
-              <div className="text-sm text-muted-foreground">Carregando materiais...</div>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground p-3 bg-muted rounded-lg">
+                <Loader2 className="h-4 w-4 spinner" />
+                Carregando materiais...
+              </div>
             ) : (
               <MaterialSelector
                 categoria="persiana"
                 materiais={materiais}
                 value={persiana.materialPrincipalId}
-                onSelect={(id) => setPersiana({ ...persiana, materialPrincipalId: id })}
+                onSelect={(id) => handleChange({ materialPrincipalId: id })}
                 placeholder="Selecionar persiana"
                 optional={true}
               />
@@ -295,7 +355,7 @@ export function PersianaCard({
               <Label>Tipo *</Label>
               <Select
                 value={persiana.tipoCortina}
-                onValueChange={(value: any) => setPersiana({ ...persiana, tipoCortina: value })}
+                onValueChange={(value: any) => handleChange({ tipoCortina: value })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione o tipo" />
@@ -318,7 +378,7 @@ export function PersianaCard({
               <Label>Fábrica</Label>
               <Input
                 value={persiana.fabrica || ''}
-                onChange={(e) => setPersiana({ ...persiana, fabrica: e.target.value })}
+                onChange={(e) => handleChange({ fabrica: e.target.value })}
                 placeholder="Ex: Luxaflex, Hunter Douglas"
               />
             </div>
@@ -329,7 +389,7 @@ export function PersianaCard({
                 type="number"
                 step="0.01"
                 value={persiana.precoUnitario || ''}
-                onChange={(e) => setPersiana({ ...persiana, precoUnitario: parseFloat(e.target.value) || 0 })}
+                onChange={(e) => handleChange({ precoUnitario: parseFloat(e.target.value) || 0 })}
                 placeholder="Valor total orçado pela fábrica"
               />
               <p className="text-xs text-muted-foreground mt-1">
@@ -345,7 +405,7 @@ export function PersianaCard({
                 id={`motorizada-${persiana.id}`}
                 checked={persiana.motorizada || false}
                 onCheckedChange={(checked) => 
-                  setPersiana({ ...persiana, motorizada: checked as boolean })
+                  handleChange({ motorizada: checked as boolean })
                 }
               />
               <Label htmlFor={`motorizada-${persiana.id}`}>Motorizada</Label>
@@ -356,7 +416,7 @@ export function PersianaCard({
                 id={`instalacao-${persiana.id}`}
                 checked={persiana.precisaInstalacao}
                 onCheckedChange={(checked) => 
-                  setPersiana({ ...persiana, precisaInstalacao: checked as boolean })
+                  handleChange({ precisaInstalacao: checked as boolean })
                 }
               />
               <Label htmlFor={`instalacao-${persiana.id}`}>Precisa de Instalação</Label>
@@ -369,7 +429,7 @@ export function PersianaCard({
                   type="number"
                   step="0.01"
                   value={persiana.valorInstalacao || ''}
-                  onChange={(e) => setPersiana({ ...persiana, valorInstalacao: parseFloat(e.target.value) || 0 })}
+                  onChange={(e) => handleChange({ valorInstalacao: parseFloat(e.target.value) || 0 })}
                   placeholder="Valor total da instalação"
                 />
               </div>
@@ -381,10 +441,12 @@ export function PersianaCard({
             <Label>Observações Internas (não aparecem no PDF)</Label>
             <Textarea
               value={persiana.observacoesInternas || ''}
-              onChange={(e) => setPersiana({ ...persiana, observacoesInternas: e.target.value })}
+              onChange={(e) => handleChange({ observacoesInternas: e.target.value.slice(0, MAX_OBS_LENGTH) })}
               placeholder="Anotações internas sobre este item..."
               className="min-h-[80px]"
+              maxLength={MAX_OBS_LENGTH}
             />
+            <CharacterCounter current={(persiana.observacoesInternas || '').length} max={MAX_OBS_LENGTH} />
           </div>
 
           {/* Seção 7 - Preview e Ações */}
@@ -404,20 +466,42 @@ export function PersianaCard({
               )}
             </div>
             <div className="flex gap-2">
-              <Button onClick={salvarPersiana} size="sm">
-                Salvar Persiana
+              <Button 
+                onClick={salvarPersiana} 
+                size="sm"
+                disabled={saving}
+                className={cn(
+                  'transition-all duration-200',
+                  justSaved && 'bg-green-600 hover:bg-green-700'
+                )}
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 spinner" />
+                    Salvando...
+                  </>
+                ) : justSaved ? (
+                  <>
+                    <Check className="h-4 w-4 mr-2" />
+                    Salvo!
+                  </>
+                ) : (
+                  'Salvar Persiana'
+                )}
               </Button>
               <Button 
                 onClick={onRemove} 
                 variant="destructive" 
                 size="sm"
+                className="btn-hover-scale"
               >
                 Remover
               </Button>
             </div>
           </div>
-        </>
+        </div>
       )}
     </Card>
+    </TooltipProvider>
   );
 }

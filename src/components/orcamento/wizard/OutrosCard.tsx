@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,11 +12,15 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import { Copy, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Copy, Trash2, ChevronDown, ChevronUp, Loader2, Check } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import type { Cortina } from '@/types/orcamento';
 import { OPCOES_AMBIENTE } from '@/types/orcamento';
+import { CardStatusBadge, getCardStatus, getCardStatusClass } from '@/components/ui/CardStatusBadge';
+import { CharacterCounter } from '@/components/ui/CharacterCounter';
+import { cn } from '@/lib/utils';
 
 interface OutrosCardProps {
   outro: Cortina;
@@ -34,10 +38,17 @@ export function OutrosCard({
   onDuplicate,
 }: OutrosCardProps) {
   const [saving, setSaving] = useState(false);
+  const [justSaved, setJustSaved] = useState(false);
   const [expanded, setExpanded] = useState(!outro.id);
+  const [hasChanges, setHasChanges] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
+  
+  const cardStatus = getCardStatus(outro.id, hasChanges);
+  const MAX_OBS_LENGTH = 500;
 
   const handleChange = (field: keyof Cortina, value: any) => {
     const novosDados = { ...outro, [field]: value };
+    setHasChanges(true);
     onUpdate(novosDados);
   };
 
@@ -99,6 +110,15 @@ export function OutrosCard({
       if (result.error) throw result.error;
 
       onUpdate({ ...outro, id: result.data.id, custoInstalacao, custoTotal });
+      setHasChanges(false);
+      setJustSaved(true);
+      setTimeout(() => setJustSaved(false), 2000);
+
+      // Flash de sucesso
+      if (cardRef.current) {
+        cardRef.current.classList.add('success-flash');
+        setTimeout(() => cardRef.current?.classList.remove('success-flash'), 600);
+      }
 
       toast({
         title: 'Sucesso',
@@ -120,11 +140,13 @@ export function OutrosCard({
   };
 
   return (
-    <Card>
+    <TooltipProvider>
+    <Card ref={cardRef} className={cn('transition-all duration-200', getCardStatusClass(cardStatus))}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
         <div className="flex-1 cursor-pointer" onClick={() => setExpanded(!expanded)}>
           <CardTitle className="text-lg flex items-center gap-2">
             {outro.nomeIdentificacao}
+            <CardStatusBadge status={cardStatus} />
             {!expanded && outro.id && (
               <span className="text-sm text-muted-foreground font-normal">
                 • Qtd: {outro.quantidade}
@@ -138,37 +160,52 @@ export function OutrosCard({
           </CardTitle>
         </div>
         <div className="flex gap-2">
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            onClick={() => setExpanded(!expanded)}
-            title={expanded ? "Recolher" : "Expandir"}
-          >
-            {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            onClick={onDuplicate}
-            title="Duplicar"
-          >
-            <Copy className="h-4 w-4" />
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            onClick={onRemove}
-            title="Remover"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => setExpanded(!expanded)}
+                className="btn-hover-scale"
+              >
+                {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{expanded ? 'Recolher' : 'Expandir'}</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={onDuplicate}
+                className="btn-hover-scale"
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Duplicar item</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={onRemove}
+                className="btn-hover-scale hover:bg-destructive hover:text-destructive-foreground"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Remover item</TooltipContent>
+          </Tooltip>
         </div>
       </CardHeader>
       {expanded && (
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 card-content-animated">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor={`nome-${outro.id}`}>Nome/Descrição *</Label>
@@ -242,14 +279,22 @@ export function OutrosCard({
             <Textarea
               id={`obs-${outro.id}`}
               value={outro.observacoesInternas || ''}
-              onChange={(e) => handleChange('observacoesInternas', e.target.value)}
+              onChange={(e) => handleChange('observacoesInternas', e.target.value.slice(0, MAX_OBS_LENGTH))}
               placeholder="Anotações internas sobre este item..."
               className="min-h-[80px]"
+              maxLength={MAX_OBS_LENGTH}
             />
+            <CharacterCounter current={(outro.observacoesInternas || '').length} max={MAX_OBS_LENGTH} />
           </div>
 
           <div className="space-y-2 flex items-center justify-between md:col-span-2">
-            <Label htmlFor={`instalacao-${outro.id}`}>Precisa de Instalação?</Label>
+            <div className="flex items-center gap-2">
+              <Label htmlFor={`instalacao-${outro.id}`}>Precisa de Instalação?</Label>
+              <Tooltip>
+                <TooltipTrigger><span className="text-muted-foreground text-xs">(i)</span></TooltipTrigger>
+                <TooltipContent>Marque se este item precisa de serviço de instalação</TooltipContent>
+              </Tooltip>
+            </div>
             <Switch
               id={`instalacao-${outro.id}`}
               checked={outro.precisaInstalacao}
@@ -305,12 +350,28 @@ export function OutrosCard({
           type="button"
           onClick={salvarOutro}
           disabled={saving}
-          className="w-full"
+          className={cn(
+            'w-full transition-all duration-200',
+            justSaved && 'bg-green-600 hover:bg-green-700'
+          )}
         >
-          {saving ? 'Salvando...' : 'Salvar Item'}
+          {saving ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 spinner" />
+              Salvando...
+            </>
+          ) : justSaved ? (
+            <>
+              <Check className="h-4 w-4 mr-2" />
+              Salvo!
+            </>
+          ) : (
+            'Salvar Item'
+          )}
         </Button>
         </CardContent>
       )}
     </Card>
+    </TooltipProvider>
   );
 }
