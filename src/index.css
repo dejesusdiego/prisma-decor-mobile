@@ -47,6 +47,13 @@ All colors MUST be HSL.
 
     --radius: 0.75rem;
     
+    /* Chart colors */
+    --chart-1: 221 83% 53%;
+    --chart-2: 142 76% 36%;
+    --chart-3: 43 74% 52%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 12 76% 61%;
+    
     /* Brand colors */
     --brand-black: 0 0% 0%;
     --brand-dark-gray: 0 0% 23%;
@@ -118,6 +125,14 @@ All colors MUST be HSL.
     --border: 0 0% 23%;
     --input: 0 0% 23%;
     --ring: 43 74% 52%;
+    
+    /* Chart colors - dark mode */
+    --chart-1: 221 83% 60%;
+    --chart-2: 142 70% 45%;
+    --chart-3: 43 74% 55%;
+    --chart-4: 280 65% 65%;
+    --chart-5: 12 76% 65%;
+    
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
