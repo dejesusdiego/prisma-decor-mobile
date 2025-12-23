@@ -11,7 +11,10 @@ import {
   Trash2,
   CheckCircle,
   AlertCircle,
-  Clock
+  Clock,
+  RefreshCw,
+  Repeat,
+  Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,6 +35,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
 import { DialogContaPagar } from './dialogs/DialogContaPagar';
 
@@ -61,6 +65,7 @@ export function ContasPagar() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('todos');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [contaEditando, setContaEditando] = useState<any>(null);
+  const [gerandoRecorrentes, setGerandoRecorrentes] = useState(false);
 
   const { data: contas = [], isLoading } = useQuery({
     queryKey: ['contas-pagar'],
@@ -143,6 +148,39 @@ export function ContasPagar() {
     setDialogOpen(true);
   };
 
+  const handleGerarRecorrentes = async () => {
+    setGerandoRecorrentes(true);
+    try {
+      const response = await supabase.functions.invoke('generate-recurring-bills');
+      
+      if (response.error) {
+        throw response.error;
+      }
+      
+      const data = response.data;
+      
+      if (data?.success) {
+        queryClient.invalidateQueries({ queryKey: ['contas-pagar'] });
+        toast.success(
+          `Geração concluída: ${data.resumo.contas_geradas} conta(s) criada(s)`,
+          {
+            description: `${data.resumo.contas_ignoradas} já existiam ou não precisavam ser geradas`
+          }
+        );
+      } else {
+        throw new Error(data?.error || 'Erro desconhecido');
+      }
+    } catch (error) {
+      console.error('Erro ao gerar recorrentes:', error);
+      toast.error('Erro ao gerar contas recorrentes');
+    } finally {
+      setGerandoRecorrentes(false);
+    }
+  };
+
+  // Contar recorrentes
+  const totalRecorrentes = contas.filter(c => c.recorrente).length;
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -151,10 +189,37 @@ export function ContasPagar() {
           <h1 className="text-2xl font-bold text-foreground">Contas a Pagar</h1>
           <p className="text-muted-foreground">Gerencie suas despesas e pagamentos</p>
         </div>
-        <Button onClick={handleNew}>
-          <Plus className="h-4 w-4 mr-2" />
-          Nova Conta
-        </Button>
+        <div className="flex gap-2">
+          {totalRecorrentes > 0 && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    onClick={handleGerarRecorrentes}
+                    disabled={gerandoRecorrentes}
+                  >
+                    {gerandoRecorrentes ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                    )}
+                    Gerar Recorrentes
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="text-xs">
+                    Gerar próximas contas para {totalRecorrentes} conta(s) recorrente(s)
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+          <Button onClick={handleNew}>
+            <Plus className="h-4 w-4 mr-2" />
+            Nova Conta
+          </Button>
+        </div>
       </div>
 
       {/* Resumo */}
@@ -241,7 +306,34 @@ export function ContasPagar() {
               ) : (
                 filteredContas.map((conta) => (
                   <TableRow key={conta.id}>
-                    <TableCell className="font-medium">{conta.descricao}</TableCell>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-2">
+                        {conta.descricao}
+                        {conta.recorrente && (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger>
+                                <Badge variant="outline" className="h-5 px-1.5 gap-0.5">
+                                  <Repeat className="h-3 w-3" />
+                                  <span className="text-[10px]">
+                                    {conta.frequencia_recorrencia === 'semanal' ? '7d' :
+                                     conta.frequencia_recorrencia === 'quinzenal' ? '15d' :
+                                     conta.frequencia_recorrencia === 'mensal' ? '1m' :
+                                     conta.frequencia_recorrencia === 'bimestral' ? '2m' :
+                                     conta.frequencia_recorrencia === 'trimestral' ? '3m' :
+                                     conta.frequencia_recorrencia === 'semestral' ? '6m' :
+                                     conta.frequencia_recorrencia === 'anual' ? '1a' : ''}
+                                  </span>
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="text-xs">Conta recorrente ({conta.frequencia_recorrencia})</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        )}
+                      </div>
+                    </TableCell>
                     <TableCell>{conta.fornecedor || '-'}</TableCell>
                     <TableCell>
                       {conta.categoria ? (
