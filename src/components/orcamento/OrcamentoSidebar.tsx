@@ -31,6 +31,7 @@ import { toast } from 'sonner';
 import { useUserRole } from '@/hooks/useUserRole';
 
 export type View = 
+  | 'dashboardUnificado'
   | 'dashboard' 
   | 'novoOrcamento' 
   | 'listaOrcamentos' 
@@ -54,7 +55,8 @@ interface OrcamentoSidebarProps {
 
 // Itens da seção PRINCIPAL (visíveis para todos)
 const principalNavItems = [
-  { id: 'dashboard' as View, label: 'Dashboard', icon: Home },
+  { id: 'dashboardUnificado' as View, label: 'Visão Geral', icon: LayoutDashboard, adminOnly: true },
+  { id: 'dashboard' as View, label: 'Dashboard Orçamentos', icon: Home },
   { id: 'novoOrcamento' as View, label: 'Novo Orçamento', icon: Plus },
   { id: 'listaOrcamentos' as View, label: 'Meus Orçamentos', icon: FileText },
   { id: 'solicitacoesVisita' as View, label: 'Solicitações de Visita', icon: CalendarCheck, adminOnly: true },
