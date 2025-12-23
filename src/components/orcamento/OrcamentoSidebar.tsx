@@ -24,9 +24,7 @@ import {
   ClipboardList,
   Target,
   Clock,
-  UserCircle,
-  Merge,
-  MessageCircle
+  UserCircle
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -60,12 +58,9 @@ export type View =
   | 'crmPainel'
   | 'crmContatos'
   | 'crmDetalheContato'
-  | 'crmOportunidades'
   | 'crmPipeline'
   | 'crmRelatorios'
-  | 'crmAtividades'
-  | 'crmMerge'
-  | 'crmFollowUp';
+  | 'crmAtividades';
 
 interface OrcamentoSidebarProps {
   currentView: View;
@@ -84,16 +79,13 @@ const orcamentosNavItems = [
   { id: 'solicitacoesVisita' as View, label: 'Solicitações de Visita', icon: CalendarCheck, adminOnly: true },
 ];
 
-// Itens da seção CRM
+// Itens da seção CRM (simplificado - Pipeline unificado)
 const crmNavItems = [
   { id: 'crmPainel' as View, label: 'Painel CRM', icon: Target },
+  { id: 'crmPipeline' as View, label: 'Pipeline', icon: TrendingUp },
   { id: 'crmContatos' as View, label: 'Contatos', icon: UserCircle },
-  { id: 'crmOportunidades' as View, label: 'Kanban', icon: TrendingUp },
-  { id: 'crmPipeline' as View, label: 'Pipeline', icon: BarChart3 },
   { id: 'crmAtividades' as View, label: 'Atividades', icon: Clock },
-  { id: 'crmFollowUp' as View, label: 'Follow-ups', icon: MessageCircle },
   { id: 'crmRelatorios' as View, label: 'Relatórios', icon: ClipboardList },
-  { id: 'crmMerge' as View, label: 'Merge Contatos', icon: Merge },
 ];
 
 // Itens da seção FINANCEIRO (admin only)

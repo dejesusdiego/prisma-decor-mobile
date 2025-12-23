@@ -24,12 +24,9 @@ import { Comissoes } from '@/components/financeiro/Comissoes';
 import { PainelCRM } from '@/components/crm/PainelCRM';
 import { ListaContatos } from '@/components/crm/ListaContatos';
 import { DetalheContato } from '@/components/crm/DetalheContato';
-import { KanbanOportunidades } from '@/components/crm/KanbanOportunidades';
-import { PipelineVisualizacoes } from '@/components/crm/PipelineVisualizacoes';
+import { PipelineUnificado } from '@/components/crm/PipelineUnificado';
 import { RelatoriosCRM } from '@/components/crm/RelatoriosCRM';
 import { ListaAtividades } from '@/components/crm/ListaAtividades';
-import { MergeContatos } from '@/components/crm/MergeContatos';
-import { NotificacoesFollowUp } from '@/components/crm/NotificacoesFollowUp';
 
 interface ClienteDataFromVisita {
   nome: string;
@@ -139,12 +136,9 @@ export default function GerarOrcamento() {
       case 'crmPainel': return 'Painel CRM';
       case 'crmContatos': return 'Contatos';
       case 'crmDetalheContato': return '';
-      case 'crmOportunidades': return 'Kanban de Oportunidades';
-      case 'crmPipeline': return 'Pipeline - Visualizações';
+      case 'crmPipeline': return 'Pipeline de Vendas';
       case 'crmRelatorios': return 'Relatórios CRM';
       case 'crmAtividades': return 'Atividades';
-      case 'crmMerge': return 'Merge de Contatos';
-      case 'crmFollowUp': return 'Follow-ups WhatsApp';
       default: return '';
     }
   };
@@ -255,12 +249,11 @@ export default function GerarOrcamento() {
                 onVisualizarOrcamento={handleVisualizarOrcamento}
               />
             )}
-            {view === 'crmOportunidades' && <KanbanOportunidades />}
-            {view === 'crmPipeline' && <PipelineVisualizacoes />}
+            {view === 'crmPipeline' && (
+              <PipelineUnificado onVerOrcamento={handleVisualizarOrcamento} />
+            )}
             {view === 'crmRelatorios' && <RelatoriosCRM />}
             {view === 'crmAtividades' && <ListaAtividades />}
-            {view === 'crmMerge' && <MergeContatos />}
-            {view === 'crmFollowUp' && <NotificacoesFollowUp />}
           </div>
         </main>
       </div>
