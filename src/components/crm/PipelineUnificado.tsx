@@ -3,26 +3,32 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui/table';
 import { 
-  Kanban, 
-  List, 
-  BarChart3, 
-  Calendar,
+  Plus, 
+  Target,
   Flame,
   Thermometer,
   Snowflake,
+  GripVertical,
   MoreHorizontal,
   Pencil,
   Trash2,
-  Plus
+  Calendar,
+  List,
+  BarChart3,
+  Kanban,
+  LayoutGrid,
+  FileText,
+  DollarSign
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -41,7 +47,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { useOportunidades, useDeleteOportunidade, Oportunidade } from '@/hooks/useCRMData';
+import { useOportunidades, useUpdateOportunidade, useDeleteOportunidade, Oportunidade } from '@/hooks/useCRMData';
 import { DialogOportunidade } from './DialogOportunidade';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -56,51 +62,66 @@ import {
   ResponsiveContainer,
   Cell
 } from 'recharts';
+import { 
+  ETAPAS_CONFIG, 
+  TEMPERATURA_CONFIG, 
+  formatCurrency,
+  getOrigemConfig 
+} from '@/lib/mapearStatusEtapa';
 
-const formatCurrency = (value: number | null) => {
-  if (!value) return 'R$ 0';
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0
-  }).format(value);
+type ViewType = 'kanban' | 'lista' | 'grafico' | 'resumo';
+
+const TEMPERATURA_ICONS = {
+  quente: Flame,
+  morno: Thermometer,
+  frio: Snowflake,
 };
 
-const ETAPAS = [
-  { id: 'prospeccao', label: 'Prospecção', color: '#3b82f6' },
-  { id: 'qualificacao', label: 'Qualificação', color: '#8b5cf6' },
-  { id: 'proposta', label: 'Proposta', color: '#f59e0b' },
-  { id: 'negociacao', label: 'Negociação', color: '#f97316' },
-  { id: 'fechado_ganho', label: 'Ganho ✓', color: '#22c55e' },
-  { id: 'fechado_perdido', label: 'Perdido ✗', color: '#ef4444' }
-];
+interface PipelineUnificadoProps {
+  onVerOrcamento?: (orcamentoId: string) => void;
+}
 
-const TEMPERATURA_CONFIG: Record<string, { icon: React.ElementType; color: string; label: string }> = {
-  quente: { icon: Flame, color: 'text-red-500', label: 'Quente' },
-  morno: { icon: Thermometer, color: 'text-amber-500', label: 'Morno' },
-  frio: { icon: Snowflake, color: 'text-blue-500', label: 'Frio' }
-};
-
-type ViewType = 'lista' | 'grafico' | 'resumo';
-
-export function PipelineVisualizacoes() {
+export function PipelineUnificado({ onVerOrcamento }: PipelineUnificadoProps) {
   const { data: oportunidades, isLoading } = useOportunidades();
+  const updateOportunidade = useUpdateOportunidade();
   const deleteOportunidade = useDeleteOportunidade();
   
-  const [viewType, setViewType] = useState<ViewType>('lista');
+  const [viewType, setViewType] = useState<ViewType>('kanban');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [oportunidadeSelecionada, setOportunidadeSelecionada] = useState<Oportunidade | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [oportunidadeParaExcluir, setOportunidadeParaExcluir] = useState<Oportunidade | null>(null);
+  const [draggedId, setDraggedId] = useState<string | null>(null);
 
-  const handleEditarOportunidade = (oportunidade: Oportunidade) => {
-    setOportunidadeSelecionada(oportunidade);
-    setDialogOpen(true);
+  // Drag and drop handlers
+  const handleDragStart = (e: React.DragEvent, oportunidadeId: string) => {
+    setDraggedId(oportunidadeId);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = async (e: React.DragEvent, etapaId: string) => {
+    e.preventDefault();
+    if (draggedId) {
+      await updateOportunidade.mutateAsync({
+        id: draggedId,
+        etapa: etapaId
+      });
+    }
+    setDraggedId(null);
   };
 
   const handleNovaOportunidade = () => {
     setOportunidadeSelecionada(null);
+    setDialogOpen(true);
+  };
+
+  const handleEditarOportunidade = (oportunidade: Oportunidade) => {
+    setOportunidadeSelecionada(oportunidade);
     setDialogOpen(true);
   };
 
@@ -119,15 +140,24 @@ export function PipelineVisualizacoes() {
           <Skeleton className="h-6 w-48" />
         </CardHeader>
         <CardContent>
-          <Skeleton className="h-80 w-full" />
+          <div className="flex gap-4">
+            {[...Array(6)].map((_, i) => (
+              <Skeleton key={i} className="h-96 w-72 shrink-0" />
+            ))}
+          </div>
         </CardContent>
       </Card>
     );
   }
 
+  const oportunidadesPorEtapa = ETAPAS_CONFIG.reduce((acc, etapa) => {
+    acc[etapa.id] = oportunidades?.filter(o => o.etapa === etapa.id) || [];
+    return acc;
+  }, {} as Record<string, Oportunidade[]>);
+
   // Dados para gráfico
-  const dadosGrafico = ETAPAS.map(etapa => {
-    const ops = oportunidades?.filter(o => o.etapa === etapa.id) || [];
+  const dadosGrafico = ETAPAS_CONFIG.map(etapa => {
+    const ops = oportunidadesPorEtapa[etapa.id] || [];
     return {
       etapa: etapa.label,
       quantidade: ops.length,
@@ -137,8 +167,8 @@ export function PipelineVisualizacoes() {
   });
 
   // Dados para resumo
-  const resumoPorEtapa = ETAPAS.map(etapa => {
-    const ops = oportunidades?.filter(o => o.etapa === etapa.id) || [];
+  const resumoPorEtapa = ETAPAS_CONFIG.map(etapa => {
+    const ops = oportunidadesPorEtapa[etapa.id] || [];
     const valorTotal = ops.reduce((sum, o) => sum + (o.valor_estimado || 0), 0);
     const quentes = ops.filter(o => o.temperatura === 'quente').length;
     const mornos = ops.filter(o => o.temperatura === 'morno').length;
@@ -146,23 +176,125 @@ export function PipelineVisualizacoes() {
     return { ...etapa, quantidade: ops.length, valorTotal, quentes, mornos, frios };
   });
 
-  const getEtapaLabel = (etapaId: string) => ETAPAS.find(e => e.id === etapaId)?.label || etapaId;
-  const getEtapaColor = (etapaId: string) => ETAPAS.find(e => e.id === etapaId)?.color || '#6b7280';
+  const renderOportunidadeCard = (oportunidade: Oportunidade, draggable = false) => {
+    const temp = TEMPERATURA_CONFIG[oportunidade.temperatura as keyof typeof TEMPERATURA_CONFIG] || TEMPERATURA_CONFIG.morno;
+    const TempIcon = TEMPERATURA_ICONS[oportunidade.temperatura as keyof typeof TEMPERATURA_ICONS] || Thermometer;
+    const origemConfig = getOrigemConfig(oportunidade.origem);
+    
+    return (
+      <div
+        key={oportunidade.id}
+        draggable={draggable}
+        onDragStart={draggable ? (e) => handleDragStart(e, oportunidade.id) : undefined}
+        className={cn(
+          "bg-card rounded-lg border p-3 shadow-sm hover:shadow transition-shadow",
+          draggable && "cursor-grab active:cursor-grabbing",
+          draggedId === oportunidade.id && "opacity-50"
+        )}
+      >
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex items-center gap-2">
+            {draggable && <GripVertical className="h-4 w-4 text-muted-foreground shrink-0" />}
+            <div className="min-w-0">
+              <p className="font-medium text-sm truncate">
+                {oportunidade.titulo}
+              </p>
+              {oportunidade.contato && (
+                <p className="text-xs text-muted-foreground truncate">
+                  {oportunidade.contato.nome}
+                </p>
+              )}
+            </div>
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0">
+                <MoreHorizontal className="h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handleEditarOportunidade(oportunidade)}>
+                <Pencil className="mr-2 h-4 w-4" />
+                Editar
+              </DropdownMenuItem>
+              {oportunidade.orcamento_id && onVerOrcamento && (
+                <DropdownMenuItem onClick={() => onVerOrcamento(oportunidade.orcamento_id!)}>
+                  <FileText className="mr-2 h-4 w-4" />
+                  Ver Orçamento
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                className="text-destructive"
+                onClick={() => {
+                  setOportunidadeParaExcluir(oportunidade);
+                  setDeleteDialogOpen(true);
+                }}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Excluir
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+        
+        {/* Origem e indicadores */}
+        <div className="flex items-center gap-2 mt-2 flex-wrap">
+          {oportunidade.origem && (
+            <Badge variant="outline" className={cn("text-xs", origemConfig.color)}>
+              {origemConfig.label}
+            </Badge>
+          )}
+          {oportunidade.orcamento_id && (
+            <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700">
+              <FileText className="h-3 w-3 mr-1" />
+              Orçamento
+            </Badge>
+          )}
+        </div>
+        
+        <div className="flex items-center justify-between mt-3">
+          <span className="text-sm font-medium flex items-center gap-1">
+            <DollarSign className="h-3 w-3" />
+            {formatCurrency(oportunidade.valor_estimado)}
+          </span>
+          <div className="flex items-center gap-2">
+            {oportunidade.data_previsao_fechamento && (
+              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                <Calendar className="h-3 w-3" />
+                {format(new Date(oportunidade.data_previsao_fechamento), 'dd/MM', { locale: ptBR })}
+              </span>
+            )}
+            <TempIcon className={cn("h-4 w-4", temp.color)} />
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="flex items-center gap-2">
-            <Kanban className="h-5 w-5" />
-            Pipeline - Visualizações
+            <Target className="h-5 w-5" />
+            Pipeline de Vendas
           </CardTitle>
           <div className="flex items-center gap-2">
             <div className="flex items-center border rounded-lg p-1">
               <Button 
+                variant={viewType === 'kanban' ? 'secondary' : 'ghost'} 
+                size="sm"
+                onClick={() => setViewType('kanban')}
+                title="Kanban"
+              >
+                <Kanban className="h-4 w-4" />
+              </Button>
+              <Button 
                 variant={viewType === 'lista' ? 'secondary' : 'ghost'} 
                 size="sm"
                 onClick={() => setViewType('lista')}
+                title="Lista"
               >
                 <List className="h-4 w-4" />
               </Button>
@@ -170,6 +302,7 @@ export function PipelineVisualizacoes() {
                 variant={viewType === 'grafico' ? 'secondary' : 'ghost'} 
                 size="sm"
                 onClick={() => setViewType('grafico')}
+                title="Gráfico"
               >
                 <BarChart3 className="h-4 w-4" />
               </Button>
@@ -177,17 +310,67 @@ export function PipelineVisualizacoes() {
                 variant={viewType === 'resumo' ? 'secondary' : 'ghost'} 
                 size="sm"
                 onClick={() => setViewType('resumo')}
+                title="Resumo"
               >
-                <Calendar className="h-4 w-4" />
+                <LayoutGrid className="h-4 w-4" />
               </Button>
             </div>
             <Button onClick={handleNovaOportunidade} size="sm">
               <Plus className="h-4 w-4 mr-2" />
-              Nova
+              Nova Oportunidade
             </Button>
           </div>
         </CardHeader>
         <CardContent>
+          {/* VISÃO KANBAN */}
+          {viewType === 'kanban' && (
+            <ScrollArea className="w-full">
+              <div className="flex gap-4 pb-4" style={{ minWidth: 'max-content' }}>
+                {ETAPAS_CONFIG.map((etapa) => {
+                  const itens = oportunidadesPorEtapa[etapa.id] || [];
+                  const valorTotal = itens.reduce((sum, o) => sum + (o.valor_estimado || 0), 0);
+                  
+                  return (
+                    <div
+                      key={etapa.id}
+                      className="w-72 shrink-0"
+                      onDragOver={handleDragOver}
+                      onDrop={(e) => handleDrop(e, etapa.id)}
+                    >
+                      {/* Header da coluna */}
+                      <div className={cn(
+                        "rounded-t-lg px-3 py-2 text-white font-medium flex items-center justify-between",
+                        etapa.bgClass
+                      )}>
+                        <span>{etapa.label}</span>
+                        <Badge variant="secondary" className="bg-white/20 text-white">
+                          {itens.length}
+                        </Badge>
+                      </div>
+                      
+                      {/* Valor total da coluna */}
+                      <div className="bg-muted/50 px-3 py-1 text-sm text-muted-foreground border-x">
+                        {formatCurrency(valorTotal)}
+                      </div>
+                      
+                      {/* Cards */}
+                      <div className="border border-t-0 rounded-b-lg bg-muted/20 min-h-[300px] p-2 space-y-2">
+                        {itens.length === 0 ? (
+                          <p className="text-xs text-muted-foreground text-center py-8">
+                            Arraste oportunidades aqui
+                          </p>
+                        ) : (
+                          itens.map((oportunidade) => renderOportunidadeCard(oportunidade, true))
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <ScrollBar orientation="horizontal" />
+            </ScrollArea>
+          )}
+
           {/* VISÃO LISTA */}
           {viewType === 'lista' && (
             <div className="rounded-md border">
@@ -197,7 +380,8 @@ export function PipelineVisualizacoes() {
                     <TableHead>Oportunidade</TableHead>
                     <TableHead>Contato</TableHead>
                     <TableHead>Etapa</TableHead>
-                    <TableHead>Temperatura</TableHead>
+                    <TableHead>Temp.</TableHead>
+                    <TableHead>Origem</TableHead>
                     <TableHead>Valor</TableHead>
                     <TableHead>Previsão</TableHead>
                     <TableHead className="w-10"></TableHead>
@@ -205,30 +389,43 @@ export function PipelineVisualizacoes() {
                 </TableHeader>
                 <TableBody>
                   {oportunidades?.map((oportunidade) => {
-                    const temp = TEMPERATURA_CONFIG[oportunidade.temperatura || 'morno'];
-                    const TempIcon = temp?.icon || Thermometer;
+                    const temp = TEMPERATURA_CONFIG[oportunidade.temperatura as keyof typeof TEMPERATURA_CONFIG] || TEMPERATURA_CONFIG.morno;
+                    const TempIcon = TEMPERATURA_ICONS[oportunidade.temperatura as keyof typeof TEMPERATURA_ICONS] || Thermometer;
+                    const etapaConfig = ETAPAS_CONFIG.find(e => e.id === oportunidade.etapa);
+                    const origemConfig = getOrigemConfig(oportunidade.origem);
                     
                     return (
                       <TableRow key={oportunidade.id}>
-                        <TableCell className="font-medium">
-                          {oportunidade.titulo}
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">{oportunidade.titulo}</span>
+                            {oportunidade.orcamento_id && (
+                              <FileText className="h-3 w-3 text-muted-foreground" />
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell className="text-muted-foreground">
                           {oportunidade.contato?.nome || '-'}
                         </TableCell>
                         <TableCell>
                           <Badge 
-                            style={{ backgroundColor: getEtapaColor(oportunidade.etapa) }}
+                            style={{ backgroundColor: etapaConfig?.color }}
                             className="text-white"
                           >
-                            {getEtapaLabel(oportunidade.etapa)}
+                            {etapaConfig?.label}
                           </Badge>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1">
-                            <TempIcon className={cn("h-4 w-4", temp?.color)} />
-                            <span className="text-sm">{temp?.label}</span>
+                            <TempIcon className={cn("h-4 w-4", temp.color)} />
                           </div>
+                        </TableCell>
+                        <TableCell>
+                          {oportunidade.origem && (
+                            <Badge variant="outline" className={cn("text-xs", origemConfig.color)}>
+                              {origemConfig.label}
+                            </Badge>
+                          )}
                         </TableCell>
                         <TableCell className="font-medium">
                           {formatCurrency(oportunidade.valor_estimado)}
@@ -251,6 +448,12 @@ export function PipelineVisualizacoes() {
                                 <Pencil className="mr-2 h-4 w-4" />
                                 Editar
                               </DropdownMenuItem>
+                              {oportunidade.orcamento_id && onVerOrcamento && (
+                                <DropdownMenuItem onClick={() => onVerOrcamento(oportunidade.orcamento_id!)}>
+                                  <FileText className="mr-2 h-4 w-4" />
+                                  Ver Orçamento
+                                </DropdownMenuItem>
+                              )}
                               <DropdownMenuSeparator />
                               <DropdownMenuItem 
                                 className="text-destructive"
@@ -270,7 +473,7 @@ export function PipelineVisualizacoes() {
                   })}
                   {(!oportunidades || oportunidades.length === 0) && (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                         Nenhuma oportunidade cadastrada
                       </TableCell>
                     </TableRow>

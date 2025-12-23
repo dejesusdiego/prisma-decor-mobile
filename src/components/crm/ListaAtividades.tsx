@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Select,
   SelectContent,
@@ -22,10 +23,12 @@ import {
   Users,
   MessageSquare,
   FileText,
-  CheckCircle2
+  CheckCircle2,
+  Bell
 } from 'lucide-react';
 import { useAtividades, useUpdateAtividade, Atividade } from '@/hooks/useCRMData';
 import { DialogAtividade } from './DialogAtividade';
+import { NotificacoesFollowUp } from './NotificacoesFollowUp';
 import { format, formatDistanceToNow, isToday, isPast } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -43,8 +46,11 @@ export function ListaAtividades() {
   const { data: atividades, isLoading } = useAtividades();
   const updateAtividade = useUpdateAtividade();
   
+  const [activeTab, setActiveTab] = useState('lista');
   const [search, setSearch] = useState('');
   const [tipoFilter, setTipoFilter] = useState<string>('todos');
+  const [statusFilter, setStatusFilter] = useState<string>('pendentes');
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('pendentes');
   const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -93,22 +99,38 @@ export function ListaAtividades() {
   }
 
   return (
-    <>
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5" />
+    <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+      <div className="flex items-center justify-between">
+        <TabsList>
+          <TabsTrigger value="lista" className="flex items-center gap-2">
+            <Clock className="h-4 w-4" />
             Atividades
-            <Badge variant="secondary" className="ml-2">
-              {atividadesFiltradas.length}
-            </Badge>
-          </CardTitle>
+          </TabsTrigger>
+          <TabsTrigger value="followup" className="flex items-center gap-2">
+            <Bell className="h-4 w-4" />
+            Follow-ups
+          </TabsTrigger>
+        </TabsList>
+        {activeTab === 'lista' && (
           <Button onClick={() => setDialogOpen(true)} size="sm">
             <Plus className="h-4 w-4 mr-2" />
             Nova Atividade
           </Button>
-        </CardHeader>
-        <CardContent>
+        )}
+      </div>
+
+      <TabsContent value="lista" className="mt-0">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Clock className="h-5 w-5" />
+              Lista de Atividades
+              <Badge variant="secondary" className="ml-2">
+                {atividadesFiltradas.length}
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
           {/* Filtros */}
           <div className="flex gap-4 mb-4 flex-wrap">
             <div className="relative flex-1 min-w-[200px]">
@@ -241,13 +263,18 @@ export function ListaAtividades() {
               })}
             </div>
           )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </TabsContent>
+
+      <TabsContent value="followup" className="mt-0">
+        <NotificacoesFollowUp />
+      </TabsContent>
 
       <DialogAtividade 
         open={dialogOpen} 
         onOpenChange={setDialogOpen}
       />
-    </>
+    </Tabs>
   );
 }
