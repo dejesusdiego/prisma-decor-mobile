@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { useNavigate } from 'react-router-dom';
 import { 
   Plus, 
   Search, 
@@ -13,7 +14,9 @@ import {
   AlertCircle,
   Clock,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  ExternalLink,
+  FileText
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,6 +38,7 @@ import {
 } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
 import { DialogContaReceber } from './dialogs/DialogContaReceber';
 import { DialogRegistrarRecebimento } from './dialogs/DialogRegistrarRecebimento';
@@ -75,7 +79,8 @@ export function ContasReceber() {
         .from('contas_receber')
         .select(`
           *,
-          parcelas:parcelas_receber(*)
+          parcelas:parcelas_receber(*),
+          orcamento:orcamentos(id, codigo, cliente_nome)
         `)
         .order('data_vencimento', { ascending: true });
       
@@ -259,7 +264,29 @@ export function ContasReceber() {
                             </Button>
                           </CollapsibleTrigger>
                         </TableCell>
-                        <TableCell className="font-medium">{conta.cliente_nome}</TableCell>
+                        <TableCell className="font-medium">
+                          <div className="flex items-center gap-2">
+                            {conta.cliente_nome}
+                            {conta.orcamento && (
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <a
+                                      href={`/gerarorcamento?visualizar=${conta.orcamento.id}`}
+                                      className="text-primary hover:text-primary/80"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      <ExternalLink className="h-3 w-3" />
+                                    </a>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p className="text-xs">Ver orçamento {conta.orcamento.codigo}</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell>{conta.descricao}</TableCell>
                         <TableCell>
                           {format(new Date(conta.data_vencimento), 'dd/MM/yyyy', { locale: ptBR })}

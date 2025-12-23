@@ -496,23 +496,28 @@ export function ListaOrcamentos({ onVoltar, onEditar, onVisualizar }: ListaOrcam
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 {conta ? (
-                                  <Badge
-                                    variant={
-                                      conta.status === 'pago' ? 'default' :
-                                      conta.status === 'parcial' ? 'secondary' :
-                                      conta.status === 'atrasado' ? 'destructive' : 'outline'
-                                    }
-                                    className="cursor-help flex items-center gap-1"
+                                  <a
+                                    href={`/gerarorcamento?financeiro=contas-receber&conta=${conta.id}`}
+                                    onClick={(e) => e.stopPropagation()}
                                   >
-                                    {conta.status === 'pago' ? (
-                                      <CheckCircle2 className="h-3 w-3" />
-                                    ) : conta.status === 'atrasado' ? (
-                                      <AlertCircle className="h-3 w-3" />
-                                    ) : (
-                                      <Clock className="h-3 w-3" />
-                                    )}
-                                    {conta.parcelas_pagas}/{conta.numero_parcelas}
-                                  </Badge>
+                                    <Badge
+                                      variant={
+                                        conta.status === 'pago' ? 'default' :
+                                        conta.status === 'parcial' ? 'secondary' :
+                                        conta.status === 'atrasado' ? 'destructive' : 'outline'
+                                      }
+                                      className="cursor-pointer flex items-center gap-1 hover:opacity-80"
+                                    >
+                                      {conta.status === 'pago' ? (
+                                        <CheckCircle2 className="h-3 w-3" />
+                                      ) : conta.status === 'atrasado' ? (
+                                        <AlertCircle className="h-3 w-3" />
+                                      ) : (
+                                        <Clock className="h-3 w-3" />
+                                      )}
+                                      {conta.parcelas_pagas}/{conta.numero_parcelas}
+                                    </Badge>
+                                  </a>
                                 ) : (
                                   <span className="text-muted-foreground text-xs">—</span>
                                 )}
@@ -523,6 +528,7 @@ export function ListaOrcamentos({ onVoltar, onEditar, onVisualizar }: ListaOrcam
                                     <p><strong>Status:</strong> {conta.status === 'pago' ? 'Quitado' : conta.status === 'parcial' ? 'Parcial' : conta.status === 'atrasado' ? 'Atrasado' : 'Pendente'}</p>
                                     <p><strong>Parcelas:</strong> {conta.parcelas_pagas} de {conta.numero_parcelas} pagas</p>
                                     <p><strong>Pago:</strong> R$ {conta.valor_pago.toFixed(2)} de R$ {conta.valor_total.toFixed(2)}</p>
+                                    <p className="text-primary font-medium">Clique para ver detalhes</p>
                                   </div>
                                 ) : (
                                   <p className="text-xs">Sem conta a receber vinculada</p>

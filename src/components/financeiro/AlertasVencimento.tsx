@@ -19,6 +19,7 @@ import { format, differenceInDays, parseISO, isToday, isTomorrow, isPast, addDay
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
+import { DialogRegistrarRecebimento } from './dialogs/DialogRegistrarRecebimento';
 
 interface Alerta {
   id: string;
@@ -65,7 +66,11 @@ function getPrioridadeConfig(prioridade: Alerta['prioridade']) {
   }
 }
 
-function AlertaItem({ alerta, onDismiss }: { alerta: Alerta; onDismiss?: (id: string) => void }) {
+function AlertaItem({ alerta, onDismiss, onAction }: { 
+  alerta: Alerta; 
+  onDismiss?: (id: string) => void;
+  onAction?: (alerta: Alerta) => void;
+}) {
   const config = getPrioridadeConfig(alerta.prioridade);
   const isParcela = alerta.referencia.tipo === 'parcela';
 
@@ -112,18 +117,32 @@ function AlertaItem({ alerta, onDismiss }: { alerta: Alerta; onDismiss?: (id: st
           )}
         </div>
         
-        <div className="flex items-center gap-2 mt-2">
-          <Badge variant="outline" className={cn("text-xs", config.badge)}>
-            {alerta.diasAtraso !== undefined && alerta.diasAtraso > 0 
-              ? `${alerta.diasAtraso}d atraso`
-              : alerta.diasAtraso === 0
-              ? 'Vence hoje'
-              : `Em ${Math.abs(alerta.diasAtraso || 0)}d`
-            }
-          </Badge>
-          <span className="text-sm font-semibold">
-            {formatCurrency(alerta.valor)}
-          </span>
+        <div className="flex items-center justify-between gap-2 mt-2">
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className={cn("text-xs", config.badge)}>
+              {alerta.diasAtraso !== undefined && alerta.diasAtraso > 0 
+                ? `${alerta.diasAtraso}d atraso`
+                : alerta.diasAtraso === 0
+                ? 'Vence hoje'
+                : `Em ${Math.abs(alerta.diasAtraso || 0)}d`
+              }
+            </Badge>
+            <span className="text-sm font-semibold">
+              {formatCurrency(alerta.valor)}
+            </span>
+          </div>
+          
+          {onAction && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 px-2 text-xs"
+              onClick={() => onAction(alerta)}
+            >
+              {isParcela ? 'Receber' : 'Pagar'}
+              <ChevronRight className="h-3 w-3 ml-1" />
+            </Button>
+          )}
         </div>
       </div>
     </div>
@@ -132,6 +151,8 @@ function AlertaItem({ alerta, onDismiss }: { alerta: Alerta; onDismiss?: (id: st
 
 export function AlertasVencimento() {
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
+  const [dialogRecebimentoOpen, setDialogRecebimentoOpen] = useState(false);
+  const [parcelaSelecionada, setParcelaSelecionada] = useState<any>(null);
 
   // Buscar parcelas vencidas ou próximas do vencimento
   const { data: parcelasData, isLoading: isLoadingParcelas } = useQuery({
@@ -260,6 +281,20 @@ export function AlertasVencimento() {
     setDismissedIds(prev => new Set([...prev, id]));
   };
 
+  const handleAction = (alerta: Alerta) => {
+    if (alerta.referencia.tipo === 'parcela') {
+      // Buscar dados da parcela para abrir o dialog
+      const parcela = parcelasData?.find((p: any) => p.id === alerta.referencia.id);
+      if (parcela) {
+        setParcelaSelecionada(parcela);
+        setDialogRecebimentoOpen(true);
+      }
+    } else {
+      // Navegar para contas a pagar (implementação futura)
+      window.location.href = `/gerarorcamento?financeiro=contas-pagar`;
+    }
+  };
+
   // Contadores
   const totalAlta = alertasOrdenados.filter(a => a.prioridade === 'alta').length;
   const totalMedia = alertasOrdenados.filter(a => a.prioridade === 'media').length;
@@ -347,11 +382,18 @@ export function AlertasVencimento() {
                 key={alerta.id} 
                 alerta={alerta} 
                 onDismiss={handleDismiss}
+                onAction={handleAction}
               />
             ))}
           </div>
         </ScrollArea>
       </CardContent>
+
+      <DialogRegistrarRecebimento
+        open={dialogRecebimentoOpen}
+        onOpenChange={setDialogRecebimentoOpen}
+        parcela={parcelaSelecionada}
+      />
     </Card>
   );
 }
