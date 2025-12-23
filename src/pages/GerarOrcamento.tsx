@@ -28,6 +28,8 @@ import { KanbanOportunidades } from '@/components/crm/KanbanOportunidades';
 import { PipelineVisualizacoes } from '@/components/crm/PipelineVisualizacoes';
 import { RelatoriosCRM } from '@/components/crm/RelatoriosCRM';
 import { ListaAtividades } from '@/components/crm/ListaAtividades';
+import { MergeContatos } from '@/components/crm/MergeContatos';
+import { NotificacoesFollowUp } from '@/components/crm/NotificacoesFollowUp';
 
 interface ClienteDataFromVisita {
   nome: string;
@@ -141,6 +143,8 @@ export default function GerarOrcamento() {
       case 'crmPipeline': return 'Pipeline - Visualizações';
       case 'crmRelatorios': return 'Relatórios CRM';
       case 'crmAtividades': return 'Atividades';
+      case 'crmMerge': return 'Merge de Contatos';
+      case 'crmFollowUp': return 'Follow-ups WhatsApp';
       default: return '';
     }
   };
@@ -255,6 +259,8 @@ export default function GerarOrcamento() {
             {view === 'crmPipeline' && <PipelineVisualizacoes />}
             {view === 'crmRelatorios' && <RelatoriosCRM />}
             {view === 'crmAtividades' && <ListaAtividades />}
+            {view === 'crmMerge' && <MergeContatos />}
+            {view === 'crmFollowUp' && <NotificacoesFollowUp />}
           </div>
         </main>
       </div>

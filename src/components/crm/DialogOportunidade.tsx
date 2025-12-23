@@ -35,6 +35,7 @@ const oportunidadeSchema = z.object({
   valor_estimado: z.string().optional(),
   etapa: z.enum(['prospeccao', 'qualificacao', 'proposta', 'negociacao', 'fechado_ganho', 'fechado_perdido']),
   temperatura: z.enum(['quente', 'morno', 'frio']),
+  origem: z.string().optional().or(z.literal('')),
   data_previsao_fechamento: z.string().optional().or(z.literal('')),
   motivo_perda: z.string().max(255).optional().or(z.literal('')),
   observacoes: z.string().max(500).optional().or(z.literal(''))
@@ -55,6 +56,16 @@ const TEMPERATURAS = [
   { value: 'quente', label: '🔥 Quente' },
   { value: 'morno', label: '🌡️ Morno' },
   { value: 'frio', label: '❄️ Frio' }
+];
+
+const ORIGENS = [
+  { value: 'site', label: 'Site' },
+  { value: 'indicacao', label: 'Indicação' },
+  { value: 'instagram', label: 'Instagram' },
+  { value: 'whatsapp', label: 'WhatsApp' },
+  { value: 'facebook', label: 'Facebook' },
+  { value: 'telefone', label: 'Telefone' },
+  { value: 'outro', label: 'Outro' }
 ];
 
 interface DialogOportunidadeProps {
@@ -79,6 +90,7 @@ export function DialogOportunidade({ open, onOpenChange, oportunidade }: DialogO
       valor_estimado: '',
       etapa: 'prospeccao',
       temperatura: 'morno',
+      origem: '',
       data_previsao_fechamento: '',
       motivo_perda: '',
       observacoes: ''
@@ -95,6 +107,7 @@ export function DialogOportunidade({ open, onOpenChange, oportunidade }: DialogO
         valor_estimado: oportunidade.valor_estimado?.toString() || '',
         etapa: oportunidade.etapa as 'prospeccao' | 'qualificacao' | 'proposta' | 'negociacao' | 'fechado_ganho' | 'fechado_perdido',
         temperatura: (oportunidade.temperatura as 'quente' | 'morno' | 'frio') || 'morno',
+        origem: oportunidade.origem || '',
         data_previsao_fechamento: oportunidade.data_previsao_fechamento || '',
         motivo_perda: oportunidade.motivo_perda || '',
         observacoes: oportunidade.observacoes || ''
@@ -106,6 +119,7 @@ export function DialogOportunidade({ open, onOpenChange, oportunidade }: DialogO
         valor_estimado: '',
         etapa: 'prospeccao',
         temperatura: 'morno',
+        origem: '',
         data_previsao_fechamento: '',
         motivo_perda: '',
         observacoes: ''
@@ -120,6 +134,7 @@ export function DialogOportunidade({ open, onOpenChange, oportunidade }: DialogO
       valor_estimado: data.valor_estimado ? parseFloat(data.valor_estimado) : null,
       etapa: data.etapa,
       temperatura: data.temperatura,
+      origem: data.origem || null,
       data_previsao_fechamento: data.data_previsao_fechamento || null,
       motivo_perda: data.motivo_perda || null,
       observacoes: data.observacoes || null
@@ -258,19 +273,46 @@ export function DialogOportunidade({ open, onOpenChange, oportunidade }: DialogO
               />
             </div>
 
-            <FormField
-              control={form.control}
-              name="data_previsao_fechamento"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Previsão de Fechamento</FormLabel>
-                  <FormControl>
-                    <Input type="date" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="origem"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Origem</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value || ''}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione..." />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {ORIGENS.map((origem) => (
+                          <SelectItem key={origem.value} value={origem.value}>
+                            {origem.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="data_previsao_fechamento"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Previsão Fechamento</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             {etapaAtual === 'fechado_perdido' && (
               <FormField
