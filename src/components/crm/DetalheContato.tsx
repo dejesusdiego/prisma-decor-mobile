@@ -15,7 +15,8 @@ import {
   MessageSquare,
   Users,
   Pencil,
-  DollarSign
+  DollarSign,
+  TrendingUp
 } from 'lucide-react';
 import { useContato, useAtividades, useOrcamentosDoContato, Contato } from '@/hooks/useCRMData';
 import { DialogContato } from './DialogContato';
@@ -234,7 +235,7 @@ export function DetalheContato({ contatoId, onVoltar, onVisualizarOrcamento }: D
               <Separator />
 
               {/* Estatísticas */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-2">
                 <div className="text-center p-3 rounded-lg bg-muted/50">
                   <DollarSign className="h-5 w-5 mx-auto text-emerald-500 mb-1" />
                   <p className="text-lg font-bold">{formatCurrency(contato.valor_total_gasto)}</p>
@@ -244,6 +245,16 @@ export function DetalheContato({ contatoId, onVoltar, onVisualizarOrcamento }: D
                   <FileText className="h-5 w-5 mx-auto text-primary mb-1" />
                   <p className="text-lg font-bold">{orcamentos?.length || 0}</p>
                   <p className="text-xs text-muted-foreground">Orçamentos</p>
+                </div>
+                <div className="text-center p-3 rounded-lg bg-muted/50">
+                  <TrendingUp className="h-5 w-5 mx-auto text-amber-500 mb-1" />
+                  <p className="text-lg font-bold">
+                    {orcamentos && orcamentos.length > 0 
+                      ? formatCurrency((orcamentos.reduce((sum, o) => sum + (o.total_com_desconto || o.total_geral || 0), 0)) / orcamentos.length)
+                      : 'R$ 0'
+                    }
+                  </p>
+                  <p className="text-xs text-muted-foreground">Ticket Médio</p>
                 </div>
               </div>
 

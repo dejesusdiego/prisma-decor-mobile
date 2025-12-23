@@ -492,6 +492,34 @@ export function useCRMMetrics() {
         .eq('concluida', false)
         .lte('data_lembrete', hoje + 'T23:59:59');
 
+      // Métricas de orçamentos
+      const { data: orcamentos, error: orcError } = await supabase
+        .from('orcamentos')
+        .select('status, total_com_desconto, total_geral');
+      
+      if (orcError) throw orcError;
+
+      const orcamentosPorStatus = {
+        rascunho: orcamentos.filter(o => o.status === 'rascunho').length,
+        finalizado: orcamentos.filter(o => o.status === 'finalizado').length,
+        enviado: orcamentos.filter(o => o.status === 'enviado').length,
+        pago: orcamentos.filter(o => o.status === 'pago').length,
+        recusado: orcamentos.filter(o => o.status === 'recusado').length,
+        total: orcamentos.length
+      };
+
+      const valorTotalOrcamentos = orcamentos.reduce(
+        (sum, o) => sum + (o.total_com_desconto || o.total_geral || 0), 0
+      );
+      
+      const valorOrcamentosPagos = orcamentos
+        .filter(o => o.status === 'pago')
+        .reduce((sum, o) => sum + (o.total_com_desconto || o.total_geral || 0), 0);
+
+      const taxaConversaoOrcamentos = orcamentos.length > 0
+        ? (orcamentosPorStatus.pago / orcamentos.length) * 100
+        : 0;
+
       return {
         contatos: contatosPorTipo,
         oportunidades: {
@@ -501,6 +529,12 @@ export function useCRMMetrics() {
           perdidas: oportunidadesPerdidas.length,
           valorPipeline,
           taxaConversao: isNaN(taxaConversao) ? 0 : taxaConversao
+        },
+        orcamentos: {
+          porStatus: orcamentosPorStatus,
+          valorTotal: valorTotalOrcamentos,
+          valorPago: valorOrcamentosPagos,
+          taxaConversao: isNaN(taxaConversaoOrcamentos) ? 0 : taxaConversaoOrcamentos
         },
         funilVendas,
         followUpsPendentes: followUpsPendentes || 0
@@ -517,11 +551,26 @@ export function useOrcamentosDoContato(contatoId: string | null) {
     queryFn: async () => {
       if (!contatoId) return [];
       
-      const { data, error } = await supabase
+      // Primeiro, buscar o telefone do contato
+      const { data: contato } = await supabase
+        .from('contatos')
+        .select('telefone')
+        .eq('id', contatoId)
+        .maybeSingle();
+      
+      // Buscar orçamentos por contato_id OU por telefone (fallback para dados antigos)
+      let query = supabase
         .from('orcamentos')
         .select('*')
-        .eq('contato_id', contatoId)
         .order('created_at', { ascending: false });
+      
+      if (contato?.telefone) {
+        query = query.or(`contato_id.eq.${contatoId},cliente_telefone.eq.${contato.telefone}`);
+      } else {
+        query = query.eq('contato_id', contatoId);
+      }
+      
+      const { data, error } = await query;
       
       if (error) throw error;
       return data;
