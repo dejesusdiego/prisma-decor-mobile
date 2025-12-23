@@ -8,6 +8,7 @@ import { toast } from '@/hooks/use-toast';
 import type { Cortina, Material, ServicoConfeccao, ServicoInstalacao } from '@/types/orcamento';
 import { calcularConsumoDetalhado, calcularResumoConsolidado } from '@/lib/calculosOrcamento';
 import { fetchMateriaisPaginados } from '@/lib/fetchMateriaisPaginados';
+import { ResumoFinanceiroOrcamento } from './ResumoFinanceiroOrcamento';
 
 interface VisualizarOrcamentoProps {
   orcamentoId: string;
@@ -676,10 +677,21 @@ export function VisualizarOrcamento({ orcamentoId, onVoltar }: VisualizarOrcamen
         </CardContent>
       </Card>
 
-      {/* Resumo Financeiro */}
+      {/* Resumo Financeiro Integrado */}
+      <ResumoFinanceiroOrcamento 
+        orcamentoId={orcamentoId}
+        onVerDetalhes={() => {
+          toast({
+            title: 'Em breve',
+            description: 'Funcionalidade de detalhes financeiros em desenvolvimento'
+          });
+        }}
+      />
+
+      {/* Resumo de Custos do Orçamento */}
       <Card>
         <CardHeader>
-          <CardTitle>Resumo Financeiro</CardTitle>
+          <CardTitle>Resumo de Custos</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex justify-between py-2 border-b">
