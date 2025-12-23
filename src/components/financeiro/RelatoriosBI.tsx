@@ -11,9 +11,11 @@ import {
   Repeat,
   ChevronRight,
   History,
-  Percent
+  Percent,
+  Scale3D
 } from 'lucide-react';
 import { RelatorioDescontos } from './RelatorioDescontos';
+import { RelatorioOrcadoRealizado } from './RelatorioOrcadoRealizado';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -324,7 +326,7 @@ export function RelatoriosBI() {
       </div>
 
       <Tabs defaultValue="dre" className="space-y-6">
-        <TabsList className="grid grid-cols-7 w-full max-w-[900px]">
+        <TabsList className="grid grid-cols-8 w-full max-w-[1000px]">
           <TabsTrigger value="dre" className="gap-2">
             <DollarSign className="h-4 w-4" />
             <span className="hidden sm:inline">DRE</span>
@@ -340,6 +342,10 @@ export function RelatoriosBI() {
           <TabsTrigger value="faturamento" className="gap-2">
             <BarChart3 className="h-4 w-4" />
             <span className="hidden sm:inline">Faturamento</span>
+          </TabsTrigger>
+          <TabsTrigger value="rentabilidade" className="gap-2">
+            <Scale3D className="h-4 w-4" />
+            <span className="hidden sm:inline">Rentabilidade</span>
           </TabsTrigger>
           <TabsTrigger value="recorrentes" className="gap-2">
             <Repeat className="h-4 w-4" />
@@ -583,6 +589,11 @@ export function RelatoriosBI() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Relatório de Rentabilidade - Orçado vs Realizado */}
+        <TabsContent value="rentabilidade" className="space-y-6">
+          <RelatorioOrcadoRealizado />
         </TabsContent>
 
         {/* Despesas Recorrentes */}

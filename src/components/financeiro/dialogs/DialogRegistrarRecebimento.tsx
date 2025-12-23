@@ -55,6 +55,10 @@ export function DialogRegistrarRecebimento({ open, onOpenChange, parcela }: Dial
     }
   });
 
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+  };
+
   useEffect(() => {
     if (open) {
       reset({
@@ -113,16 +117,25 @@ export function DialogRegistrarRecebimento({ open, onOpenChange, parcela }: Dial
         const valorTotalOrcamento = Number(conta.orcamento?.total_com_desconto ?? conta.orcamento?.total_geral ?? conta.valor_total) || 0;
         const percentualPago = valorTotalOrcamento > 0 ? (novoValorPago / valorTotalOrcamento) * 100 : 0;
 
+        // Buscar percentual anterior para verificar se cruzou um marco
+        const percentualAnterior = valorTotalOrcamento > 0 
+          ? ((novoValorPago - Number(parcela.valor)) / valorTotalOrcamento) * 100 
+          : 0;
+
         let novoStatusOrcamento: string | null = null;
+        let marcoAtingido: number | null = null;
         
-        if (percentualPago >= 100) {
+        if (percentualPago >= 100 && percentualAnterior < 100) {
           novoStatusOrcamento = 'pago';
-        } else if (percentualPago >= 60) {
+          marcoAtingido = 100;
+        } else if (percentualPago >= 60 && percentualAnterior < 60) {
           novoStatusOrcamento = 'pago_60';
-        } else if (percentualPago >= 50) {
+          marcoAtingido = 60;
+        } else if (percentualPago >= 50 && percentualAnterior < 50) {
           novoStatusOrcamento = 'pago_parcial';
-        } else if (percentualPago >= 40) {
+        } else if (percentualPago >= 40 && percentualAnterior < 40) {
           novoStatusOrcamento = 'pago_40';
+          marcoAtingido = 40;
         }
 
         if (novoStatusOrcamento) {
@@ -137,6 +150,29 @@ export function DialogRegistrarRecebimento({ open, onOpenChange, parcela }: Dial
             console.error('Erro ao sincronizar status do orçamento:', errorSyncStatus);
           } else {
             console.log(`Status do orçamento ${conta.orcamento_id} atualizado para: ${novoStatusOrcamento} (${percentualPago.toFixed(1)}%)`);
+          }
+        }
+
+        // Notificação de marco atingido
+        if (marcoAtingido) {
+          const clienteNome = conta.orcamento?.cliente_nome || conta.cliente_nome;
+          const codigoOrcamento = conta.orcamento?.codigo || '';
+          
+          if (marcoAtingido === 100) {
+            toast.success(`🎉 Orçamento ${codigoOrcamento} TOTALMENTE PAGO!`, {
+              description: `${clienteNome} - ${formatCurrency(valorTotalOrcamento)}`,
+              duration: 8000,
+            });
+          } else if (marcoAtingido === 60) {
+            toast.info(`📊 Orçamento ${codigoOrcamento} atingiu 60% de pagamento`, {
+              description: `${clienteNome} - Faltam ${formatCurrency(valorTotalOrcamento - novoValorPago)}`,
+              duration: 6000,
+            });
+          } else if (marcoAtingido === 40) {
+            toast.info(`📊 Orçamento ${codigoOrcamento} atingiu 40% de pagamento`, {
+              description: `${clienteNome} - Recebido ${formatCurrency(novoValorPago)}`,
+              duration: 6000,
+            });
           }
         }
       }
@@ -256,10 +292,6 @@ export function DialogRegistrarRecebimento({ open, onOpenChange, parcela }: Dial
   };
 
   if (!parcela) return null;
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
-  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
