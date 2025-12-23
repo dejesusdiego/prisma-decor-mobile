@@ -7,6 +7,7 @@ import {
   Moon, 
   Sun,
   ChevronLeft,
+  ChevronDown,
   Users,
   CalendarCheck,
   Bell,
@@ -15,10 +16,11 @@ import {
   ArrowDownCircle,
   Receipt,
   BarChart3,
-  CreditCard,
   Tags,
   TrendingUp,
-  DollarSign
+  DollarSign,
+  Wallet,
+  Wrench
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -26,6 +28,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -80,12 +83,31 @@ const administracaoNavItems = [
   { id: 'ajustesSistema' as View, label: 'Ajustes do Sistema', icon: Settings },
 ];
 
+interface SectionConfig {
+  id: string;
+  title: string;
+  icon: React.ElementType;
+  items: typeof principalNavItems;
+  adminOnly?: boolean;
+}
+
 export function OrcamentoSidebar({ currentView, onNavigate }: OrcamentoSidebarProps) {
   const navigate = useNavigate();
   const { isAdmin } = useUserRole();
   const [collapsed, setCollapsed] = useState(false);
   const [isDark, setIsDark] = useState(false);
   const [visitasNaoVistas, setVisitasNaoVistas] = useState(0);
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({
+    principal: true,
+    financeiro: true,
+    administracao: false
+  });
+
+  const sections: SectionConfig[] = [
+    { id: 'principal', title: 'Principal', icon: Home, items: principalNavItems },
+    { id: 'financeiro', title: 'Financeiro', icon: Wallet, items: financeiroNavItems, adminOnly: true },
+    { id: 'administracao', title: 'Administração', icon: Wrench, items: administracaoNavItems, adminOnly: true },
+  ];
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme');
@@ -94,6 +116,16 @@ export function OrcamentoSidebar({ currentView, onNavigate }: OrcamentoSidebarPr
       document.documentElement.classList.add('dark');
     }
   }, []);
+
+  // Auto-expand section containing current view
+  useEffect(() => {
+    sections.forEach(section => {
+      const hasActiveItem = section.items.some(item => item.id === currentView);
+      if (hasActiveItem && !openSections[section.id]) {
+        setOpenSections(prev => ({ ...prev, [section.id]: true }));
+      }
+    });
+  }, [currentView]);
 
   // Buscar contagem de visitas não visualizadas e configurar realtime
   useEffect(() => {
@@ -179,6 +211,10 @@ export function OrcamentoSidebar({ currentView, onNavigate }: OrcamentoSidebarPr
     setIsDark(!isDark);
   };
 
+  const toggleSection = (sectionId: string) => {
+    setOpenSections(prev => ({ ...prev, [sectionId]: !prev[sectionId] }));
+  };
+
   const NavItem = ({ item, isActive }: { item: { id: View; label: string; icon: React.ElementType; adminOnly?: boolean }, isActive: boolean }) => {
     const showBadge = item.id === 'solicitacoesVisita' && visitasNaoVistas > 0;
     
@@ -186,14 +222,14 @@ export function OrcamentoSidebar({ currentView, onNavigate }: OrcamentoSidebarPr
       <button
         onClick={() => onNavigate(item.id)}
         className={cn(
-          "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 relative",
+          "w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 relative",
           "hover:bg-accent/50",
           isActive && "bg-primary text-primary-foreground hover:bg-primary/90",
           !isActive && "text-muted-foreground hover:text-foreground"
         )}
       >
         <div className="relative">
-          <item.icon className={cn("h-5 w-5 shrink-0", isActive && "text-primary-foreground")} />
+          <item.icon className={cn("h-4 w-4 shrink-0", isActive && "text-primary-foreground")} />
           {showBadge && collapsed && (
             <Badge 
               variant="destructive" 
@@ -223,7 +259,7 @@ export function OrcamentoSidebar({ currentView, onNavigate }: OrcamentoSidebarPr
       return (
         <Tooltip delayDuration={0}>
           <TooltipTrigger asChild>{content}</TooltipTrigger>
-          <TooltipContent side="right" className="font-medium flex items-center gap-2">
+          <TooltipContent side="right" className="font-medium flex items-center gap-2 bg-popover border z-50">
             {item.label}
             {showBadge && (
               <Badge variant="destructive" className="h-5 min-w-[20px] px-1.5 text-xs">
@@ -238,23 +274,63 @@ export function OrcamentoSidebar({ currentView, onNavigate }: OrcamentoSidebarPr
     return content;
   };
 
-  const renderSection = (title: string, items: typeof principalNavItems) => {
-    const filteredItems = items.filter(item => !item.adminOnly || isAdmin);
+  const renderSection = (section: SectionConfig) => {
+    if (section.adminOnly && !isAdmin) return null;
     
+    const filteredItems = section.items.filter(item => !item.adminOnly || isAdmin);
     if (filteredItems.length === 0) return null;
+
+    const isOpen = openSections[section.id];
+    const hasActiveItem = filteredItems.some(item => item.id === currentView);
+    const SectionIcon = section.icon;
+
+    if (collapsed) {
+      return (
+        <div key={section.id} className="space-y-1">
+          {section.id !== 'principal' && <div className="border-t my-2" />}
+          {filteredItems.map((item) => (
+            <NavItem key={item.id} item={item} isActive={currentView === item.id} />
+          ))}
+        </div>
+      );
+    }
     
     return (
-      <div className="space-y-1">
-        {!collapsed && (
-          <span className="text-xs font-semibold text-muted-foreground px-3 py-2 block uppercase tracking-wider">
-            {title}
-          </span>
-        )}
-        {collapsed && title !== 'Principal' && <div className="border-t my-2" />}
-        {filteredItems.map((item) => (
-          <NavItem key={item.id} item={item} isActive={currentView === item.id} />
-        ))}
-      </div>
+      <Collapsible
+        key={section.id}
+        open={isOpen}
+        onOpenChange={() => toggleSection(section.id)}
+        className="space-y-1"
+      >
+        <CollapsibleTrigger asChild>
+          <button
+            className={cn(
+              "w-full flex items-center justify-between px-3 py-2 rounded-lg transition-all duration-200",
+              "hover:bg-accent/30",
+              hasActiveItem && "text-primary",
+              !hasActiveItem && "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <div className="flex items-center gap-2">
+              <SectionIcon className="h-4 w-4" />
+              <span className="text-xs font-semibold uppercase tracking-wider">
+                {section.title}
+              </span>
+            </div>
+            <ChevronDown 
+              className={cn(
+                "h-4 w-4 transition-transform duration-200",
+                isOpen && "rotate-180"
+              )} 
+            />
+          </button>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="space-y-0.5 pl-2">
+          {filteredItems.map((item) => (
+            <NavItem key={item.id} item={item} isActive={currentView === item.id} />
+          ))}
+        </CollapsibleContent>
+      </Collapsible>
     );
   };
 
@@ -267,7 +343,7 @@ export function OrcamentoSidebar({ currentView, onNavigate }: OrcamentoSidebarPr
     >
       {/* Header */}
       <div className={cn(
-        "h-16 border-b flex items-center px-4",
+        "h-16 border-b flex items-center px-4 shrink-0",
         collapsed ? "justify-center" : "justify-between"
       )}>
         {!collapsed && (
@@ -289,20 +365,19 @@ export function OrcamentoSidebar({ currentView, onNavigate }: OrcamentoSidebarPr
         </Button>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 p-3 space-y-4 overflow-y-auto">
-        {/* Seção Principal */}
-        {renderSection('Principal', principalNavItems)}
-
-        {/* Seção Financeiro - Apenas para admins */}
-        {isAdmin && renderSection('Financeiro', financeiroNavItems)}
-
-        {/* Seção Administração - Apenas para admins */}
-        {isAdmin && renderSection('Administração', administracaoNavItems)}
+      {/* Navigation - Scroll invisível */}
+      <nav 
+        className={cn(
+          "flex-1 p-3 space-y-2 overflow-y-auto",
+          "[&::-webkit-scrollbar]:w-0 [&::-webkit-scrollbar]:h-0",
+          "[-ms-overflow-style:none] [scrollbar-width:none]"
+        )}
+      >
+        {sections.map(renderSection)}
       </nav>
 
       {/* Footer */}
-      <div className="p-3 border-t space-y-2">
+      <div className="p-3 border-t space-y-1 shrink-0">
         {/* Users button - Apenas para admins */}
         {isAdmin && (
           <Tooltip delayDuration={0}>
@@ -310,16 +385,16 @@ export function OrcamentoSidebar({ currentView, onNavigate }: OrcamentoSidebarPr
               <button
                 onClick={() => navigate('/gerenciarusuarios')}
                 className={cn(
-                  "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all",
+                  "w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all",
                   "text-muted-foreground hover:text-foreground hover:bg-accent/50"
                 )}
               >
-                <Users className="h-5 w-5 shrink-0" />
+                <Users className="h-4 w-4 shrink-0" />
                 {!collapsed && <span className="text-sm font-medium">Usuários</span>}
               </button>
             </TooltipTrigger>
             {collapsed && (
-              <TooltipContent side="right" className="font-medium">
+              <TooltipContent side="right" className="font-medium bg-popover border z-50">
                 Usuários
               </TooltipContent>
             )}
@@ -332,14 +407,14 @@ export function OrcamentoSidebar({ currentView, onNavigate }: OrcamentoSidebarPr
             <button
               onClick={toggleTheme}
               className={cn(
-                "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all",
+                "w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all",
                 "text-muted-foreground hover:text-foreground hover:bg-accent/50"
               )}
             >
               {isDark ? (
-                <Sun className="h-5 w-5 shrink-0" />
+                <Sun className="h-4 w-4 shrink-0" />
               ) : (
-                <Moon className="h-5 w-5 shrink-0" />
+                <Moon className="h-4 w-4 shrink-0" />
               )}
               {!collapsed && (
                 <span className="text-sm font-medium">
@@ -349,7 +424,7 @@ export function OrcamentoSidebar({ currentView, onNavigate }: OrcamentoSidebarPr
             </button>
           </TooltipTrigger>
           {collapsed && (
-            <TooltipContent side="right" className="font-medium">
+            <TooltipContent side="right" className="font-medium bg-popover border z-50">
               {isDark ? 'Modo Claro' : 'Modo Escuro'}
             </TooltipContent>
           )}
