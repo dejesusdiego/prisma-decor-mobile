@@ -51,8 +51,6 @@ export function ListaAtividades() {
   const [tipoFilter, setTipoFilter] = useState<string>('todos');
   const [statusFilter, setStatusFilter] = useState<string>('pendentes');
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<string>('pendentes');
-  const [dialogOpen, setDialogOpen] = useState(false);
 
   const atividadesFiltradas = useMemo(() => {
     if (!atividades) return [];
