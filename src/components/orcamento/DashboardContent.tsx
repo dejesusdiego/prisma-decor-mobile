@@ -46,6 +46,7 @@ export function DashboardContent({
     tendencias,
     funil, 
     recentOrcamentos, 
+    dadosDiarios,
     dadosMensais, 
     alertas, 
     produtosRanking,
@@ -68,13 +69,6 @@ export function DashboardContent({
       default: return '';
     }
   };
-
-  // Preparar dados para os gráficos
-  const dadosFaturamento = dadosMensais.map(d => ({
-    mes: d.mes,
-    faturamento: d.faturamento,
-    custoTotal: 0,
-  }));
 
   const etapasFunil = funil.map(f => ({
     status: f.status,
@@ -226,12 +220,9 @@ export function DashboardContent({
         ) : (
           <>
             <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Faturamento Diário</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {dadosFaturamento.length > 0 ? (
-                  <GraficoFaturamentoMensal dados={dadosFaturamento} />
+              <CardContent className="pt-4">
+                {dadosDiarios.length > 0 || dadosMensais.length > 0 ? (
+                  <GraficoFaturamentoMensal dadosDiarios={dadosDiarios} dadosMensais={dadosMensais} />
                 ) : (
                   <div className="h-[250px] flex items-center justify-center text-muted-foreground">
                     Sem dados para o período
