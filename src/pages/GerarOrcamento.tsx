@@ -25,6 +25,8 @@ import { PainelCRM } from '@/components/crm/PainelCRM';
 import { ListaContatos } from '@/components/crm/ListaContatos';
 import { DetalheContato } from '@/components/crm/DetalheContato';
 import { KanbanOportunidades } from '@/components/crm/KanbanOportunidades';
+import { PipelineVisualizacoes } from '@/components/crm/PipelineVisualizacoes';
+import { RelatoriosCRM } from '@/components/crm/RelatoriosCRM';
 import { ListaAtividades } from '@/components/crm/ListaAtividades';
 
 interface ClienteDataFromVisita {
@@ -135,7 +137,9 @@ export default function GerarOrcamento() {
       case 'crmPainel': return 'Painel CRM';
       case 'crmContatos': return 'Contatos';
       case 'crmDetalheContato': return '';
-      case 'crmOportunidades': return 'Oportunidades';
+      case 'crmOportunidades': return 'Kanban de Oportunidades';
+      case 'crmPipeline': return 'Pipeline - Visualizações';
+      case 'crmRelatorios': return 'Relatórios CRM';
       case 'crmAtividades': return 'Atividades';
       default: return '';
     }
@@ -248,6 +252,8 @@ export default function GerarOrcamento() {
               />
             )}
             {view === 'crmOportunidades' && <KanbanOportunidades />}
+            {view === 'crmPipeline' && <PipelineVisualizacoes />}
+            {view === 'crmRelatorios' && <RelatoriosCRM />}
             {view === 'crmAtividades' && <ListaAtividades />}
           </div>
         </main>

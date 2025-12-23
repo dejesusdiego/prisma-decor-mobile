@@ -59,6 +59,8 @@ export type View =
   | 'crmContatos'
   | 'crmDetalheContato'
   | 'crmOportunidades'
+  | 'crmPipeline'
+  | 'crmRelatorios'
   | 'crmAtividades';
 
 interface OrcamentoSidebarProps {
@@ -82,8 +84,10 @@ const orcamentosNavItems = [
 const crmNavItems = [
   { id: 'crmPainel' as View, label: 'Painel CRM', icon: Target },
   { id: 'crmContatos' as View, label: 'Contatos', icon: UserCircle },
-  { id: 'crmOportunidades' as View, label: 'Oportunidades', icon: TrendingUp },
+  { id: 'crmOportunidades' as View, label: 'Kanban', icon: TrendingUp },
+  { id: 'crmPipeline' as View, label: 'Pipeline', icon: BarChart3 },
   { id: 'crmAtividades' as View, label: 'Atividades', icon: Clock },
+  { id: 'crmRelatorios' as View, label: 'Relatórios', icon: ClipboardList },
 ];
 
 // Itens da seção FINANCEIRO (admin only)
