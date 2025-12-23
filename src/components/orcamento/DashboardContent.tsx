@@ -227,7 +227,7 @@ export function DashboardContent({
           <>
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Faturamento Mensal</CardTitle>
+                <CardTitle className="text-base">Faturamento Diário</CardTitle>
               </CardHeader>
               <CardContent>
                 {dadosFaturamento.length > 0 ? (
