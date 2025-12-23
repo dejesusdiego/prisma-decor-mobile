@@ -14,7 +14,8 @@ import {
   Clock,
   RefreshCw,
   Repeat,
-  Loader2
+  Loader2,
+  ExternalLink
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,6 +40,9 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { toast } from 'sonner';
 import { DialogContaPagar } from './dialogs/DialogContaPagar';
 
+interface ContasPagarProps {
+  onVisualizarOrcamento?: (orcamentoId: string) => void;
+}
 type StatusFilter = 'todos' | 'pendente' | 'pago' | 'atrasado';
 
 const formatCurrency = (value: number) => {
@@ -59,7 +63,7 @@ const getStatusBadge = (status: string, dataVencimento: string) => {
   return <Badge variant="secondary"><Clock className="h-3 w-3 mr-1" />Pendente</Badge>;
 };
 
-export function ContasPagar() {
+export function ContasPagar({ onVisualizarOrcamento }: ContasPagarProps) {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('todos');
@@ -75,7 +79,8 @@ export function ContasPagar() {
         .select(`
           *,
           categoria:categorias_financeiras(nome, cor),
-          forma_pagamento:formas_pagamento(nome)
+          forma_pagamento:formas_pagamento(nome),
+          orcamento:orcamentos(id, codigo, cliente_nome)
         `)
         .order('data_vencimento', { ascending: true });
       
@@ -328,6 +333,25 @@ export function ContasPagar() {
                               </TooltipTrigger>
                               <TooltipContent>
                                 <p className="text-xs">Conta recorrente ({conta.frequencia_recorrencia})</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        )}
+                        {conta.orcamento && onVisualizarOrcamento && (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6"
+                                  onClick={() => onVisualizarOrcamento(conta.orcamento_id)}
+                                >
+                                  <ExternalLink className="h-3 w-3" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="text-xs">Ver orçamento {conta.orcamento.codigo}</p>
                               </TooltipContent>
                             </Tooltip>
                           </TooltipProvider>

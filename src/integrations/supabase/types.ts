@@ -206,6 +206,7 @@ export type Database = {
           id: string
           numero_documento: string | null
           observacoes: string | null
+          orcamento_id: string | null
           recorrente: boolean
           status: string
           updated_at: string
@@ -225,6 +226,7 @@ export type Database = {
           id?: string
           numero_documento?: string | null
           observacoes?: string | null
+          orcamento_id?: string | null
           recorrente?: boolean
           status?: string
           updated_at?: string
@@ -244,6 +246,7 @@ export type Database = {
           id?: string
           numero_documento?: string | null
           observacoes?: string | null
+          orcamento_id?: string | null
           recorrente?: boolean
           status?: string
           updated_at?: string
@@ -269,6 +272,13 @@ export type Database = {
             columns: ["forma_pagamento_id"]
             isOneToOne: false
             referencedRelation: "formas_pagamento"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contas_pagar_orcamento_id_fkey"
+            columns: ["orcamento_id"]
+            isOneToOne: false
+            referencedRelation: "orcamentos"
             referencedColumns: ["id"]
           },
         ]

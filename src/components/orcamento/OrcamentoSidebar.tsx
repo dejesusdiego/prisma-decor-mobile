@@ -50,6 +50,7 @@ export type View =
   | 'finRelatorios'
   | 'finFluxoPrevisto'
   | 'finRentabilidade'
+  | 'finComissoes'
   | 'categoriasFormas';
 
 interface OrcamentoSidebarProps {
@@ -74,6 +75,7 @@ const financeiroNavItems = [
   { id: 'finDashboard' as View, label: 'Visão Geral', icon: LayoutDashboard },
   { id: 'finFluxoPrevisto' as View, label: 'Fluxo Previsto', icon: TrendingUp },
   { id: 'finRentabilidade' as View, label: 'Rentabilidade', icon: DollarSign },
+  { id: 'finComissoes' as View, label: 'Comissões', icon: Users },
   { id: 'finContasPagar' as View, label: 'Contas a Pagar', icon: ArrowUpCircle },
   { id: 'finContasReceber' as View, label: 'Contas a Receber', icon: ArrowDownCircle },
   { id: 'finLancamentos' as View, label: 'Lançamentos', icon: Receipt },
