@@ -828,6 +828,7 @@ export type Database = {
           motivo_perda: string | null
           observacoes: string | null
           orcamento_id: string | null
+          origem: string | null
           temperatura: string | null
           titulo: string
           updated_at: string
@@ -843,6 +844,7 @@ export type Database = {
           motivo_perda?: string | null
           observacoes?: string | null
           orcamento_id?: string | null
+          origem?: string | null
           temperatura?: string | null
           titulo: string
           updated_at?: string
@@ -858,6 +860,7 @@ export type Database = {
           motivo_perda?: string | null
           observacoes?: string | null
           orcamento_id?: string | null
+          origem?: string | null
           temperatura?: string | null
           titulo?: string
           updated_at?: string

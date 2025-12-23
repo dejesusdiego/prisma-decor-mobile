@@ -24,7 +24,9 @@ import {
   ClipboardList,
   Target,
   Clock,
-  UserCircle
+  UserCircle,
+  Merge,
+  MessageCircle
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -61,7 +63,9 @@ export type View =
   | 'crmOportunidades'
   | 'crmPipeline'
   | 'crmRelatorios'
-  | 'crmAtividades';
+  | 'crmAtividades'
+  | 'crmMerge'
+  | 'crmFollowUp';
 
 interface OrcamentoSidebarProps {
   currentView: View;
@@ -87,7 +91,9 @@ const crmNavItems = [
   { id: 'crmOportunidades' as View, label: 'Kanban', icon: TrendingUp },
   { id: 'crmPipeline' as View, label: 'Pipeline', icon: BarChart3 },
   { id: 'crmAtividades' as View, label: 'Atividades', icon: Clock },
+  { id: 'crmFollowUp' as View, label: 'Follow-ups', icon: MessageCircle },
   { id: 'crmRelatorios' as View, label: 'Relatórios', icon: ClipboardList },
+  { id: 'crmMerge' as View, label: 'Merge Contatos', icon: Merge },
 ];
 
 // Itens da seção FINANCEIRO (admin only)

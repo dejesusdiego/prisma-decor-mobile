@@ -37,6 +37,7 @@ export interface Oportunidade {
   motivo_perda: string | null;
   data_previsao_fechamento: string | null;
   observacoes: string | null;
+  origem: string | null;
   created_at: string;
   updated_at: string;
   created_by_user_id: string;
@@ -243,6 +244,7 @@ export function useCreateOportunidade() {
           motivo_perda: oportunidade.motivo_perda,
           data_previsao_fechamento: oportunidade.data_previsao_fechamento,
           observacoes: oportunidade.observacoes,
+          origem: oportunidade.origem,
           created_by_user_id: user.id
         }])
         .select()
