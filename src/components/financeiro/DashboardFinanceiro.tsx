@@ -17,6 +17,7 @@ import { GraficoFluxoCaixa } from './charts/GraficoFluxoCaixa';
 import { GraficoCategoriaDespesas } from './charts/GraficoCategoriaDespesas';
 import { ListaContasPendentes } from './ListaContasPendentes';
 import { ListaLancamentosRecentes } from './ListaLancamentosRecentes';
+import { AlertasVencimento } from './AlertasVencimento';
 import { format, subDays, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -213,8 +214,11 @@ export function DashboardFinanceiro() {
         </Card>
       </div>
 
-      {/* Listas */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Alertas e Listas */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Alertas de Vencimento */}
+        <AlertasVencimento />
+
         {/* Contas Pendentes */}
         <ListaContasPendentes 
           contasPagar={contasPagarPendentes}
