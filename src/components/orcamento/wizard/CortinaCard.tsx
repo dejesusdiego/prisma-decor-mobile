@@ -224,14 +224,15 @@ export function CortinaCard({
       console.log('🔧 Serviços de confecção:', servicosParaCalculo.map(s => s.nome_modelo));
       console.log('🔨 Serviço de instalação:', instalacaoData?.nome);
 
-      // Calcular custo de costura somando todos os serviços
+      // Calcular custo de costura somando todos os serviços (multiplicado pela quantidade)
       const trilho = cortina.trilhoId ? trilhos.find(t => t.id === cortina.trilhoId || t.codigo_item === cortina.trilhoId) : null;
-      const comprimentoTrilho_m = cortina.largura + 0.1;
-      const comprimentoParaCostura = trilho ? comprimentoTrilho_m : cortina.largura;
+      const comprimentoTrilhoUnitario_m = cortina.largura + 0.1;
+      const comprimentoParaCosturaUnitario = trilho ? comprimentoTrilhoUnitario_m : cortina.largura;
+      const comprimentoParaCosturaTotal = comprimentoParaCosturaUnitario * cortina.quantidade;
       
       let custoCosturaTotal = 0;
       for (const servico of servicosParaCalculo) {
-        custoCosturaTotal += comprimentoParaCostura * servico.preco_custo;
+        custoCosturaTotal += comprimentoParaCosturaTotal * servico.preco_custo;
       }
 
       // Calcular custos usando o primeiro serviço para estrutura, mas substituir custosCostura
