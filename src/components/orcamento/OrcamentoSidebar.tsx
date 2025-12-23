@@ -91,23 +91,64 @@ interface SectionConfig {
   adminOnly?: boolean;
 }
 
+const SIDEBAR_SECTIONS_KEY = 'sidebar-open-sections';
+const SIDEBAR_COLLAPSED_KEY = 'sidebar-collapsed';
+
+const getInitialSections = (): Record<string, boolean> => {
+  try {
+    const saved = localStorage.getItem(SIDEBAR_SECTIONS_KEY);
+    if (saved) {
+      return JSON.parse(saved);
+    }
+  } catch (e) {
+    console.error('Error reading sidebar sections from localStorage:', e);
+  }
+  return { principal: true, financeiro: true, administracao: false };
+};
+
+const getInitialCollapsed = (): boolean => {
+  try {
+    const saved = localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
+    if (saved) {
+      return JSON.parse(saved);
+    }
+  } catch (e) {
+    console.error('Error reading sidebar collapsed from localStorage:', e);
+  }
+  return false;
+};
+
 export function OrcamentoSidebar({ currentView, onNavigate }: OrcamentoSidebarProps) {
   const navigate = useNavigate();
   const { isAdmin } = useUserRole();
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(getInitialCollapsed);
   const [isDark, setIsDark] = useState(false);
   const [visitasNaoVistas, setVisitasNaoVistas] = useState(0);
-  const [openSections, setOpenSections] = useState<Record<string, boolean>>({
-    principal: true,
-    financeiro: true,
-    administracao: false
-  });
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>(getInitialSections);
 
   const sections: SectionConfig[] = [
     { id: 'principal', title: 'Principal', icon: Home, items: principalNavItems },
     { id: 'financeiro', title: 'Financeiro', icon: Wallet, items: financeiroNavItems, adminOnly: true },
     { id: 'administracao', title: 'Administração', icon: Wrench, items: administracaoNavItems, adminOnly: true },
   ];
+
+  // Salvar estado das seções no localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem(SIDEBAR_SECTIONS_KEY, JSON.stringify(openSections));
+    } catch (e) {
+      console.error('Error saving sidebar sections to localStorage:', e);
+    }
+  }, [openSections]);
+
+  // Salvar estado collapsed no localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem(SIDEBAR_COLLAPSED_KEY, JSON.stringify(collapsed));
+    } catch (e) {
+      console.error('Error saving sidebar collapsed to localStorage:', e);
+    }
+  }, [collapsed]);
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme');
