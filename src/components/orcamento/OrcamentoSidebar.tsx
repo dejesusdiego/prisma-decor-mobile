@@ -9,7 +9,8 @@ import {
   ChevronLeft,
   Users,
   CalendarCheck,
-  Bell
+  Bell,
+  Wallet
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -21,7 +22,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useUserRole } from '@/hooks/useUserRole';
 
-type View = 'dashboard' | 'novoOrcamento' | 'listaOrcamentos' | 'visualizarOrcamento' | 'gestaoMateriais' | 'ajustesSistema' | 'solicitacoesVisita';
+type View = 'dashboard' | 'novoOrcamento' | 'listaOrcamentos' | 'visualizarOrcamento' | 'gestaoMateriais' | 'ajustesSistema' | 'solicitacoesVisita' | 'financeiro';
 
 interface OrcamentoSidebarProps {
   currentView: View;
@@ -38,6 +39,7 @@ const baseNavItems = [
 // Itens visíveis apenas para admins (seção principal)
 const adminMainNavItems = [
   { id: 'solicitacoesVisita' as View, label: 'Solicitações de Visita', icon: CalendarCheck },
+  { id: 'financeiro' as View, label: 'Financeiro', icon: Wallet },
 ];
 
 // Itens da seção de administração (apenas admins)
