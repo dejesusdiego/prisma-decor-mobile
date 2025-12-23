@@ -117,16 +117,16 @@ export function PainelCRM() {
       color: 'text-blue-500'
     },
     {
-      title: 'Oportunidades Abertas',
-      value: metrics?.oportunidades.abertas || 0,
-      description: `Pipeline: ${formatCurrency(metrics?.oportunidades.valorPipeline || 0)}`,
-      icon: Target,
-      color: 'text-amber-500'
+      title: 'Orçamentos',
+      value: metrics?.orcamentos?.porStatus.total || 0,
+      description: `${metrics?.orcamentos?.porStatus.pago || 0} pagos · ${formatCurrency(metrics?.orcamentos?.valorPago || 0)}`,
+      icon: FileText,
+      color: 'text-primary'
     },
     {
-      title: 'Taxa de Conversão',
-      value: `${(metrics?.oportunidades.taxaConversao || 0).toFixed(0)}%`,
-      description: `${metrics?.oportunidades.ganhas || 0} ganhas de ${(metrics?.oportunidades.ganhas || 0) + (metrics?.oportunidades.perdidas || 0)}`,
+      title: 'Taxa Conversão Orç.',
+      value: `${(metrics?.orcamentos?.taxaConversao || 0).toFixed(0)}%`,
+      description: `${metrics?.orcamentos?.porStatus.pago || 0} pagos de ${metrics?.orcamentos?.porStatus.total || 0}`,
       icon: TrendingUp,
       color: 'text-emerald-500'
     },

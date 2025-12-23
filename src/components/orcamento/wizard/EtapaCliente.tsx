@@ -15,9 +15,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import type { DadosOrcamento } from '@/types/orcamento';
-import { OPCOES_AMBIENTE } from '@/types/orcamento';
 import { useContatoByTelefone } from '@/hooks/useCRMData';
-import { User, Loader2 } from 'lucide-react';
+import { User, Loader2, UserPlus } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 interface EtapaClienteProps {
@@ -72,6 +71,53 @@ export function EtapaCliente({ dados, orcamentoId, onAvancar, onCancelar }: Etap
     }
   }, [formData.clienteTelefone]);
 
+  // Função para criar ou obter contato vinculado
+  const obterOuCriarContato = async (): Promise<string | null> => {
+    // Se já temos um contato vinculado encontrado pela busca, usar ele
+    if (contatoVinculadoId) {
+      return contatoVinculadoId;
+    }
+    
+    // Tentar buscar contato existente pelo telefone
+    const { data: contatoExistente } = await supabase
+      .from('contatos')
+      .select('id')
+      .eq('telefone', formData.clienteTelefone)
+      .maybeSingle();
+    
+    if (contatoExistente) {
+      return contatoExistente.id;
+    }
+    
+    // Criar novo contato se não existe
+    const { data: novoContato, error: erroContato } = await supabase
+      .from('contatos')
+      .insert({
+        nome: formData.clienteNome,
+        telefone: formData.clienteTelefone,
+        cidade: formData.cidade,
+        endereco: formData.endereco,
+        tipo: 'lead',
+        origem: 'orcamento',
+        created_by_user_id: user!.id,
+      })
+      .select()
+      .single();
+    
+    if (erroContato) {
+      console.error('Erro ao criar contato:', erroContato);
+      // Não lançar erro, apenas não vincular
+      return null;
+    }
+    
+    toast({
+      title: 'Contato criado',
+      description: `${formData.clienteNome} foi adicionado ao CRM automaticamente.`,
+    });
+    
+    return novoContato.id;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -87,6 +133,9 @@ export function EtapaCliente({ dados, orcamentoId, onAvancar, onCancelar }: Etap
     setLoading(true);
     
     try {
+      // Obter ou criar contato vinculado
+      const contatoId = await obterOuCriarContato();
+      
       if (orcamentoId) {
         // Atualizar orçamento existente
         const { error } = await supabase
@@ -97,6 +146,7 @@ export function EtapaCliente({ dados, orcamentoId, onAvancar, onCancelar }: Etap
             cidade: formData.cidade,
             endereco: formData.endereco,
             observacoes: formData.observacoes || null,
+            contato_id: contatoId, // Vincular contato
           })
           .eq('id', orcamentoId);
 
@@ -109,7 +159,7 @@ export function EtapaCliente({ dados, orcamentoId, onAvancar, onCancelar }: Etap
 
         onAvancar(formData, orcamentoId);
       } else {
-        // Criar novo orçamento
+        // Criar novo orçamento com contato vinculado
         const { data, error } = await supabase
           .from('orcamentos')
           .insert({
@@ -123,6 +173,7 @@ export function EtapaCliente({ dados, orcamentoId, onAvancar, onCancelar }: Etap
             status: 'rascunho',
             created_by_user_id: user.id,
             codigo: '', // Será gerado pelo trigger
+            contato_id: contatoId, // Vincular contato
           })
           .select()
           .single();
@@ -200,6 +251,14 @@ export function EtapaCliente({ dados, orcamentoId, onAvancar, onCancelar }: Etap
                 <span className="text-xs text-muted-foreground">
                   (dados preenchidos automaticamente)
                 </span>
+              </div>
+            )}
+            {!contatoEncontrado && !buscandoContato && telefoneDebounced && (
+              <div className="flex items-center gap-2 mt-1">
+                <Badge variant="outline" className="text-xs text-amber-600 border-amber-300">
+                  <UserPlus className="h-3 w-3 mr-1" />
+                  Novo contato será criado no CRM
+                </Badge>
               </div>
             )}
           </div>
