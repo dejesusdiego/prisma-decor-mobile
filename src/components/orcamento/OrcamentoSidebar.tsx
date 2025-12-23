@@ -24,7 +24,8 @@ import {
   ClipboardList,
   Target,
   Clock,
-  UserCircle
+  UserCircle,
+  BookOpen
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -503,6 +504,27 @@ export function OrcamentoSidebar({ currentView, onNavigate }: OrcamentoSidebarPr
             )}
           </Tooltip>
         )}
+
+        {/* Help/Documentation link */}
+        <Tooltip delayDuration={0}>
+          <TooltipTrigger asChild>
+            <button
+              onClick={() => navigate('/documentacao')}
+              className={cn(
+                "w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all",
+                "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+              )}
+            >
+              <BookOpen className="h-4 w-4 shrink-0" />
+              {!collapsed && <span className="text-sm font-medium">Ajuda</span>}
+            </button>
+          </TooltipTrigger>
+          {collapsed && (
+            <TooltipContent side="right" className="font-medium bg-popover border z-50">
+              Ajuda
+            </TooltipContent>
+          )}
+        </Tooltip>
 
         {/* Theme toggle */}
         <Tooltip delayDuration={0}>
