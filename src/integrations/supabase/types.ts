@@ -194,6 +194,7 @@ export type Database = {
       contas_pagar: {
         Row: {
           categoria_id: string | null
+          conta_origem_id: string | null
           created_at: string
           created_by_user_id: string
           data_pagamento: string | null
@@ -212,6 +213,7 @@ export type Database = {
         }
         Insert: {
           categoria_id?: string | null
+          conta_origem_id?: string | null
           created_at?: string
           created_by_user_id: string
           data_pagamento?: string | null
@@ -230,6 +232,7 @@ export type Database = {
         }
         Update: {
           categoria_id?: string | null
+          conta_origem_id?: string | null
           created_at?: string
           created_by_user_id?: string
           data_pagamento?: string | null
@@ -252,6 +255,13 @@ export type Database = {
             columns: ["categoria_id"]
             isOneToOne: false
             referencedRelation: "categorias_financeiras"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contas_pagar_conta_origem_id_fkey"
+            columns: ["conta_origem_id"]
+            isOneToOne: false
+            referencedRelation: "contas_pagar"
             referencedColumns: ["id"]
           },
           {

@@ -1,18 +1,20 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
+import { format, subMonths, startOfMonth, endOfMonth, addMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { 
   BarChart3,
   TrendingUp,
   PieChart,
   DollarSign,
-  Download
+  Repeat,
+  ChevronRight,
+  History
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   Select,
   SelectContent,
@@ -20,6 +22,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 import {
   BarChart,
   Bar,
@@ -41,6 +56,26 @@ const formatCurrency = (value: number) => {
 };
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))'];
+
+const FREQUENCIAS_LABEL: Record<string, string> = {
+  semanal: 'Semanal',
+  quinzenal: 'Quinzenal',
+  mensal: 'Mensal',
+  bimestral: 'Bimestral',
+  trimestral: 'Trimestral',
+  semestral: 'Semestral',
+  anual: 'Anual',
+};
+
+const FREQUENCIAS_MESES: Record<string, number> = {
+  semanal: 0.25,
+  quinzenal: 0.5,
+  mensal: 1,
+  bimestral: 2,
+  trimestral: 3,
+  semestral: 6,
+  anual: 12,
+};
 
 type Periodo = '3m' | '6m' | '12m';
 
@@ -77,6 +112,45 @@ export function RelatoriosBI() {
         .select('*')
         .gte('created_at', format(dataInicio, 'yyyy-MM-dd'))
         .lte('created_at', format(dataFim, 'yyyy-MM-dd'));
+      
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  // Buscar contas recorrentes
+  const { data: contasRecorrentes = [] } = useQuery({
+    queryKey: ['contas-recorrentes-relatorio'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('contas_pagar')
+        .select(`
+          *,
+          categoria:categorias_financeiras(nome, cor)
+        `)
+        .eq('recorrente', true)
+        .not('frequencia_recorrencia', 'is', null)
+        .order('descricao');
+      
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  // Buscar histórico de contas geradas automaticamente
+  const { data: contasGeradas = [] } = useQuery({
+    queryKey: ['contas-geradas-historico'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('contas_pagar')
+        .select(`
+          *,
+          categoria:categorias_financeiras(nome, cor),
+          conta_origem:contas_pagar!conta_origem_id(id, descricao)
+        `)
+        .not('conta_origem_id', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(50);
       
       if (error) throw error;
       return data;
@@ -165,6 +239,66 @@ export function RelatoriosBI() {
     }));
   })();
 
+  // Projeção de gastos recorrentes
+  const projecaoRecorrentes = (() => {
+    const hoje = new Date();
+    const projecao: { mes: string; valor: number }[] = [];
+    
+    for (let i = 0; i < 12; i++) {
+      const mesData = addMonths(hoje, i);
+      const mesLabel = format(mesData, 'MMM/yy', { locale: ptBR });
+      let valorMes = 0;
+      
+      contasRecorrentes.forEach(conta => {
+        const freq = conta.frequencia_recorrencia || 'mensal';
+        const mesesIntervalo = FREQUENCIAS_MESES[freq] || 1;
+        
+        // Calcular quantas vezes essa conta ocorre neste mês
+        if (mesesIntervalo < 1) {
+          // Semanal/quinzenal - múltiplas vezes por mês
+          valorMes += Number(conta.valor) * (1 / mesesIntervalo);
+        } else if (i % mesesIntervalo === 0) {
+          // Mensal ou mais - uma vez no intervalo
+          valorMes += Number(conta.valor);
+        }
+      });
+      
+      projecao.push({ mes: mesLabel, valor: valorMes });
+    }
+    
+    return projecao;
+  })();
+
+  // Total mensal estimado de recorrentes
+  const totalMensalRecorrentes = contasRecorrentes.reduce((acc, conta) => {
+    const freq = conta.frequencia_recorrencia || 'mensal';
+    const mesesIntervalo = FREQUENCIAS_MESES[freq] || 1;
+    return acc + (Number(conta.valor) / mesesIntervalo);
+  }, 0);
+
+  // Agrupar contas recorrentes por categoria
+  const recorrentesPorCategoria = (() => {
+    const grupos: { [key: string]: { contas: typeof contasRecorrentes; totalMensal: number; cor: string } } = {};
+    
+    contasRecorrentes.forEach(conta => {
+      const catNome = conta.categoria?.nome || 'Sem categoria';
+      const catCor = conta.categoria?.cor || '#6B7280';
+      
+      if (!grupos[catNome]) {
+        grupos[catNome] = { contas: [], totalMensal: 0, cor: catCor };
+      }
+      
+      grupos[catNome].contas.push(conta);
+      const freq = conta.frequencia_recorrencia || 'mensal';
+      const mesesIntervalo = FREQUENCIAS_MESES[freq] || 1;
+      grupos[catNome].totalMensal += Number(conta.valor) / mesesIntervalo;
+    });
+    
+    return Object.entries(grupos)
+      .map(([nome, data]) => ({ nome, ...data }))
+      .sort((a, b) => b.totalMensal - a.totalMensal);
+  })();
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -188,22 +322,30 @@ export function RelatoriosBI() {
       </div>
 
       <Tabs defaultValue="dre" className="space-y-6">
-        <TabsList className="grid grid-cols-4 w-full max-w-[600px]">
+        <TabsList className="grid grid-cols-6 w-full max-w-[800px]">
           <TabsTrigger value="dre" className="gap-2">
             <DollarSign className="h-4 w-4" />
-            DRE
+            <span className="hidden sm:inline">DRE</span>
           </TabsTrigger>
           <TabsTrigger value="margem" className="gap-2">
             <TrendingUp className="h-4 w-4" />
-            Margem
+            <span className="hidden sm:inline">Margem</span>
           </TabsTrigger>
           <TabsTrigger value="categorias" className="gap-2">
             <PieChart className="h-4 w-4" />
-            Categorias
+            <span className="hidden sm:inline">Categorias</span>
           </TabsTrigger>
           <TabsTrigger value="faturamento" className="gap-2">
             <BarChart3 className="h-4 w-4" />
-            Faturamento
+            <span className="hidden sm:inline">Faturamento</span>
+          </TabsTrigger>
+          <TabsTrigger value="recorrentes" className="gap-2">
+            <Repeat className="h-4 w-4" />
+            <span className="hidden sm:inline">Recorrentes</span>
+          </TabsTrigger>
+          <TabsTrigger value="historico" className="gap-2">
+            <History className="h-4 w-4" />
+            <span className="hidden sm:inline">Histórico</span>
           </TabsTrigger>
         </TabsList>
 
@@ -433,6 +575,187 @@ export function RelatoriosBI() {
                   </BarChart>
                 </ResponsiveContainer>
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Despesas Recorrentes */}
+        <TabsContent value="recorrentes" className="space-y-6">
+          {/* Cards de resumo */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Total Mensal Estimado</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-2xl font-bold text-foreground">{formatCurrency(totalMensalRecorrentes)}</p>
+                <p className="text-xs text-muted-foreground mt-1">Soma normalizada de todas as recorrentes</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Total Anual Projetado</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-2xl font-bold text-foreground">{formatCurrency(totalMensalRecorrentes * 12)}</p>
+                <p className="text-xs text-muted-foreground mt-1">Projeção para os próximos 12 meses</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Contas Recorrentes</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-2xl font-bold text-foreground">{contasRecorrentes.length}</p>
+                <p className="text-xs text-muted-foreground mt-1">Cadastradas no sistema</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Gráfico de projeção */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Projeção de Gastos Recorrentes (12 meses)</CardTitle>
+              <CardDescription>Estimativa de despesas fixas para os próximos meses</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={projecaoRecorrentes}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                    <XAxis dataKey="mes" className="text-xs" />
+                    <YAxis tickFormatter={(v) => `R$ ${(v/1000).toFixed(0)}k`} className="text-xs" />
+                    <Tooltip 
+                      formatter={(value: number) => formatCurrency(value)}
+                      contentStyle={{ 
+                        backgroundColor: 'hsl(var(--card))',
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px'
+                      }}
+                    />
+                    <Bar 
+                      dataKey="valor" 
+                      name="Projeção"
+                      fill="hsl(var(--chart-3))" 
+                      radius={[4, 4, 0, 0]} 
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Lista agrupada por categoria */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Despesas Recorrentes por Categoria</CardTitle>
+              <CardDescription>Clique para expandir e ver os detalhes</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {recorrentesPorCategoria.map((grupo) => (
+                  <Collapsible key={grupo.nome}>
+                    <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg border p-4 hover:bg-muted/50 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <div 
+                          className="w-3 h-3 rounded-full" 
+                          style={{ backgroundColor: grupo.cor }}
+                        />
+                        <span className="font-medium">{grupo.nome}</span>
+                        <Badge variant="secondary">{grupo.contas.length}</Badge>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <span className="text-sm text-muted-foreground">
+                          {formatCurrency(grupo.totalMensal)}/mês
+                        </span>
+                        <ChevronRight className="h-4 w-4 transition-transform data-[state=open]:rotate-90" />
+                      </div>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <div className="mt-2 ml-4 space-y-2">
+                        {grupo.contas.map((conta) => (
+                          <div key={conta.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
+                            <div className="flex flex-col">
+                              <span className="font-medium">{conta.descricao}</span>
+                              <span className="text-xs text-muted-foreground">
+                                {conta.fornecedor || 'Sem fornecedor'} • {FREQUENCIAS_LABEL[conta.frequencia_recorrencia || 'mensal']}
+                              </span>
+                            </div>
+                            <span className="font-medium">{formatCurrency(Number(conta.valor))}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
+                ))}
+                {recorrentesPorCategoria.length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    Nenhuma conta recorrente cadastrada
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Histórico de Contas Geradas */}
+        <TabsContent value="historico" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Histórico de Contas Geradas Automaticamente</CardTitle>
+              <CardDescription>Últimas 50 contas criadas a partir de recorrentes</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {contasGeradas.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Descrição</TableHead>
+                      <TableHead>Origem</TableHead>
+                      <TableHead>Vencimento</TableHead>
+                      <TableHead>Valor</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Gerada em</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {contasGeradas.map((conta) => (
+                      <TableRow key={conta.id}>
+                        <TableCell className="font-medium">{conta.descricao}</TableCell>
+                        <TableCell>
+                          {conta.conta_origem ? (
+                            <Badge variant="outline" className="gap-1">
+                              <Repeat className="h-3 w-3" />
+                              {conta.conta_origem.descricao?.substring(0, 20)}...
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell>{format(new Date(conta.data_vencimento), 'dd/MM/yyyy')}</TableCell>
+                        <TableCell>{formatCurrency(Number(conta.valor))}</TableCell>
+                        <TableCell>
+                          <Badge 
+                            variant={
+                              conta.status === 'pago' ? 'default' : 
+                              conta.status === 'atrasado' ? 'destructive' : 'secondary'
+                            }
+                          >
+                            {conta.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {format(new Date(conta.created_at), 'dd/MM/yyyy HH:mm')}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  Nenhuma conta gerada automaticamente ainda
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

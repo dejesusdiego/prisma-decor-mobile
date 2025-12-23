@@ -132,7 +132,7 @@ Deno.serve(async (req) => {
           continue;
         }
         
-        // Criar nova conta
+        // Criar nova conta com rastreamento da origem
         const { error: insertError } = await supabase
           .from('contas_pagar')
           .insert({
@@ -146,7 +146,8 @@ Deno.serve(async (req) => {
             recorrente: true,
             frequencia_recorrencia: conta.frequencia_recorrencia,
             created_by_user_id: conta.created_by_user_id,
-            status: 'pendente'
+            status: 'pendente',
+            conta_origem_id: conta.id
           });
         
         if (insertError) {
