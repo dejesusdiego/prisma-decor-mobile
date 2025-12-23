@@ -8,6 +8,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import type { Material } from '@/types/orcamento';
+import { MaterialSelectorSkeleton } from './MaterialSelectorSkeleton';
 
 interface MaterialSelectorProps {
   categoria: 'tecido' | 'forro' | 'trilho' | 'acessorio' | 'persiana' | 'papel' | 'motorizado';
@@ -16,6 +17,7 @@ interface MaterialSelectorProps {
   onSelect: (materialId: string | undefined) => void;
   placeholder?: string;
   optional?: boolean;
+  loading?: boolean;
 }
 
 export function MaterialSelector({
@@ -25,7 +27,12 @@ export function MaterialSelector({
   onSelect,
   placeholder = 'Selecionar material',
   optional = true,
+  loading = false,
 }: MaterialSelectorProps) {
+  // Se estiver carregando, mostra skeleton
+  if (loading) {
+    return <MaterialSelectorSkeleton />;
+  }
   const [filtroTipo, setFiltroTipo] = useState<string>('');
   const [filtroLinha, setFiltroLinha] = useState<string>('');
   const [filtroCor, setFiltroCor] = useState<string>('');
