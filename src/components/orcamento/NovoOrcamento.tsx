@@ -8,18 +8,26 @@ import type { DadosOrcamento, Cortina } from '@/types/orcamento';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
+interface ClienteDataInicial {
+  nome: string;
+  telefone: string;
+  endereco: string;
+  cidade: string;
+}
+
 interface NovoOrcamentoProps {
   onVoltar: () => void;
   orcamentoId?: string | null;
+  clienteDataInicial?: ClienteDataInicial | null;
 }
 
-export function NovoOrcamento({ onVoltar, orcamentoId }: NovoOrcamentoProps) {
+export function NovoOrcamento({ onVoltar, orcamentoId, clienteDataInicial }: NovoOrcamentoProps) {
   const [etapa, setEtapa] = useState(1);
   const [dados, setDados] = useState<DadosOrcamento>({
-    clienteNome: '',
-    clienteTelefone: '',
-    cidade: '',
-    endereco: '',
+    clienteNome: clienteDataInicial?.nome || '',
+    clienteTelefone: clienteDataInicial?.telefone || '',
+    cidade: clienteDataInicial?.cidade || '',
+    endereco: clienteDataInicial?.endereco || '',
     observacoes: '',
   });
   const [cortinas, setCortinas] = useState<Cortina[]>([]);

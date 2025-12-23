@@ -124,6 +124,7 @@ export default function GerarOrcamento() {
               <NovoOrcamento
                 onVoltar={handleVoltarDashboard}
                 orcamentoId={orcamentoEditandoId}
+                clienteDataInicial={clienteDataFromVisita}
               />
             )}
 
