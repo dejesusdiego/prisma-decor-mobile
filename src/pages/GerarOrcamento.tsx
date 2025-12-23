@@ -12,6 +12,7 @@ import { GestaoMateriais } from '@/components/orcamento/GestaoMateriais';
 import { AjustesSistema } from '@/components/orcamento/AjustesSistema';
 import { SolicitacoesVisita } from '@/components/orcamento/SolicitacoesVisita';
 import { DashboardFinanceiro } from '@/components/financeiro/DashboardFinanceiro';
+import { FluxoCaixaPrevisto } from '@/components/financeiro/FluxoCaixaPrevisto';
 import { ContasPagar } from '@/components/financeiro/ContasPagar';
 import { ContasReceber } from '@/components/financeiro/ContasReceber';
 import { Lancamentos } from '@/components/financeiro/Lancamentos';
@@ -31,6 +32,7 @@ const ADMIN_ONLY_VIEWS: View[] = [
   'ajustesSistema', 
   'solicitacoesVisita',
   'finDashboard',
+  'finFluxoPrevisto',
   'finContasPagar',
   'finContasReceber',
   'finLancamentos',
@@ -102,6 +104,7 @@ export default function GerarOrcamento() {
       case 'finContasReceber': return 'Contas a Receber';
       case 'finLancamentos': return 'Lançamentos';
       case 'finRelatorios': return 'Relatórios';
+      case 'finFluxoPrevisto': return 'Fluxo de Caixa Previsto';
       case 'categoriasFormas': return 'Categorias e Formas de Pagamento';
       default: return '';
     }
@@ -179,6 +182,7 @@ export default function GerarOrcamento() {
 
             {/* Seção Financeiro */}
             {view === 'finDashboard' && <DashboardFinanceiro />}
+            {view === 'finFluxoPrevisto' && <FluxoCaixaPrevisto />}
             {view === 'finContasPagar' && <ContasPagar />}
             {view === 'finContasReceber' && <ContasReceber />}
             {view === 'finLancamentos' && <Lancamentos />}
