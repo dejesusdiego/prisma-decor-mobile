@@ -17,6 +17,8 @@ import { gerarPdfOrcamento } from '@/lib/gerarPdfOrcamento';
 import { DescontoSection, calcularDesconto } from './DescontoSection';
 import { MateriaisAgrupados } from './MateriaisAgrupados';
 import { DebugCalculos } from './DebugCalculos';
+import { HistoricoDescontos, registrarHistoricoDesconto } from './HistoricoDescontos';
+import { useAuth } from '@/hooks/useAuth';
 
 interface EtapaResumoProps {
   orcamentoId: string;
@@ -42,8 +44,12 @@ export function EtapaResumo({
   const [expandedCards, setExpandedCards] = useState<Record<number, boolean>>({});
   const [descontoTipo, setDescontoTipo] = useState<'percentual' | 'valor_fixo' | null>(null);
   const [descontoValor, setDescontoValor] = useState<number>(0);
+  const [descontoTipoOriginal, setDescontoTipoOriginal] = useState<'percentual' | 'valor_fixo' | null>(null);
+  const [descontoValorOriginal, setDescontoValorOriginal] = useState<number>(0);
   const [servicoConfeccao, setServicoConfeccao] = useState<ServicoConfeccao | null>(null);
   const [servicoInstalacao, setServicoInstalacao] = useState<ServicoInstalacao | null>(null);
+  
+  const { user } = useAuth();
 
   const margemAtual =
     margemTipo === 'personalizada'
@@ -65,8 +71,14 @@ export function EtapaResumo({
 
       if (!error && data) {
         if (data.validade_dias) setValidadeDias(data.validade_dias);
-        if (data.desconto_tipo) setDescontoTipo(data.desconto_tipo as 'percentual' | 'valor_fixo');
-        if (data.desconto_valor) setDescontoValor(data.desconto_valor);
+        if (data.desconto_tipo) {
+          setDescontoTipo(data.desconto_tipo as 'percentual' | 'valor_fixo');
+          setDescontoTipoOriginal(data.desconto_tipo as 'percentual' | 'valor_fixo');
+        }
+        if (data.desconto_valor) {
+          setDescontoValor(data.desconto_valor);
+          setDescontoValorOriginal(data.desconto_valor);
+        }
       }
 
       // Carregar materiais do banco de dados Supabase com paginação
@@ -177,6 +189,20 @@ export function EtapaResumo({
         .eq('id', orcamentoId);
 
       if (orcError) throw orcError;
+
+      // Registrar histórico de desconto se houve mudança
+      if (user && (descontoTipo !== descontoTipoOriginal || descontoValor !== descontoValorOriginal)) {
+        await registrarHistoricoDesconto(
+          orcamentoId,
+          { tipo: descontoTipoOriginal, valor: descontoValorOriginal },
+          { tipo: descontoTipo, valor: descontoValor },
+          user.id,
+          user.email || 'Usuário'
+        );
+        // Atualizar valores originais
+        setDescontoTipoOriginal(descontoTipo);
+        setDescontoValorOriginal(descontoValor);
+      }
 
       toast({
         title: 'Sucesso',
@@ -472,12 +498,15 @@ export function EtapaResumo({
           </div>
 
           {/* Seção de Desconto */}
-          <DescontoSection
-            descontoTipo={descontoTipo}
-            descontoValor={descontoValor}
-            totalGeral={resumo.totalGeral}
-            onDescontoChange={handleDescontoChange}
-          />
+          <div className="space-y-2">
+            <DescontoSection
+              descontoTipo={descontoTipo}
+              descontoValor={descontoValor}
+              totalGeral={resumo.totalGeral}
+              onDescontoChange={handleDescontoChange}
+            />
+            <HistoricoDescontos orcamentoId={orcamentoId} />
+          </div>
 
           {/* Materiais Agrupados por Código */}
           <MateriaisAgrupados cortinas={cortinas} materiais={materiais} />
