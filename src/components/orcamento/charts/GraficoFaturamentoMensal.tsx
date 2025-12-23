@@ -43,7 +43,7 @@ export function GraficoFaturamentoMensal({ dados }: GraficoFaturamentoMensalProp
       <CardHeader className="pb-2">
         <CardTitle className="text-lg font-semibold flex items-center gap-2">
           <TrendingUp className="h-5 w-5 text-muted-foreground" />
-          Faturamento Mensal
+          Faturamento Diário
         </CardTitle>
       </CardHeader>
       <CardContent>

@@ -396,23 +396,26 @@ export function useDashboardData(periodo: PeriodoFiltro = '30d'): DashboardData 
       // Orçamentos recentes
       setRecentOrcamentos(allOrcamentos.slice(0, 10));
 
-      // Dados mensais
-      const mesesMap: Record<string, { faturamento: number; quantidade: number }> = {};
+      // Dados diários
+      const diasMap: Record<string, { faturamento: number; quantidade: number }> = {};
       allOrcamentos.forEach((orc) => {
         if (['aprovado', 'pago_40', 'pago_parcial', 'pago_60', 'pago'].includes(orc.status)) {
-          const mes = format(new Date(orc.created_at), 'MMM/yy');
-          if (!mesesMap[mes]) {
-            mesesMap[mes] = { faturamento: 0, quantidade: 0 };
+          const diaKey = format(new Date(orc.created_at), 'yyyy-MM-dd');
+          if (!diasMap[diaKey]) {
+            diasMap[diaKey] = { faturamento: 0, quantidade: 0 };
           }
-          mesesMap[mes].faturamento += getValorEfetivo(orc);
-          mesesMap[mes].quantidade++;
+          diasMap[diaKey].faturamento += getValorEfetivo(orc);
+          diasMap[diaKey].quantidade++;
         }
       });
 
-      const dadosMensaisArr = Object.entries(mesesMap)
-        .map(([mes, data]) => ({ mes, ...data }))
-        .slice(-6);
-      setDadosMensais(dadosMensaisArr);
+      const dadosDiariosArr = Object.entries(diasMap)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([diaKey, data]) => ({ 
+          mes: format(new Date(diaKey), 'dd/MM'),
+          ...data 
+        }));
+      setDadosMensais(dadosDiariosArr);
 
       // Alertas
       const hoje = new Date();
