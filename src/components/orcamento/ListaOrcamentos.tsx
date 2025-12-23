@@ -24,11 +24,13 @@ import { toast } from '@/hooks/use-toast';
 import { DialogValidade } from './DialogValidade';
 import { gerarPdfOrcamento } from '@/lib/gerarPdfOrcamento';
 import { STATUS_CONFIG, STATUS_LIST, getStatusConfig, getStatusLabel, StatusOrcamento } from '@/lib/statusOrcamento';
+import { DialogCondicoesPagamento } from '@/components/financeiro/dialogs/DialogCondicoesPagamento';
 
 interface Orcamento {
   id: string;
   codigo: string;
   cliente_nome: string;
+  cliente_telefone: string;
   endereco: string;
   created_at: string;
   total_geral: number;
@@ -42,6 +44,9 @@ interface ListaOrcamentosProps {
   onVisualizar: (orcamentoId: string) => void;
 }
 
+// Status que devem abrir o dialog de condições de pagamento
+const STATUS_PAGAMENTO: StatusOrcamento[] = ['pago_40', 'pago_parcial', 'pago_60', 'pago'];
+
 export function ListaOrcamentos({ onVoltar, onEditar, onVisualizar }: ListaOrcamentosProps) {
   const { user } = useAuth();
   const [orcamentos, setOrcamentos] = useState<Orcamento[]>([]);
@@ -51,6 +56,11 @@ export function ListaOrcamentos({ onVoltar, onEditar, onVisualizar }: ListaOrcam
   const [dialogValidadeOpen, setDialogValidadeOpen] = useState(false);
   const [orcamentoSelecionadoId, setOrcamentoSelecionadoId] = useState<string>('');
   const [validadeAtual, setValidadeAtual] = useState<number | undefined>(undefined);
+  
+  // Estado para o dialog de condições de pagamento
+  const [dialogPagamentoOpen, setDialogPagamentoOpen] = useState(false);
+  const [orcamentoParaPagamento, setOrcamentoParaPagamento] = useState<Orcamento | null>(null);
+  const [novoStatusPendente, setNovoStatusPendente] = useState<StatusOrcamento | null>(null);
 
   useEffect(() => {
     carregarOrcamentos();
@@ -83,6 +93,22 @@ export function ListaOrcamentos({ onVoltar, onEditar, onVisualizar }: ListaOrcam
   };
 
   const alterarStatus = async (orcamentoId: string, novoStatus: StatusOrcamento) => {
+    const orcamento = orcamentos.find(o => o.id === orcamentoId);
+    if (!orcamento) return;
+
+    // Se está mudando para um status de pagamento e ainda não está em status de pagamento
+    const statusAtualEhPagamento = STATUS_PAGAMENTO.includes(orcamento.status as StatusOrcamento);
+    const novoStatusEhPagamento = STATUS_PAGAMENTO.includes(novoStatus);
+    
+    if (novoStatusEhPagamento && !statusAtualEhPagamento) {
+      // Abrir dialog para definir condições de pagamento
+      setOrcamentoParaPagamento(orcamento);
+      setNovoStatusPendente(novoStatus);
+      setDialogPagamentoOpen(true);
+      return;
+    }
+
+    // Atualização normal de status
     try {
       const { error } = await supabase
         .from('orcamentos')
@@ -109,6 +135,18 @@ export function ListaOrcamentos({ onVoltar, onEditar, onVisualizar }: ListaOrcam
         variant: 'destructive',
       });
     }
+  };
+
+  const handlePagamentoSuccess = () => {
+    if (orcamentoParaPagamento && novoStatusPendente) {
+      setOrcamentos(prev => 
+        prev.map(orc => 
+          orc.id === orcamentoParaPagamento.id ? { ...orc, status: novoStatusPendente } : orc
+        )
+      );
+    }
+    setOrcamentoParaPagamento(null);
+    setNovoStatusPendente(null);
   };
 
   const duplicarOrcamento = async (orcamentoId: string) => {
@@ -480,6 +518,14 @@ export function ListaOrcamentos({ onVoltar, onEditar, onVisualizar }: ListaOrcam
         onOpenChange={setDialogValidadeOpen}
         onConfirmar={handleConfirmarValidade}
         validadeAtual={validadeAtual}
+      />
+
+      <DialogCondicoesPagamento
+        open={dialogPagamentoOpen}
+        onOpenChange={setDialogPagamentoOpen}
+        orcamento={orcamentoParaPagamento}
+        novoStatus={novoStatusPendente || ''}
+        onSuccess={handlePagamentoSuccess}
       />
     </div>
   );
