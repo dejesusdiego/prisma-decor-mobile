@@ -17,7 +17,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Edit, Copy, FileDown, Search, Trash2, Eye } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { ArrowLeft, Edit, Copy, FileDown, Search, Trash2, Eye, Receipt, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
@@ -25,6 +27,15 @@ import { DialogValidade } from './DialogValidade';
 import { gerarPdfOrcamento } from '@/lib/gerarPdfOrcamento';
 import { STATUS_CONFIG, STATUS_LIST, getStatusConfig, getStatusLabel, StatusOrcamento } from '@/lib/statusOrcamento';
 import { DialogCondicoesPagamento } from '@/components/financeiro/dialogs/DialogCondicoesPagamento';
+
+interface ContaReceberInfo {
+  id: string;
+  status: string;
+  valor_total: number;
+  valor_pago: number;
+  numero_parcelas: number;
+  parcelas_pagas: number;
+}
 
 interface Orcamento {
   id: string;
@@ -36,6 +47,7 @@ interface Orcamento {
   total_geral: number;
   status: string;
   validade_dias?: number;
+  conta_receber?: ContaReceberInfo;
 }
 
 interface ListaOrcamentosProps {
@@ -71,15 +83,56 @@ export function ListaOrcamentos({ onVoltar, onEditar, onVisualizar }: ListaOrcam
 
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      // Buscar orçamentos
+      const { data: orcamentosData, error: orcError } = await supabase
         .from('orcamentos')
         .select('*')
         .eq('created_by_user_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (orcError) throw orcError;
 
-      setOrcamentos(data || []);
+      // Buscar contas a receber vinculadas
+      const { data: contasData, error: contasError } = await supabase
+        .from('contas_receber')
+        .select(`
+          id,
+          orcamento_id,
+          status,
+          valor_total,
+          valor_pago,
+          numero_parcelas,
+          parcelas_receber (status)
+        `)
+        .in('orcamento_id', (orcamentosData || []).map(o => o.id));
+
+      if (contasError) throw contasError;
+
+      // Mapear contas por orcamento_id
+      const contasPorOrcamento = new Map<string, ContaReceberInfo>();
+      (contasData || []).forEach((conta: any) => {
+        if (conta.orcamento_id) {
+          const parcelasPagas = (conta.parcelas_receber || []).filter(
+            (p: any) => p.status === 'pago'
+          ).length;
+          contasPorOrcamento.set(conta.orcamento_id, {
+            id: conta.id,
+            status: conta.status,
+            valor_total: conta.valor_total,
+            valor_pago: conta.valor_pago,
+            numero_parcelas: conta.numero_parcelas,
+            parcelas_pagas: parcelasPagas,
+          });
+        }
+      });
+
+      // Associar contas aos orçamentos
+      const orcamentosComContas = (orcamentosData || []).map(orc => ({
+        ...orc,
+        conta_receber: contasPorOrcamento.get(orc.id),
+      }));
+
+      setOrcamentos(orcamentosComContas);
     } catch (error) {
       console.error('Erro ao carregar orçamentos:', error);
       toast({
@@ -420,6 +473,7 @@ export function ListaOrcamentos({ onVoltar, onEditar, onVisualizar }: ListaOrcam
                     <TableHead>Endereço</TableHead>
                     <TableHead>Data</TableHead>
                     <TableHead>Total</TableHead>
+                    <TableHead>Pagamento</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
@@ -427,6 +481,7 @@ export function ListaOrcamentos({ onVoltar, onEditar, onVisualizar }: ListaOrcam
                 <TableBody>
                   {orcamentosFiltrados.map((orc) => {
                     const statusConfig = getStatusConfig(orc.status);
+                    const conta = orc.conta_receber;
                     return (
                       <TableRow key={orc.id}>
                         <TableCell className="font-medium">{orc.codigo}</TableCell>
@@ -436,6 +491,46 @@ export function ListaOrcamentos({ onVoltar, onEditar, onVisualizar }: ListaOrcam
                           {new Date(orc.created_at).toLocaleDateString('pt-BR')}
                         </TableCell>
                         <TableCell>R$ {orc.total_geral?.toFixed(2) || '0.00'}</TableCell>
+                        <TableCell>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                {conta ? (
+                                  <Badge
+                                    variant={
+                                      conta.status === 'pago' ? 'default' :
+                                      conta.status === 'parcial' ? 'secondary' :
+                                      conta.status === 'atrasado' ? 'destructive' : 'outline'
+                                    }
+                                    className="cursor-help flex items-center gap-1"
+                                  >
+                                    {conta.status === 'pago' ? (
+                                      <CheckCircle2 className="h-3 w-3" />
+                                    ) : conta.status === 'atrasado' ? (
+                                      <AlertCircle className="h-3 w-3" />
+                                    ) : (
+                                      <Clock className="h-3 w-3" />
+                                    )}
+                                    {conta.parcelas_pagas}/{conta.numero_parcelas}
+                                  </Badge>
+                                ) : (
+                                  <span className="text-muted-foreground text-xs">—</span>
+                                )}
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                {conta ? (
+                                  <div className="text-xs space-y-1">
+                                    <p><strong>Status:</strong> {conta.status === 'pago' ? 'Quitado' : conta.status === 'parcial' ? 'Parcial' : conta.status === 'atrasado' ? 'Atrasado' : 'Pendente'}</p>
+                                    <p><strong>Parcelas:</strong> {conta.parcelas_pagas} de {conta.numero_parcelas} pagas</p>
+                                    <p><strong>Pago:</strong> R$ {conta.valor_pago.toFixed(2)} de R$ {conta.valor_total.toFixed(2)}</p>
+                                  </div>
+                                ) : (
+                                  <p className="text-xs">Sem conta a receber vinculada</p>
+                                )}
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </TableCell>
                         <TableCell>
                           <Select
                             value={orc.status}
