@@ -14,6 +14,156 @@ export type Database = {
   }
   public: {
     Tables: {
+      categorias_financeiras: {
+        Row: {
+          ativo: boolean
+          cor: string | null
+          created_at: string
+          icone: string | null
+          id: string
+          nome: string
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          cor?: string | null
+          created_at?: string
+          icone?: string | null
+          id?: string
+          nome: string
+          tipo: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          cor?: string | null
+          created_at?: string
+          icone?: string | null
+          id?: string
+          nome?: string
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      comissoes: {
+        Row: {
+          created_at: string
+          created_by_user_id: string
+          data_pagamento: string | null
+          id: string
+          observacoes: string | null
+          orcamento_id: string | null
+          percentual: number
+          status: string
+          updated_at: string
+          valor_base: number
+          valor_comissao: number
+          vendedor_nome: string
+          vendedor_user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by_user_id: string
+          data_pagamento?: string | null
+          id?: string
+          observacoes?: string | null
+          orcamento_id?: string | null
+          percentual?: number
+          status?: string
+          updated_at?: string
+          valor_base: number
+          valor_comissao: number
+          vendedor_nome: string
+          vendedor_user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by_user_id?: string
+          data_pagamento?: string | null
+          id?: string
+          observacoes?: string | null
+          orcamento_id?: string | null
+          percentual?: number
+          status?: string
+          updated_at?: string
+          valor_base?: number
+          valor_comissao?: number
+          vendedor_nome?: string
+          vendedor_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comissoes_orcamento_id_fkey"
+            columns: ["orcamento_id"]
+            isOneToOne: false
+            referencedRelation: "orcamentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      comprovantes_pagamento: {
+        Row: {
+          arquivo_url: string
+          conta_pagar_id: string | null
+          created_at: string
+          id: string
+          lancamento_id: string | null
+          nome_arquivo: string
+          parcela_receber_id: string | null
+          tamanho_bytes: number | null
+          tipo_arquivo: string | null
+          uploaded_by_user_id: string
+        }
+        Insert: {
+          arquivo_url: string
+          conta_pagar_id?: string | null
+          created_at?: string
+          id?: string
+          lancamento_id?: string | null
+          nome_arquivo: string
+          parcela_receber_id?: string | null
+          tamanho_bytes?: number | null
+          tipo_arquivo?: string | null
+          uploaded_by_user_id: string
+        }
+        Update: {
+          arquivo_url?: string
+          conta_pagar_id?: string | null
+          created_at?: string
+          id?: string
+          lancamento_id?: string | null
+          nome_arquivo?: string
+          parcela_receber_id?: string | null
+          tamanho_bytes?: number | null
+          tipo_arquivo?: string | null
+          uploaded_by_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comprovantes_pagamento_conta_pagar_id_fkey"
+            columns: ["conta_pagar_id"]
+            isOneToOne: false
+            referencedRelation: "contas_pagar"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comprovantes_pagamento_lancamento_id_fkey"
+            columns: ["lancamento_id"]
+            isOneToOne: false
+            referencedRelation: "lancamentos_financeiros"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comprovantes_pagamento_parcela_receber_id_fkey"
+            columns: ["parcela_receber_id"]
+            isOneToOne: false
+            referencedRelation: "parcelas_receber"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       configuracoes_sistema: {
         Row: {
           chave: string
@@ -40,6 +190,137 @@ export type Database = {
           valor?: Json
         }
         Relationships: []
+      }
+      contas_pagar: {
+        Row: {
+          categoria_id: string | null
+          created_at: string
+          created_by_user_id: string
+          data_pagamento: string | null
+          data_vencimento: string
+          descricao: string
+          forma_pagamento_id: string | null
+          fornecedor: string | null
+          frequencia_recorrencia: string | null
+          id: string
+          numero_documento: string | null
+          observacoes: string | null
+          recorrente: boolean
+          status: string
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          categoria_id?: string | null
+          created_at?: string
+          created_by_user_id: string
+          data_pagamento?: string | null
+          data_vencimento: string
+          descricao: string
+          forma_pagamento_id?: string | null
+          fornecedor?: string | null
+          frequencia_recorrencia?: string | null
+          id?: string
+          numero_documento?: string | null
+          observacoes?: string | null
+          recorrente?: boolean
+          status?: string
+          updated_at?: string
+          valor: number
+        }
+        Update: {
+          categoria_id?: string | null
+          created_at?: string
+          created_by_user_id?: string
+          data_pagamento?: string | null
+          data_vencimento?: string
+          descricao?: string
+          forma_pagamento_id?: string | null
+          fornecedor?: string | null
+          frequencia_recorrencia?: string | null
+          id?: string
+          numero_documento?: string | null
+          observacoes?: string | null
+          recorrente?: boolean
+          status?: string
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contas_pagar_categoria_id_fkey"
+            columns: ["categoria_id"]
+            isOneToOne: false
+            referencedRelation: "categorias_financeiras"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contas_pagar_forma_pagamento_id_fkey"
+            columns: ["forma_pagamento_id"]
+            isOneToOne: false
+            referencedRelation: "formas_pagamento"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contas_receber: {
+        Row: {
+          cliente_nome: string
+          cliente_telefone: string | null
+          created_at: string
+          created_by_user_id: string
+          data_vencimento: string
+          descricao: string
+          id: string
+          numero_parcelas: number
+          observacoes: string | null
+          orcamento_id: string | null
+          status: string
+          updated_at: string
+          valor_pago: number
+          valor_total: number
+        }
+        Insert: {
+          cliente_nome: string
+          cliente_telefone?: string | null
+          created_at?: string
+          created_by_user_id: string
+          data_vencimento: string
+          descricao: string
+          id?: string
+          numero_parcelas?: number
+          observacoes?: string | null
+          orcamento_id?: string | null
+          status?: string
+          updated_at?: string
+          valor_pago?: number
+          valor_total: number
+        }
+        Update: {
+          cliente_nome?: string
+          cliente_telefone?: string | null
+          created_at?: string
+          created_by_user_id?: string
+          data_vencimento?: string
+          descricao?: string
+          id?: string
+          numero_parcelas?: number
+          observacoes?: string | null
+          orcamento_id?: string | null
+          status?: string
+          updated_at?: string
+          valor_pago?: number
+          valor_total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contas_receber_orcamento_id_fkey"
+            columns: ["orcamento_id"]
+            isOneToOne: false
+            referencedRelation: "orcamentos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cortina_items: {
         Row: {
@@ -156,6 +437,122 @@ export type Database = {
             columns: ["orcamento_id"]
             isOneToOne: false
             referencedRelation: "orcamentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      formas_pagamento: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          id: string
+          max_parcelas: number | null
+          nome: string
+          permite_parcelamento: boolean
+          taxa_percentual: number | null
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          max_parcelas?: number | null
+          nome: string
+          permite_parcelamento?: boolean
+          taxa_percentual?: number | null
+          tipo: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          max_parcelas?: number | null
+          nome?: string
+          permite_parcelamento?: boolean
+          taxa_percentual?: number | null
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      lancamentos_financeiros: {
+        Row: {
+          categoria_id: string | null
+          conta_pagar_id: string | null
+          created_at: string
+          created_by_user_id: string
+          data_competencia: string | null
+          data_lancamento: string
+          descricao: string
+          forma_pagamento_id: string | null
+          id: string
+          observacoes: string | null
+          parcela_receber_id: string | null
+          tipo: string
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          categoria_id?: string | null
+          conta_pagar_id?: string | null
+          created_at?: string
+          created_by_user_id: string
+          data_competencia?: string | null
+          data_lancamento?: string
+          descricao: string
+          forma_pagamento_id?: string | null
+          id?: string
+          observacoes?: string | null
+          parcela_receber_id?: string | null
+          tipo: string
+          updated_at?: string
+          valor: number
+        }
+        Update: {
+          categoria_id?: string | null
+          conta_pagar_id?: string | null
+          created_at?: string
+          created_by_user_id?: string
+          data_competencia?: string | null
+          data_lancamento?: string
+          descricao?: string
+          forma_pagamento_id?: string | null
+          id?: string
+          observacoes?: string | null
+          parcela_receber_id?: string | null
+          tipo?: string
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lancamentos_financeiros_categoria_id_fkey"
+            columns: ["categoria_id"]
+            isOneToOne: false
+            referencedRelation: "categorias_financeiras"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lancamentos_financeiros_conta_pagar_id_fkey"
+            columns: ["conta_pagar_id"]
+            isOneToOne: false
+            referencedRelation: "contas_pagar"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lancamentos_financeiros_forma_pagamento_id_fkey"
+            columns: ["forma_pagamento_id"]
+            isOneToOne: false
+            referencedRelation: "formas_pagamento"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lancamentos_financeiros_parcela_receber_id_fkey"
+            columns: ["parcela_receber_id"]
+            isOneToOne: false
+            referencedRelation: "parcelas_receber"
             referencedColumns: ["id"]
           },
         ]
@@ -297,6 +694,63 @@ export type Database = {
           validade_dias?: number | null
         }
         Relationships: []
+      }
+      parcelas_receber: {
+        Row: {
+          conta_receber_id: string
+          created_at: string
+          data_pagamento: string | null
+          data_vencimento: string
+          forma_pagamento_id: string | null
+          id: string
+          numero_parcela: number
+          observacoes: string | null
+          status: string
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          conta_receber_id: string
+          created_at?: string
+          data_pagamento?: string | null
+          data_vencimento: string
+          forma_pagamento_id?: string | null
+          id?: string
+          numero_parcela: number
+          observacoes?: string | null
+          status?: string
+          updated_at?: string
+          valor: number
+        }
+        Update: {
+          conta_receber_id?: string
+          created_at?: string
+          data_pagamento?: string | null
+          data_vencimento?: string
+          forma_pagamento_id?: string | null
+          id?: string
+          numero_parcela?: number
+          observacoes?: string | null
+          status?: string
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parcelas_receber_conta_receber_id_fkey"
+            columns: ["conta_receber_id"]
+            isOneToOne: false
+            referencedRelation: "contas_receber"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parcelas_receber_forma_pagamento_id_fkey"
+            columns: ["forma_pagamento_id"]
+            isOneToOne: false
+            referencedRelation: "formas_pagamento"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       servicos_confeccao: {
         Row: {
@@ -459,6 +913,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      atualizar_contas_atrasadas: { Args: never; Returns: undefined }
       gerar_codigo_orcamento: { Args: never; Returns: string }
       has_role: {
         Args: {
