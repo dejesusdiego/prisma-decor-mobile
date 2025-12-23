@@ -191,11 +191,14 @@ export function calcularConsumoDetalhado(
     alturaPanoForro = resultadoForro.alturaPano;
   }
 
-  // Comprimento do trilho (10cm de sobra)
-  const comprimentoTrilho_m = trilho ? cortina.largura + 0.1 : 0;
+  // Comprimento do trilho (10cm de sobra) - unitário (sem multiplicar por quantidade aqui, já que é para exibição)
+  const comprimentoTrilhoUnitario_m = trilho ? cortina.largura + 0.1 : 0;
+  // Total multiplicado pela quantidade
+  const comprimentoTrilho_m = comprimentoTrilhoUnitario_m * cortina.quantidade;
 
-  // Comprimento para costura
-  const comprimentoCostura_m = trilho ? comprimentoTrilho_m : cortina.largura;
+  // Comprimento para costura - total
+  const comprimentoCosturaUnitario_m = trilho ? comprimentoTrilhoUnitario_m : cortina.largura;
+  const comprimentoCostura_m = comprimentoCosturaUnitario_m * cortina.quantidade;
 
   return {
     consumoTecido_m,
@@ -237,22 +240,26 @@ export function calcularResumoConsolidado(
   let totalOutros = 0;
 
   for (const cortina of cortinas) {
-    // Contagem por tipo
+    const qtd = cortina.quantidade || 1;
+    
+    // Contagem por tipo (somar quantidades, não apenas itens)
     if (cortina.tipoProduto === 'cortina') {
-      totalCortinas++;
+      totalCortinas += qtd;
       const consumo = calcularConsumoDetalhado(cortina, materiais, coeficientesTecidoConfig, coeficientesForroConfig);
       totalTecido_m += consumo.consumoTecido_m;
       totalForro_m += consumo.consumoForro_m;
-      totalTrilho_m += consumo.comprimentoTrilho_m;
+      // Trilho: comprimento unitário × quantidade
+      const comprimentoTrilhoUnitario = cortina.trilhoId ? (cortina.largura + 0.1) : 0;
+      totalTrilho_m += comprimentoTrilhoUnitario * qtd;
     } else if (cortina.tipoProduto === 'persiana') {
-      totalPersianas++;
+      totalPersianas += qtd;
     } else {
-      totalOutros++;
+      totalOutros += qtd;
     }
 
-    // Pontos de instalação
+    // Pontos de instalação (multiplicar pela quantidade)
     if (cortina.precisaInstalacao) {
-      totalPontosInstalacao += cortina.pontosInstalacao || 1;
+      totalPontosInstalacao += (cortina.pontosInstalacao || 1) * qtd;
     }
   }
 
@@ -327,17 +334,20 @@ export function calcularCustosCortina(
     custoForro = resultadoForro.consumo_m * forro.preco_custo;
   }
 
-  // 5) Cálculo do trilho (10cm de sobra, SEM multiplicar por quantidade) - opcional
-  const comprimentoTrilho_m = cortina.largura + 0.1;
-  const custoTrilho = trilho ? (comprimentoTrilho_m * trilho.preco_custo) : 0;
+  // 5) Cálculo do trilho (10cm de sobra, multiplicado pela quantidade)
+  const comprimentoTrilhoUnitario_m = cortina.largura + 0.1;
+  const comprimentoTrilhoTotal_m = comprimentoTrilhoUnitario_m * cortina.quantidade;
+  const custoTrilho = trilho ? (comprimentoTrilhoTotal_m * trilho.preco_custo) : 0;
 
-  // 6) Cálculo da costura (usa comprimento do trilho OU largura se não tiver trilho, SEM multiplicar por quantidade)
-  const comprimentoParaCostura = trilho ? comprimentoTrilho_m : cortina.largura;
-  const custoCostura = comprimentoParaCostura * servicoConfeccao.preco_custo;
+  // 6) Cálculo da costura (usa comprimento do trilho OU largura, multiplicado pela quantidade)
+  const comprimentoParaCosturaUnitario = trilho ? comprimentoTrilhoUnitario_m : cortina.largura;
+  const comprimentoParaCosturaTotal = comprimentoParaCosturaUnitario * cortina.quantidade;
+  const custoCostura = comprimentoParaCosturaTotal * servicoConfeccao.preco_custo;
 
-  // Cálculo da instalação
+  // 7) Cálculo da instalação (pontos multiplicados pela quantidade)
+  const pontosInstalacaoTotal = (cortina.pontosInstalacao || 1) * cortina.quantidade;
   const custoInstalacao = cortina.precisaInstalacao && servicoInstalacao
-    ? (cortina.pontosInstalacao || 1) * servicoInstalacao.preco_custo_por_ponto
+    ? pontosInstalacaoTotal * servicoInstalacao.preco_custo_por_ponto
     : 0;
 
   const custoTotal = custoTecido + custoForro + custoTrilho + custoCostura + custoInstalacao;

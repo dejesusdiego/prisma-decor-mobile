@@ -429,7 +429,16 @@ export function EtapaResumo({
                 <Package className="h-4 w-4" />
                 Resumo de Materiais (Todo o Orçamento)
               </h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+                <div className="bg-background rounded p-2">
+                  <p className="text-xs text-muted-foreground">Total de Unidades</p>
+                  <p className="font-bold text-lg">
+                    {resumoConsolidado.totalCortinas + resumoConsolidado.totalPersianas + resumoConsolidado.totalOutros}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    ({cortinas.length} item(ns) no orçamento)
+                  </p>
+                </div>
                 {resumoConsolidado.totalTecido_m > 0 && (
                   <div className="bg-background rounded p-2">
                     <p className="text-xs text-muted-foreground">Total Tecidos</p>
@@ -473,19 +482,32 @@ export function EtapaResumo({
                   className="border rounded-lg p-4 space-y-3"
                 >
                   <div className="flex justify-between items-start">
-                    <div>
+                    <div className="flex items-center gap-2">
                       <p className="font-semibold text-lg">{cortina.nomeIdentificacao}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {cortina.tipoProduto === 'cortina' ? 'Cortina' : cortina.tipoProduto === 'persiana' ? 'Persiana' : 'Outro'} - {cortina.tipoCortina}
-                        {cortina.ambiente && <span className="ml-2">• {cortina.ambiente}</span>}
-                      </p>
+                      {cortina.quantidade > 1 && (
+                        <span className="bg-primary text-primary-foreground text-xs font-bold px-2 py-0.5 rounded-full">
+                          ×{cortina.quantidade}
+                        </span>
+                      )}
                     </div>
-                    <p className="font-bold text-primary">
-                      {formatCurrency((cortina.custoTotal || 0) * (1 + margemAtual / 100))}
-                    </p>
+                    <div className="text-right">
+                      <p className="font-bold text-primary">
+                        {formatCurrency((cortina.custoTotal || 0) * (1 + margemAtual / 100))}
+                      </p>
+                      {cortina.quantidade > 1 && (
+                        <p className="text-xs text-muted-foreground">
+                          Unitário: {formatCurrency(((cortina.custoTotal || 0) / cortina.quantidade) * (1 + margemAtual / 100))}
+                        </p>
+                      )}
+                    </div>
                   </div>
+                  
+                  <p className="text-sm text-muted-foreground">
+                    {cortina.tipoProduto === 'cortina' ? 'Cortina' : cortina.tipoProduto === 'persiana' ? 'Persiana' : 'Outro'} - {cortina.tipoCortina}
+                    {cortina.ambiente && <span className="ml-2">• {cortina.ambiente}</span>}
+                  </p>
 
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-sm">
                     <div>
                       <p className="text-xs text-muted-foreground">Largura</p>
                       <p className="font-medium">{cortina.largura}m</p>
@@ -494,7 +516,7 @@ export function EtapaResumo({
                       <p className="text-xs text-muted-foreground">Altura</p>
                       <p className="font-medium">{cortina.altura}m</p>
                     </div>
-                    {cortina.barraCm && (
+                    {cortina.barraCm > 0 && (
                       <div>
                         <p className="text-xs text-muted-foreground">Barra</p>
                         <p className="font-medium">{cortina.barraCm}cm</p>
@@ -504,6 +526,19 @@ export function EtapaResumo({
                       <p className="text-xs text-muted-foreground">Quantidade</p>
                       <p className="font-medium">{cortina.quantidade}</p>
                     </div>
+                    {cortina.precisaInstalacao && (
+                      <div>
+                        <p className="text-xs text-muted-foreground">Pts Instalação</p>
+                        <p className="font-medium">
+                          {(cortina.pontosInstalacao || 1) * cortina.quantidade}
+                          {cortina.quantidade > 1 && (
+                            <span className="text-xs text-muted-foreground ml-1">
+                              ({cortina.pontosInstalacao || 1} × {cortina.quantidade})
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                    )}
                   </div>
 
                   {cortina.tipoProduto === 'cortina' && (
@@ -608,8 +643,15 @@ export function EtapaResumo({
                   )}
 
                   <div className="flex justify-between pt-2 border-t text-sm">
-                    <span className="text-muted-foreground">Custo Total</span>
-                    <span className="font-semibold">{formatCurrency(cortina.custoTotal || 0)}</span>
+                    <span className="text-muted-foreground">Custo Total (×{cortina.quantidade})</span>
+                    <div className="text-right">
+                      <span className="font-semibold">{formatCurrency(cortina.custoTotal || 0)}</span>
+                      {cortina.quantidade > 1 && (
+                        <p className="text-xs text-muted-foreground">
+                          Custo unitário: {formatCurrency((cortina.custoTotal || 0) / cortina.quantidade)}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
