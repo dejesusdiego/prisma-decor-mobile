@@ -63,8 +63,8 @@ interface FunilItem {
   percentual: number;
 }
 
-interface DadoMensal {
-  mes: string;
+interface DadoPeriodo {
+  periodo: string;
   faturamento: number;
   quantidade: number;
 }
@@ -102,7 +102,8 @@ interface DashboardData {
   tendencias: StatsTendencias;
   funil: FunilItem[];
   recentOrcamentos: Orcamento[];
-  dadosMensais: DadoMensal[];
+  dadosDiarios: DadoPeriodo[];
+  dadosMensais: DadoPeriodo[];
   alertas: OrcamentoAlerta[];
   produtosRanking: ProdutoRanking[];
   custosComposicao: DadoCusto[];
@@ -176,7 +177,8 @@ export function useDashboardData(periodo: PeriodoFiltro = '30d'): DashboardData 
   });
   const [funil, setFunil] = useState<FunilItem[]>([]);
   const [recentOrcamentos, setRecentOrcamentos] = useState<Orcamento[]>([]);
-  const [dadosMensais, setDadosMensais] = useState<DadoMensal[]>([]);
+  const [dadosDiarios, setDadosDiarios] = useState<DadoPeriodo[]>([]);
+  const [dadosMensais, setDadosMensais] = useState<DadoPeriodo[]>([]);
   const [alertas, setAlertas] = useState<OrcamentoAlerta[]>([]);
   const [produtosRanking, setProdutosRanking] = useState<ProdutoRanking[]>([]);
   const [custosComposicao, setCustosComposicao] = useState<DadoCusto[]>([]);
@@ -412,10 +414,32 @@ export function useDashboardData(periodo: PeriodoFiltro = '30d'): DashboardData 
       const dadosDiariosArr = Object.entries(diasMap)
         .sort(([a], [b]) => a.localeCompare(b))
         .map(([diaKey, data]) => ({ 
-          mes: format(new Date(diaKey), 'dd/MM'),
+          periodo: format(new Date(diaKey), 'dd/MM'),
           ...data 
         }));
-      setDadosMensais(dadosDiariosArr);
+      setDadosDiarios(dadosDiariosArr);
+
+      // Dados mensais
+      const mesesMap: Record<string, { faturamento: number; quantidade: number }> = {};
+      allOrcamentos.forEach((orc) => {
+        if (['aprovado', 'pago_40', 'pago_parcial', 'pago_60', 'pago'].includes(orc.status)) {
+          const mesKey = format(new Date(orc.created_at), 'yyyy-MM');
+          if (!mesesMap[mesKey]) {
+            mesesMap[mesKey] = { faturamento: 0, quantidade: 0 };
+          }
+          mesesMap[mesKey].faturamento += getValorEfetivo(orc);
+          mesesMap[mesKey].quantidade++;
+        }
+      });
+
+      const dadosMensaisArr = Object.entries(mesesMap)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([mesKey, data]) => ({ 
+          periodo: format(new Date(mesKey + '-01'), 'MMM/yy'),
+          ...data 
+        }))
+        .slice(-6);
+      setDadosMensais(dadosMensaisArr);
 
       // Alertas
       const hoje = new Date();
@@ -488,6 +512,7 @@ export function useDashboardData(periodo: PeriodoFiltro = '30d'): DashboardData 
     tendencias,
     funil,
     recentOrcamentos,
+    dadosDiarios,
     dadosMensais,
     alertas,
     produtosRanking,
