@@ -51,6 +51,7 @@ export type View =
   | 'gestaoMateriais' 
   | 'ajustesSistema' 
   | 'solicitacoesVisita'
+  | 'calendarioGeral'
   | 'finDashboard'
   | 'finContasPagar'
   | 'finContasReceber'
@@ -84,6 +85,7 @@ interface OrcamentoSidebarProps {
 const principalNavItems = [
   { id: 'dashboardUnificado' as View, label: 'Visão Geral', icon: LayoutDashboard, adminOnly: true },
   { id: 'dashboard' as View, label: 'Dashboard', icon: Home },
+  { id: 'calendarioGeral' as View, label: 'Calendário', icon: Calendar, adminOnly: true },
 ];
 
 // Itens da seção ORÇAMENTOS
