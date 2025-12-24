@@ -990,6 +990,54 @@ export type Database = {
         }
         Relationships: []
       }
+      notificacoes: {
+        Row: {
+          created_at: string
+          data_lembrete: string | null
+          expires_at: string | null
+          id: string
+          lida: boolean
+          link_acao: string | null
+          mensagem: string
+          prioridade: string | null
+          referencia_id: string | null
+          referencia_tipo: string | null
+          tipo: string
+          titulo: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          data_lembrete?: string | null
+          expires_at?: string | null
+          id?: string
+          lida?: boolean
+          link_acao?: string | null
+          mensagem: string
+          prioridade?: string | null
+          referencia_id?: string | null
+          referencia_tipo?: string | null
+          tipo: string
+          titulo: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          data_lembrete?: string | null
+          expires_at?: string | null
+          id?: string
+          lida?: boolean
+          link_acao?: string | null
+          mensagem?: string
+          prioridade?: string | null
+          referencia_id?: string | null
+          referencia_tipo?: string | null
+          tipo?: string
+          titulo?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       oportunidades: {
         Row: {
           contato_id: string | null
