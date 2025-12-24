@@ -1,8 +1,15 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
+import { Calendar } from '@/components/ui/calendar';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import { 
   BarChart, 
   Bar, 
@@ -21,23 +28,45 @@ import {
   TrendingUp, 
   CheckCircle2,
   Timer,
-  Zap
+  Zap,
+  Download,
+  CalendarIcon,
+  Filter
 } from 'lucide-react';
 import { useProducaoData, STATUS_ITEM_LABELS, PRIORIDADE_LABELS } from '@/hooks/useProducaoData';
 import { TipBanner } from '@/components/ui/TipBanner';
 import { cn } from '@/lib/utils';
-import { differenceInHours, differenceInDays, parseISO } from 'date-fns';
+import { differenceInHours, differenceInDays, parseISO, format, isWithinInterval, startOfMonth, endOfMonth, subMonths } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import { toast } from 'sonner';
 
 const COLORS = ['#6b7280', '#f97316', '#3b82f6', '#6366f1', '#8b5cf6', '#22c55e'];
 
 export function RelatorioProducao() {
   const { pedidos, isLoading } = useProducaoData();
+  const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
+    from: startOfMonth(subMonths(new Date(), 1)),
+    to: endOfMonth(new Date()),
+  });
+  const [isExporting, setIsExporting] = useState(false);
+
+  // Filter pedidos by date range
+  const pedidosFiltrados = useMemo(() => {
+    if (!dateRange.from || !dateRange.to) return pedidos;
+    
+    return pedidos.filter(p => {
+      const dataEntrada = parseISO(p.data_entrada);
+      return isWithinInterval(dataEntrada, { start: dateRange.from!, end: dateRange.to! });
+    });
+  }, [pedidos, dateRange]);
 
   // Calculate metrics
   const metricas = useMemo(() => {
-    if (!pedidos.length) return null;
+    if (!pedidosFiltrados.length) return null;
 
-    const allItems = pedidos.flatMap(p => p.itens_pedido || []);
+    const allItems = pedidosFiltrados.flatMap(p => p.itens_pedido || []);
     
     // Count items by status
     const statusCounts: Record<string, number> = {};
@@ -102,21 +131,21 @@ export function RelatorioProducao() {
       .sort((a, b) => b.count - a.count);
 
     // Priority distribution
-    const prioridadeDistribution = pedidos.reduce((acc, p) => {
+    const prioridadeDistribution = pedidosFiltrados.reduce((acc, p) => {
       acc[p.prioridade] = (acc[p.prioridade] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
 
     // Overdue orders
     const hoje = new Date();
-    const atrasados = pedidos.filter(p => {
+    const atrasados = pedidosFiltrados.filter(p => {
       if (!p.previsao_entrega || p.status_producao === 'entregue') return false;
       return parseISO(p.previsao_entrega) < hoje;
     });
 
     return {
       totalItens: allItems.length,
-      totalPedidos: pedidos.length,
+      totalPedidos: pedidosFiltrados.length,
       statusDistribution,
       tempoMedioPorEtapa: {
         corte: tempoMedioPorEtapa.corte.count > 0 
@@ -140,7 +169,114 @@ export function RelatorioProducao() {
         ? Math.round((statusCounts['pronto'] || 0) / allItems.length * 100)
         : 0
     };
-  }, [pedidos]);
+  }, [pedidosFiltrados]);
+
+  // Export to PDF function
+  const exportarPDF = async () => {
+    if (!metricas) return;
+    
+    setIsExporting(true);
+    try {
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      
+      // Header
+      doc.setFontSize(20);
+      doc.setTextColor(30, 64, 175);
+      doc.text('Relatório de Produtividade', pageWidth / 2, 20, { align: 'center' });
+      
+      // Date range
+      doc.setFontSize(10);
+      doc.setTextColor(100);
+      const periodoTexto = dateRange.from && dateRange.to 
+        ? `Período: ${format(dateRange.from, 'dd/MM/yyyy', { locale: ptBR })} a ${format(dateRange.to, 'dd/MM/yyyy', { locale: ptBR })}`
+        : 'Todos os períodos';
+      doc.text(periodoTexto, pageWidth / 2, 28, { align: 'center' });
+      doc.text(`Gerado em: ${format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}`, pageWidth / 2, 34, { align: 'center' });
+      
+      // KPIs section
+      doc.setFontSize(14);
+      doc.setTextColor(0);
+      doc.text('Indicadores Principais', 14, 48);
+      
+      autoTable(doc, {
+        startY: 52,
+        head: [['Indicador', 'Valor']],
+        body: [
+          ['Total em Produção', `${metricas.totalItens} itens (${metricas.totalPedidos} pedidos)`],
+          ['Lead Time Médio', metricas.leadTimeMedio !== null ? `${metricas.leadTimeMedio} dias` : 'N/A'],
+          ['Eficiência (Prontos)', `${metricas.eficiencia}%`],
+          ['Pedidos Atrasados', `${metricas.atrasados}`],
+          ['Tempo Médio Corte', metricas.tempoMedioPorEtapa.corte !== null ? `${metricas.tempoMedioPorEtapa.corte}h` : 'Sem dados'],
+          ['Tempo Médio Costura', metricas.tempoMedioPorEtapa.costura !== null ? `${metricas.tempoMedioPorEtapa.costura}h` : 'Sem dados'],
+        ],
+        theme: 'striped',
+        headStyles: { fillColor: [30, 64, 175] },
+      });
+      
+      // Bottleneck section
+      const tableEndY = (doc as any).lastAutoTable.finalY + 10;
+      doc.setFontSize(14);
+      doc.text('Gargalo Identificado', 14, tableEndY);
+      
+      if (metricas.gargalo) {
+        autoTable(doc, {
+          startY: tableEndY + 4,
+          head: [['Etapa', 'Itens', 'Percentual']],
+          body: [[
+            metricas.gargalo.label,
+            `${metricas.gargalo.count}`,
+            `${metricas.gargalo.percentage.toFixed(1)}%`
+          ]],
+          theme: 'striped',
+          headStyles: { fillColor: [249, 115, 22] },
+        });
+      }
+      
+      // Status distribution
+      const bottleneckEndY = (doc as any).lastAutoTable.finalY + 10;
+      doc.setFontSize(14);
+      doc.text('Distribuição por Status', 14, bottleneckEndY);
+      
+      autoTable(doc, {
+        startY: bottleneckEndY + 4,
+        head: [['Status', 'Quantidade', 'Percentual']],
+        body: metricas.statusDistribution.map(item => [
+          item.label,
+          `${item.count}`,
+          `${item.percentage.toFixed(1)}%`
+        ]),
+        theme: 'striped',
+        headStyles: { fillColor: [59, 130, 246] },
+      });
+      
+      // Priority distribution
+      const statusEndY = (doc as any).lastAutoTable.finalY + 10;
+      doc.setFontSize(14);
+      doc.text('Distribuição por Prioridade', 14, statusEndY);
+      
+      autoTable(doc, {
+        startY: statusEndY + 4,
+        head: [['Prioridade', 'Quantidade']],
+        body: metricas.prioridadeDistribution.map(item => [
+          item.name,
+          `${item.value}`
+        ]),
+        theme: 'striped',
+        headStyles: { fillColor: [139, 92, 246] },
+      });
+      
+      // Save
+      const fileName = `relatorio-producao-${format(new Date(), 'yyyy-MM-dd')}.pdf`;
+      doc.save(fileName);
+      toast.success('PDF exportado com sucesso!');
+    } catch (error) {
+      console.error('Erro ao exportar PDF:', error);
+      toast.error('Erro ao exportar PDF');
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -180,6 +316,42 @@ export function RelatorioProducao() {
         Acompanhe métricas de tempo, identifique gargalos e otimize seu processo produtivo.
         Os dados são calculados com base no histórico de movimentação dos itens.
       </TipBanner>
+
+      {/* Filtros e Ações */}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-2">
+          <Filter className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm font-medium">Período:</span>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="w-[280px] justify-start text-left font-normal">
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {dateRange.from && dateRange.to ? (
+                  <>
+                    {format(dateRange.from, 'dd/MM/yyyy', { locale: ptBR })} - {format(dateRange.to, 'dd/MM/yyyy', { locale: ptBR })}
+                  </>
+                ) : (
+                  <span>Selecione o período</span>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="range"
+                selected={{ from: dateRange.from, to: dateRange.to }}
+                onSelect={(range) => setDateRange({ from: range?.from, to: range?.to })}
+                numberOfMonths={2}
+                locale={ptBR}
+              />
+            </PopoverContent>
+          </Popover>
+        </div>
+        
+        <Button onClick={exportarPDF} disabled={isExporting || !metricas}>
+          <Download className="mr-2 h-4 w-4" />
+          {isExporting ? 'Exportando...' : 'Exportar PDF'}
+        </Button>
+      </div>
 
       {/* KPIs principais */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
