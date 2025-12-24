@@ -182,6 +182,24 @@ export function DetalheContato({ contatoId, onVoltar, onVisualizarOrcamento }: D
             </div>
           </div>
           <div className="flex gap-2">
+            <Button 
+              variant="default" 
+              size="sm" 
+              onClick={() => {
+                // Navegar para criar orçamento com dados pré-populados
+                const params = new URLSearchParams({
+                  contato_id: contatoId,
+                  cliente_nome: contato.nome,
+                  cliente_telefone: contato.telefone || '',
+                  endereco: contato.endereco || '',
+                  cidade: contato.cidade || ''
+                });
+                window.location.href = `/gerarorcamento?${params.toString()}`;
+              }}
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              Criar Orçamento
+            </Button>
             <Button variant="outline" size="sm" onClick={() => setAtividadeDialogOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Nova Atividade

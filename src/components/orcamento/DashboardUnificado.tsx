@@ -40,6 +40,7 @@ import {
 } from 'recharts';
 import { HelpTooltip, InfoIcon } from '@/components/ui/HelpTooltip';
 import { TipBanner } from '@/components/ui/TipBanner';
+import { AlertasConsolidados } from './AlertasConsolidados';
 
 type PeriodoFiltro = '7dias' | '30dias' | 'mesAtual' | 'mesAnterior' | '90dias';
 
@@ -516,70 +517,80 @@ export function DashboardUnificado({ onNavigate }: DashboardUnificadoProps) {
         </Card>
       </div>
 
-      {/* Cards de resumo integrado */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Lucro Projetado */}
-        <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
-          <CardContent className="p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Lucro Projetado</p>
-                <p className={cn(
-                  "text-2xl font-bold mt-1",
-                  orcamentoStats.lucroProjetado >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600"
-                )}>
-                  {formatCurrency(orcamentoStats.lucroProjetado)}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Baseado nos orçamentos pagos
-                </p>
-              </div>
-              <TrendingUp className="h-10 w-10 text-primary/30" />
-            </div>
-          </CardContent>
-        </Card>
+      {/* Cards de resumo integrado + Alertas */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Coluna de Cards */}
+        <div className="lg:col-span-2 space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Lucro Projetado */}
+            <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
+              <CardContent className="p-5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Lucro Projetado</p>
+                    <p className={cn(
+                      "text-2xl font-bold mt-1",
+                      orcamentoStats.lucroProjetado >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600"
+                    )}>
+                      {formatCurrency(orcamentoStats.lucroProjetado)}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Baseado nos orçamentos pagos
+                    </p>
+                  </div>
+                  <TrendingUp className="h-10 w-10 text-primary/30" />
+                </div>
+              </CardContent>
+            </Card>
 
-        {/* A Receber */}
-        <Card 
-          className="cursor-pointer hover:shadow-md transition-shadow"
-          onClick={() => onNavigate('finReceber')}
-        >
-          <CardContent className="p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Contas a Receber</p>
-                <p className="text-2xl font-bold mt-1 text-emerald-600 dark:text-emerald-400">
-                  {contasReceberPendentes.length}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {formatCurrency(contasReceberPendentes.reduce((s, c) => s + c.valor, 0))} pendente
-                </p>
-              </div>
-              <ArrowRight className="h-5 w-5 text-muted-foreground" />
-            </div>
-          </CardContent>
-        </Card>
+            {/* A Receber */}
+            <Card 
+              className="cursor-pointer hover:shadow-md transition-shadow"
+              onClick={() => onNavigate('finReceber')}
+            >
+              <CardContent className="p-5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Contas a Receber</p>
+                    <p className="text-2xl font-bold mt-1 text-emerald-600 dark:text-emerald-400">
+                      {contasReceberPendentes.length}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {formatCurrency(contasReceberPendentes.reduce((s, c) => s + c.valor, 0))} pendente
+                    </p>
+                  </div>
+                  <ArrowRight className="h-5 w-5 text-muted-foreground" />
+                </div>
+              </CardContent>
+            </Card>
 
-        {/* A Pagar */}
-        <Card 
-          className="cursor-pointer hover:shadow-md transition-shadow"
-          onClick={() => onNavigate('finPagar')}
-        >
-          <CardContent className="p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Contas a Pagar</p>
-                <p className="text-2xl font-bold mt-1 text-red-600 dark:text-red-400">
-                  {contasPagarPendentes.length}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {formatCurrency(contasPagarPendentes.reduce((s, c) => s + c.valor, 0))} pendente
-                </p>
-              </div>
-              <ArrowRight className="h-5 w-5 text-muted-foreground" />
-            </div>
-          </CardContent>
-        </Card>
+            {/* A Pagar */}
+            <Card 
+              className="cursor-pointer hover:shadow-md transition-shadow"
+              onClick={() => onNavigate('finPagar')}
+            >
+              <CardContent className="p-5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Contas a Pagar</p>
+                    <p className="text-2xl font-bold mt-1 text-red-600 dark:text-red-400">
+                      {contasPagarPendentes.length}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {formatCurrency(contasPagarPendentes.reduce((s, c) => s + c.valor, 0))} pendente
+                    </p>
+                  </div>
+                  <ArrowRight className="h-5 w-5 text-muted-foreground" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* Coluna de Alertas */}
+        <div className="lg:col-span-1">
+          <AlertasConsolidados onNavigate={onNavigate} />
+        </div>
       </div>
 
       {/* Links rápidos */}
