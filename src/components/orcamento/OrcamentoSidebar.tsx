@@ -60,6 +60,7 @@ export type View =
   | 'finRentabilidade'
   | 'finComissoes'
   | 'finVendedores'
+  | 'finKPIs'
   | 'categoriasFormas'
   | 'crmPainel'
   | 'crmContatos'
@@ -116,6 +117,7 @@ const financeiroNavItems = [
   { id: 'finRentabilidade' as View, label: 'Rentabilidade', icon: DollarSign },
   { id: 'finComissoes' as View, label: 'Comissões', icon: Users },
   { id: 'finVendedores' as View, label: 'Desempenho Vendedores', icon: Target },
+  { id: 'finKPIs' as View, label: 'KPIs do Negócio', icon: BarChart3 },
   { id: 'finContasPagar' as View, label: 'Contas a Pagar', icon: ArrowUpCircle },
   { id: 'finContasReceber' as View, label: 'Contas a Receber', icon: ArrowDownCircle },
   { id: 'finLancamentos' as View, label: 'Lançamentos', icon: Receipt },
