@@ -1,4 +1,4 @@
-import { 
+import {
   Home, 
   Plus, 
   FileText, 
@@ -70,7 +70,8 @@ export type View =
   | 'prodKanban'
   | 'prodLista'
   | 'prodFicha'
-  | 'prodAgenda';
+  | 'prodAgenda'
+  | 'prodRelatorio';
 
 interface OrcamentoSidebarProps {
   currentView: View;
@@ -104,6 +105,7 @@ const producaoNavItems = [
   { id: 'prodKanban' as View, label: 'Kanban', icon: Layers },
   { id: 'prodLista' as View, label: 'Pedidos', icon: Package },
   { id: 'prodAgenda' as View, label: 'Agenda Instalações', icon: Calendar },
+  { id: 'prodRelatorio' as View, label: 'Relatório', icon: BarChart3 },
 ];
 
 // Itens da seção FINANCEIRO (admin only)

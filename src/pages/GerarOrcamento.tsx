@@ -32,6 +32,7 @@ import { KanbanProducao } from '@/components/producao/KanbanProducao';
 import { ListaPedidos } from '@/components/producao/ListaPedidos';
 import { FichaPedido } from '@/components/producao/FichaPedido';
 import { AgendaInstalacoes } from '@/components/producao/AgendaInstalacoes';
+import { RelatorioProducao } from '@/components/producao/RelatorioProducao';
 
 interface ClienteDataFromVisita {
   nome: string;
@@ -300,6 +301,7 @@ export default function GerarOrcamento() {
               />
             )}
             {view === 'prodAgenda' && <AgendaInstalacoes />}
+            {view === 'prodRelatorio' && <RelatorioProducao />}
           </div>
         </main>
       </div>
