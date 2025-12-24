@@ -40,6 +40,7 @@ import {
 } from 'recharts';
 import { format, subMonths, startOfMonth, endOfMonth, differenceInMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { MetasVendas } from './MetasVendas';
 
 type PeriodoFiltro = '3m' | '6m' | '12m' | 'todos';
 
@@ -384,6 +385,15 @@ export default function DashboardKPIs() {
           </Button>
         </div>
       </div>
+
+      {/* Metas de Vendas */}
+      <MetasVendas
+        receitaAtual={data.receitaTotal}
+        taxaConversao={data.taxaConversao}
+        ticketMedio={data.ticketMedio}
+        clientesNovos={data.clientesNovos}
+        periodo={periodo}
+      />
 
       {/* KPIs Principais */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
