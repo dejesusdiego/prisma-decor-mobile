@@ -59,6 +59,7 @@ export type View =
   | 'finFluxoPrevisto'
   | 'finRentabilidade'
   | 'finComissoes'
+  | 'finVendedores'
   | 'categoriasFormas'
   | 'crmPainel'
   | 'crmContatos'
@@ -114,6 +115,7 @@ const financeiroNavItems = [
   { id: 'finFluxoPrevisto' as View, label: 'Fluxo Previsto', icon: TrendingUp },
   { id: 'finRentabilidade' as View, label: 'Rentabilidade', icon: DollarSign },
   { id: 'finComissoes' as View, label: 'Comissões', icon: Users },
+  { id: 'finVendedores' as View, label: 'Desempenho Vendedores', icon: Target },
   { id: 'finContasPagar' as View, label: 'Contas a Pagar', icon: ArrowUpCircle },
   { id: 'finContasReceber' as View, label: 'Contas a Receber', icon: ArrowDownCircle },
   { id: 'finLancamentos' as View, label: 'Lançamentos', icon: Receipt },
