@@ -22,6 +22,7 @@ import { RelatoriosBI } from '@/components/financeiro/RelatoriosBI';
 import { CategoriasFormas } from '@/components/financeiro/CategoriasFormas';
 import { RelatorioRentabilidade } from '@/components/financeiro/RelatorioRentabilidade';
 import { Comissoes } from '@/components/financeiro/Comissoes';
+import { RelatorioVendedores } from '@/components/financeiro/RelatorioVendedores';
 import { PainelCRM } from '@/components/crm/PainelCRM';
 import { ListaContatos } from '@/components/crm/ListaContatos';
 import { DetalheContato } from '@/components/crm/DetalheContato';
@@ -53,6 +54,7 @@ const ADMIN_ONLY_VIEWS: View[] = [
   'finFluxoPrevisto',
   'finRentabilidade',
   'finComissoes',
+  'finVendedores',
   'finContasPagar',
   'finContasReceber',
   'finLancamentos',
@@ -278,6 +280,9 @@ export default function GerarOrcamento() {
             )}
             {view === 'finComissoes' && (
               <Comissoes onVisualizarOrcamento={handleVisualizarOrcamento} />
+            )}
+            {view === 'finVendedores' && (
+              <RelatorioVendedores onVisualizarOrcamento={handleVisualizarOrcamento} />
             )}
             {view === 'finContasPagar' && (
               <ContasPagar onVisualizarOrcamento={handleVisualizarOrcamento} />
