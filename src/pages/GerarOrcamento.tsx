@@ -56,16 +56,19 @@ const ADMIN_ONLY_VIEWS: View[] = [
   'finRentabilidade',
   'finComissoes',
   'finVendedores',
+  'finKPIs',
   'finContasPagar',
   'finContasReceber',
   'finLancamentos',
   'finRelatorios',
   'categoriasFormas',
+  'crmRelatorios',
   'prodDashboard',
   'prodKanban',
   'prodLista',
   'prodFicha',
-  'prodAgenda'
+  'prodAgenda',
+  'prodRelatorio'
 ];
 
 export default function GerarOrcamento() {
@@ -177,7 +180,10 @@ export default function GerarOrcamento() {
       case 'finContasPagar': return 'Contas a Pagar';
       case 'finContasReceber': return 'Contas a Receber';
       case 'finLancamentos': return 'Lançamentos';
-      case 'finRelatorios': return 'Relatórios';
+      case 'finRelatorios': return 'Análise Financeira';
+      case 'finVendedores': return 'Desempenho Vendedores';
+      case 'finKPIs': return 'KPIs do Negócio';
+      case 'prodRelatorio': return 'Análise Produção';
       case 'finFluxoPrevisto': return 'Fluxo de Caixa Previsto';
       case 'finRentabilidade': return 'Rentabilidade por Orçamento';
       case 'finComissoes': return 'Comissões';

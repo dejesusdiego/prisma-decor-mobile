@@ -98,7 +98,6 @@ const crmNavItems = [
   { id: 'crmPipeline' as View, label: 'Pipeline', icon: TrendingUp },
   { id: 'crmContatos' as View, label: 'Contatos', icon: UserCircle },
   { id: 'crmAtividades' as View, label: 'Atividades', icon: Clock },
-  { id: 'crmRelatorios' as View, label: 'Relatórios', icon: ClipboardList },
 ];
 
 // Itens da seção PRODUÇÃO (admin only)
@@ -107,21 +106,26 @@ const producaoNavItems = [
   { id: 'prodKanban' as View, label: 'Kanban', icon: Layers },
   { id: 'prodLista' as View, label: 'Pedidos', icon: Package },
   { id: 'prodAgenda' as View, label: 'Agenda Instalações', icon: Calendar },
-  { id: 'prodRelatorio' as View, label: 'Relatório', icon: BarChart3 },
 ];
 
-// Itens da seção FINANCEIRO (admin only)
+// Itens da seção FINANCEIRO (admin only) - apenas operacional
 const financeiroNavItems = [
   { id: 'finDashboard' as View, label: 'Visão Geral', icon: LayoutDashboard },
   { id: 'finFluxoPrevisto' as View, label: 'Fluxo Previsto', icon: TrendingUp },
   { id: 'finRentabilidade' as View, label: 'Rentabilidade', icon: DollarSign },
   { id: 'finComissoes' as View, label: 'Comissões', icon: Users },
-  { id: 'finVendedores' as View, label: 'Desempenho Vendedores', icon: Target },
-  { id: 'finKPIs' as View, label: 'KPIs do Negócio', icon: BarChart3 },
   { id: 'finContasPagar' as View, label: 'Contas a Pagar', icon: ArrowUpCircle },
   { id: 'finContasReceber' as View, label: 'Contas a Receber', icon: ArrowDownCircle },
   { id: 'finLancamentos' as View, label: 'Lançamentos', icon: Receipt },
-  { id: 'finRelatorios' as View, label: 'Relatórios', icon: BarChart3 },
+];
+
+// Itens da seção RELATÓRIOS & BI (admin only)
+const relatoriosBINavItems = [
+  { id: 'finKPIs' as View, label: 'KPIs do Negócio', icon: Target },
+  { id: 'finVendedores' as View, label: 'Desempenho Vendedores', icon: Users },
+  { id: 'finRelatorios' as View, label: 'Análise Financeira', icon: DollarSign },
+  { id: 'crmRelatorios' as View, label: 'Análise Comercial', icon: TrendingUp },
+  { id: 'prodRelatorio' as View, label: 'Análise Produção', icon: Factory },
 ];
 
 // Itens da seção ADMINISTRAÇÃO (admin only)
@@ -151,7 +155,7 @@ const getInitialSections = (): Record<string, boolean> => {
   } catch (e) {
     console.error('Error reading sidebar sections from localStorage:', e);
   }
-  return { principal: true, orcamentos: true, crm: true, producao: true, financeiro: true, administracao: false };
+  return { principal: true, orcamentos: true, crm: true, producao: true, financeiro: true, relatoriosBI: true, administracao: false };
 };
 
 const getInitialCollapsed = (): boolean => {
@@ -180,6 +184,7 @@ export function OrcamentoSidebar({ currentView, onNavigate }: OrcamentoSidebarPr
     { id: 'crm', title: 'CRM', icon: Target, items: crmNavItems },
     { id: 'producao', title: 'Produção', icon: Factory, items: producaoNavItems, adminOnly: true },
     { id: 'financeiro', title: 'Financeiro', icon: Wallet, items: financeiroNavItems, adminOnly: true },
+    { id: 'relatoriosBI', title: 'Relatórios & BI', icon: BarChart3, items: relatoriosBINavItems, adminOnly: true },
     { id: 'administracao', title: 'Administração', icon: Wrench, items: administracaoNavItems, adminOnly: true },
   ];
 
