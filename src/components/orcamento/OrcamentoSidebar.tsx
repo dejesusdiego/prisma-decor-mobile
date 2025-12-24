@@ -61,7 +61,12 @@ export type View =
   | 'crmDetalheContato'
   | 'crmPipeline'
   | 'crmRelatorios'
-  | 'crmAtividades';
+  | 'crmAtividades'
+  | 'prodDashboard'
+  | 'prodKanban'
+  | 'prodLista'
+  | 'prodFicha'
+  | 'prodAgenda';
 
 interface OrcamentoSidebarProps {
   currentView: View;
