@@ -33,6 +33,7 @@ import { ListaPedidos } from '@/components/producao/ListaPedidos';
 import { FichaPedido } from '@/components/producao/FichaPedido';
 import { AgendaInstalacoes } from '@/components/producao/AgendaInstalacoes';
 import { RelatorioProducao } from '@/components/producao/RelatorioProducao';
+import { NotificationCenter } from '@/components/NotificationCenter';
 
 interface ClienteDataFromVisita {
   nome: string;
@@ -183,6 +184,7 @@ export default function GerarOrcamento() {
             )}
           </div>
           <div className="flex items-center gap-3">
+            <NotificationCenter onNavigate={(newView) => handleNavigate(newView as View)} />
             <span className="text-sm text-muted-foreground hidden sm:block">{user?.email}</span>
             <Button variant="ghost" size="sm" onClick={signOut}>
               <LogOut className="h-4 w-4 mr-2" />

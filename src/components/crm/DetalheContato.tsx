@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   ArrowLeft,
   Phone,
@@ -16,9 +17,16 @@ import {
   Users,
   Pencil,
   DollarSign,
-  TrendingUp
+  TrendingUp,
+  Package,
+  Wallet,
+  AlertTriangle,
+  CheckCircle,
+  XCircle,
+  Truck
 } from 'lucide-react';
 import { useContato, useAtividades, useOrcamentosDoContato, Contato } from '@/hooks/useCRMData';
+import { useContatoFinanceiro, useContatoPedidos } from '@/hooks/useContatoFinanceiro';
 import { DialogContato } from './DialogContato';
 import { DialogAtividade } from './DialogAtividade';
 import { format, formatDistanceToNow } from 'date-fns';
@@ -62,8 +70,19 @@ export function DetalheContato({ contatoId, onVoltar, onVisualizarOrcamento }: D
   const { data: atividades, isLoading: loadingAtividades } = useAtividades({ contatoId });
   const { data: orcamentos, isLoading: loadingOrcamentos } = useOrcamentosDoContato(contatoId);
   
+  // Integrações com Financeiro e Produção
+  const { data: financeiro, isLoading: loadingFinanceiro } = useContatoFinanceiro(
+    contatoId, 
+    contato?.telefone || null
+  );
+  const { data: pedidos, isLoading: loadingPedidos } = useContatoPedidos(
+    contatoId, 
+    contato?.telefone || null
+  );
+  
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [atividadeDialogOpen, setAtividadeDialogOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('historico');
 
   // Criar timeline unificada
   const timeline = useMemo(() => {
@@ -280,110 +299,294 @@ export function DetalheContato({ contatoId, onVoltar, onVisualizarOrcamento }: D
             </CardContent>
           </Card>
 
-          {/* Timeline */}
+          {/* Área de Abas */}
           <Card className="lg:col-span-2">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Clock className="h-4 w-4" />
-                Histórico
-              </CardTitle>
-              <Badge variant="secondary">{timeline.length} eventos</Badge>
-            </CardHeader>
-            <CardContent>
-              {(loadingAtividades || loadingOrcamentos) ? (
-                <div className="space-y-4">
-                  {[...Array(5)].map((_, i) => (
-                    <div key={i} className="flex gap-4">
-                      <Skeleton className="h-10 w-10 rounded-full shrink-0" />
-                      <div className="flex-1">
-                        <Skeleton className="h-4 w-48" />
-                        <Skeleton className="h-3 w-32 mt-1" />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : timeline.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Nenhum histórico ainda</p>
-                  <Button 
-                    variant="link" 
-                    className="mt-2"
-                    onClick={() => setAtividadeDialogOpen(true)}
-                  >
-                    Registrar primeira atividade
-                  </Button>
-                </div>
-              ) : (
-                <div className="relative">
-                  {/* Linha vertical */}
-                  <div className="absolute left-5 top-0 bottom-0 w-px bg-border" />
-                  
-                  <div className="space-y-4">
-                    {timeline.map((item, index) => {
-                      const Icon = item.icon;
-                      
-                      return (
-                        <div 
-                          key={item.id}
-                          className={cn(
-                            "relative flex gap-4 pl-0",
-                            item.tipo === 'orcamento' && onVisualizarOrcamento && "cursor-pointer hover:bg-muted/50 -mx-4 px-4 py-2 rounded-lg transition-colors"
-                          )}
-                          onClick={() => {
-                            if (item.tipo === 'orcamento' && onVisualizarOrcamento) {
-                              onVisualizarOrcamento(item.id.replace('orc-', ''));
-                            }
-                          }}
-                        >
-                          <div className={cn(
-                            "h-10 w-10 rounded-full flex items-center justify-center shrink-0 z-10",
-                            item.iconClass
-                          )}>
-                            <Icon className="h-5 w-5" />
-                          </div>
-                          
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between gap-2">
-                              <div>
-                                <p className={cn(
-                                  "font-medium",
-                                  item.concluida && "line-through text-muted-foreground"
-                                )}>
-                                  {item.titulo}
-                                </p>
-                                {item.subtitulo && (
-                                  <p className="text-sm text-muted-foreground line-clamp-1">
-                                    {item.subtitulo}
-                                  </p>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-2 shrink-0">
-                                {item.valor !== undefined && (
-                                  <span className="text-sm font-medium">
-                                    {formatCurrency(item.valor)}
-                                  </span>
-                                )}
-                                {item.status && (
-                                  <Badge variant="outline" className="text-xs capitalize">
-                                    {item.status.replace('_', ' ')}
-                                  </Badge>
-                                )}
-                              </div>
-                            </div>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {format(item.data, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
-                              {' · '}
-                              {formatDistanceToNow(item.data, { addSuffix: true, locale: ptBR })}
-                            </p>
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <CardHeader className="pb-2">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="historico" className="flex items-center gap-2">
+                    <Clock className="h-4 w-4" />
+                    Histórico
+                  </TabsTrigger>
+                  <TabsTrigger value="financeiro" className="flex items-center gap-2">
+                    <Wallet className="h-4 w-4" />
+                    Financeiro
+                  </TabsTrigger>
+                  <TabsTrigger value="producao" className="flex items-center gap-2">
+                    <Package className="h-4 w-4" />
+                    Produção
+                  </TabsTrigger>
+                </TabsList>
+              </CardHeader>
+
+              <CardContent>
+                {/* Aba Histórico */}
+                <TabsContent value="historico" className="mt-0">
+                  {(loadingAtividades || loadingOrcamentos) ? (
+                    <div className="space-y-4">
+                      {[...Array(5)].map((_, i) => (
+                        <div key={i} className="flex gap-4">
+                          <Skeleton className="h-10 w-10 rounded-full shrink-0" />
+                          <div className="flex-1">
+                            <Skeleton className="h-4 w-48" />
+                            <Skeleton className="h-3 w-32 mt-1" />
                           </div>
                         </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </CardContent>
+                      ))}
+                    </div>
+                  ) : timeline.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>Nenhum histórico ainda</p>
+                      <Button 
+                        variant="link" 
+                        className="mt-2"
+                        onClick={() => setAtividadeDialogOpen(true)}
+                      >
+                        Registrar primeira atividade
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="relative">
+                      <div className="absolute left-5 top-0 bottom-0 w-px bg-border" />
+                      <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
+                        {timeline.map((item) => {
+                          const Icon = item.icon;
+                          return (
+                            <div 
+                              key={item.id}
+                              className={cn(
+                                "relative flex gap-4 pl-0",
+                                item.tipo === 'orcamento' && onVisualizarOrcamento && "cursor-pointer hover:bg-muted/50 -mx-4 px-4 py-2 rounded-lg transition-colors"
+                              )}
+                              onClick={() => {
+                                if (item.tipo === 'orcamento' && onVisualizarOrcamento) {
+                                  onVisualizarOrcamento(item.id.replace('orc-', ''));
+                                }
+                              }}
+                            >
+                              <div className={cn(
+                                "h-10 w-10 rounded-full flex items-center justify-center shrink-0 z-10",
+                                item.iconClass
+                              )}>
+                                <Icon className="h-5 w-5" />
+                              </div>
+                              
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-start justify-between gap-2">
+                                  <div>
+                                    <p className={cn(
+                                      "font-medium",
+                                      item.concluida && "line-through text-muted-foreground"
+                                    )}>
+                                      {item.titulo}
+                                    </p>
+                                    {item.subtitulo && (
+                                      <p className="text-sm text-muted-foreground line-clamp-1">
+                                        {item.subtitulo}
+                                      </p>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-2 shrink-0">
+                                    {item.valor !== undefined && (
+                                      <span className="text-sm font-medium">
+                                        {formatCurrency(item.valor)}
+                                      </span>
+                                    )}
+                                    {item.status && (
+                                      <Badge variant="outline" className="text-xs capitalize">
+                                        {item.status.replace('_', ' ')}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </div>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  {format(item.data, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                                  {' · '}
+                                  {formatDistanceToNow(item.data, { addSuffix: true, locale: ptBR })}
+                                </p>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </TabsContent>
+
+                {/* Aba Financeiro */}
+                <TabsContent value="financeiro" className="mt-0">
+                  {loadingFinanceiro ? (
+                    <div className="space-y-4">
+                      {[...Array(3)].map((_, i) => (
+                        <Skeleton key={i} className="h-16 w-full" />
+                      ))}
+                    </div>
+                  ) : !financeiro || financeiro.contasReceber.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Wallet className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>Nenhuma conta financeira</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {/* Resumo Financeiro */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="p-4 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800">
+                          <p className="text-xs text-muted-foreground">Total Recebido</p>
+                          <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400">
+                            {formatCurrency(financeiro.totalRecebido)}
+                          </p>
+                        </div>
+                        <div className="p-4 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
+                          <p className="text-xs text-muted-foreground">A Receber</p>
+                          <p className="text-xl font-bold text-amber-600 dark:text-amber-400">
+                            {formatCurrency(financeiro.totalAReceber)}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Lista de Contas */}
+                      <div className="space-y-3 max-h-[300px] overflow-y-auto">
+                        {financeiro.contasReceber.map((conta) => (
+                          <div 
+                            key={conta.id} 
+                            className="p-3 rounded-lg border hover:bg-muted/50 transition-colors"
+                          >
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="font-medium text-sm">
+                                {conta.orcamento?.codigo || 'Conta avulsa'}
+                              </span>
+                              <Badge 
+                                variant={conta.status === 'pago' ? 'default' : 'secondary'}
+                                className="text-xs"
+                              >
+                                {conta.status}
+                              </Badge>
+                            </div>
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="text-muted-foreground">
+                                {conta.numero_parcelas}x de {formatCurrency(conta.valor_total / conta.numero_parcelas)}
+                              </span>
+                              <span className="font-medium">{formatCurrency(conta.valor_total)}</span>
+                            </div>
+                            {conta.parcelas && conta.parcelas.length > 0 && (
+                              <div className="mt-2 pt-2 border-t">
+                                <div className="flex flex-wrap gap-1">
+                                  {conta.parcelas.map((p) => (
+                                    <div 
+                                      key={p.id} 
+                                      className={cn(
+                                        "px-2 py-0.5 rounded text-xs",
+                                        p.status === 'pago' 
+                                          ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                                          : p.status === 'atrasado'
+                                          ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                                          : 'bg-muted text-muted-foreground'
+                                      )}
+                                    >
+                                      {p.numero_parcela}ª {formatCurrency(p.valor)}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </TabsContent>
+
+                {/* Aba Produção */}
+                <TabsContent value="producao" className="mt-0">
+                  {loadingPedidos ? (
+                    <div className="space-y-4">
+                      {[...Array(3)].map((_, i) => (
+                        <Skeleton key={i} className="h-16 w-full" />
+                      ))}
+                    </div>
+                  ) : !pedidos || pedidos.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>Nenhum pedido em produção</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3 max-h-[400px] overflow-y-auto">
+                      {pedidos.map((pedido) => {
+                        const statusConfig: Record<string, { color: string; icon: React.ElementType }> = {
+                          aguardando_materiais: { color: 'text-amber-600 bg-amber-100 dark:bg-amber-900/30', icon: Clock },
+                          em_producao: { color: 'text-blue-600 bg-blue-100 dark:bg-blue-900/30', icon: Package },
+                          pronto_instalacao: { color: 'text-green-600 bg-green-100 dark:bg-green-900/30', icon: CheckCircle },
+                          pronto_entrega: { color: 'text-green-600 bg-green-100 dark:bg-green-900/30', icon: CheckCircle },
+                          entregue: { color: 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30', icon: CheckCircle },
+                          cancelado: { color: 'text-red-600 bg-red-100 dark:bg-red-900/30', icon: XCircle },
+                        };
+                        const config = statusConfig[pedido.status_producao] || statusConfig.aguardando_materiais;
+                        const StatusIcon = config.icon;
+
+                        return (
+                          <div 
+                            key={pedido.id} 
+                            className="p-4 rounded-lg border hover:bg-muted/50 transition-colors"
+                          >
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                <div className={cn("p-1.5 rounded-full", config.color)}>
+                                  <StatusIcon className="h-4 w-4" />
+                                </div>
+                                <span className="font-medium">{pedido.numero_pedido}</span>
+                              </div>
+                              <Badge variant="outline" className="text-xs capitalize">
+                                {pedido.status_producao.replace(/_/g, ' ')}
+                              </Badge>
+                            </div>
+                            
+                            <div className="text-sm text-muted-foreground mb-2">
+                              Orçamento: {pedido.orcamento?.codigo || '-'}
+                            </div>
+
+                            {pedido.previsao_entrega && (
+                              <div className="flex items-center gap-2 text-sm">
+                                <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+                                <span>Previsão: {format(new Date(pedido.previsao_entrega), 'dd/MM/yyyy', { locale: ptBR })}</span>
+                              </div>
+                            )}
+
+                            {/* Instalações agendadas */}
+                            {pedido.instalacoes && pedido.instalacoes.length > 0 && (
+                              <div className="mt-3 pt-3 border-t">
+                                <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
+                                  <Truck className="h-3 w-3" />
+                                  Instalações Agendadas
+                                </p>
+                                <div className="space-y-1">
+                                  {pedido.instalacoes.map((inst) => (
+                                    <div 
+                                      key={inst.id} 
+                                      className="flex items-center justify-between text-sm"
+                                    >
+                                      <span>
+                                        {format(new Date(inst.data_agendada), 'dd/MM/yyyy', { locale: ptBR })} - {inst.turno}
+                                      </span>
+                                      <Badge 
+                                        variant={inst.status === 'realizada' ? 'default' : 'secondary'}
+                                        className="text-xs"
+                                      >
+                                        {inst.status}
+                                      </Badge>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </TabsContent>
+              </CardContent>
+            </Tabs>
           </Card>
         </div>
       </div>
