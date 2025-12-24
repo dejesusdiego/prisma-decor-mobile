@@ -25,7 +25,11 @@ import {
   Target,
   Clock,
   UserCircle,
-  BookOpen
+  BookOpen,
+  Factory,
+  Layers,
+  Calendar,
+  Package
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -94,6 +98,14 @@ const crmNavItems = [
   { id: 'crmRelatorios' as View, label: 'Relatórios', icon: ClipboardList },
 ];
 
+// Itens da seção PRODUÇÃO (admin only)
+const producaoNavItems = [
+  { id: 'prodDashboard' as View, label: 'Visão Geral', icon: LayoutDashboard },
+  { id: 'prodKanban' as View, label: 'Kanban', icon: Layers },
+  { id: 'prodLista' as View, label: 'Pedidos', icon: Package },
+  { id: 'prodAgenda' as View, label: 'Agenda Instalações', icon: Calendar },
+];
+
 // Itens da seção FINANCEIRO (admin only)
 const financeiroNavItems = [
   { id: 'finDashboard' as View, label: 'Visão Geral', icon: LayoutDashboard },
@@ -133,7 +145,7 @@ const getInitialSections = (): Record<string, boolean> => {
   } catch (e) {
     console.error('Error reading sidebar sections from localStorage:', e);
   }
-  return { principal: true, orcamentos: true, crm: true, financeiro: true, administracao: false };
+  return { principal: true, orcamentos: true, crm: true, producao: true, financeiro: true, administracao: false };
 };
 
 const getInitialCollapsed = (): boolean => {
@@ -160,6 +172,7 @@ export function OrcamentoSidebar({ currentView, onNavigate }: OrcamentoSidebarPr
     { id: 'principal', title: 'Principal', icon: Home, items: principalNavItems },
     { id: 'orcamentos', title: 'Orçamentos', icon: ClipboardList, items: orcamentosNavItems },
     { id: 'crm', title: 'CRM', icon: Target, items: crmNavItems },
+    { id: 'producao', title: 'Produção', icon: Factory, items: producaoNavItems, adminOnly: true },
     { id: 'financeiro', title: 'Financeiro', icon: Wallet, items: financeiroNavItems, adminOnly: true },
     { id: 'administracao', title: 'Administração', icon: Wrench, items: administracaoNavItems, adminOnly: true },
   ];

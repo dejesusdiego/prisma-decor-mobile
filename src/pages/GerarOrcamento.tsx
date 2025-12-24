@@ -27,6 +27,11 @@ import { DetalheContato } from '@/components/crm/DetalheContato';
 import { PipelineOrcamentos } from '@/components/crm/PipelineOrcamentos';
 import { RelatoriosCRM } from '@/components/crm/RelatoriosCRM';
 import { ListaAtividades } from '@/components/crm/ListaAtividades';
+import { DashboardProducao } from '@/components/producao/DashboardProducao';
+import { KanbanProducao } from '@/components/producao/KanbanProducao';
+import { ListaPedidos } from '@/components/producao/ListaPedidos';
+import { FichaPedido } from '@/components/producao/FichaPedido';
+import { AgendaInstalacoes } from '@/components/producao/AgendaInstalacoes';
 
 interface ClienteDataFromVisita {
   nome: string;
@@ -49,7 +54,12 @@ const ADMIN_ONLY_VIEWS: View[] = [
   'finContasReceber',
   'finLancamentos',
   'finRelatorios',
-  'categoriasFormas'
+  'categoriasFormas',
+  'prodDashboard',
+  'prodKanban',
+  'prodLista',
+  'prodFicha',
+  'prodAgenda'
 ];
 
 export default function GerarOrcamento() {
@@ -59,6 +69,7 @@ export default function GerarOrcamento() {
   const [orcamentoEditandoId, setOrcamentoEditandoId] = useState<string | null>(null);
   const [clienteDataFromVisita, setClienteDataFromVisita] = useState<ClienteDataFromVisita | null>(null);
   const [contatoSelecionadoId, setContatoSelecionadoId] = useState<string | null>(null);
+  const [pedidoSelecionadoId, setPedidoSelecionadoId] = useState<string | null>(null);
 
   // Redirecionar para dashboard se usuário não-admin tentar acessar view restrita
   useEffect(() => {
@@ -116,6 +127,16 @@ export default function GerarOrcamento() {
     }
   };
 
+  const handleVerPedido = (pedidoId: string) => {
+    setPedidoSelecionadoId(pedidoId);
+    setView('prodFicha');
+  };
+
+  const handleVoltarProducao = () => {
+    setPedidoSelecionadoId(null);
+    setView('prodLista');
+  };
+
   const getPageTitle = () => {
     switch (view) {
       case 'dashboardUnificado': return '';
@@ -139,6 +160,11 @@ export default function GerarOrcamento() {
       case 'crmPipeline': return 'Pipeline de Vendas';
       case 'crmRelatorios': return 'Relatórios CRM';
       case 'crmAtividades': return 'Atividades';
+      case 'prodDashboard': return '';
+      case 'prodKanban': return 'Kanban de Produção';
+      case 'prodLista': return 'Pedidos em Produção';
+      case 'prodFicha': return '';
+      case 'prodAgenda': return 'Agenda de Instalações';
       default: return '';
     }
   };
@@ -257,6 +283,23 @@ export default function GerarOrcamento() {
             )}
             {view === 'crmRelatorios' && <RelatoriosCRM />}
             {view === 'crmAtividades' && <ListaAtividades />}
+
+            {/* Produção */}
+            {view === 'prodDashboard' && (
+              <DashboardProducao onNavigate={handleNavigate} />
+            )}
+            {view === 'prodKanban' && <KanbanProducao />}
+            {view === 'prodLista' && (
+              <ListaPedidos onVerPedido={handleVerPedido} />
+            )}
+            {view === 'prodFicha' && pedidoSelecionadoId && (
+              <FichaPedido 
+                pedidoId={pedidoSelecionadoId} 
+                onVoltar={handleVoltarProducao}
+                onAgendarInstalacao={() => setView('prodAgenda')}
+              />
+            )}
+            {view === 'prodAgenda' && <AgendaInstalacoes />}
           </div>
         </main>
       </div>
