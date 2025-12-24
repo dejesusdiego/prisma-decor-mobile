@@ -668,6 +668,179 @@ export type Database = {
           },
         ]
       }
+      historico_producao: {
+        Row: {
+          data_evento: string
+          descricao: string
+          id: string
+          item_pedido_id: string | null
+          pedido_id: string
+          status_anterior: string | null
+          status_novo: string | null
+          tipo_evento: string
+          usuario_id: string
+          usuario_nome: string
+        }
+        Insert: {
+          data_evento?: string
+          descricao: string
+          id?: string
+          item_pedido_id?: string | null
+          pedido_id: string
+          status_anterior?: string | null
+          status_novo?: string | null
+          tipo_evento: string
+          usuario_id: string
+          usuario_nome: string
+        }
+        Update: {
+          data_evento?: string
+          descricao?: string
+          id?: string
+          item_pedido_id?: string | null
+          pedido_id?: string
+          status_anterior?: string | null
+          status_novo?: string | null
+          tipo_evento?: string
+          usuario_id?: string
+          usuario_nome?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "historico_producao_item_pedido_id_fkey"
+            columns: ["item_pedido_id"]
+            isOneToOne: false
+            referencedRelation: "itens_pedido"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "historico_producao_pedido_id_fkey"
+            columns: ["pedido_id"]
+            isOneToOne: false
+            referencedRelation: "pedidos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      instalacoes: {
+        Row: {
+          cidade: string | null
+          created_at: string
+          created_by_user_id: string
+          data_agendada: string
+          data_realizada: string | null
+          endereco: string
+          id: string
+          instalador: string | null
+          observacoes: string | null
+          pedido_id: string
+          status: string
+          turno: string
+          updated_at: string
+        }
+        Insert: {
+          cidade?: string | null
+          created_at?: string
+          created_by_user_id: string
+          data_agendada: string
+          data_realizada?: string | null
+          endereco: string
+          id?: string
+          instalador?: string | null
+          observacoes?: string | null
+          pedido_id: string
+          status?: string
+          turno?: string
+          updated_at?: string
+        }
+        Update: {
+          cidade?: string | null
+          created_at?: string
+          created_by_user_id?: string
+          data_agendada?: string
+          data_realizada?: string | null
+          endereco?: string
+          id?: string
+          instalador?: string | null
+          observacoes?: string | null
+          pedido_id?: string
+          status?: string
+          turno?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "instalacoes_pedido_id_fkey"
+            columns: ["pedido_id"]
+            isOneToOne: false
+            referencedRelation: "pedidos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      itens_pedido: {
+        Row: {
+          cortina_item_id: string
+          created_at: string
+          data_fim_corte: string | null
+          data_fim_costura: string | null
+          data_finalizacao: string | null
+          data_inicio_corte: string | null
+          data_inicio_costura: string | null
+          id: string
+          observacoes: string | null
+          pedido_id: string
+          responsavel: string | null
+          status_item: string
+          updated_at: string
+        }
+        Insert: {
+          cortina_item_id: string
+          created_at?: string
+          data_fim_corte?: string | null
+          data_fim_costura?: string | null
+          data_finalizacao?: string | null
+          data_inicio_corte?: string | null
+          data_inicio_costura?: string | null
+          id?: string
+          observacoes?: string | null
+          pedido_id: string
+          responsavel?: string | null
+          status_item?: string
+          updated_at?: string
+        }
+        Update: {
+          cortina_item_id?: string
+          created_at?: string
+          data_fim_corte?: string | null
+          data_fim_costura?: string | null
+          data_finalizacao?: string | null
+          data_inicio_corte?: string | null
+          data_inicio_costura?: string | null
+          id?: string
+          observacoes?: string | null
+          pedido_id?: string
+          responsavel?: string | null
+          status_item?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "itens_pedido_cortina_item_id_fkey"
+            columns: ["cortina_item_id"]
+            isOneToOne: false
+            referencedRelation: "cortina_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "itens_pedido_pedido_id_fkey"
+            columns: ["pedido_id"]
+            isOneToOne: false
+            referencedRelation: "pedidos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lancamentos_financeiros: {
         Row: {
           categoria_id: string | null
@@ -1029,6 +1202,59 @@ export type Database = {
           },
         ]
       }
+      pedidos: {
+        Row: {
+          created_at: string
+          created_by_user_id: string
+          data_entrada: string
+          data_pronto: string | null
+          id: string
+          numero_pedido: string
+          observacoes_producao: string | null
+          orcamento_id: string
+          previsao_entrega: string | null
+          prioridade: string
+          status_producao: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_user_id: string
+          data_entrada?: string
+          data_pronto?: string | null
+          id?: string
+          numero_pedido: string
+          observacoes_producao?: string | null
+          orcamento_id: string
+          previsao_entrega?: string | null
+          prioridade?: string
+          status_producao?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by_user_id?: string
+          data_entrada?: string
+          data_pronto?: string | null
+          id?: string
+          numero_pedido?: string
+          observacoes_producao?: string | null
+          orcamento_id?: string
+          previsao_entrega?: string | null
+          prioridade?: string
+          status_producao?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pedidos_orcamento_id_fkey"
+            columns: ["orcamento_id"]
+            isOneToOne: false
+            referencedRelation: "orcamentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       servicos_confeccao: {
         Row: {
           ativo: boolean
@@ -1192,6 +1418,7 @@ export type Database = {
     Functions: {
       atualizar_contas_atrasadas: { Args: never; Returns: undefined }
       gerar_codigo_orcamento: { Args: never; Returns: string }
+      gerar_numero_pedido: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
