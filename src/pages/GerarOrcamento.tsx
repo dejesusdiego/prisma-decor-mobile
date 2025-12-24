@@ -23,6 +23,7 @@ import { CategoriasFormas } from '@/components/financeiro/CategoriasFormas';
 import { RelatorioRentabilidade } from '@/components/financeiro/RelatorioRentabilidade';
 import { Comissoes } from '@/components/financeiro/Comissoes';
 import { RelatorioVendedores } from '@/components/financeiro/RelatorioVendedores';
+import DashboardKPIs from '@/components/financeiro/DashboardKPIs';
 import { PainelCRM } from '@/components/crm/PainelCRM';
 import { ListaContatos } from '@/components/crm/ListaContatos';
 import { DetalheContato } from '@/components/crm/DetalheContato';
@@ -314,6 +315,7 @@ export default function GerarOrcamento() {
             )}
             {view === 'crmRelatorios' && <RelatoriosCRM />}
             {view === 'crmAtividades' && <ListaAtividades />}
+            {view === 'finKPIs' && <DashboardKPIs />}
 
             {/* Produção */}
             {view === 'prodDashboard' && (
