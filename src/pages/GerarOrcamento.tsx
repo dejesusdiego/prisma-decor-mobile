@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Button } from '@/components/ui/button';
@@ -67,11 +68,33 @@ const ADMIN_ONLY_VIEWS: View[] = [
 export default function GerarOrcamento() {
   const { user, signOut } = useAuth();
   const { isAdmin, isLoading: isLoadingRole } = useUserRole();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [view, setView] = useState<View>('dashboard');
   const [orcamentoEditandoId, setOrcamentoEditandoId] = useState<string | null>(null);
   const [clienteDataFromVisita, setClienteDataFromVisita] = useState<ClienteDataFromVisita | null>(null);
   const [contatoSelecionadoId, setContatoSelecionadoId] = useState<string | null>(null);
   const [pedidoSelecionadoId, setPedidoSelecionadoId] = useState<string | null>(null);
+
+  // Verificar parâmetros URL para pré-popular dados do cliente (vindo do CRM)
+  useEffect(() => {
+    const clienteNome = searchParams.get('cliente_nome');
+    const clienteTelefone = searchParams.get('cliente_telefone');
+    const contatoId = searchParams.get('contato_id');
+    
+    if (clienteNome || clienteTelefone) {
+      setClienteDataFromVisita({
+        nome: clienteNome || '',
+        telefone: clienteTelefone || '',
+        endereco: searchParams.get('endereco') || '',
+        cidade: searchParams.get('cidade') || ''
+      });
+      setContatoSelecionadoId(contatoId);
+      setView('novoOrcamento');
+      
+      // Limpar parâmetros URL após processar
+      setSearchParams({});
+    }
+  }, [searchParams, setSearchParams]);
 
   // Redirecionar para dashboard se usuário não-admin tentar acessar view restrita
   useEffect(() => {

@@ -22,7 +22,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Users, DollarSign, Percent } from 'lucide-react';
+import { DollarSign, Percent } from 'lucide-react';
+import { VendedorAutocomplete } from '../VendedorAutocomplete';
 
 interface DialogComissaoProps {
   open: boolean;
@@ -165,7 +166,6 @@ export function DialogComissao({ open, onOpenChange, comissao }: DialogComissaoP
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
             {comissao ? 'Editar Comissão' : 'Nova Comissão'}
           </DialogTitle>
           <DialogDescription>
@@ -174,17 +174,15 @@ export function DialogComissao({ open, onOpenChange, comissao }: DialogComissaoP
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="vendedor_nome">Nome do Vendedor *</Label>
-            <Input
-              id="vendedor_nome"
-              placeholder="Nome do vendedor..."
-              {...register('vendedor_nome', { required: true })}
-            />
-            {errors.vendedor_nome && (
-              <p className="text-xs text-destructive">Campo obrigatório</p>
-            )}
-          </div>
+          <VendedorAutocomplete
+            value={watch('vendedor_nome')}
+            onChange={(v) => setValue('vendedor_nome', v)}
+            label="Nome do Vendedor"
+            placeholder="Digite ou selecione o vendedor..."
+          />
+          {errors.vendedor_nome && (
+            <p className="text-xs text-destructive">Campo obrigatório</p>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="orcamento_id">Orçamento (opcional)</Label>
