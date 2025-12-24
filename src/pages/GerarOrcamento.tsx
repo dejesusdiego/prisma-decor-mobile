@@ -37,6 +37,7 @@ import { FichaPedido } from '@/components/producao/FichaPedido';
 import { AgendaInstalacoes } from '@/components/producao/AgendaInstalacoes';
 import { RelatorioProducao } from '@/components/producao/RelatorioProducao';
 import { NotificationCenter } from '@/components/NotificationCenter';
+import { CalendarioGeral } from '@/components/calendario/CalendarioGeral';
 
 interface ClienteDataFromVisita {
   nome: string;
@@ -51,6 +52,7 @@ const ADMIN_ONLY_VIEWS: View[] = [
   'gestaoMateriais', 
   'ajustesSistema', 
   'solicitacoesVisita',
+  'calendarioGeral',
   'finDashboard',
   'finFluxoPrevisto',
   'finRentabilidade',
@@ -177,6 +179,7 @@ export default function GerarOrcamento() {
       case 'gestaoMateriais': return 'Gestão de Materiais';
       case 'ajustesSistema': return 'Ajustes do Sistema';
       case 'solicitacoesVisita': return 'Solicitações de Visita';
+      case 'calendarioGeral': return 'Calendário Geral';
       case 'finContasPagar': return 'Contas a Pagar';
       case 'finContasReceber': return 'Contas a Receber';
       case 'finLancamentos': return 'Lançamentos';
@@ -278,6 +281,8 @@ export default function GerarOrcamento() {
                 onCreateOrcamento={(clienteData) => handleNovoOrcamento(clienteData)}
               />
             )}
+
+            {view === 'calendarioGeral' && <CalendarioGeral />}
 
             {/* Seção Financeiro */}
             {view === 'finDashboard' && <DashboardFinanceiro />}
