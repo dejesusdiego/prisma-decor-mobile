@@ -20,7 +20,10 @@ import {
   ResponsiveContainer,
   PieChart,
   Pie,
-  Cell
+  Cell,
+  LineChart,
+  Line,
+  Legend
 } from 'recharts';
 import { 
   Clock, 
@@ -31,12 +34,13 @@ import {
   Zap,
   Download,
   CalendarIcon,
-  Filter
+  Filter,
+  BarChart3
 } from 'lucide-react';
 import { useProducaoData, STATUS_ITEM_LABELS, PRIORIDADE_LABELS } from '@/hooks/useProducaoData';
 import { TipBanner } from '@/components/ui/TipBanner';
 import { cn } from '@/lib/utils';
-import { differenceInHours, differenceInDays, parseISO, format, isWithinInterval, startOfMonth, endOfMonth, subMonths } from 'date-fns';
+import { differenceInHours, differenceInDays, parseISO, format, isWithinInterval, startOfMonth, endOfMonth, subMonths, startOfWeek, getWeek, getYear } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -47,10 +51,11 @@ const COLORS = ['#6b7280', '#f97316', '#3b82f6', '#6366f1', '#8b5cf6', '#22c55e'
 export function RelatorioProducao() {
   const { pedidos, isLoading } = useProducaoData();
   const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
-    from: startOfMonth(subMonths(new Date(), 1)),
+    from: startOfMonth(subMonths(new Date(), 2)),
     to: endOfMonth(new Date()),
   });
   const [isExporting, setIsExporting] = useState(false);
+  const [evolucaoTipo, setEvolucaoTipo] = useState<'semana' | 'mes'>('semana');
 
   // Filter pedidos by date range
   const pedidosFiltrados = useMemo(() => {
@@ -170,6 +175,41 @@ export function RelatorioProducao() {
         : 0
     };
   }, [pedidosFiltrados]);
+
+  // Calculate temporal evolution data
+  const evolucaoData = useMemo(() => {
+    if (!pedidosFiltrados.length) return [];
+
+    const grouped: Record<string, { label: string; total: number; prontos: number }> = {};
+
+    pedidosFiltrados.forEach(p => {
+      const dataEntrada = parseISO(p.data_entrada);
+      let key: string;
+      let label: string;
+
+      if (evolucaoTipo === 'semana') {
+        const weekNum = getWeek(dataEntrada, { weekStartsOn: 0 });
+        const year = getYear(dataEntrada);
+        key = `${year}-W${weekNum.toString().padStart(2, '0')}`;
+        label = `Sem ${weekNum}/${year}`;
+      } else {
+        key = format(dataEntrada, 'yyyy-MM');
+        label = format(dataEntrada, 'MMM/yy', { locale: ptBR });
+      }
+
+      if (!grouped[key]) {
+        grouped[key] = { label, total: 0, prontos: 0 };
+      }
+      grouped[key].total += 1;
+      if (p.status_producao === 'pronto' || p.status_producao === 'entregue') {
+        grouped[key].prontos += 1;
+      }
+    });
+
+    return Object.entries(grouped)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([_, data]) => data);
+  }, [pedidosFiltrados, evolucaoTipo]);
 
   // Export to PDF function
   const exportarPDF = async () => {
@@ -528,6 +568,69 @@ export function RelatorioProducao() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Gráfico de Evolução Temporal */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5" />
+              Evolução Temporal de Pedidos
+            </CardTitle>
+            <div className="flex gap-1">
+              <Button
+                variant={evolucaoTipo === 'semana' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setEvolucaoTipo('semana')}
+              >
+                Por Semana
+              </Button>
+              <Button
+                variant={evolucaoTipo === 'mes' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setEvolucaoTipo('mes')}
+              >
+                Por Mês
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {evolucaoData.length > 0 ? (
+            <div className="h-[350px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={evolucaoData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="label" fontSize={12} />
+                  <YAxis allowDecimals={false} />
+                  <Tooltip />
+                  <Legend />
+                  <Line 
+                    type="monotone" 
+                    dataKey="total" 
+                    name="Total de Pedidos" 
+                    stroke="#3b82f6" 
+                    strokeWidth={2}
+                    dot={{ fill: '#3b82f6' }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="prontos" 
+                    name="Prontos/Entregues" 
+                    stroke="#22c55e" 
+                    strokeWidth={2}
+                    dot={{ fill: '#22c55e' }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <p className="text-center text-muted-foreground py-8">
+              Sem dados suficientes para o período selecionado.
+            </p>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Status detalhado */}
       <Card>
