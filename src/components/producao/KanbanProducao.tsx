@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -26,7 +26,8 @@ import { useProducaoData, STATUS_ITEM_LABELS, PRIORIDADE_LABELS, ItemPedido, Ped
 import { TipBanner } from '@/components/ui/TipBanner';
 import { HelpTooltip } from '@/components/ui/HelpTooltip';
 import { cn } from '@/lib/utils';
-
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 const KANBAN_COLUMNS = [
   { id: 'fila', label: 'Na Fila', icon: Package, color: 'bg-gray-500' },
   { id: 'corte', label: 'Corte', icon: Scissors, color: 'bg-orange-500' },
@@ -41,8 +42,44 @@ interface ItemWithPedido extends ItemPedido {
 }
 
 export function KanbanProducao() {
-  const { pedidos, isLoading, atualizarStatusItem, isUpdating } = useProducaoData();
+  const { pedidos, isLoading, atualizarStatusItem, isUpdating, refetch } = useProducaoData();
   const [filtroPrioridade, setFiltroPrioridade] = useState<string>('todas');
+
+  // Real-time subscription for item status changes
+  useEffect(() => {
+    const channel = supabase
+      .channel('kanban-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'itens_pedido',
+        },
+        (payload) => {
+          const oldStatus = payload.old?.status_item;
+          const newStatus = payload.new?.status_item;
+          
+          if (oldStatus && newStatus && oldStatus !== newStatus) {
+            const oldLabel = STATUS_ITEM_LABELS[oldStatus] || oldStatus;
+            const newLabel = STATUS_ITEM_LABELS[newStatus] || newStatus;
+            
+            toast.success(`Item movido: ${oldLabel} → ${newLabel}`, {
+              description: 'O quadro foi atualizado automaticamente',
+              duration: 3000,
+            });
+            
+            // Refresh data
+            refetch();
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [refetch]);
 
   // Flatten items from all pedidos
   const allItems: ItemWithPedido[] = pedidos
@@ -59,6 +96,10 @@ export function KanbanProducao() {
     allItems.filter(item => item.status_item === status);
 
   const handleMoveItem = (itemId: string, novoStatus: string) => {
+    const item = allItems.find(i => i.id === itemId);
+    const oldLabel = item ? STATUS_ITEM_LABELS[item.status_item] : '';
+    const newLabel = STATUS_ITEM_LABELS[novoStatus] || novoStatus;
+    
     atualizarStatusItem({ itemId, novoStatus });
   };
 
