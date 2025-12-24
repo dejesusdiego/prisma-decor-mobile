@@ -13,6 +13,8 @@ import { TimelineOrcamento } from './TimelineOrcamento';
 import { DialogGerarContaReceber } from './dialogs/DialogGerarContaReceber';
 import { DialogGerarCustos } from './dialogs/DialogGerarCustos';
 import { useOrcamentoFinanceiro } from '@/hooks/useOrcamentoFinanceiro';
+import { TipBanner } from '@/components/ui/TipBanner';
+import { HelpTooltip } from '@/components/ui/HelpTooltip';
 
 interface VisualizarOrcamentoProps {
   orcamentoId: string;
@@ -392,10 +394,19 @@ export function VisualizarOrcamento({ orcamentoId, onVoltar }: VisualizarOrcamen
         </Button>
       </div>
 
+      {/* Dica de integração */}
+      <TipBanner id="orcamento-visualizar-dica" variant="info">
+        Use os botões no <strong>Resumo Financeiro</strong> abaixo para gerar contas a receber e registrar custos. 
+        Isso integra automaticamente com o módulo financeiro!
+      </TipBanner>
+
       {/* Timeline do Fluxo */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Fluxo do Orçamento</CardTitle>
+          <CardTitle className="text-base flex items-center gap-2">
+            Fluxo do Orçamento
+            <HelpTooltip content="Acompanhe o progresso do orçamento desde a criação até o pagamento completo" />
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <TimelineOrcamento

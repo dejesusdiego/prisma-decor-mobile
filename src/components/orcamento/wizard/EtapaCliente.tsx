@@ -18,6 +18,8 @@ import type { DadosOrcamento } from '@/types/orcamento';
 import { useContatoByTelefone } from '@/hooks/useCRMData';
 import { User, Loader2, UserPlus } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { HelpTooltip } from '@/components/ui/HelpTooltip';
+import { TipBanner } from '@/components/ui/TipBanner';
 
 interface EtapaClienteProps {
   dados: DadosOrcamento;
@@ -205,6 +207,12 @@ export function EtapaCliente({ dados, orcamentoId, onAvancar, onCancelar }: Etap
         <CardTitle>Etapa 1 - Dados do Cliente</CardTitle>
       </CardHeader>
       <CardContent>
+        {/* Dica */}
+        <TipBanner id="orcamento-etapa-cliente-dica" variant="info" className="mb-4">
+          O telefone é usado para <strong>vincular automaticamente</strong> ao CRM. 
+          Se o contato já existir, os dados serão preenchidos automaticamente!
+        </TipBanner>
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="clienteNome">Nome do Cliente *</Label>
@@ -218,7 +226,10 @@ export function EtapaCliente({ dados, orcamentoId, onAvancar, onCancelar }: Etap
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="clienteTelefone">Telefone / WhatsApp *</Label>
+            <Label htmlFor="clienteTelefone" className="flex items-center gap-1">
+              Telefone / WhatsApp *
+              <HelpTooltip content="Um contato será criado ou vinculado automaticamente no CRM usando este telefone" side="right" />
+            </Label>
             <div className="relative">
               <Input
                 id="clienteTelefone"
@@ -264,7 +275,10 @@ export function EtapaCliente({ dados, orcamentoId, onAvancar, onCancelar }: Etap
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="cidade">Cidade *</Label>
+            <Label htmlFor="cidade" className="flex items-center gap-1">
+              Cidade *
+              <HelpTooltip content="Usado para cálculos de deslocamento e relatórios por região" side="right" />
+            </Label>
             <Select
               value={formData.cidade}
               onValueChange={(value) => setFormData({ ...formData, cidade: value })}

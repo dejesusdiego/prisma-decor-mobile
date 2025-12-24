@@ -54,6 +54,9 @@ import { useContatos, useDeleteContato, Contato } from '@/hooks/useCRMData';
 import { DialogContato } from './DialogContato';
 import { MergeContatos } from './MergeContatos';
 import { cn } from '@/lib/utils';
+import { HelpTooltip } from '@/components/ui/HelpTooltip';
+import { TipBanner } from '@/components/ui/TipBanner';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const formatCurrency = (value: number | null) => {
   if (!value) return 'R$ 0';
@@ -173,6 +176,12 @@ export function ListaContatos({ onVerContato }: ListaContatosProps) {
               </CardTitle>
             </CardHeader>
             <CardContent>
+              {/* Banner de dica */}
+              <TipBanner id="crm-contatos-dica" variant="tip" className="mb-4">
+                Contatos são criados <strong>automaticamente</strong> ao criar orçamentos! 
+                Quando um orçamento é pago, o contato se torna "Cliente" automaticamente.
+              </TipBanner>
+
               {/* Filtros */}
               <div className="flex gap-4 mb-4">
                 <div className="relative flex-1">
@@ -220,8 +229,16 @@ export function ListaContatos({ onVerContato }: ListaContatosProps) {
                         <TableHead>Nome</TableHead>
                         <TableHead>Contato</TableHead>
                         <TableHead>Cidade</TableHead>
-                        <TableHead>Tipo</TableHead>
-                        <TableHead className="text-right">Valor Gasto</TableHead>
+                        <TableHead>
+                          <HelpTooltip content="Lead: interessado que ainda não comprou. Cliente: já realizou compra.">
+                            Tipo
+                          </HelpTooltip>
+                        </TableHead>
+                        <TableHead className="text-right">
+                          <HelpTooltip content="Total de orçamentos pagos vinculados a este contato">
+                            Valor Gasto
+                          </HelpTooltip>
+                        </TableHead>
                         <TableHead className="w-10"></TableHead>
                       </TableRow>
                     </TableHeader>
@@ -281,9 +298,22 @@ export function ListaContatos({ onVerContato }: ListaContatosProps) {
                               )}
                             </TableCell>
                             <TableCell>
-                              <Badge variant={tipoConfig.variant}>
-                                {tipoConfig.label}
-                              </Badge>
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Badge variant={tipoConfig.variant} className="cursor-help">
+                                      {tipoConfig.label}
+                                    </Badge>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p className="text-xs">
+                                      {contato.tipo === 'lead' && 'Interessado que ainda não fechou compra'}
+                                      {contato.tipo === 'cliente' && 'Já realizou pelo menos uma compra'}
+                                      {contato.tipo === 'inativo' && 'Contato marcado como inativo'}
+                                    </p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
                             </TableCell>
                             <TableCell className="text-right font-medium">
                               {formatCurrency(contato.valor_total_gasto)}

@@ -31,13 +31,15 @@ import {
   XAxis, 
   YAxis, 
   CartesianGrid, 
-  Tooltip, 
+  Tooltip as RechartsTooltip, 
   ResponsiveContainer,
   PieChart as RechartsPie,
   Pie,
   Cell,
   Legend
 } from 'recharts';
+import { HelpTooltip, InfoIcon } from '@/components/ui/HelpTooltip';
+import { TipBanner } from '@/components/ui/TipBanner';
 
 type PeriodoFiltro = '7dias' | '30dias' | 'mesAtual' | 'mesAnterior' | '90dias';
 
@@ -264,6 +266,12 @@ export function DashboardUnificado({ onNavigate }: DashboardUnificadoProps) {
         </div>
       </div>
 
+      {/* Dica inicial */}
+      <TipBanner id="dashboard-dica-inicial" variant="info" title="Bem-vindo ao Dashboard!">
+        Este painel unifica dados de <strong>Orçamentos</strong> e <strong>Financeiro</strong> em uma única visão. 
+        Use o filtro de período para analisar diferentes intervalos de tempo.
+      </TipBanner>
+
       {/* Seção Orçamentos */}
       <div>
         <div className="flex items-center justify-between mb-3">
@@ -280,7 +288,11 @@ export function DashboardUnificado({ onNavigate }: DashboardUnificadoProps) {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-muted-foreground">Total Orçamentos</p>
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <HelpTooltip content="Quantidade de orçamentos criados no período selecionado">
+                      Total Orçamentos
+                    </HelpTooltip>
+                  </p>
                   <p className="text-xl font-bold">{orcamentoStats.total}</p>
                 </div>
                 <FileText className="h-8 w-8 text-primary/30" />
@@ -291,7 +303,11 @@ export function DashboardUnificado({ onNavigate }: DashboardUnificadoProps) {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-muted-foreground">Valor Total</p>
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <HelpTooltip content="Soma do valor de todos os orçamentos, independente do status">
+                      Valor Total
+                    </HelpTooltip>
+                  </p>
                   <p className="text-xl font-bold">{formatCompact(orcamentoStats.valorTotal)}</p>
                 </div>
                 <DollarSign className="h-8 w-8 text-muted-foreground/30" />
@@ -302,7 +318,11 @@ export function DashboardUnificado({ onNavigate }: DashboardUnificadoProps) {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-muted-foreground">Pagos</p>
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <HelpTooltip content="Orçamentos com status pago, pago_parcial, pago_40 ou pago_60">
+                      Pagos
+                    </HelpTooltip>
+                  </p>
                   <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400">
                     {orcamentoStats.pagos}
                   </p>
@@ -316,7 +336,11 @@ export function DashboardUnificado({ onNavigate }: DashboardUnificadoProps) {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-muted-foreground">Conversão</p>
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <HelpTooltip content="Percentual de orçamentos enviados que foram convertidos em venda (pagos)">
+                      Conversão
+                    </HelpTooltip>
+                  </p>
                   <p className="text-xl font-bold">{orcamentoStats.taxaConversao.toFixed(1)}%</p>
                 </div>
                 <Percent className="h-8 w-8 text-muted-foreground/30" />
@@ -426,10 +450,10 @@ export function DashboardUnificado({ onNavigate }: DashboardUnificadoProps) {
           <CardContent>
             <ResponsiveContainer width="100%" height={250}>
               <BarChart data={dadosComparativos} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} />
                 <XAxis type="number" tickFormatter={(v) => formatCompact(v)} />
                 <YAxis type="category" dataKey="nome" width={80} />
-                <Tooltip 
+                <RechartsTooltip 
                   formatter={(value: number) => formatCurrency(value)}
                   contentStyle={{ 
                     backgroundColor: 'hsl(var(--background))', 
@@ -474,7 +498,7 @@ export function DashboardUnificado({ onNavigate }: DashboardUnificadoProps) {
                     <Cell key={`cell-${index}`} fill={entry.cor} />
                   ))}
                 </Pie>
-                <Tooltip 
+                <RechartsTooltip 
                   formatter={(value: number, name: string, props: any) => [
                     `${value} orçamentos (${formatCurrency(props.payload.valor)})`,
                     props.payload.label

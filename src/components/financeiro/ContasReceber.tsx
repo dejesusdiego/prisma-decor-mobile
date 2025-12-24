@@ -42,6 +42,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { toast } from 'sonner';
 import { DialogContaReceber } from './dialogs/DialogContaReceber';
 import { DialogRegistrarRecebimento } from './dialogs/DialogRegistrarRecebimento';
+import { HelpTooltip } from '@/components/ui/HelpTooltip';
+import { TipBanner } from '@/components/ui/TipBanner';
 
 type StatusFilter = 'todos' | 'pendente' | 'parcial' | 'pago' | 'atrasado';
 
@@ -161,7 +163,11 @@ export function ContasReceber() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Pendente</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              <HelpTooltip content="Valor total de parcelas ainda não pagas">
+                Pendente
+              </HelpTooltip>
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-yellow-600">{formatCurrency(totais.pendente)}</p>
@@ -169,7 +175,11 @@ export function ContasReceber() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Parcial</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              <HelpTooltip content="Contas com pelo menos uma parcela paga, mas não todas">
+                Parcial
+              </HelpTooltip>
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-blue-600">{formatCurrency(totais.parcial)}</p>
@@ -177,7 +187,11 @@ export function ContasReceber() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Atrasado</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              <HelpTooltip content="Parcelas com vencimento anterior a hoje que ainda não foram pagas">
+                Atrasado
+              </HelpTooltip>
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-destructive">{formatCurrency(totais.atrasado)}</p>
@@ -185,13 +199,23 @@ export function ContasReceber() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Recebido</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              <HelpTooltip content="Valor total já recebido no período">
+                Recebido
+              </HelpTooltip>
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-green-600">{formatCurrency(totais.pago)}</p>
           </CardContent>
         </Card>
       </div>
+
+      {/* Dica */}
+      <TipBanner id="financeiro-contas-receber-dica" variant="info">
+        Clique no ícone <ChevronDown className="h-3 w-3 inline" /> para expandir uma conta e ver as parcelas. 
+        Use o botão <strong>"Receber"</strong> para registrar pagamentos parciais ou totais.
+      </TipBanner>
 
       {/* Filtros */}
       <div className="flex flex-col sm:flex-row gap-4">

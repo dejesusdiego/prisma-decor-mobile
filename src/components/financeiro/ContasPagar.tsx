@@ -39,6 +39,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
 import { DialogContaPagar } from './dialogs/DialogContaPagar';
+import { HelpTooltip } from '@/components/ui/HelpTooltip';
+import { TipBanner } from '@/components/ui/TipBanner';
 
 interface ContasPagarProps {
   onVisualizarOrcamento?: (orcamentoId: string) => void;
@@ -231,7 +233,11 @@ export function ContasPagar({ onVisualizarOrcamento }: ContasPagarProps) {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Pendente</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              <HelpTooltip content="Valor total de contas ainda não pagas">
+                Pendente
+              </HelpTooltip>
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-yellow-600">{formatCurrency(totais.pendente)}</p>
@@ -239,7 +245,11 @@ export function ContasPagar({ onVisualizarOrcamento }: ContasPagarProps) {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Atrasado</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              <HelpTooltip content="Contas com vencimento anterior a hoje que ainda não foram pagas">
+                Atrasado
+              </HelpTooltip>
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-destructive">{formatCurrency(totais.atrasado)}</p>
@@ -247,13 +257,25 @@ export function ContasPagar({ onVisualizarOrcamento }: ContasPagarProps) {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Pago</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              <HelpTooltip content="Valor total já pago no período">
+                Pago
+              </HelpTooltip>
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-green-600">{formatCurrency(totais.pago)}</p>
           </CardContent>
         </Card>
       </div>
+
+      {/* Dica sobre recorrentes */}
+      {totalRecorrentes > 0 && (
+        <TipBanner id="financeiro-contas-pagar-recorrentes" variant="tip">
+          Você tem <strong>{totalRecorrentes}</strong> conta(s) recorrente(s). 
+          Clique em <strong>"Gerar Recorrentes"</strong> para criar automaticamente as próximas parcelas.
+        </TipBanner>
+      )}
 
       {/* Filtros */}
       <div className="flex flex-col sm:flex-row gap-4">
