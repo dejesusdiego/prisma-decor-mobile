@@ -15,7 +15,9 @@ import {
   RefreshCw,
   Plus,
   Zap,
-  Receipt
+  Receipt,
+  CreditCard,
+  ExternalLink
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -45,13 +47,14 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import { parseExtrato, autoMatch, DadosExtrato } from './utils/parserOFX';
-import { buscarRegrasAtivas, aplicarRegrasMovimentacoes, criarRegrasPadrao, analisarDuplicadosParciais, AnaliseReconciliacao, ParcelaParaAnalise } from './utils/aplicarRegras';
+import { buscarRegrasAtivas, aplicarRegrasMovimentacoes, criarRegrasPadrao, analisarDuplicadosParciais, AnaliseReconciliacao, ParcelaParaAnalise, ContaPagarParaAnalise } from './utils/aplicarRegras';
 import { DialogConciliarManual } from './dialogs/DialogConciliarManual';
 import { DialogPreviaExtrato } from './dialogs/DialogPreviaExtrato';
 import { DialogRegrasConciliacao } from './dialogs/DialogRegrasConciliacao';
 import { DialogCriarLancamentoDeExtrato } from './dialogs/DialogCriarLancamentoDeExtrato';
 import { DialogGerenciarImportacoes } from './dialogs/DialogGerenciarImportacoes';
 import { DialogConciliarComRecebimento } from './dialogs/DialogConciliarComRecebimento';
+import { DialogConciliarComPagamento } from './dialogs/DialogConciliarComPagamento';
 import { AlertasReconciliacao } from './AlertasReconciliacao';
 
 const formatCurrency = (value: number) => {
@@ -86,6 +89,11 @@ export function ConciliacaoBancaria() {
 
   // Análise de duplicados/parciais
   const [analiseReconciliacao, setAnaliseReconciliacao] = useState<AnaliseReconciliacao | null>(null);
+
+  // Conciliar com pagamento (débitos) state
+  const [pagamentoOpen, setPagamentoOpen] = useState(false);
+  const [movimentacaoParaPagamento, setMovimentacaoParaPagamento] = useState<any>(null);
+  const [contaParaPagamento, setContaParaPagamento] = useState<any>(null);
 
   // Criar regras padrão ao carregar (uma vez por usuário)
   useEffect(() => {
@@ -305,6 +313,30 @@ export function ConciliacaoBancaria() {
     enabled: !!extratoSelecionado
   });
 
+  // Buscar contas a pagar pendentes para conciliação de débitos
+  const { data: contasPagarPendentes = [] } = useQuery({
+    queryKey: ['contas-pagar-para-conciliacao', extratoSelecionado],
+    queryFn: async () => {
+      const extrato = extratos.find(e => e.id === extratoSelecionado);
+      if (!extrato) return [];
+
+      const { data, error } = await supabase
+        .from('contas_pagar')
+        .select(`
+          id, descricao, valor, data_vencimento, status, fornecedor, orcamento_id,
+          orcamento:orcamentos(id, codigo, cliente_nome),
+          categoria:categorias_financeiras(id, nome)
+        `)
+        .in('status', ['pendente', 'atrasado'])
+        .gte('data_vencimento', extrato.data_inicio || '2020-01-01')
+        .lte('data_vencimento', extrato.data_fim || '2099-12-31');
+
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!extratoSelecionado
+  });
+
   // Auto-conciliar (agora com parcelas também)
   const autoConciliarMutation = useMutation({
     mutationFn: async () => {
@@ -496,11 +528,49 @@ export function ConciliacaoBancaria() {
     return parcelasPendentes.find(p => Math.abs(Number(p.valor) - Number(mov.valor)) < 1);
   };
 
+  // Buscar conta a pagar correspondente para botão de pagamento (débitos)
+  const buscarContaPagarMatch = (mov: any) => {
+    if (mov.tipo !== 'debito') return null;
+    return contasPagarPendentes.find(cp => Math.abs(Number(cp.valor) - Math.abs(Number(mov.valor))) < 1);
+  };
+
   const handleRegistrarRecebimento = (mov: any, parcela: any, isParcial = false) => {
     setMovimentacaoParaRecebimento(mov);
     setParcelaParaRecebimento(parcela);
     setIsPagamentoParcial(isParcial);
     setRecebimentoOpen(true);
+  };
+
+  const handleRegistrarPagamento = (mov: any, contaPagar: any) => {
+    setMovimentacaoParaPagamento(mov);
+    setContaParaPagamento(contaPagar);
+    setPagamentoOpen(true);
+  };
+
+  // Buscar código do orçamento relacionado a uma movimentação
+  const getOrcamentoRelacionado = (mov: any) => {
+    if (!mov.lancamento) return null;
+    
+    // Via parcela_receber → conta_receber → orcamento
+    const parcelaMatch = parcelasPendentes.find(p => {
+      // Verificar se o lançamento está vinculado a esta parcela
+      return mov.lancamento?.parcela_receber_id === p.id;
+    });
+    
+    if (parcelaMatch?.conta_receber?.orcamento?.codigo) {
+      return parcelaMatch.conta_receber.orcamento.codigo;
+    }
+    
+    // Via conta_pagar → orcamento  
+    const contaMatch = contasPagarPendentes.find(cp => 
+      mov.lancamento?.conta_pagar_id === cp.id
+    );
+    
+    if (contaMatch?.orcamento?.codigo) {
+      return contaMatch.orcamento.codigo;
+    }
+    
+    return null;
   };
 
   const movimentacoesFiltradas = movimentacoes.filter(m => {
@@ -694,7 +764,7 @@ export function ConciliacaoBancaria() {
                                       </TooltipTrigger>
                                       <TooltipContent>Criar lançamento</TooltipContent>
                                     </Tooltip>
-                                    {/* Botão de recebimento se houver parcela match */}
+                                    {/* Botão de recebimento se houver parcela match (créditos) */}
                                     {(() => {
                                       const parcelaMatch = buscarParcelaMatch(mov);
                                       if (parcelaMatch) {
@@ -712,6 +782,30 @@ export function ConciliacaoBancaria() {
                                             </TooltipTrigger>
                                             <TooltipContent>
                                               Recebimento: {parcelaMatch.conta_receber?.cliente_nome}
+                                            </TooltipContent>
+                                          </Tooltip>
+                                        );
+                                      }
+                                      return null;
+                                    })()}
+                                    {/* Botão de pagamento se houver conta a pagar match (débitos) */}
+                                    {(() => {
+                                      const contaMatch = buscarContaPagarMatch(mov);
+                                      if (contaMatch) {
+                                        return (
+                                          <Tooltip>
+                                            <TooltipTrigger asChild>
+                                              <Button 
+                                                variant="ghost" 
+                                                size="icon"
+                                                className="text-destructive"
+                                                onClick={() => handleRegistrarPagamento(mov, contaMatch)}
+                                              >
+                                                <CreditCard className="h-4 w-4" />
+                                              </Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                              Pagamento: {contaMatch.descricao}
                                             </TooltipContent>
                                           </Tooltip>
                                         );
@@ -788,6 +882,13 @@ export function ConciliacaoBancaria() {
         movimentacao={movimentacaoParaRecebimento}
         parcela={parcelaParaRecebimento}
         isPagamentoParcial={isPagamentoParcial}
+      />
+
+      <DialogConciliarComPagamento
+        open={pagamentoOpen}
+        onOpenChange={setPagamentoOpen}
+        movimentacao={movimentacaoParaPagamento}
+        contaPagar={contaParaPagamento}
       />
     </div>
   );
