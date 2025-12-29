@@ -427,6 +427,7 @@ export type Database = {
           telefone: string | null
           telefone_secundario: string | null
           tipo: string
+          ultima_interacao_em: string | null
           updated_at: string
           valor_total_gasto: number | null
         }
@@ -444,6 +445,7 @@ export type Database = {
           telefone?: string | null
           telefone_secundario?: string | null
           tipo?: string
+          ultima_interacao_em?: string | null
           updated_at?: string
           valor_total_gasto?: number | null
         }
@@ -461,6 +463,7 @@ export type Database = {
           telefone?: string | null
           telefone_secundario?: string | null
           tipo?: string
+          ultima_interacao_em?: string | null
           updated_at?: string
           valor_total_gasto?: number | null
         }
