@@ -36,6 +36,7 @@ export interface Configuracoes {
   opcoesMargem: OpcaoMargem[];
   opcoesAmbiente: string[];
   diasSemResposta: number;
+  diasSemRespostaVisitas: number;
 }
 
 const DEFAULT_CONFIGS: Configuracoes = {
@@ -58,7 +59,8 @@ const DEFAULT_CONFIGS: Configuracoes = {
     'Sala de Estar', 'Sala de Jantar', 'Quarto', 'Cozinha',
     'Escritório', 'Varanda', 'Banheiro', 'Lavanderia', 'Área Externa', 'Outros'
   ],
-  diasSemResposta: 7
+  diasSemResposta: 7,
+  diasSemRespostaVisitas: 3
 };
 
 // Cache global para evitar múltiplas requisições
@@ -112,6 +114,9 @@ export function useConfiguracoes() {
               break;
             case 'dias_sem_resposta':
               configs.diasSemResposta = Number(item.valor) || 7;
+              break;
+            case 'dias_sem_resposta_visitas':
+              configs.diasSemRespostaVisitas = Number(item.valor) || 3;
               break;
           }
         }
@@ -217,6 +222,9 @@ export async function fetchConfiguracoes(): Promise<Configuracoes> {
             break;
           case 'dias_sem_resposta':
             configs.diasSemResposta = Number(item.valor) || 7;
+            break;
+          case 'dias_sem_resposta_visitas':
+            configs.diasSemRespostaVisitas = Number(item.valor) || 3;
             break;
         }
       }

@@ -38,6 +38,7 @@ export function AjustesSistema({ onVoltar }: AjustesSistemaProps) {
   const [opcoesAmbiente, setOpcoesAmbiente] = useState<string[]>([]);
   const [novoAmbiente, setNovoAmbiente] = useState('');
   const [diasSemResposta, setDiasSemResposta] = useState<number>(7);
+  const [diasSemRespostaVisitas, setDiasSemRespostaVisitas] = useState<number>(3);
 
   useEffect(() => {
     carregarServicosConfeccao();
@@ -65,6 +66,7 @@ export function AjustesSistema({ onVoltar }: AjustesSistemaProps) {
       setOpcoesMargem(configuracoes.opcoesMargem);
       setOpcoesAmbiente(configuracoes.opcoesAmbiente);
       setDiasSemResposta(configuracoes.diasSemResposta);
+      setDiasSemRespostaVisitas(configuracoes.diasSemRespostaVisitas);
     }
   }, [loading, configuracoes]);
 
@@ -136,7 +138,8 @@ export function AjustesSistema({ onVoltar }: AjustesSistemaProps) {
     setSaving(true);
     try {
       await salvarConfiguracao('dias_sem_resposta', diasSemResposta);
-      toast.success('Dias para "Sem Resposta" salvos com sucesso!');
+      await salvarConfiguracao('dias_sem_resposta_visitas', diasSemRespostaVisitas);
+      toast.success('Configurações de automação salvas com sucesso!');
     } catch (err) {
       toast.error('Erro ao salvar configuração');
     } finally {
@@ -534,9 +537,10 @@ export function AjustesSistema({ onVoltar }: AjustesSistemaProps) {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
+              {/* Dias para Sem Resposta - Orçamentos */}
               <div className="space-y-4 p-4 border rounded-lg">
                 <div>
-                  <Label className="text-lg font-semibold">Dias para "Sem Resposta"</Label>
+                  <Label className="text-lg font-semibold">Dias para "Sem Resposta" (Orçamentos)</Label>
                   <p className="text-sm text-muted-foreground mt-1">
                     Após quantos dias um orçamento com status "Enviado" deve ser marcado automaticamente como "Sem Resposta"
                   </p>
@@ -552,10 +556,33 @@ export function AjustesSistema({ onVoltar }: AjustesSistemaProps) {
                   />
                   <span className="text-muted-foreground">dias após o envio</span>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  Os orçamentos serão atualizados automaticamente todos os dias. Você pode alterar manualmente o status de "Sem Resposta" para "Enviado" caso o cliente responda posteriormente.
-                </p>
               </div>
+
+              {/* Dias para Sem Resposta - Visitas */}
+              <div className="space-y-4 p-4 border rounded-lg">
+                <div>
+                  <Label className="text-lg font-semibold">Dias para "Sem Resposta" (Visitas)</Label>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Após quantos dias uma solicitação de visita com status "Pendente" deve ser marcada automaticamente como "Sem Resposta"
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Input
+                    type="number"
+                    min="1"
+                    max="30"
+                    value={diasSemRespostaVisitas}
+                    onChange={(e) => setDiasSemRespostaVisitas(Number(e.target.value) || 3)}
+                    className="w-24"
+                  />
+                  <span className="text-muted-foreground">dias após a criação</span>
+                </div>
+              </div>
+
+              <p className="text-xs text-muted-foreground">
+                Os registros serão atualizados automaticamente todos os dias. Você pode alterar manualmente o status de "Sem Resposta" para outros status a qualquer momento.
+              </p>
+              
               <div className="flex justify-end pt-4">
                 <Button onClick={handleSalvarDiasSemResposta} disabled={saving}>
                   <Save className="mr-2 h-4 w-4" />
