@@ -23,12 +23,17 @@ import {
   AlertTriangle,
   CheckCircle,
   XCircle,
-  Truck
+  Truck,
+  Factory,
+  CreditCard
 } from 'lucide-react';
 import { useContato, useAtividades, useOrcamentosDoContato, Contato } from '@/hooks/useCRMData';
 import { useContatoFinanceiro, useContatoPedidos } from '@/hooks/useContatoFinanceiro';
+import { useJornadaCliente, AlertaContextual } from '@/hooks/useJornadaCliente';
 import { DialogContato } from './DialogContato';
 import { DialogAtividade } from './DialogAtividade';
+import { JornadaCliente } from './JornadaCliente';
+import { AlertasContextuais } from './AlertasContextuais';
 import { format, formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -80,58 +85,84 @@ export function DetalheContato({ contatoId, onVoltar, onVisualizarOrcamento }: D
     contato?.telefone || null
   );
   
+  // Hook de jornada do cliente (alertas, timeline expandida, estágios)
+  const { estagios, alertas, timelineExpandida, isLoading: loadingJornada } = useJornadaCliente(contatoId);
+  
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [atividadeDialogOpen, setAtividadeDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('historico');
 
-  // Criar timeline unificada
+  // Usar timeline expandida do hook de jornada (inclui pagamentos, produção, instalações)
   const timeline = useMemo(() => {
-    const items: Array<{
-      id: string;
-      tipo: 'atividade' | 'orcamento';
-      data: Date;
-      titulo: string;
-      subtitulo?: string;
-      icon: React.ElementType;
-      iconClass: string;
-      status?: string;
-      valor?: number;
-      concluida?: boolean;
-    }> = [];
+    if (!timelineExpandida || timelineExpandida.length === 0) {
+      // Fallback para timeline básica se o hook não retornou dados
+      const items: Array<{
+        id: string;
+        tipo: 'atividade' | 'orcamento' | 'pagamento' | 'producao' | 'instalacao';
+        data: Date;
+        titulo: string;
+        subtitulo?: string;
+        iconType: string;
+        status?: string;
+        valor?: number;
+        concluida?: boolean;
+      }> = [];
 
-    // Adicionar atividades
-    atividades?.forEach(atividade => {
-      const config = TIPO_ATIVIDADE_ICONS[atividade.tipo] || TIPO_ATIVIDADE_ICONS.outro;
-      items.push({
-        id: `ativ-${atividade.id}`,
-        tipo: 'atividade',
-        data: new Date(atividade.data_atividade),
-        titulo: atividade.titulo,
-        subtitulo: atividade.descricao || undefined,
-        icon: config.icon,
-        iconClass: config.color,
-        concluida: atividade.concluida
+      atividades?.forEach(atividade => {
+        items.push({
+          id: `ativ-${atividade.id}`,
+          tipo: 'atividade',
+          data: new Date(atividade.data_atividade),
+          titulo: atividade.titulo,
+          subtitulo: atividade.descricao || undefined,
+          iconType: atividade.tipo,
+          concluida: atividade.concluida
+        });
       });
-    });
 
-    // Adicionar orçamentos
-    orcamentos?.forEach(orcamento => {
-      items.push({
-        id: `orc-${orcamento.id}`,
-        tipo: 'orcamento',
-        data: new Date(orcamento.created_at),
-        titulo: `Orçamento ${orcamento.codigo}`,
-        subtitulo: orcamento.endereco || undefined,
-        icon: FileText,
-        iconClass: 'text-primary bg-primary/10',
-        status: orcamento.status,
-        valor: orcamento.total_com_desconto || orcamento.total_geral
+      orcamentos?.forEach(orcamento => {
+        items.push({
+          id: `orc-${orcamento.id}`,
+          tipo: 'orcamento',
+          data: new Date(orcamento.created_at),
+          titulo: `Orçamento ${orcamento.codigo}`,
+          subtitulo: orcamento.endereco || undefined,
+          iconType: 'orcamento',
+          status: orcamento.status,
+          valor: orcamento.total_com_desconto || orcamento.total_geral
+        });
       });
-    });
 
-    // Ordenar por data decrescente
-    return items.sort((a, b) => b.data.getTime() - a.data.getTime());
-  }, [atividades, orcamentos]);
+      return items.sort((a, b) => b.data.getTime() - a.data.getTime());
+    }
+    
+    return timelineExpandida;
+  }, [timelineExpandida, atividades, orcamentos]);
+
+  // Mapear iconType para componentes de ícone
+  const getIconForType = (iconType: string) => {
+    const iconMap: Record<string, { icon: React.ElementType; color: string }> = {
+      ligacao: { icon: Phone, color: 'text-blue-500 bg-blue-500/10' },
+      email: { icon: Mail, color: 'text-amber-500 bg-amber-500/10' },
+      reuniao: { icon: Calendar, color: 'text-purple-500 bg-purple-500/10' },
+      visita: { icon: Users, color: 'text-green-500 bg-green-500/10' },
+      whatsapp: { icon: MessageSquare, color: 'text-emerald-500 bg-emerald-500/10' },
+      outro: { icon: Clock, color: 'text-muted-foreground bg-muted' },
+      orcamento: { icon: FileText, color: 'text-primary bg-primary/10' },
+      pagamento: { icon: CreditCard, color: 'text-emerald-600 bg-emerald-500/10' },
+      producao: { icon: Factory, color: 'text-blue-600 bg-blue-500/10' },
+      instalacao: { icon: Truck, color: 'text-purple-600 bg-purple-500/10' }
+    };
+    return iconMap[iconType] || iconMap.outro;
+  };
+
+  // Handler para ações dos alertas
+  const handleAlertaAcao = (alerta: AlertaContextual) => {
+    if (alerta.tipo === 'sem_contato') {
+      setAtividadeDialogOpen(true);
+    }
+    // Outros alertas podem ter ações específicas no futuro
+  };
 
   if (loadingContato) {
     return (
@@ -210,6 +241,16 @@ export function DetalheContato({ contatoId, onVoltar, onVisualizarOrcamento }: D
             </Button>
           </div>
         </div>
+
+        {/* Jornada do Cliente */}
+        {estagios && estagios.length > 0 && (
+          <Card className="p-4">
+            <JornadaCliente estagios={estagios} />
+          </Card>
+        )}
+
+        {/* Alertas Contextuais */}
+        <AlertasContextuais alertas={alertas} onAcao={handleAlertaAcao} />
 
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Informações do Contato */}
@@ -369,7 +410,8 @@ export function DetalheContato({ contatoId, onVoltar, onVisualizarOrcamento }: D
                       <div className="absolute left-5 top-0 bottom-0 w-px bg-border" />
                       <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
                         {timeline.map((item) => {
-                          const Icon = item.icon;
+                          const iconConfig = getIconForType(item.iconType);
+                          const Icon = iconConfig.icon;
                           return (
                             <div 
                               key={item.id}
@@ -385,7 +427,7 @@ export function DetalheContato({ contatoId, onVoltar, onVisualizarOrcamento }: D
                             >
                               <div className={cn(
                                 "h-10 w-10 rounded-full flex items-center justify-center shrink-0 z-10",
-                                item.iconClass
+                                iconConfig.color
                               )}>
                                 <Icon className="h-5 w-5" />
                               </div>
