@@ -257,13 +257,26 @@ export function CortinaCard({
       custos.custoCostura = custoCosturaTotal;
       custos.custoTotal = custos.custoTecido + custos.custoForro + custos.custoTrilho + custoCosturaTotal + custos.custoInstalacao;
 
+      // Garantir tipos corretos para os campos de barra
+      const barraCmValue = Math.round(Number(cortina.barraCm) || 0);
+      const barraForroCmValue = Number(cortina.barraForroCm) || 0;
+      
+      console.log('🔍 BARRA DEBUG PRE-SAVE:', {
+        'cortina.barraCm': cortina.barraCm,
+        'cortina.barraForroCm': cortina.barraForroCm,
+        'typeof barraCm': typeof cortina.barraCm,
+        'typeof barraForroCm': typeof cortina.barraForroCm,
+        'barraCmValue (to save)': barraCmValue,
+        'barraForroCmValue (to save)': barraForroCmValue
+      });
+
       const dadosCortina = {
         orcamento_id: orcamentoId,
         nome_identificacao: cortina.nomeIdentificacao,
         largura: cortina.largura,
         altura: cortina.altura,
-        barra_cm: cortina.barraCm || 0,
-        barra_forro_cm: cortina.barraForroCm || 0,
+        barra_cm: barraCmValue,
+        barra_forro_cm: barraForroCmValue,
         quantidade: cortina.quantidade,
         tipo_produto: 'cortina',
         tipo_cortina: cortina.tipoCortina,
@@ -512,11 +525,15 @@ export function CortinaCard({
             <Input
               id={`barra-${cortina.id}`}
               type="number"
+              min="0"
               step="1"
-              value={cortina.barraCm || ''}
+              value={cortina.barraCm ?? ''}
               onChange={(e) => {
-                console.log(`🔢 Input barraCm: raw="${e.target.value}", parsed=${parseFloat(e.target.value)}`);
-                handleChange('barraCm', parseFloat(e.target.value) || 0);
+                const rawValue = e.target.value;
+                // barra_cm é INTEGER no banco - usar parseInt e Math.round para garantir
+                const parsedValue = rawValue === '' ? 0 : Math.round(parseInt(rawValue, 10) || 0);
+                console.log(`🔢 Input barraCm: raw="${rawValue}", parsed=${parsedValue}`);
+                handleChange('barraCm', parsedValue);
               }}
               placeholder="0"
             />
@@ -527,11 +544,15 @@ export function CortinaCard({
             <Input
               id={`barra-forro-${cortina.id}`}
               type="number"
+              min="0"
               step="1"
-              value={cortina.barraForroCm || ''}
+              value={cortina.barraForroCm ?? ''}
               onChange={(e) => {
-                console.log(`🔢 Input barraForroCm: raw="${e.target.value}", parsed=${parseFloat(e.target.value)}`);
-                handleChange('barraForroCm', parseFloat(e.target.value) || 0);
+                const rawValue = e.target.value;
+                // barra_forro_cm é NUMERIC no banco - usar parseFloat
+                const parsedValue = rawValue === '' ? 0 : parseFloat(rawValue) || 0;
+                console.log(`🔢 Input barraForroCm: raw="${rawValue}", parsed=${parsedValue}`);
+                handleChange('barraForroCm', parsedValue);
               }}
               placeholder="0"
             />
