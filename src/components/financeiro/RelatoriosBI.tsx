@@ -20,8 +20,7 @@ import {
 import { RelatorioEmprestimos } from './RelatorioEmprestimos';
 import { RelatorioDescontos } from './RelatorioDescontos';
 import { RelatorioOrcadoRealizado } from './RelatorioOrcadoRealizado';
-import { ConciliacaoBancaria } from './ConciliacaoBancaria';
-import { RelatorioConciliacaoClientes } from './RelatorioConciliacaoClientes';
+import { BreadcrumbsFinanceiro } from './BreadcrumbsFinanceiro';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -89,7 +88,11 @@ const FREQUENCIAS_MESES: Record<string, number> = {
 
 type Periodo = '3m' | '6m' | '12m';
 
-export function RelatoriosBI() {
+interface RelatoriosBIProps {
+  onNavigate?: (view: string) => void;
+}
+
+export function RelatoriosBI({ onNavigate }: RelatoriosBIProps) {
   const [periodo, setPeriodo] = useState<Periodo>('6m');
   
   const meses = periodo === '3m' ? 3 : periodo === '6m' ? 6 : 12;
@@ -311,6 +314,9 @@ export function RelatoriosBI() {
 
   return (
     <div className="space-y-6">
+      {/* Breadcrumbs */}
+      <BreadcrumbsFinanceiro currentView="finRelatorios" onNavigate={onNavigate} />
+      
       {/* Header */}
       <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
         <div>
