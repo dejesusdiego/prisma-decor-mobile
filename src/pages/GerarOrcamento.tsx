@@ -307,7 +307,12 @@ export default function GerarOrcamento() {
             {view === 'categoriasFormas' && <CategoriasFormas />}
 
             {/* CRM */}
-            {view === 'crmPainel' && <PainelCRM />}
+            {view === 'crmPainel' && (
+              <PainelCRM 
+                onVerContato={handleVerContato}
+                onVerOrcamento={handleVisualizarOrcamento}
+              />
+            )}
             {view === 'crmContatos' && (
               <ListaContatos onVerContato={handleVerContato} />
             )}
