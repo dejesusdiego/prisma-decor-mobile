@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useFinanceiroInvalidation } from '@/hooks/useFinanceiroInvalidation';
 import {
   Dialog,
   DialogContent,
@@ -42,8 +43,8 @@ const FREQUENCIAS = [
 ];
 
 export function DialogContaPagar({ open, onOpenChange, conta }: DialogContaPagarProps) {
-  const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { invalidateAfterPagamento } = useFinanceiroInvalidation();
   const [recorrente, setRecorrente] = useState(false);
   const [frequencia, setFrequencia] = useState('mensal');
   
@@ -126,13 +127,8 @@ export function DialogContaPagar({ open, onOpenChange, conta }: DialogContaPagar
       }
     },
     onSuccess: () => {
-      // Invalidação cruzada completa
-      queryClient.invalidateQueries({ queryKey: ['contas-pagar'] });
-      queryClient.invalidateQueries({ queryKey: ['contas-pagar-pendentes'] });
-      queryClient.invalidateQueries({ queryKey: ['contas-pagar-previsao'] }); // Fluxo previsto
-      queryClient.invalidateQueries({ queryKey: ['contas-recorrentes-previsao'] });
-      queryClient.invalidateQueries({ queryKey: ['lancamentos-financeiros'] }); // Dashboard
-      queryClient.invalidateQueries({ queryKey: ['saldo-atual-caixa'] });
+      // Invalidação cruzada usando hook centralizado
+      invalidateAfterPagamento();
       toast.success(conta ? 'Conta atualizada' : 'Conta criada');
       onOpenChange(false);
     },

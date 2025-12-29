@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useFinanceiroInvalidation } from '@/hooks/useFinanceiroInvalidation';
 import { format } from 'date-fns';
 import {
   Dialog,
@@ -33,6 +34,7 @@ interface DialogRegistrarRecebimentoProps {
 export function DialogRegistrarRecebimento({ open, onOpenChange, parcela }: DialogRegistrarRecebimentoProps) {
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { invalidateAfterRecebimento, invalidateComissoes } = useFinanceiroInvalidation();
   const [uploading, setUploading] = useState(false);
   const [arquivo, setArquivo] = useState<File | null>(null);
   
@@ -256,17 +258,10 @@ export function DialogRegistrarRecebimento({ open, onOpenChange, parcela }: Dial
       }
     },
     onSuccess: () => {
-      // Invalidação cruzada completa - atualiza todos os módulos relacionados
-      queryClient.invalidateQueries({ queryKey: ['contas-receber'] });
-      queryClient.invalidateQueries({ queryKey: ['contas-receber-pendentes'] });
-      queryClient.invalidateQueries({ queryKey: ['lancamentos'] });
-      queryClient.invalidateQueries({ queryKey: ['lancamentos-financeiros'] }); // Dashboard
+      // Invalidação cruzada usando hook centralizado
+      invalidateAfterRecebimento();
+      invalidateComissoes();
       queryClient.invalidateQueries({ queryKey: ['orcamentos'] });
-      queryClient.invalidateQueries({ queryKey: ['comissoes'] });
-      queryClient.invalidateQueries({ queryKey: ['parcelas-receber-previsao'] }); // Fluxo previsto
-      queryClient.invalidateQueries({ queryKey: ['saldo-atual-caixa'] }); // Saldo fluxo
-      queryClient.invalidateQueries({ queryKey: ['movimentacoes-extrato'] }); // Conciliação
-      queryClient.invalidateQueries({ queryKey: ['extratos-bancarios'] }); // Conciliação
       toast.success('Recebimento registrado com sucesso');
       onOpenChange(false);
     },
