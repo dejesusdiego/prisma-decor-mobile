@@ -49,6 +49,7 @@ interface CalendarioVisitasProps {
 const statusColors: Record<string, string> = {
   pendente: "bg-yellow-500",
   confirmada: "bg-blue-500",
+  sem_resposta: "bg-orange-500",
   realizada: "bg-green-500",
   cancelada: "bg-red-500",
 };
@@ -56,6 +57,7 @@ const statusColors: Record<string, string> = {
 const statusLabels: Record<string, string> = {
   pendente: "Pendente",
   confirmada: "Confirmada",
+  sem_resposta: "Sem Resposta",
   realizada: "Realizada",
   cancelada: "Cancelada",
 };
@@ -370,6 +372,7 @@ function VisitaCard({
             "shrink-0 text-xs",
             visita.status === "pendente" && "bg-yellow-500/10 text-yellow-600 border-yellow-500/30",
             visita.status === "confirmada" && "bg-blue-500/10 text-blue-600 border-blue-500/30",
+            visita.status === "sem_resposta" && "bg-orange-500/10 text-orange-600 border-orange-500/30",
             visita.status === "realizada" && "bg-green-500/10 text-green-600 border-green-500/30",
             visita.status === "cancelada" && "bg-red-500/10 text-red-600 border-red-500/30"
           )}
