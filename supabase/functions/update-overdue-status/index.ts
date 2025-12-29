@@ -18,79 +18,130 @@ serve(async (req) => {
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Buscar configuração de dias para sem_resposta
-    const { data: configData, error: configError } = await supabase
+    // ========== ORÇAMENTOS ==========
+    
+    // Buscar configuração de dias para sem_resposta de orçamentos
+    const { data: configOrcamentos, error: configOrcError } = await supabase
       .from('configuracoes_sistema')
       .select('valor')
       .eq('chave', 'dias_sem_resposta')
       .maybeSingle();
 
-    if (configError) {
-      console.error('Erro ao buscar configuração:', configError);
-      throw configError;
+    if (configOrcError) {
+      console.error('Erro ao buscar configuração de orçamentos:', configOrcError);
     }
 
-    // Default 7 dias se não configurado
-    const diasSemResposta = configData?.valor ? Number(configData.valor) : 7;
+    const diasSemRespostaOrcamentos = configOrcamentos?.valor ? Number(configOrcamentos.valor) : 7;
     
-    console.log(`Verificando orçamentos enviados há mais de ${diasSemResposta} dias...`);
+    console.log(`Verificando orçamentos enviados há mais de ${diasSemRespostaOrcamentos} dias...`);
 
-    // Calcular a data limite
-    const dataLimite = new Date();
-    dataLimite.setDate(dataLimite.getDate() - diasSemResposta);
+    // Calcular a data limite para orçamentos
+    const dataLimiteOrcamentos = new Date();
+    dataLimiteOrcamentos.setDate(dataLimiteOrcamentos.getDate() - diasSemRespostaOrcamentos);
 
     // Buscar orçamentos com status 'enviado' e status_updated_at anterior à data limite
-    const { data: orcamentosExpirados, error: fetchError } = await supabase
+    const { data: orcamentosExpirados, error: fetchOrcError } = await supabase
       .from('orcamentos')
       .select('id, codigo, cliente_nome, status_updated_at')
       .eq('status', 'enviado')
-      .lt('status_updated_at', dataLimite.toISOString());
+      .lt('status_updated_at', dataLimiteOrcamentos.toISOString());
 
-    if (fetchError) {
-      console.error('Erro ao buscar orçamentos:', fetchError);
-      throw fetchError;
-    }
-
-    if (!orcamentosExpirados || orcamentosExpirados.length === 0) {
-      console.log('Nenhum orçamento expirado encontrado.');
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          message: 'Nenhum orçamento expirado encontrado',
-          updated: 0 
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    console.log(`Encontrados ${orcamentosExpirados.length} orçamentos para atualizar`);
-
-    // Atualizar status para 'sem_resposta'
-    const ids = orcamentosExpirados.map(o => o.id);
+    let orcamentosAtualizados = 0;
     
-    const { error: updateError } = await supabase
-      .from('orcamentos')
-      .update({ status: 'sem_resposta' })
-      .in('id', ids);
+    if (fetchOrcError) {
+      console.error('Erro ao buscar orçamentos:', fetchOrcError);
+    } else if (orcamentosExpirados && orcamentosExpirados.length > 0) {
+      console.log(`Encontrados ${orcamentosExpirados.length} orçamentos para atualizar`);
 
-    if (updateError) {
-      console.error('Erro ao atualizar orçamentos:', updateError);
-      throw updateError;
+      const ids = orcamentosExpirados.map(o => o.id);
+      
+      const { error: updateOrcError } = await supabase
+        .from('orcamentos')
+        .update({ status: 'sem_resposta' })
+        .in('id', ids);
+
+      if (updateOrcError) {
+        console.error('Erro ao atualizar orçamentos:', updateOrcError);
+      } else {
+        orcamentosAtualizados = orcamentosExpirados.length;
+        console.log('Orçamentos atualizados:', orcamentosExpirados.map(o => ({
+          codigo: o.codigo,
+          cliente: o.cliente_nome
+        })));
+      }
+    } else {
+      console.log('Nenhum orçamento expirado encontrado.');
     }
 
-    const orcamentosAtualizados = orcamentosExpirados.map(o => ({
-      codigo: o.codigo,
-      cliente: o.cliente_nome
-    }));
+    // ========== SOLICITAÇÕES DE VISITA ==========
+    
+    // Buscar configuração de dias para sem_resposta de visitas
+    const { data: configVisitas, error: configVisError } = await supabase
+      .from('configuracoes_sistema')
+      .select('valor')
+      .eq('chave', 'dias_sem_resposta_visitas')
+      .maybeSingle();
 
-    console.log('Orçamentos atualizados:', orcamentosAtualizados);
+    if (configVisError) {
+      console.error('Erro ao buscar configuração de visitas:', configVisError);
+    }
 
+    const diasSemRespostaVisitas = configVisitas?.valor ? Number(configVisitas.valor) : 3;
+    
+    console.log(`Verificando visitas pendentes há mais de ${diasSemRespostaVisitas} dias...`);
+
+    // Calcular a data limite para visitas
+    const dataLimiteVisitas = new Date();
+    dataLimiteVisitas.setDate(dataLimiteVisitas.getDate() - diasSemRespostaVisitas);
+
+    // Buscar visitas com status 'pendente' e status_updated_at anterior à data limite
+    const { data: visitasExpiradas, error: fetchVisError } = await supabase
+      .from('solicitacoes_visita')
+      .select('id, nome, telefone, status_updated_at')
+      .eq('status', 'pendente')
+      .lt('status_updated_at', dataLimiteVisitas.toISOString());
+
+    let visitasAtualizadas = 0;
+    
+    if (fetchVisError) {
+      console.error('Erro ao buscar visitas:', fetchVisError);
+    } else if (visitasExpiradas && visitasExpiradas.length > 0) {
+      console.log(`Encontradas ${visitasExpiradas.length} visitas para atualizar`);
+
+      const visitaIds = visitasExpiradas.map(v => v.id);
+      
+      const { error: updateVisError } = await supabase
+        .from('solicitacoes_visita')
+        .update({ status: 'sem_resposta' })
+        .in('id', visitaIds);
+
+      if (updateVisError) {
+        console.error('Erro ao atualizar visitas:', updateVisError);
+      } else {
+        visitasAtualizadas = visitasExpiradas.length;
+        console.log('Visitas atualizadas:', visitasExpiradas.map(v => ({
+          nome: v.nome,
+          telefone: v.telefone
+        })));
+      }
+    } else {
+      console.log('Nenhuma visita expirada encontrada.');
+    }
+
+    // ========== RESPOSTA ==========
+    
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: `${orcamentosExpirados.length} orçamento(s) atualizado(s) para "Sem Resposta"`,
-        updated: orcamentosExpirados.length,
-        orcamentos: orcamentosAtualizados
+        message: `${orcamentosAtualizados} orçamento(s) e ${visitasAtualizadas} visita(s) atualizado(s) para "Sem Resposta"`,
+        orcamentos: {
+          updated: orcamentosAtualizados,
+          diasConfiguracao: diasSemRespostaOrcamentos
+        },
+        visitas: {
+          updated: visitasAtualizadas,
+          diasConfiguracao: diasSemRespostaVisitas
+        }
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

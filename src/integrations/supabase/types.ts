@@ -1392,6 +1392,7 @@ export type Database = {
           nome: string
           observacoes_internas: string | null
           status: string
+          status_updated_at: string | null
           telefone: string
           updated_at: string
           visualizada: boolean
@@ -1411,6 +1412,7 @@ export type Database = {
           nome: string
           observacoes_internas?: string | null
           status?: string
+          status_updated_at?: string | null
           telefone: string
           updated_at?: string
           visualizada?: boolean
@@ -1430,6 +1432,7 @@ export type Database = {
           nome?: string
           observacoes_internas?: string | null
           status?: string
+          status_updated_at?: string | null
           telefone?: string
           updated_at?: string
           visualizada?: boolean
