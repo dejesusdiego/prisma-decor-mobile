@@ -272,9 +272,33 @@ export function EtapaProdutos({
   };
 
   const duplicarProduto = (index: number) => {
-    const produto = { ...produtos[index] };
-    delete produto.id;
-    produto.nomeIdentificacao = `${produto.nomeIdentificacao} (Cópia)`;
+    const produtoOriginal = produtos[index];
+    // Clonar profundamente todos os campos do produto
+    const produto: Cortina = {
+      ...produtoOriginal,
+      id: undefined, // Remover ID para criar novo
+      nomeIdentificacao: `${produtoOriginal.nomeIdentificacao} (Cópia)`,
+      // Garantir cópia de todos os campos
+      tecidoId: produtoOriginal.tecidoId,
+      forroId: produtoOriginal.forroId,
+      trilhoId: produtoOriginal.trilhoId,
+      barraCm: produtoOriginal.barraCm,
+      barraForroCm: produtoOriginal.barraForroCm,
+      custoTecido: produtoOriginal.custoTecido,
+      custoForro: produtoOriginal.custoForro,
+      custoTrilho: produtoOriginal.custoTrilho,
+      custoMaterialPrincipal: produtoOriginal.custoMaterialPrincipal,
+      custoCostura: produtoOriginal.custoCostura,
+      custoInstalacao: produtoOriginal.custoInstalacao,
+      custoTotal: produtoOriginal.custoTotal,
+      precoUnitario: produtoOriginal.precoUnitario,
+      precoVenda: produtoOriginal.precoVenda,
+      servicosAdicionaisIds: produtoOriginal.servicosAdicionaisIds 
+        ? [...produtoOriginal.servicosAdicionaisIds] 
+        : [],
+      materialPrincipalId: produtoOriginal.materialPrincipalId,
+      observacoesInternas: produtoOriginal.observacoesInternas,
+    };
     setProdutos([...produtos, produto]);
   };
 

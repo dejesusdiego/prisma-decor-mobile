@@ -82,8 +82,9 @@ export function PersianaCard({
 
     setSaving(true);
 
-    // custoTotal = orçamento fábrica (valor total) + instalação
-    const custoTotal = persiana.precoUnitario;
+    // custoTotal = orçamento fábrica (preço unitário * quantidade) + instalação
+    const custoUnitario = persiana.precoUnitario;
+    const custoTotalProduto = custoUnitario * persiana.quantidade;
     const custoInstalacao = persiana.precisaInstalacao && persiana.valorInstalacao 
       ? persiana.valorInstalacao 
       : 0;
@@ -100,8 +101,8 @@ export function PersianaCard({
       descricao: persiana.descricao || null,
       fabrica: persiana.fabrica || null,
       motorizada: persiana.motorizada || false,
-      preco_unitario: persiana.precoUnitario,
-      custo_total: custoTotal + custoInstalacao,
+      preco_unitario: custoUnitario,
+      custo_total: custoTotalProduto + custoInstalacao,
       precisa_instalacao: persiana.precisaInstalacao,
       custo_instalacao: custoInstalacao,
       observacoes_internas: persiana.observacoesInternas || null,
@@ -139,7 +140,7 @@ export function PersianaCard({
       const persianaAtualizada = {
         ...persiana,
         id: result.data.id,
-        custoTotal: custoTotal + custoInstalacao,
+        custoTotal: custoTotalProduto + custoInstalacao,
         custoInstalacao,
       };
       
