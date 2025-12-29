@@ -56,7 +56,11 @@ import {
   Thermometer,
   MessageSquare,
   ExternalLink,
-  AlertCircle
+  AlertCircle,
+  Wrench,
+  Calendar,
+  DollarSign,
+  CheckCircle2
 } from 'lucide-react';
 import { useContatosComMetricas, ContatoComMetricas } from '@/hooks/useContatoComMetricas';
 import { Contato } from '@/hooks/useCRMData';
@@ -491,7 +495,54 @@ export function ListaContatosV2({ onVerContato }: ListaContatosProps) {
                               </Badge>
                             </TableCell>
                             <TableCell>
-                              <div className="flex items-center justify-center gap-2">
+                              <div className="flex items-center justify-center gap-1 flex-wrap">
+                                {/* Produção */}
+                                {contato.pedidosEmProducao > 0 && (
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger>
+                                        <Badge variant="outline" className="bg-purple-500/10 text-purple-600 border-purple-500/30">
+                                          <Wrench className="h-3 w-3 mr-1" />
+                                          {contato.pedidosEmProducao}
+                                        </Badge>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        {contato.pedidosEmProducao} pedido(s) em produção
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                )}
+                                {contato.pedidosProntos > 0 && (
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger>
+                                        <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30">
+                                          <CheckCircle2 className="h-3 w-3 mr-1" />
+                                          {contato.pedidosProntos}
+                                        </Badge>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        {contato.pedidosProntos} pedido(s) pronto(s)
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                )}
+                                {contato.instalacoesAgendadas > 0 && (
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger>
+                                        <Badge variant="outline" className="bg-indigo-500/10 text-indigo-600 border-indigo-500/30">
+                                          <Calendar className="h-3 w-3 mr-1" />
+                                          {contato.instalacoesAgendadas}
+                                        </Badge>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        {contato.instalacoesAgendadas} instalação(ões) agendada(s)
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                )}
+                                {/* Orçamentos */}
                                 {contato.orcamentosPendentes > 0 && (
                                   <TooltipProvider>
                                     <Tooltip>
@@ -507,6 +558,22 @@ export function ListaContatosV2({ onVerContato }: ListaContatosProps) {
                                     </Tooltip>
                                   </TooltipProvider>
                                 )}
+                                {/* Financeiro */}
+                                {contato.valorVencido > 0 && (
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger>
+                                        <Badge variant="outline" className="bg-red-500/10 text-red-600 border-red-500/30">
+                                          <DollarSign className="h-3 w-3" />!
+                                        </Badge>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        R$ {contato.valorVencido.toFixed(0)} vencido
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                )}
+                                {/* Atividades */}
                                 {contato.atividadesPendentes > 0 && (
                                   <TooltipProvider>
                                     <Tooltip>
@@ -522,11 +589,12 @@ export function ListaContatosV2({ onVerContato }: ListaContatosProps) {
                                     </Tooltip>
                                   </TooltipProvider>
                                 )}
+                                {/* Dias sem contato */}
                                 {contato.diasSemContato >= 7 && (
                                   <TooltipProvider>
                                     <Tooltip>
                                       <TooltipTrigger>
-                                        <Badge variant="outline" className="bg-red-500/10 text-red-600 border-red-500/30">
+                                        <Badge variant="outline" className="bg-gray-500/10 text-gray-600 border-gray-500/30">
                                           {contato.diasSemContato}d
                                         </Badge>
                                       </TooltipTrigger>

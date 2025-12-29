@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { differenceInDays } from 'date-fns';
+import { differenceInDays, format } from 'date-fns';
 
 export interface ContatoComMetricas {
   id: string;
@@ -38,6 +38,18 @@ export interface ContatoComMetricas {
     valor: number;
     data: string;
   } | null;
+  // Métricas de produção e financeiro
+  pedidosEmProducao: number;
+  pedidosProntos: number;
+  instalacoesAgendadas: number;
+  proximaInstalacao: {
+    id: string;
+    data: string;
+    turno: string;
+    status: string;
+  } | null;
+  valorAReceber: number;
+  valorVencido: number;
 }
 
 export function useContatosComMetricas() {
@@ -71,10 +83,64 @@ export function useContatosComMetricas() {
 
       if (errorAtiv) throw errorAtiv;
 
+      // Buscar pedidos com orçamentos vinculados a contatos
+      const orcamentoIds = orcamentos?.map(o => o.id) || [];
+      const { data: pedidos, error: errorPed } = await supabase
+        .from('pedidos')
+        .select('id, numero_pedido, status_producao, orcamento_id')
+        .in('orcamento_id', orcamentoIds.length > 0 ? orcamentoIds : ['00000000-0000-0000-0000-000000000000']);
+
+      if (errorPed) throw errorPed;
+
+      // Buscar instalações dos pedidos
+      const pedidoIds = pedidos?.map(p => p.id) || [];
+      const { data: instalacoes, error: errorInst } = await supabase
+        .from('instalacoes')
+        .select('id, data_agendada, turno, status, pedido_id')
+        .in('pedido_id', pedidoIds.length > 0 ? pedidoIds : ['00000000-0000-0000-0000-000000000000'])
+        .in('status', ['agendada', 'confirmada'])
+        .order('data_agendada', { ascending: true });
+
+      if (errorInst) throw errorInst;
+
+      // Buscar contas a receber vinculadas aos orçamentos
+      const { data: contasReceber, error: errorCR } = await supabase
+        .from('contas_receber')
+        .select('id, orcamento_id, valor_total, valor_pago, status, data_vencimento')
+        .in('orcamento_id', orcamentoIds.length > 0 ? orcamentoIds : ['00000000-0000-0000-0000-000000000000']);
+
+      if (errorCR) throw errorCR;
+
+      const hoje = new Date();
+      const hojeStr = format(hoje, 'yyyy-MM-dd');
+
       // Mapear contatos com métricas
       const contatosComMetricas: ContatoComMetricas[] = contatos.map(contato => {
         const orcamentosContato = orcamentos?.filter(o => o.contato_id === contato.id) || [];
         const atividadesContato = atividades?.filter(a => a.contato_id === contato.id) || [];
+        const orcamentoIdsContato = orcamentosContato.map(o => o.id);
+        
+        // Pedidos do contato
+        const pedidosContato = pedidos?.filter(p => orcamentoIdsContato.includes(p.orcamento_id)) || [];
+        const statusProducao = ['em_corte', 'em_costura', 'aguardando_materiais'];
+        const statusProntos = ['pronto_instalacao', 'pronto_entrega'];
+        const pedidosEmProducao = pedidosContato.filter(p => statusProducao.includes(p.status_producao)).length;
+        const pedidosProntos = pedidosContato.filter(p => statusProntos.includes(p.status_producao)).length;
+        
+        // Instalações do contato
+        const pedidoIdsContato = pedidosContato.map(p => p.id);
+        const instalacoesContato = instalacoes?.filter(i => pedidoIdsContato.includes(i.pedido_id)) || [];
+        const instalacoesAgendadas = instalacoesContato.length;
+        const proximaInst = instalacoesContato[0];
+        
+        // Financeiro do contato
+        const contasContato = contasReceber?.filter(c => orcamentoIdsContato.includes(c.orcamento_id || '')) || [];
+        const valorAReceber = contasContato
+          .filter(c => c.status !== 'pago')
+          .reduce((sum, c) => sum + (c.valor_total - c.valor_pago), 0);
+        const valorVencido = contasContato
+          .filter(c => c.status !== 'pago' && c.data_vencimento < hojeStr)
+          .reduce((sum, c) => sum + (c.valor_total - c.valor_pago), 0);
         
         // Calcular dias sem contato
         const ultimaInteracao = contato.ultima_interacao_em || contato.updated_at;
@@ -145,10 +211,21 @@ export function useContatosComMetricas() {
             status: ultimoOrc.status,
             valor: ultimoOrc.total_com_desconto || ultimoOrc.total_geral || 0,
             data: ultimoOrc.created_at
-          } : null
+          } : null,
+          // Novas métricas de produção e financeiro
+          pedidosEmProducao,
+          pedidosProntos,
+          instalacoesAgendadas,
+          proximaInstalacao: proximaInst ? {
+            id: proximaInst.id,
+            data: proximaInst.data_agendada,
+            turno: proximaInst.turno,
+            status: proximaInst.status
+          } : null,
+          valorAReceber,
+          valorVencido
         };
       });
-
       return contatosComMetricas;
     }
   });
