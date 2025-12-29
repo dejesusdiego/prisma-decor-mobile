@@ -13,11 +13,13 @@ import {
   History,
   Percent,
   Scale3D,
-  RefreshCcw
+  RefreshCcw,
+  Landmark
 } from 'lucide-react';
 import { RelatorioEmprestimos } from './RelatorioEmprestimos';
 import { RelatorioDescontos } from './RelatorioDescontos';
 import { RelatorioOrcadoRealizado } from './RelatorioOrcadoRealizado';
+import { ConciliacaoBancaria } from './ConciliacaoBancaria';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -328,7 +330,7 @@ export function RelatoriosBI() {
       </div>
 
       <Tabs defaultValue="dre" className="space-y-6">
-        <TabsList className="grid grid-cols-9 w-full max-w-[1100px]">
+        <TabsList className="grid grid-cols-10 w-full max-w-[1200px]">
           <TabsTrigger value="dre" className="gap-2">
             <DollarSign className="h-4 w-4" />
             <span className="hidden sm:inline">DRE</span>
@@ -364,6 +366,10 @@ export function RelatoriosBI() {
           <TabsTrigger value="historico" className="gap-2">
             <History className="h-4 w-4" />
             <span className="hidden sm:inline">Histórico</span>
+          </TabsTrigger>
+          <TabsTrigger value="conciliacao" className="gap-2">
+            <Landmark className="h-4 w-4" />
+            <span className="hidden sm:inline">Conciliação</span>
           </TabsTrigger>
         </TabsList>
 
@@ -791,6 +797,11 @@ export function RelatoriosBI() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Conciliação Bancária */}
+        <TabsContent value="conciliacao" className="space-y-6">
+          <ConciliacaoBancaria />
         </TabsContent>
       </Tabs>
     </div>

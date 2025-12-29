@@ -128,6 +128,48 @@ serve(async (req) => {
       console.log('Nenhuma visita expirada encontrada.');
     }
 
+    // ========== EMPRÉSTIMOS ATRASADOS ==========
+    
+    console.log('Verificando empréstimos atrasados...');
+    
+    // Buscar contas a receber de empréstimos atrasadas
+    const { data: emprestimosAtrasados, error: empError } = await supabase
+      .from('contas_receber')
+      .select('id, cliente_nome, valor_total, data_vencimento, created_by_user_id')
+      .not('lancamento_origem_id', 'is', null)
+      .in('status', ['pendente', 'parcial'])
+      .lt('data_vencimento', new Date().toISOString().split('T')[0]);
+    
+    let notificacoesEmprestimo = 0;
+    
+    if (empError) {
+      console.error('Erro ao buscar empréstimos atrasados:', empError);
+    } else if (emprestimosAtrasados && emprestimosAtrasados.length > 0) {
+      console.log(`Encontrados ${emprestimosAtrasados.length} empréstimos atrasados`);
+      
+      for (const emp of emprestimosAtrasados) {
+        const diasAtraso = Math.floor((new Date().getTime() - new Date(emp.data_vencimento).getTime()) / (1000 * 60 * 60 * 24));
+        
+        const { error: notifError } = await supabase
+          .from('notificacoes')
+          .upsert({
+            user_id: emp.created_by_user_id,
+            tipo: 'emprestimo_atrasado',
+            titulo: 'Empréstimo atrasado!',
+            mensagem: `Empréstimo "${emp.cliente_nome}" (R$ ${emp.valor_total}) está atrasado há ${diasAtraso} dia(s)`,
+            prioridade: 'urgente',
+            referencia_tipo: 'emprestimo',
+            referencia_id: emp.id,
+            data_lembrete: new Date().toISOString()
+          }, { 
+            onConflict: 'referencia_id,referencia_tipo',
+            ignoreDuplicates: true 
+          });
+        
+        if (!notifError) notificacoesEmprestimo++;
+      }
+    }
+
     // ========== RESPOSTA ==========
     
     return new Response(

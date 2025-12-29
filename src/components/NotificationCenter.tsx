@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Bell, Check, CheckCheck, Trash2, X, AlertCircle, Calendar, Package, Eye, DollarSign, Clock } from 'lucide-react';
+import { Bell, Check, CheckCheck, Trash2, X, AlertCircle, Calendar, Package, Eye, DollarSign, Clock, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -21,6 +21,8 @@ const TIPO_CONFIG: Record<string, { icon: React.ElementType; color: string; bgCo
   visita_nova: { icon: Calendar, color: 'text-purple-600', bgColor: 'bg-purple-100 dark:bg-purple-900/30' },
   orcamento_vencendo: { icon: AlertCircle, color: 'text-orange-600', bgColor: 'bg-orange-100 dark:bg-orange-900/30' },
   pagamento_atrasado: { icon: AlertCircle, color: 'text-red-600', bgColor: 'bg-red-100 dark:bg-red-900/30' },
+  emprestimo_vencendo: { icon: RefreshCw, color: 'text-orange-600', bgColor: 'bg-orange-100 dark:bg-orange-900/30' },
+  emprestimo_atrasado: { icon: AlertCircle, color: 'text-red-600', bgColor: 'bg-red-100 dark:bg-red-900/30' },
 };
 
 const PRIORIDADE_CONFIG: Record<string, { color: string }> = {
@@ -59,6 +61,7 @@ export function NotificationCenter({ onNavigate }: NotificationCenterProps) {
         conta_pagar: 'finContasPagar',
         conta_receber: 'finContasReceber',
         contato: 'crm',
+        emprestimo: 'finRelatorios',
       };
       
       const view = navMap[notificacao.referencia_tipo];
