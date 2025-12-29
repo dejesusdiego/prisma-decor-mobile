@@ -332,7 +332,7 @@ export function RelatoriosBI() {
       </div>
 
       <Tabs defaultValue="dre" className="space-y-6">
-        <TabsList className="grid grid-cols-10 w-full max-w-[1200px]">
+        <TabsList className="flex flex-wrap gap-1 h-auto p-1 w-full max-w-[1200px]">
           <TabsTrigger value="dre" className="gap-2">
             <DollarSign className="h-4 w-4" />
             <span className="hidden sm:inline">DRE</span>
@@ -373,9 +373,17 @@ export function RelatoriosBI() {
             <Landmark className="h-4 w-4" />
             <span className="hidden sm:inline">Conciliação</span>
           </TabsTrigger>
-          <TabsTrigger value="clientes" className="gap-2">
+        </TabsList>
+        
+        {/* Aba Clientes destacada */}
+        <TabsList className="w-auto">
+          <TabsTrigger 
+            value="clientes" 
+            className="gap-2 bg-primary/10 border border-primary/30 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+          >
             <Users className="h-4 w-4" />
-            <span className="hidden sm:inline">Clientes</span>
+            <span>Clientes</span>
+            <Badge variant="secondary" className="ml-1 text-xs px-1.5 py-0">Novo</Badge>
           </TabsTrigger>
         </TabsList>
 
