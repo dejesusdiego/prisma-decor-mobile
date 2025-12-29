@@ -28,7 +28,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { SugestoesConciliacao } from '@/components/financeiro/SugestoesConciliacao';
 import { SugestoesPadroes } from '@/components/financeiro/SugestoesPadroes';
+import { DialogConciliarComOrcamento } from './DialogConciliarComOrcamento';
 import { usePadroesConciliacao } from '@/hooks/usePadroesConciliacao';
+import { SugestaoOrcamento } from '@/hooks/useSugestoesConciliacao';
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -54,6 +56,15 @@ export function DialogConciliarManual({ open, onOpenChange, movimentacao }: Dial
   const [tabAtiva, setTabAtiva] = useState<'sugestoes' | 'todos'>('sugestoes');
   const queryClient = useQueryClient();
   const { salvarPadrao } = usePadroesConciliacao();
+  
+  // Dialog para vincular ao orçamento
+  const [orcamentoDialogOpen, setOrcamentoDialogOpen] = useState(false);
+  const [orcamentoSelecionado, setOrcamentoSelecionado] = useState<SugestaoOrcamento | null>(null);
+
+  const handleVincularOrcamento = (orcamento: SugestaoOrcamento) => {
+    setOrcamentoSelecionado(orcamento);
+    setOrcamentoDialogOpen(true);
+  };
 
   // Buscar lançamentos não conciliados
   const { data: lancamentos = [], isLoading } = useQuery({
@@ -208,6 +219,7 @@ export function DialogConciliarManual({ open, onOpenChange, movimentacao }: Dial
               onSelecionarPagamento={(conta) => {
                 toast.info(`Conta "${conta.descricao}" selecionada. Use a aba Contas a Pagar para conciliar.`);
               }}
+              onVincularOrcamento={handleVincularOrcamento}
             />
             <SugestoesPadroes 
               descricaoExtrato={movimentacao.descricao}
@@ -384,6 +396,19 @@ export function DialogConciliarManual({ open, onOpenChange, movimentacao }: Dial
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      {/* Dialog para vincular ao orçamento */}
+      <DialogConciliarComOrcamento
+        open={orcamentoDialogOpen}
+        onOpenChange={(open) => {
+          setOrcamentoDialogOpen(open);
+          if (!open) {
+            onOpenChange(false);
+          }
+        }}
+        movimentacao={movimentacao}
+        orcamento={orcamentoSelecionado}
+      />
     </Dialog>
   );
 }

@@ -2,28 +2,32 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { FileText, Sparkles, ArrowRight } from 'lucide-react';
+import { FileText, Sparkles, ArrowRight, Link2, Receipt, CreditCard } from 'lucide-react';
 import { useSugestoesConciliacao, SugestaoContaReceber, SugestaoContaPagar, SugestaoOrcamento } from '@/hooks/useSugestoesConciliacao';
 import { formatCurrency, formatDate } from '@/lib/formatters';
 
+interface MovimentacaoSugestao {
+  id: string;
+  descricao: string;
+  valor: number;
+  tipo: string | null;
+  data_movimentacao: string;
+}
+
 interface SugestoesConciliacaoProps {
-  movimentacao: {
-    id: string;
-    descricao: string;
-    valor: number;
-    tipo: string | null;
-    data_movimentacao: string;
-  } | null;
+  movimentacao: MovimentacaoSugestao | null;
   onSelecionarRecebimento?: (parcela: SugestaoContaReceber) => void;
   onSelecionarPagamento?: (conta: SugestaoContaPagar) => void;
   onSelecionarOrcamento?: (orcamento: SugestaoOrcamento) => void;
+  onVincularOrcamento?: (orcamento: SugestaoOrcamento, movimentacao: MovimentacaoSugestao) => void;
 }
 
 export function SugestoesConciliacao({ 
   movimentacao, 
   onSelecionarRecebimento,
   onSelecionarPagamento,
-  onSelecionarOrcamento
+  onSelecionarOrcamento,
+  onVincularOrcamento
 }: SugestoesConciliacaoProps) {
   const { 
     sugestoesRecebimento, 
@@ -167,7 +171,7 @@ export function SugestoesConciliacao({
         {/* Sugestões de Orçamento */}
         {sugestoesOrcamento.length > 0 && (
           <div className="space-y-2">
-            <p className="text-xs text-muted-foreground">Orçamentos relacionados:</p>
+            <p className="text-xs text-muted-foreground">Orçamentos relacionados (vincular pagamento):</p>
             {sugestoesOrcamento.map((sugestao) => (
               <div 
                 key={sugestao.orcamentoId}
@@ -197,15 +201,30 @@ export function SugestoesConciliacao({
                     <span>{sugestao.motivoMatch}</span>
                   </div>
                 </div>
-                {onSelecionarOrcamento && (
-                  <Button 
-                    size="sm" 
-                    variant="ghost"
-                    onClick={() => onSelecionarOrcamento(sugestao)}
-                  >
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
-                )}
+                <div className="flex items-center gap-1">
+                  {onVincularOrcamento && movimentacao && (
+                    <Button 
+                      size="sm" 
+                      variant="default"
+                      className="gap-1"
+                      onClick={() => onVincularOrcamento(sugestao, movimentacao)}
+                      title="Vincular pagamento a este orçamento"
+                    >
+                      <Link2 className="h-3 w-3" />
+                      <span className="hidden sm:inline text-xs">Vincular</span>
+                    </Button>
+                  )}
+                  {onSelecionarOrcamento && (
+                    <Button 
+                      size="sm" 
+                      variant="ghost"
+                      onClick={() => onSelecionarOrcamento(sugestao)}
+                      title="Ver detalhes"
+                    >
+                      <ArrowRight className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
               </div>
             ))}
           </div>
