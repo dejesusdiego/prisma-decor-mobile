@@ -12,7 +12,8 @@ import {
   ArrowUpCircle,
   ArrowDownCircle,
   Download,
-  RefreshCw
+  RefreshCw,
+  ArrowLeftRight
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,10 +34,31 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
 import { DialogLancamento } from './dialogs/DialogLancamento';
+import { DialogDevolucaoEmprestimo } from './dialogs/DialogDevolucaoEmprestimo';
 
 type TipoFilter = 'todos' | 'entrada' | 'saida' | 'emprestimo';
+
+interface EmprestimoParaDevolucao {
+  id: string;
+  descricao: string;
+  valor: number;
+  data_lancamento: string;
+  contaReceber?: {
+    id: string;
+    valor_total: number;
+    valor_pago: number;
+    status: string;
+    data_vencimento: string;
+    parcelas?: Array<{
+      id: string;
+      valor: number;
+      status: string;
+    }>;
+  };
+}
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -48,6 +70,8 @@ export function Lancamentos() {
   const [tipoFilter, setTipoFilter] = useState<TipoFilter>('todos');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [lancamentoEditando, setLancamentoEditando] = useState<any>(null);
+  const [dialogDevolucaoOpen, setDialogDevolucaoOpen] = useState(false);
+  const [emprestimoParaDevolucao, setEmprestimoParaDevolucao] = useState<EmprestimoParaDevolucao | null>(null);
 
   const { data: lancamentos = [], isLoading } = useQuery({
     queryKey: ['lancamentos'],
@@ -122,6 +146,58 @@ export function Lancamentos() {
     link.click();
     
     toast.success('Arquivo exportado com sucesso');
+  };
+
+  const handleDevolucao = async (lancamento: any) => {
+    // Buscar conta a receber vinculada ao empréstimo
+    const { data: contaReceber } = await supabase
+      .from('contas_receber')
+      .select('*, parcelas:parcelas_receber(*)')
+      .eq('lancamento_origem_id', lancamento.id)
+      .single();
+
+    setEmprestimoParaDevolucao({
+      id: lancamento.id,
+      descricao: lancamento.descricao,
+      valor: Number(lancamento.valor),
+      data_lancamento: lancamento.data_lancamento,
+      contaReceber: contaReceber || undefined,
+    });
+    setDialogDevolucaoOpen(true);
+  };
+
+  // Query para buscar status de devolução dos empréstimos
+  const { data: statusEmprestimos = {} } = useQuery({
+    queryKey: ['status-emprestimos'],
+    queryFn: async () => {
+      const { data: contasReceber } = await supabase
+        .from('contas_receber')
+        .select('lancamento_origem_id, status, valor_total, valor_pago')
+        .not('lancamento_origem_id', 'is', null);
+
+      const statusMap: Record<string, { status: string; valorPago: number; valorTotal: number }> = {};
+      (contasReceber || []).forEach((cr: any) => {
+        statusMap[cr.lancamento_origem_id] = {
+          status: cr.status,
+          valorPago: Number(cr.valor_pago),
+          valorTotal: Number(cr.valor_total),
+        };
+      });
+      return statusMap;
+    },
+  });
+
+  const getEmprestimoStatusBadge = (lancamentoId: string) => {
+    const status = statusEmprestimos[lancamentoId];
+    if (!status) return null;
+
+    if (status.status === 'pago') {
+      return <Badge className="bg-green-500/10 text-green-600 ml-2">Devolvido</Badge>;
+    }
+    if (status.valorPago > 0) {
+      return <Badge className="bg-blue-500/10 text-blue-600 ml-2">Parcial</Badge>;
+    }
+    return <Badge variant="outline" className="ml-2">Pendente</Badge>;
   };
 
   return (
@@ -290,22 +366,55 @@ export function Lancamentos() {
                       {lancamento.tipo === 'entrada' ? '+' : '-'} {formatCurrency(Number(lancamento.valor))}
                     </TableCell>
                     <TableCell className="text-right">
-                      <div className="flex justify-end gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleEdit(lancamento)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => deleteMutation.mutate(lancamento.id)}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </div>
+                      <TooltipProvider>
+                        <div className="flex justify-end gap-1">
+                          {lancamento.tipo === 'emprestimo' && statusEmprestimos[lancamento.id]?.status !== 'pago' && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleDevolucao(lancamento)}
+                                  className="text-violet-600 hover:text-violet-700"
+                                >
+                                  <ArrowLeftRight className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Registrar devolução</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          )}
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleEdit(lancamento)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Editar</p>
+                            </TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => deleteMutation.mutate(lancamento.id)}
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Excluir</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                      </TooltipProvider>
                     </TableCell>
                   </TableRow>
                 ))
@@ -319,6 +428,12 @@ export function Lancamentos() {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         lancamento={lancamentoEditando}
+      />
+
+      <DialogDevolucaoEmprestimo
+        open={dialogDevolucaoOpen}
+        onOpenChange={setDialogDevolucaoOpen}
+        emprestimo={emprestimoParaDevolucao}
       />
     </div>
   );

@@ -362,6 +362,7 @@ export type Database = {
           data_vencimento: string
           descricao: string
           id: string
+          lancamento_origem_id: string | null
           numero_parcelas: number
           observacoes: string | null
           orcamento_id: string | null
@@ -378,6 +379,7 @@ export type Database = {
           data_vencimento: string
           descricao: string
           id?: string
+          lancamento_origem_id?: string | null
           numero_parcelas?: number
           observacoes?: string | null
           orcamento_id?: string | null
@@ -394,6 +396,7 @@ export type Database = {
           data_vencimento?: string
           descricao?: string
           id?: string
+          lancamento_origem_id?: string | null
           numero_parcelas?: number
           observacoes?: string | null
           orcamento_id?: string | null
@@ -403,6 +406,13 @@ export type Database = {
           valor_total?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "contas_receber_lancamento_origem_id_fkey"
+            columns: ["lancamento_origem_id"]
+            isOneToOne: false
+            referencedRelation: "lancamentos_financeiros"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "contas_receber_orcamento_id_fkey"
             columns: ["orcamento_id"]
