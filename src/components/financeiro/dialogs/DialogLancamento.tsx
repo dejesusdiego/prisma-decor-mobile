@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -21,7 +21,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
+import { Info, Wallet } from 'lucide-react';
 
 interface DialogLancamentoProps {
   open: boolean;
@@ -46,6 +48,7 @@ export function DialogLancamento({ open, onOpenChange, lancamento }: DialogLanca
   });
 
   const tipoSelecionado = watch('tipo');
+  const categoriaId = watch('categoria_id');
 
   const { data: categorias = [] } = useQuery({
     queryKey: ['categorias-financeiras', tipoSelecionado],
@@ -73,6 +76,14 @@ export function DialogLancamento({ open, onOpenChange, lancamento }: DialogLanca
       return data;
     }
   });
+
+  // Verificar se a categoria selecionada é de empréstimo
+  const isEmprestimo = useMemo(() => {
+    if (!categoriaId || !categorias.length) return false;
+    const categoria = categorias.find(c => c.id === categoriaId);
+    return categoria?.nome?.toLowerCase().includes('empréstimo') || 
+           categoria?.nome?.toLowerCase().includes('emprestimo');
+  }, [categoriaId, categorias]);
 
   useEffect(() => {
     if (lancamento) {
@@ -126,6 +137,7 @@ export function DialogLancamento({ open, onOpenChange, lancamento }: DialogLanca
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['lancamentos'] });
+      queryClient.invalidateQueries({ queryKey: ['contas-receber'] });
       toast.success(lancamento ? 'Lançamento atualizado' : 'Lançamento criado');
       onOpenChange(false);
     },
@@ -213,6 +225,17 @@ export function DialogLancamento({ open, onOpenChange, lancamento }: DialogLanca
               </SelectContent>
             </Select>
           </div>
+
+          {/* Banner informativo para empréstimos */}
+          {isEmprestimo && (
+            <Alert className="border-violet-500/50 bg-violet-50 dark:bg-violet-950/30">
+              <Wallet className="h-4 w-4 text-violet-600" />
+              <AlertDescription className="text-sm text-violet-800 dark:text-violet-200">
+                <strong>Empréstimo detectado!</strong> Este lançamento criará automaticamente uma 
+                conta a receber para devolução em <strong>30 dias</strong>.
+              </AlertDescription>
+            </Alert>
+          )}
 
           <div className="space-y-2">
             <Label>Forma de Pagamento</Label>
