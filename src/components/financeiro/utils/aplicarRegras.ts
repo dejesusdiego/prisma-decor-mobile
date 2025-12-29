@@ -38,6 +38,16 @@ export interface ParcelaParaAnalise {
   orcamento_codigo?: string;
 }
 
+// Interface para análise de contas a pagar
+export interface ContaPagarParaAnalise {
+  id: string;
+  valor: number;
+  data_vencimento: string;
+  descricao: string;
+  fornecedor?: string;
+  orcamento_codigo?: string;
+}
+
 export interface AlertaDuplicado {
   tipo: 'duplicado';
   movimentacoes: { id: string; descricao: string; data: string }[];
@@ -70,13 +80,22 @@ export interface AlertaExcedente {
   mensagem: string;
 }
 
-export type AlertaReconciliacao = AlertaDuplicado | AlertaParcial | AlertaAgrupado | AlertaExcedente;
+// Alerta para débitos correspondentes a contas a pagar
+export interface AlertaDebitoPendente {
+  tipo: 'debito_pendente';
+  movimentacao: { id: string; descricao: string; valor: number; data: string };
+  contaPagar: ContaPagarParaAnalise;
+  mensagem: string;
+}
+
+export type AlertaReconciliacao = AlertaDuplicado | AlertaParcial | AlertaAgrupado | AlertaExcedente | AlertaDebitoPendente;
 
 export interface AnaliseReconciliacao {
   duplicados: AlertaDuplicado[];
   parciais: AlertaParcial[];
   agrupados: AlertaAgrupado[];
   excedentes: AlertaExcedente[];
+  debitosPendentes: AlertaDebitoPendente[];
   totalAlertas: number;
 }
 
@@ -153,16 +172,21 @@ function formatDate(dateStr: string): string {
 // Analisar movimentações para detectar duplicados, parciais, agrupados e excedentes
 export function analisarDuplicadosParciais(
   movimentacoes: MovimentacaoExtrato[],
-  parcelasPendentes: ParcelaParaAnalise[]
+  parcelasPendentes: ParcelaParaAnalise[],
+  contasPagarPendentes: ContaPagarParaAnalise[] = []
 ): AnaliseReconciliacao {
   const duplicados: AlertaDuplicado[] = [];
   const parciais: AlertaParcial[] = [];
   const agrupados: AlertaAgrupado[] = [];
   const excedentes: AlertaExcedente[] = [];
+  const debitosPendentes: AlertaDebitoPendente[] = [];
 
-  // Filtrar apenas créditos pendentes
+  // Filtrar créditos e débitos pendentes
   const creditosPendentes = movimentacoes.filter(
     m => m.tipo === 'credito' && !m.conciliado && !m.ignorado
+  );
+  const debitosPendentesLista = movimentacoes.filter(
+    m => m.tipo === 'debito' && !m.conciliado && !m.ignorado
   );
 
   // 1. DETECTAR DUPLICADOS - movimentações com mesmo valor
@@ -274,12 +298,36 @@ export function analisarDuplicadosParciais(
     }
   }
 
+  // 4. DETECTAR DÉBITOS PENDENTES - correspondentes a contas a pagar
+  for (const mov of debitosPendentesLista) {
+    const valorMov = Math.abs(mov.valor);
+    
+    for (const conta of contasPagarPendentes) {
+      // Match se diferença menor que R$1
+      if (Math.abs(conta.valor - valorMov) < 1) {
+        debitosPendentes.push({
+          tipo: 'debito_pendente',
+          movimentacao: {
+            id: mov.id,
+            descricao: mov.descricao,
+            valor: valorMov,
+            data: formatDate(mov.data_movimentacao)
+          },
+          contaPagar: conta,
+          mensagem: `Débito corresponde a: ${conta.descricao}${conta.fornecedor ? ` (${conta.fornecedor})` : ''}`
+        });
+        break; // Só uma correspondência por movimentação
+      }
+    }
+  }
+
   return {
     duplicados,
     parciais,
     agrupados,
     excedentes,
-    totalAlertas: duplicados.length + parciais.length + agrupados.length + excedentes.length
+    debitosPendentes,
+    totalAlertas: duplicados.length + parciais.length + agrupados.length + excedentes.length + debitosPendentes.length
   };
 }
 
