@@ -58,6 +58,8 @@ import { DialogConciliarComPagamento } from './dialogs/DialogConciliarComPagamen
 import { AlertasReconciliacao } from './AlertasReconciliacao';
 import { AlertasOrcamentosConciliacao } from './AlertasOrcamentosConciliacao';
 import { SugestoesConciliacao } from './SugestoesConciliacao';
+import { DialogGerenciarPadroes } from './dialogs/DialogGerenciarPadroes';
+import { usePadroesConciliacao } from '@/hooks/usePadroesConciliacao';
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -68,6 +70,7 @@ type StatusFilter = 'todos' | 'conciliados' | 'pendentes' | 'ignorados';
 export function ConciliacaoBancaria() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { verificarMatchesAlta } = usePadroesConciliacao();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [extratoSelecionado, setExtratoSelecionado] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('todos');
@@ -248,7 +251,7 @@ export function ConciliacaoBancaria() {
         throw err;
       }
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       toast.success(`Extrato importado com ${data.count} movimentações`);
       queryClient.invalidateQueries({ queryKey: ['extratos-bancarios'] });
       queryClient.invalidateQueries({ queryKey: ['movimentacoes-extrato'] });
@@ -256,6 +259,44 @@ export function ConciliacaoBancaria() {
       setPreviaOpen(false);
       setDadosPrevia(null);
       setArquivoPrevia(null);
+
+      // Verificar matches de alta probabilidade e criar notificações
+      if (user) {
+        const { data: movsCriadas } = await supabase
+          .from('movimentacoes_extrato')
+          .select('id, descricao, valor, tipo, conciliado, ignorado')
+          .eq('extrato_id', data.extrato.id);
+
+        if (movsCriadas && movsCriadas.length > 0) {
+          const matches = verificarMatchesAlta(movsCriadas.map(m => ({
+            id: m.id,
+            descricao: m.descricao,
+            valor: Number(m.valor),
+            tipo: m.tipo || 'debito',
+            conciliado: m.conciliado,
+            ignorado: m.ignorado
+          })));
+
+          // Criar notificações para matches de alta probabilidade
+          if (matches.length > 0) {
+            const notificacoesInsert = matches.slice(0, 5).map(match => ({
+              user_id: user.id,
+              tipo: 'match_padrao',
+              titulo: 'Sugestão de conciliação',
+              mensagem: `"${match.descricao.substring(0, 40)}..." pode ser ${match.categoria?.nome || match.padrao.tipo_conciliacao} (${match.matchScore}% confiança)`,
+              prioridade: 'alta',
+              referencia_tipo: 'extrato',
+              referencia_id: data.extrato.id
+            }));
+
+            await supabase.from('notificacoes').insert(notificacoesInsert);
+            
+            if (matches.length > 0) {
+              toast.info(`${matches.length} sugestão(ões) de conciliação detectada(s)`);
+            }
+          }
+        }
+      }
     },
     onError: (error: Error) => {
       toast.error('Erro ao importar: ' + error.message);
@@ -611,6 +652,7 @@ export function ConciliacaoBancaria() {
             
             <DialogGerenciarImportacoes onSelectExtrato={setExtratoSelecionado} />
             <DialogRegrasConciliacao />
+            <DialogGerenciarPadroes />
             
             {extratos.length > 0 && (
               <Select value={extratoSelecionado || ''} onValueChange={setExtratoSelecionado}>

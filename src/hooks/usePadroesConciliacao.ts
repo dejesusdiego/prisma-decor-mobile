@@ -60,6 +60,15 @@ function calcularMatchScore(descricaoExtrato: string, padraoDescricao: string): 
   return Math.round(baseScore);
 }
 
+export interface MatchAltaProbabilidade {
+  movimentacaoId: string;
+  descricao: string;
+  valor: number;
+  padrao: PadraoConciliacao;
+  matchScore: number;
+  categoria?: { id: string; nome: string; tipo: string };
+}
+
 export function usePadroesConciliacao() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -89,6 +98,45 @@ export function usePadroesConciliacao() {
     },
     enabled: !!user
   });
+
+  // Verificar matches de alta probabilidade para movimentações
+  const verificarMatchesAlta = (movimentacoes: Array<{
+    id: string;
+    descricao: string;
+    valor: number;
+    tipo: string;
+    conciliado?: boolean;
+    ignorado?: boolean;
+  }>): MatchAltaProbabilidade[] => {
+    const matches: MatchAltaProbabilidade[] = [];
+
+    for (const mov of movimentacoes) {
+      if (mov.conciliado || mov.ignorado) continue;
+
+      const tipoLancamento = mov.tipo === 'credito' ? 'entrada' : 'saida';
+      
+      for (const padrao of padroes) {
+        if (padrao.tipo_lancamento && padrao.tipo_lancamento !== tipoLancamento) continue;
+
+        const matchScore = calcularMatchScore(mov.descricao, padrao.padrao_descricao);
+        
+        // Alta probabilidade: score >= 70%
+        if (matchScore >= 70) {
+          matches.push({
+            movimentacaoId: mov.id,
+            descricao: mov.descricao,
+            valor: mov.valor,
+            padrao,
+            matchScore,
+            categoria: (padrao as any).categoria
+          });
+          break; // Um match por movimentação
+        }
+      }
+    }
+
+    return matches;
+  };
 
   // Buscar sugestões baseadas em padrões para uma descrição
   const buscarSugestoesPorPadrao = (descricaoExtrato: string, tipoMovimento: 'credito' | 'debito'): SugestaoPadrao[] => {
@@ -210,6 +258,7 @@ export function usePadroesConciliacao() {
     padroes,
     isLoading,
     buscarSugestoesPorPadrao,
+    verificarMatchesAlta,
     salvarPadrao: salvarPadraoMutation.mutate,
     desativarPadrao: desativarPadraoMutation.mutate
   };
