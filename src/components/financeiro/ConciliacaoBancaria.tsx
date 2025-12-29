@@ -12,9 +12,9 @@ import {
   AlertCircle,
   Link2,
   Link2Off,
-  Eye,
-  Trash2,
-  RefreshCw
+  RefreshCw,
+  Plus,
+  Zap
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -42,10 +42,14 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
-import { parseExtrato, autoMatch } from './utils/parserOFX';
+import { parseExtrato, autoMatch, DadosExtrato } from './utils/parserOFX';
+import { buscarRegrasAtivas, aplicarRegrasMovimentacoes } from './utils/aplicarRegras';
 import { DialogConciliarManual } from './dialogs/DialogConciliarManual';
+import { DialogPreviaExtrato } from './dialogs/DialogPreviaExtrato';
+import { DialogRegrasConciliacao } from './dialogs/DialogRegrasConciliacao';
+import { DialogCriarLancamentoDeExtrato } from './dialogs/DialogCriarLancamentoDeExtrato';
+import { DialogGerenciarImportacoes } from './dialogs/DialogGerenciarImportacoes';
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -61,9 +65,18 @@ export function ConciliacaoBancaria() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('todos');
   const [dialogConciliarOpen, setDialogConciliarOpen] = useState(false);
   const [movimentacaoParaConciliar, setMovimentacaoParaConciliar] = useState<any>(null);
+  
+  // Preview state
+  const [previaOpen, setPreviaOpen] = useState(false);
+  const [dadosPrevia, setDadosPrevia] = useState<DadosExtrato | null>(null);
+  const [arquivoPrevia, setArquivoPrevia] = useState<File | null>(null);
+  
+  // Criar lançamento state
+  const [criarLancamentoOpen, setCriarLancamentoOpen] = useState(false);
+  const [movimentacaoParaLancamento, setMovimentacaoParaLancamento] = useState<any>(null);
 
   // Buscar extratos importados
-  const { data: extratos = [], isLoading: loadingExtratos } = useQuery({
+  const { data: extratos = [] } = useQuery({
     queryKey: ['extratos-bancarios'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -103,38 +116,50 @@ export function ConciliacaoBancaria() {
     conciliados: movimentacoes.filter(m => m.conciliado).length,
     pendentes: movimentacoes.filter(m => !m.conciliado && !m.ignorado).length,
     ignorados: movimentacoes.filter(m => m.ignorado).length,
-    valorTotal: movimentacoes.reduce((acc, m) => acc + (m.tipo === 'credito' ? Number(m.valor) : -Number(m.valor)), 0),
-    valorConciliado: movimentacoes.filter(m => m.conciliado).reduce((acc, m) => acc + Number(m.valor), 0)
   };
 
   const percentualConciliado = estatisticas.total > 0 
     ? (estatisticas.conciliados / estatisticas.total) * 100 
     : 0;
 
-  // Upload de arquivo
+  // Processar arquivo para prévia
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      file.text().then(content => {
+        try {
+          const dados = parseExtrato(content, file.name);
+          setDadosPrevia(dados);
+          setArquivoPrevia(file);
+          setPreviaOpen(true);
+        } catch (err: any) {
+          toast.error('Erro ao processar arquivo: ' + err.message);
+        }
+      });
+    }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  // Upload após confirmação da prévia
   const uploadMutation = useMutation({
-    mutationFn: async (file: File) => {
-      const content = await file.text();
-      const dados = parseExtrato(content, file.name);
+    mutationFn: async () => {
+      if (!dadosPrevia || !arquivoPrevia || !user) throw new Error('Dados inválidos');
 
-      if (dados.movimentacoes.length === 0) {
-        throw new Error('Nenhuma movimentação encontrada no arquivo');
-      }
-
-      // Criar extrato e inserir movimentações (com rollback se falhar)
       let extratoId: string | null = null;
 
       try {
         const { data: extrato, error: extratoError } = await supabase
           .from('extratos_bancarios')
           .insert({
-            nome_arquivo: file.name,
-            banco: dados.banco,
-            conta: dados.conta,
-            data_inicio: dados.data_inicio,
-            data_fim: dados.data_fim,
+            nome_arquivo: arquivoPrevia.name,
+            banco: dadosPrevia.banco,
+            conta: dadosPrevia.conta,
+            data_inicio: dadosPrevia.data_inicio,
+            data_fim: dadosPrevia.data_fim,
             status: 'concluido',
-            created_by_user_id: user?.id,
+            created_by_user_id: user.id,
           })
           .select()
           .single();
@@ -142,26 +167,19 @@ export function ConciliacaoBancaria() {
         if (extratoError) throw extratoError;
         extratoId = extrato.id;
 
-        // Inserir movimentações - filtrar inválidas (NaN/Infinity viram null no JSON)
-        const movimentacoesInsert = dados.movimentacoes
-          .map((m) => {
-            const valor = Number(m.valor);
-            if (!m.data_movimentacao) return null;
-            if (!Number.isFinite(valor)) return null;
-
-            return {
-              extrato_id: extrato.id,
-              data_movimentacao: m.data_movimentacao,
-              descricao: m.descricao || 'Sem descrição',
-              valor,
-              tipo: m.tipo,
-              numero_documento: m.numero_documento,
-            };
-          })
-          .filter(Boolean);
+        const movimentacoesInsert = dadosPrevia.movimentacoes
+          .filter(m => m.data_movimentacao && Number.isFinite(m.valor))
+          .map(m => ({
+            extrato_id: extrato.id,
+            data_movimentacao: m.data_movimentacao,
+            descricao: m.descricao || 'Sem descrição',
+            valor: m.valor,
+            tipo: m.tipo,
+            numero_documento: m.numero_documento,
+          }));
 
         if (movimentacoesInsert.length === 0) {
-          throw new Error('Nenhuma movimentação válida encontrada no arquivo');
+          throw new Error('Nenhuma movimentação válida');
         }
 
         const { error: movError } = await supabase
@@ -169,6 +187,22 @@ export function ConciliacaoBancaria() {
           .insert(movimentacoesInsert);
 
         if (movError) throw movError;
+
+        // Aplicar regras automáticas
+        const regras = await buscarRegrasAtivas();
+        if (regras.length > 0) {
+          const { data: movsCriadas } = await supabase
+            .from('movimentacoes_extrato')
+            .select('id, descricao, valor, data_movimentacao, tipo, conciliado, ignorado')
+            .eq('extrato_id', extrato.id);
+
+          if (movsCriadas) {
+            const resultados = await aplicarRegrasMovimentacoes(movsCriadas as any, regras, user.id);
+            if (resultados.length > 0) {
+              toast.info(`${resultados.length} regra(s) aplicada(s) automaticamente`);
+            }
+          }
+        }
 
         return { extrato, count: movimentacoesInsert.length };
       } catch (err) {
@@ -179,12 +213,16 @@ export function ConciliacaoBancaria() {
       }
     },
     onSuccess: (data) => {
-      toast.success(`Extrato importado com ${data.count} movimentações válidas`);
+      toast.success(`Extrato importado com ${data.count} movimentações`);
       queryClient.invalidateQueries({ queryKey: ['extratos-bancarios'] });
+      queryClient.invalidateQueries({ queryKey: ['movimentacoes-extrato'] });
       setExtratoSelecionado(data.extrato.id);
+      setPreviaOpen(false);
+      setDadosPrevia(null);
+      setArquivoPrevia(null);
     },
     onError: (error: Error) => {
-      toast.error('Erro ao importar extrato: ' + error.message);
+      toast.error('Erro ao importar: ' + error.message);
     },
   });
 
@@ -194,8 +232,6 @@ export function ConciliacaoBancaria() {
       if (!extratoSelecionado) return;
       
       const movPendentes = movimentacoes.filter(m => !m.conciliado && !m.ignorado);
-      
-      // Buscar lançamentos no período
       const extrato = extratos.find(e => e.id === extratoSelecionado);
       if (!extrato) return;
       
@@ -207,7 +243,6 @@ export function ConciliacaoBancaria() {
       
       if (!lancamentos || lancamentos.length === 0) return;
       
-      // Buscar IDs já conciliados
       const { data: jaConciliados } = await supabase
         .from('movimentacoes_extrato')
         .select('lancamento_id')
@@ -232,14 +267,10 @@ export function ConciliacaoBancaria() {
       
       const matches = autoMatch(movParaMatch, lancParaMatch);
       
-      // Aplicar matches
       for (const match of matches) {
         await supabase
           .from('movimentacoes_extrato')
-          .update({ 
-            lancamento_id: match.lancamentoId,
-            conciliado: true 
-          })
+          .update({ lancamento_id: match.lancamentoId, conciliado: true })
           .eq('id', match.movimentacaoId);
       }
       
@@ -247,9 +278,28 @@ export function ConciliacaoBancaria() {
     },
     onSuccess: (count) => {
       if (count && count > 0) {
-        toast.success(`${count} movimentação(ões) conciliada(s) automaticamente`);
+        toast.success(`${count} movimentação(ões) conciliada(s)`);
       } else {
-        toast.info('Nenhuma correspondência automática encontrada');
+        toast.info('Nenhuma correspondência encontrada');
+      }
+      queryClient.invalidateQueries({ queryKey: ['movimentacoes-extrato'] });
+    }
+  });
+
+  // Aplicar regras aos pendentes
+  const aplicarRegrasMutation = useMutation({
+    mutationFn: async () => {
+      if (!user) return 0;
+      const regras = await buscarRegrasAtivas();
+      const pendentes = movimentacoes.filter(m => !m.conciliado && !m.ignorado);
+      const resultados = await aplicarRegrasMovimentacoes(pendentes as any, regras, user.id);
+      return resultados.length;
+    },
+    onSuccess: (count) => {
+      if (count > 0) {
+        toast.success(`${count} regra(s) aplicada(s)`);
+      } else {
+        toast.info('Nenhuma regra correspondeu');
       }
       queryClient.invalidateQueries({ queryKey: ['movimentacoes-extrato'] });
     }
@@ -262,7 +312,6 @@ export function ConciliacaoBancaria() {
         .from('movimentacoes_extrato')
         .update({ ignorado: true })
         .eq('id', id);
-      
       if (error) throw error;
     },
     onSuccess: () => {
@@ -271,39 +320,24 @@ export function ConciliacaoBancaria() {
     }
   });
 
-  // Desfazer conciliação
-  const desfazerConciliacaoMutation = useMutation({
+  // Desfazer
+  const desfazerMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
         .from('movimentacoes_extrato')
-        .update({ 
-          lancamento_id: null,
-          conciliado: false,
-          ignorado: false 
-        })
+        .update({ lancamento_id: null, conciliado: false, ignorado: false })
         .eq('id', id);
-      
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success('Conciliação desfeita');
+      toast.success('Desfeito');
       queryClient.invalidateQueries({ queryKey: ['movimentacoes-extrato'] });
     }
   });
 
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      uploadMutation.mutate(file);
-    }
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
-
-  const handleConciliarManual = (movimentacao: any) => {
-    setMovimentacaoParaConciliar(movimentacao);
-    setDialogConciliarOpen(true);
+  const handleCriarLancamento = (mov: any) => {
+    setMovimentacaoParaLancamento(mov);
+    setCriarLancamentoOpen(true);
   };
 
   const movimentacoesFiltradas = movimentacoes.filter(m => {
@@ -320,14 +354,14 @@ export function ConciliacaoBancaria() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Upload className="h-5 w-5" />
-            Importar Extrato Bancário
+            Conciliação Bancária
           </CardTitle>
           <CardDescription>
-            Faça upload de arquivos OFX ou CSV para conciliar com os lançamentos do sistema
+            Importe extratos OFX/CSV e concilie com os lançamentos do sistema
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex flex-wrap gap-2">
             <input
               ref={fileInputRef}
               type="file"
@@ -335,28 +369,23 @@ export function ConciliacaoBancaria() {
               onChange={handleFileSelect}
               className="hidden"
             />
-            <Button 
-              variant="outline" 
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploadMutation.isPending}
-              className="w-full sm:w-auto"
-            >
+            <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
               <FileText className="h-4 w-4 mr-2" />
-              {uploadMutation.isPending ? 'Processando...' : 'Selecionar Arquivo (OFX/CSV)'}
+              Importar Extrato
             </Button>
             
+            <DialogGerenciarImportacoes onSelectExtrato={setExtratoSelecionado} />
+            <DialogRegrasConciliacao />
+            
             {extratos.length > 0 && (
-              <Select 
-                value={extratoSelecionado || ''} 
-                onValueChange={setExtratoSelecionado}
-              >
-                <SelectTrigger className="w-full sm:w-[300px]">
-                  <SelectValue placeholder="Selecione um extrato importado" />
+              <Select value={extratoSelecionado || ''} onValueChange={setExtratoSelecionado}>
+                <SelectTrigger className="w-[250px]">
+                  <SelectValue placeholder="Selecione um extrato" />
                 </SelectTrigger>
                 <SelectContent>
                   {extratos.map(e => (
                     <SelectItem key={e.id} value={e.id}>
-                      {e.nome_arquivo} ({format(new Date(e.created_at), "dd/MM/yyyy", { locale: ptBR })})
+                      {e.nome_arquivo} ({format(new Date(e.created_at), "dd/MM", { locale: ptBR })})
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -366,77 +395,47 @@ export function ConciliacaoBancaria() {
         </CardContent>
       </Card>
 
-      {/* Estatísticas */}
+      {/* Estatísticas e ações */}
       {extratoSelecionado && (
         <>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <Card>
               <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Total</p>
-                    <p className="text-2xl font-bold">{estatisticas.total}</p>
-                  </div>
-                  <FileText className="h-8 w-8 text-muted-foreground/50" />
-                </div>
+                <p className="text-sm text-muted-foreground">Total</p>
+                <p className="text-2xl font-bold">{estatisticas.total}</p>
               </CardContent>
             </Card>
-            
             <Card>
               <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Conciliados</p>
-                    <p className="text-2xl font-bold text-green-600">{estatisticas.conciliados}</p>
-                  </div>
-                  <CheckCircle2 className="h-8 w-8 text-green-500/50" />
-                </div>
+                <p className="text-sm text-muted-foreground">Conciliados</p>
+                <p className="text-2xl font-bold text-green-600">{estatisticas.conciliados}</p>
               </CardContent>
             </Card>
-            
             <Card>
               <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Pendentes</p>
-                    <p className="text-2xl font-bold text-amber-600">{estatisticas.pendentes}</p>
-                  </div>
-                  <AlertCircle className="h-8 w-8 text-amber-500/50" />
-                </div>
+                <p className="text-sm text-muted-foreground">Pendentes</p>
+                <p className="text-2xl font-bold text-amber-600">{estatisticas.pendentes}</p>
               </CardContent>
             </Card>
-            
             <Card>
               <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Ignorados</p>
-                    <p className="text-2xl font-bold text-muted-foreground">{estatisticas.ignorados}</p>
-                  </div>
-                  <XCircle className="h-8 w-8 text-muted-foreground/50" />
-                </div>
+                <p className="text-sm text-muted-foreground">Ignorados</p>
+                <p className="text-2xl font-bold text-muted-foreground">{estatisticas.ignorados}</p>
               </CardContent>
             </Card>
           </div>
 
-          {/* Progresso */}
           <Card>
             <CardContent className="pt-6">
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>Progresso da Conciliação</span>
-                  <span className="font-medium">{percentualConciliado.toFixed(0)}%</span>
-                </div>
-                <Progress value={percentualConciliado} className="h-2" />
-                <p className="text-xs text-muted-foreground">
-                  {estatisticas.conciliados} de {estatisticas.total} movimentações conciliadas
-                </p>
+              <div className="flex justify-between text-sm mb-2">
+                <span>Progresso</span>
+                <span>{percentualConciliado.toFixed(0)}%</span>
               </div>
+              <Progress value={percentualConciliado} className="h-2" />
             </CardContent>
           </Card>
 
-          {/* Ações e Filtros */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-between">
+          <div className="flex flex-wrap gap-2 justify-between">
             <div className="flex gap-2">
               <Button 
                 variant="outline" 
@@ -446,10 +445,18 @@ export function ConciliacaoBancaria() {
                 <RefreshCw className={`h-4 w-4 mr-2 ${autoConciliarMutation.isPending ? 'animate-spin' : ''}`} />
                 Auto-Conciliar
               </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => aplicarRegrasMutation.mutate()}
+                disabled={aplicarRegrasMutation.isPending || estatisticas.pendentes === 0}
+              >
+                <Zap className="h-4 w-4 mr-2" />
+                Aplicar Regras
+              </Button>
             </div>
             
             <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-[150px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -461,18 +468,18 @@ export function ConciliacaoBancaria() {
             </Select>
           </div>
 
-          {/* Tabela de Movimentações */}
+          {/* Tabela */}
           <Card>
             <CardContent className="p-0">
-              <ScrollArea className="h-[500px]">
+              <ScrollArea className="h-[400px]">
                 {loadingMovimentacoes ? (
-                  <div className="flex items-center justify-center py-12">
+                  <div className="flex justify-center py-12">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
                   </div>
                 ) : movimentacoesFiltradas.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-                    <FileText className="h-12 w-12 mb-4 opacity-30" />
-                    <p>Nenhuma movimentação encontrada</p>
+                  <div className="text-center py-12 text-muted-foreground">
+                    <FileText className="h-12 w-12 mx-auto mb-4 opacity-30" />
+                    <p>Nenhuma movimentação</p>
                   </div>
                 ) : (
                   <Table>
@@ -480,9 +487,9 @@ export function ConciliacaoBancaria() {
                       <TableRow>
                         <TableHead>Status</TableHead>
                         <TableHead>Data</TableHead>
-                        <TableHead>Descrição Extrato</TableHead>
+                        <TableHead>Descrição</TableHead>
                         <TableHead className="text-right">Valor</TableHead>
-                        <TableHead>Lançamento Vinculado</TableHead>
+                        <TableHead>Vinculado</TableHead>
                         <TableHead className="text-right">Ações</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -491,42 +498,22 @@ export function ConciliacaoBancaria() {
                         <TableRow key={mov.id} className={mov.ignorado ? 'opacity-50' : ''}>
                           <TableCell>
                             {mov.conciliado ? (
-                              <Badge variant="default" className="bg-green-500">
-                                <CheckCircle2 className="h-3 w-3 mr-1" />
-                                Conciliado
-                              </Badge>
+                              <Badge className="bg-green-500"><CheckCircle2 className="h-3 w-3 mr-1" />OK</Badge>
                             ) : mov.ignorado ? (
-                              <Badge variant="secondary">
-                                <XCircle className="h-3 w-3 mr-1" />
-                                Ignorado
-                              </Badge>
+                              <Badge variant="secondary"><XCircle className="h-3 w-3 mr-1" />Ign</Badge>
                             ) : (
-                              <Badge variant="outline" className="text-amber-600 border-amber-300">
-                                <AlertCircle className="h-3 w-3 mr-1" />
-                                Pendente
-                              </Badge>
+                              <Badge variant="outline" className="text-amber-600"><AlertCircle className="h-3 w-3 mr-1" />Pend</Badge>
                             )}
                           </TableCell>
-                          <TableCell>
-                            {format(new Date(mov.data_movimentacao), "dd/MM/yyyy")}
-                          </TableCell>
-                          <TableCell className="max-w-[200px] truncate">
-                            {mov.descricao}
-                          </TableCell>
+                          <TableCell>{format(new Date(mov.data_movimentacao), "dd/MM/yy")}</TableCell>
+                          <TableCell className="max-w-[180px] truncate">{mov.descricao}</TableCell>
                           <TableCell className={`text-right font-medium ${mov.tipo === 'credito' ? 'text-green-600' : 'text-red-600'}`}>
-                            {mov.tipo === 'credito' ? '+' : '-'} {formatCurrency(Number(mov.valor))}
+                            {mov.tipo === 'credito' ? '+' : '-'}{formatCurrency(Number(mov.valor))}
                           </TableCell>
                           <TableCell>
                             {mov.lancamento ? (
-                              <div className="text-sm">
-                                <p className="font-medium">{mov.lancamento.descricao}</p>
-                                <p className="text-muted-foreground text-xs">
-                                  {format(new Date(mov.lancamento.data_lancamento), "dd/MM/yyyy")} - {formatCurrency(Number(mov.lancamento.valor))}
-                                </p>
-                              </div>
-                            ) : (
-                              <span className="text-muted-foreground">-</span>
-                            )}
+                              <span className="text-xs">{mov.lancamento.descricao}</span>
+                            ) : '-'}
                           </TableCell>
                           <TableCell>
                             <div className="flex justify-end gap-1">
@@ -535,24 +522,23 @@ export function ConciliacaoBancaria() {
                                   <>
                                     <Tooltip>
                                       <TooltipTrigger asChild>
-                                        <Button 
-                                          variant="ghost" 
-                                          size="icon"
-                                          onClick={() => handleConciliarManual(mov)}
-                                        >
+                                        <Button variant="ghost" size="icon" onClick={() => handleCriarLancamento(mov)}>
+                                          <Plus className="h-4 w-4" />
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>Criar lançamento</TooltipContent>
+                                    </Tooltip>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button variant="ghost" size="icon" onClick={() => { setMovimentacaoParaConciliar(mov); setDialogConciliarOpen(true); }}>
                                           <Link2 className="h-4 w-4" />
                                         </Button>
                                       </TooltipTrigger>
-                                      <TooltipContent>Conciliar manualmente</TooltipContent>
+                                      <TooltipContent>Conciliar</TooltipContent>
                                     </Tooltip>
-                                    
                                     <Tooltip>
                                       <TooltipTrigger asChild>
-                                        <Button 
-                                          variant="ghost" 
-                                          size="icon"
-                                          onClick={() => ignorarMutation.mutate(mov.id)}
-                                        >
+                                        <Button variant="ghost" size="icon" onClick={() => ignorarMutation.mutate(mov.id)}>
                                           <XCircle className="h-4 w-4" />
                                         </Button>
                                       </TooltipTrigger>
@@ -560,15 +546,10 @@ export function ConciliacaoBancaria() {
                                     </Tooltip>
                                   </>
                                 )}
-                                
                                 {(mov.conciliado || mov.ignorado) && (
                                   <Tooltip>
                                     <TooltipTrigger asChild>
-                                      <Button 
-                                        variant="ghost" 
-                                        size="icon"
-                                        onClick={() => desfazerConciliacaoMutation.mutate(mov.id)}
-                                      >
+                                      <Button variant="ghost" size="icon" onClick={() => desfazerMutation.mutate(mov.id)}>
                                         <Link2Off className="h-4 w-4" />
                                       </Button>
                                     </TooltipTrigger>
@@ -589,11 +570,26 @@ export function ConciliacaoBancaria() {
         </>
       )}
 
-      {/* Dialog de Conciliação Manual */}
+      {/* Dialogs */}
       <DialogConciliarManual
         open={dialogConciliarOpen}
         onOpenChange={setDialogConciliarOpen}
         movimentacao={movimentacaoParaConciliar}
+      />
+      
+      <DialogPreviaExtrato
+        open={previaOpen}
+        onOpenChange={setPreviaOpen}
+        dados={dadosPrevia}
+        nomeArquivo={arquivoPrevia?.name || ''}
+        onConfirmar={() => uploadMutation.mutate()}
+        isLoading={uploadMutation.isPending}
+      />
+      
+      <DialogCriarLancamentoDeExtrato
+        open={criarLancamentoOpen}
+        onOpenChange={setCriarLancamentoOpen}
+        movimentacao={movimentacaoParaLancamento}
       />
     </div>
   );
