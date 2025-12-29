@@ -116,60 +116,76 @@ export function ConciliacaoBancaria() {
     mutationFn: async (file: File) => {
       const content = await file.text();
       const dados = parseExtrato(content, file.name);
-      
+
       if (dados.movimentacoes.length === 0) {
         throw new Error('Nenhuma movimentação encontrada no arquivo');
       }
-      
-      // Criar extrato
-      const { data: extrato, error: extratoError } = await supabase
-        .from('extratos_bancarios')
-        .insert({
-          nome_arquivo: file.name,
-          banco: dados.banco,
-          conta: dados.conta,
-          data_inicio: dados.data_inicio,
-          data_fim: dados.data_fim,
-          status: 'concluido',
-          created_by_user_id: user?.id
-        })
-        .select()
-        .single();
-      
-      if (extratoError) throw extratoError;
-      
-      // Inserir movimentações - filtrar inválidas
-      const movimentacoesInsert = dados.movimentacoes
-        .filter(m => m.valor != null && !isNaN(m.valor) && m.data_movimentacao)
-        .map(m => ({
-          extrato_id: extrato.id,
-          data_movimentacao: m.data_movimentacao,
-          descricao: m.descricao || 'Sem descrição',
-          valor: m.valor,
-          tipo: m.tipo,
-          numero_documento: m.numero_documento
-        }));
-      
-      if (movimentacoesInsert.length === 0) {
-        throw new Error('Nenhuma movimentação válida encontrada no arquivo');
+
+      // Criar extrato e inserir movimentações (com rollback se falhar)
+      let extratoId: string | null = null;
+
+      try {
+        const { data: extrato, error: extratoError } = await supabase
+          .from('extratos_bancarios')
+          .insert({
+            nome_arquivo: file.name,
+            banco: dados.banco,
+            conta: dados.conta,
+            data_inicio: dados.data_inicio,
+            data_fim: dados.data_fim,
+            status: 'concluido',
+            created_by_user_id: user?.id,
+          })
+          .select()
+          .single();
+
+        if (extratoError) throw extratoError;
+        extratoId = extrato.id;
+
+        // Inserir movimentações - filtrar inválidas (NaN/Infinity viram null no JSON)
+        const movimentacoesInsert = dados.movimentacoes
+          .map((m) => {
+            const valor = Number(m.valor);
+            if (!m.data_movimentacao) return null;
+            if (!Number.isFinite(valor)) return null;
+
+            return {
+              extrato_id: extrato.id,
+              data_movimentacao: m.data_movimentacao,
+              descricao: m.descricao || 'Sem descrição',
+              valor,
+              tipo: m.tipo,
+              numero_documento: m.numero_documento,
+            };
+          })
+          .filter(Boolean);
+
+        if (movimentacoesInsert.length === 0) {
+          throw new Error('Nenhuma movimentação válida encontrada no arquivo');
+        }
+
+        const { error: movError } = await supabase
+          .from('movimentacoes_extrato')
+          .insert(movimentacoesInsert);
+
+        if (movError) throw movError;
+
+        return { extrato, count: movimentacoesInsert.length };
+      } catch (err) {
+        if (extratoId) {
+          await supabase.from('extratos_bancarios').delete().eq('id', extratoId);
+        }
+        throw err;
       }
-      
-      const { error: movError } = await supabase
-        .from('movimentacoes_extrato')
-        .insert(movimentacoesInsert);
-      
-      if (movError) throw movError;
-      
-      return { extrato, count: dados.movimentacoes.length };
     },
     onSuccess: (data) => {
-      toast.success(`Extrato importado com ${data.count} movimentações`);
+      toast.success(`Extrato importado com ${data.count} movimentações válidas`);
       queryClient.invalidateQueries({ queryKey: ['extratos-bancarios'] });
       setExtratoSelecionado(data.extrato.id);
     },
     onError: (error: Error) => {
       toast.error('Erro ao importar extrato: ' + error.message);
-    }
+    },
   });
 
   // Auto-conciliar
