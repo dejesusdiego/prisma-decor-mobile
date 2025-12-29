@@ -45,13 +45,14 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import { parseExtrato, autoMatch, DadosExtrato } from './utils/parserOFX';
-import { buscarRegrasAtivas, aplicarRegrasMovimentacoes, criarRegrasPadrao } from './utils/aplicarRegras';
+import { buscarRegrasAtivas, aplicarRegrasMovimentacoes, criarRegrasPadrao, analisarDuplicadosParciais, AnaliseReconciliacao, ParcelaParaAnalise } from './utils/aplicarRegras';
 import { DialogConciliarManual } from './dialogs/DialogConciliarManual';
 import { DialogPreviaExtrato } from './dialogs/DialogPreviaExtrato';
 import { DialogRegrasConciliacao } from './dialogs/DialogRegrasConciliacao';
 import { DialogCriarLancamentoDeExtrato } from './dialogs/DialogCriarLancamentoDeExtrato';
 import { DialogGerenciarImportacoes } from './dialogs/DialogGerenciarImportacoes';
 import { DialogConciliarComRecebimento } from './dialogs/DialogConciliarComRecebimento';
+import { AlertasReconciliacao } from './AlertasReconciliacao';
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -81,6 +82,10 @@ export function ConciliacaoBancaria() {
   const [recebimentoOpen, setRecebimentoOpen] = useState(false);
   const [movimentacaoParaRecebimento, setMovimentacaoParaRecebimento] = useState<any>(null);
   const [parcelaParaRecebimento, setParcelaParaRecebimento] = useState<any>(null);
+  const [isPagamentoParcial, setIsPagamentoParcial] = useState(false);
+
+  // Análise de duplicados/parciais
+  const [analiseReconciliacao, setAnaliseReconciliacao] = useState<AnaliseReconciliacao | null>(null);
 
   // Criar regras padrão ao carregar (uma vez por usuário)
   useEffect(() => {
@@ -268,7 +273,34 @@ export function ConciliacaoBancaria() {
         .lte('data_vencimento', extrato.data_fim || '2099-12-31');
 
       if (error) throw error;
-      return data || [];
+      
+      // Atualizar análise quando parcelas carregarem
+      const parcelas = data || [];
+      if (parcelas.length > 0 && movimentacoes.length > 0) {
+        const parcelasParaAnalise: ParcelaParaAnalise[] = parcelas.map(p => ({
+          id: p.id,
+          valor: Number(p.valor),
+          data_vencimento: p.data_vencimento,
+          numero_parcela: p.numero_parcela,
+          cliente_nome: (p.conta_receber as any)?.cliente_nome || 'Cliente',
+          orcamento_codigo: (p.conta_receber as any)?.orcamento?.codigo
+        }));
+        
+        const movParaAnalise = movimentacoes.map(m => ({
+          id: m.id,
+          descricao: m.descricao,
+          valor: Number(m.valor),
+          data_movimentacao: m.data_movimentacao,
+          tipo: m.tipo || 'debito',
+          conciliado: m.conciliado,
+          ignorado: m.ignorado
+        }));
+        
+        const analise = analisarDuplicadosParciais(movParaAnalise, parcelasParaAnalise);
+        setAnaliseReconciliacao(analise);
+      }
+      
+      return parcelas;
     },
     enabled: !!extratoSelecionado
   });
@@ -464,9 +496,10 @@ export function ConciliacaoBancaria() {
     return parcelasPendentes.find(p => Math.abs(Number(p.valor) - Number(mov.valor)) < 1);
   };
 
-  const handleRegistrarRecebimento = (mov: any, parcela: any) => {
+  const handleRegistrarRecebimento = (mov: any, parcela: any, isParcial = false) => {
     setMovimentacaoParaRecebimento(mov);
     setParcelaParaRecebimento(parcela);
+    setIsPagamentoParcial(isParcial);
     setRecebimentoOpen(true);
   };
 
