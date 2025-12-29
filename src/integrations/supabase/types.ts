@@ -598,6 +598,42 @@ export type Database = {
           },
         ]
       }
+      extratos_bancarios: {
+        Row: {
+          banco: string | null
+          conta: string | null
+          created_at: string | null
+          created_by_user_id: string
+          data_fim: string | null
+          data_inicio: string | null
+          id: string
+          nome_arquivo: string
+          status: string | null
+        }
+        Insert: {
+          banco?: string | null
+          conta?: string | null
+          created_at?: string | null
+          created_by_user_id: string
+          data_fim?: string | null
+          data_inicio?: string | null
+          id?: string
+          nome_arquivo: string
+          status?: string | null
+        }
+        Update: {
+          banco?: string | null
+          conta?: string | null
+          created_at?: string | null
+          created_by_user_id?: string
+          data_fim?: string | null
+          data_inicio?: string | null
+          id?: string
+          nome_arquivo?: string
+          status?: string | null
+        }
+        Relationships: []
+      }
       formas_pagamento: {
         Row: {
           ativo: boolean
@@ -1002,6 +1038,63 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      movimentacoes_extrato: {
+        Row: {
+          conciliado: boolean | null
+          created_at: string | null
+          data_movimentacao: string
+          descricao: string
+          extrato_id: string | null
+          id: string
+          ignorado: boolean | null
+          lancamento_id: string | null
+          numero_documento: string | null
+          tipo: string | null
+          valor: number
+        }
+        Insert: {
+          conciliado?: boolean | null
+          created_at?: string | null
+          data_movimentacao: string
+          descricao: string
+          extrato_id?: string | null
+          id?: string
+          ignorado?: boolean | null
+          lancamento_id?: string | null
+          numero_documento?: string | null
+          tipo?: string | null
+          valor: number
+        }
+        Update: {
+          conciliado?: boolean | null
+          created_at?: string | null
+          data_movimentacao?: string
+          descricao?: string
+          extrato_id?: string | null
+          id?: string
+          ignorado?: boolean | null
+          lancamento_id?: string | null
+          numero_documento?: string | null
+          tipo?: string | null
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "movimentacoes_extrato_extrato_id_fkey"
+            columns: ["extrato_id"]
+            isOneToOne: false
+            referencedRelation: "extratos_bancarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "movimentacoes_extrato_lancamento_id_fkey"
+            columns: ["lancamento_id"]
+            isOneToOne: false
+            referencedRelation: "lancamentos_financeiros"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       notificacoes: {
         Row: {
