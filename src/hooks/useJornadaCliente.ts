@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useContato, useAtividades, useOrcamentosDoContato } from '@/hooks/useCRMData';
 import { useContatoFinanceiro, useContatoPedidos } from '@/hooks/useContatoFinanceiro';
+import { useHistoricoProducaoByContato } from '@/hooks/useHistoricoProducao';
 import { differenceInDays, isBefore, addDays } from 'date-fns';
 
 export type EstagioJornada = 'lead' | 'orcamento' | 'pagamento' | 'producao' | 'instalacao' | 'pos_venda';
@@ -18,6 +19,8 @@ export interface AlertaContextual {
   titulo: string;
   descricao: string;
   prioridade: 'urgente' | 'alta' | 'normal';
+  parcelaId?: string;
+  pedidoId?: string;
   acao?: {
     label: string;
     href?: string;
@@ -26,7 +29,7 @@ export interface AlertaContextual {
 
 export interface TimelineExpandidaItem {
   id: string;
-  tipo: 'atividade' | 'orcamento' | 'pagamento' | 'producao' | 'instalacao';
+  tipo: 'atividade' | 'orcamento' | 'pagamento' | 'producao' | 'instalacao' | 'producao_historico';
   data: Date;
   titulo: string;
   subtitulo?: string;
@@ -57,7 +60,11 @@ export function useJornadaCliente(contatoId: string): JornadaCliente {
     contato?.telefone || null
   );
 
-  const isLoading = loadingContato || loadingAtividades || loadingOrcamentos || loadingFinanceiro || loadingPedidos;
+  // Buscar IDs dos pedidos para histórico de produção
+  const pedidoIds = useMemo(() => pedidos?.map(p => p.id) || [], [pedidos]);
+  const { data: historicoProducao, isLoading: loadingHistorico } = useHistoricoProducaoByContato(pedidoIds);
+
+  const isLoading = loadingContato || loadingAtividades || loadingOrcamentos || loadingFinanceiro || loadingPedidos || loadingHistorico;
 
   // Calcular estágio atual da jornada
   const { estagioAtual, estagios } = useMemo(() => {
@@ -150,6 +157,7 @@ export function useJornadaCliente(contatoId: string): JornadaCliente {
               titulo: 'Parcela atrasada',
               descricao: `Parcela ${parcela.numero_parcela} de R$ ${parcela.valor.toFixed(0)} está atrasada há ${Math.abs(diasParaVencer)} dias`,
               prioridade: 'urgente',
+              parcelaId: parcela.id,
               acao: { label: 'Registrar Pagamento' }
             });
           } else if (diasParaVencer <= 3) {
@@ -159,6 +167,7 @@ export function useJornadaCliente(contatoId: string): JornadaCliente {
               titulo: 'Parcela vencendo',
               descricao: `Parcela ${parcela.numero_parcela} de R$ ${parcela.valor.toFixed(0)} vence em ${diasParaVencer === 0 ? 'hoje' : `${diasParaVencer} dias`}`,
               prioridade: diasParaVencer === 0 ? 'urgente' : 'alta',
+              parcelaId: parcela.id,
               acao: { label: 'Registrar Pagamento' }
             });
           }
@@ -177,6 +186,7 @@ export function useJornadaCliente(contatoId: string): JornadaCliente {
             titulo: 'Pedido pronto',
             descricao: `Pedido ${pedido.numero_pedido} está pronto e aguarda instalação/entrega`,
             prioridade: 'alta',
+            pedidoId: pedido.id,
             acao: { label: 'Agendar Instalação' }
           });
         }
@@ -281,9 +291,36 @@ export function useJornadaCliente(contatoId: string): JornadaCliente {
       });
     });
 
+    // FASE 1: Adicionar histórico de produção detalhado
+    historicoProducao?.forEach(historico => {
+      // Mapear tipo de evento para ícone
+      let iconType = 'producao';
+      if (historico.status_novo === 'corte' || historico.status_novo === 'cortando') {
+        iconType = 'corte';
+      } else if (historico.status_novo === 'costura' || historico.status_novo === 'costurando') {
+        iconType = 'costura';
+      } else if (historico.status_novo === 'acabamento' || historico.status_novo === 'finalizando') {
+        iconType = 'acabamento';
+      } else if (historico.status_novo === 'qualidade') {
+        iconType = 'qualidade';
+      } else if (historico.status_novo === 'pronto' || historico.status_novo === 'pronto_instalacao') {
+        iconType = 'pronto';
+      }
+
+      items.push({
+        id: `hist-${historico.id}`,
+        tipo: 'producao_historico',
+        data: new Date(historico.data_evento),
+        titulo: `Pedido ${historico.pedido?.numero_pedido || 'N/A'}`,
+        subtitulo: historico.descricao,
+        iconType,
+        status: historico.status_novo || undefined
+      });
+    });
+
     // Ordenar por data decrescente
     return items.sort((a, b) => b.data.getTime() - a.data.getTime());
-  }, [atividades, orcamentos, financeiro, pedidos]);
+  }, [atividades, orcamentos, financeiro, pedidos, historicoProducao]);
 
   return {
     estagioAtual,

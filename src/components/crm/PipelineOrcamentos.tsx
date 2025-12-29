@@ -70,7 +70,12 @@ import {
   formatCurrency 
 } from '@/lib/mapearStatusEtapa';
 
-type ViewType = 'kanban' | 'lista' | 'grafico' | 'resumo';
+import { PipelineCompacto } from './visualizacoes/PipelineCompacto';
+import { FunilPipeline } from './visualizacoes/FunilPipeline';
+import { ListaInteligente } from './visualizacoes/ListaInteligente';
+import { GridPipeline } from './visualizacoes/GridPipeline';
+
+type ViewType = 'kanban' | 'compacto' | 'funil' | 'lista' | 'grid' | 'grafico' | 'resumo';
 
 interface OrcamentoPipeline {
   id: string;
@@ -429,7 +434,7 @@ export function PipelineOrcamentos({ onVerOrcamento, onVerContato }: PipelineOrc
           </Popover>
 
           {/* Seletor de visualização */}
-          <div className="flex items-center border rounded-lg p-1">
+          <div className="flex items-center border rounded-lg p-1 flex-wrap">
             <Button 
               variant={viewType === 'kanban' ? 'secondary' : 'ghost'} 
               size="sm"
@@ -439,12 +444,36 @@ export function PipelineOrcamentos({ onVerOrcamento, onVerContato }: PipelineOrc
               <Kanban className="h-4 w-4" />
             </Button>
             <Button 
+              variant={viewType === 'compacto' ? 'secondary' : 'ghost'} 
+              size="sm"
+              onClick={() => setViewType('compacto')}
+              title="Compacto"
+            >
+              <LayoutGrid className="h-4 w-4" />
+            </Button>
+            <Button 
+              variant={viewType === 'funil' ? 'secondary' : 'ghost'} 
+              size="sm"
+              onClick={() => setViewType('funil')}
+              title="Funil"
+            >
+              <Target className="h-4 w-4" />
+            </Button>
+            <Button 
               variant={viewType === 'lista' ? 'secondary' : 'ghost'} 
               size="sm"
               onClick={() => setViewType('lista')}
               title="Lista"
             >
               <List className="h-4 w-4" />
+            </Button>
+            <Button 
+              variant={viewType === 'grid' ? 'secondary' : 'ghost'} 
+              size="sm"
+              onClick={() => setViewType('grid')}
+              title="Grid"
+            >
+              <FileText className="h-4 w-4" />
             </Button>
             <Button 
               variant={viewType === 'grafico' ? 'secondary' : 'ghost'} 
@@ -460,7 +489,7 @@ export function PipelineOrcamentos({ onVerOrcamento, onVerContato }: PipelineOrc
               onClick={() => setViewType('resumo')}
               title="Resumo"
             >
-              <LayoutGrid className="h-4 w-4" />
+              <Calendar className="h-4 w-4" />
             </Button>
           </div>
         </div>
@@ -513,6 +542,36 @@ export function PipelineOrcamentos({ onVerOrcamento, onVerContato }: PipelineOrc
             </div>
             <ScrollBar orientation="horizontal" />
           </ScrollArea>
+        )}
+
+        {/* VISÃO COMPACTO */}
+        {viewType === 'compacto' && (
+          <PipelineCompacto
+            orcamentosPorStatus={orcamentosPorStatus}
+            statusConfig={STATUS_PIPELINE_VISIVEL}
+            onVerOrcamento={onVerOrcamento}
+            onVerContato={onVerContato}
+          />
+        )}
+
+        {/* VISÃO FUNIL */}
+        {viewType === 'funil' && (
+          <FunilPipeline
+            orcamentosPorStatus={orcamentosPorStatus}
+            statusConfig={STATUS_PIPELINE_VISIVEL}
+            onVerOrcamento={onVerOrcamento}
+            onVerContato={onVerContato}
+          />
+        )}
+
+        {/* VISÃO GRID */}
+        {viewType === 'grid' && (
+          <GridPipeline
+            orcamentos={orcamentosFiltrados}
+            statusConfig={STATUS_PIPELINE_VISIVEL}
+            onVerOrcamento={onVerOrcamento}
+            onVerContato={onVerContato}
+          />
         )}
 
         {/* VISÃO LISTA */}
