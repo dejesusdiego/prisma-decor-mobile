@@ -5,7 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 export interface Notificacao {
   id: string;
   user_id: string;
-  tipo: 'follow_up' | 'conta_vencer' | 'pedido_pronto' | 'visita_nova' | 'orcamento_vencendo' | 'pagamento_atrasado' | 'emprestimo_vencendo' | 'emprestimo_atrasado';
+  tipo: 'follow_up' | 'conta_vencer' | 'pedido_pronto' | 'visita_nova' | 'orcamento_vencendo' | 'pagamento_atrasado' | 'emprestimo_vencendo' | 'emprestimo_atrasado' | 'pagamento_parcial' | 'parcela_vencer';
   titulo: string;
   mensagem: string;
   lida: boolean;

@@ -14,12 +14,14 @@ import {
   Percent,
   Scale3D,
   RefreshCcw,
-  Landmark
+  Landmark,
+  Users
 } from 'lucide-react';
 import { RelatorioEmprestimos } from './RelatorioEmprestimos';
 import { RelatorioDescontos } from './RelatorioDescontos';
 import { RelatorioOrcadoRealizado } from './RelatorioOrcadoRealizado';
 import { ConciliacaoBancaria } from './ConciliacaoBancaria';
+import { RelatorioConciliacaoClientes } from './RelatorioConciliacaoClientes';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -370,6 +372,10 @@ export function RelatoriosBI() {
           <TabsTrigger value="conciliacao" className="gap-2">
             <Landmark className="h-4 w-4" />
             <span className="hidden sm:inline">Conciliação</span>
+          </TabsTrigger>
+          <TabsTrigger value="clientes" className="gap-2">
+            <Users className="h-4 w-4" />
+            <span className="hidden sm:inline">Clientes</span>
           </TabsTrigger>
         </TabsList>
 
@@ -802,6 +808,11 @@ export function RelatoriosBI() {
         {/* Conciliação Bancária */}
         <TabsContent value="conciliacao" className="space-y-6">
           <ConciliacaoBancaria />
+        </TabsContent>
+
+        {/* Relatório por Clientes */}
+        <TabsContent value="clientes" className="space-y-6">
+          <RelatorioConciliacaoClientes />
         </TabsContent>
       </Tabs>
     </div>
