@@ -24,6 +24,7 @@ import { RelatorioRentabilidade } from '@/components/financeiro/RelatorioRentabi
 import { Comissoes } from '@/components/financeiro/Comissoes';
 import { RelatorioVendedores } from '@/components/financeiro/RelatorioVendedores';
 import DashboardKPIs from '@/components/financeiro/DashboardKPIs';
+import { FinanceiroProvider } from '@/contexts/FinanceiroContext';
 import { PainelCRM } from '@/components/crm/PainelCRM';
 import { ListaContatos } from '@/components/crm/ListaContatos';
 import { DetalheContato } from '@/components/crm/DetalheContato';
@@ -284,24 +285,29 @@ export default function GerarOrcamento() {
 
             {view === 'calendarioGeral' && <CalendarioGeral />}
 
-            {/* Seção Financeiro */}
-            {view === 'finDashboard' && <DashboardFinanceiro onNavigate={handleNavigate} />}
-            {view === 'finFluxoPrevisto' && <FluxoCaixaPrevisto onNavigate={handleNavigate} />}
-            {view === 'finRentabilidade' && (
-              <RelatorioRentabilidade onVisualizarOrcamento={handleVisualizarOrcamento} onNavigate={handleNavigate} />
+            {/* Seção Financeiro - envolta com Provider para estado global do período */}
+            {view.startsWith('fin') && (
+              <FinanceiroProvider>
+                {view === 'finDashboard' && <DashboardFinanceiro onNavigate={handleNavigate} />}
+                {view === 'finFluxoPrevisto' && <FluxoCaixaPrevisto onNavigate={handleNavigate} />}
+                {view === 'finRentabilidade' && (
+                  <RelatorioRentabilidade onVisualizarOrcamento={handleVisualizarOrcamento} onNavigate={handleNavigate} />
+                )}
+                {view === 'finComissoes' && (
+                  <Comissoes onVisualizarOrcamento={handleVisualizarOrcamento} onNavigate={handleNavigate} />
+                )}
+                {view === 'finVendedores' && (
+                  <RelatorioVendedores onVisualizarOrcamento={handleVisualizarOrcamento} onNavigate={handleNavigate} />
+                )}
+                {view === 'finContasPagar' && (
+                  <ContasPagar onVisualizarOrcamento={handleVisualizarOrcamento} onNavigate={handleNavigate} />
+                )}
+                {view === 'finContasReceber' && <ContasReceber onNavigate={handleNavigate} />}
+                {view === 'finLancamentos' && <Lancamentos onNavigate={handleNavigate} />}
+                {view === 'finRelatorios' && <RelatoriosBI onNavigate={handleNavigate} />}
+                {view === 'finKPIs' && <DashboardKPIs />}
+              </FinanceiroProvider>
             )}
-            {view === 'finComissoes' && (
-              <Comissoes onVisualizarOrcamento={handleVisualizarOrcamento} onNavigate={handleNavigate} />
-            )}
-            {view === 'finVendedores' && (
-              <RelatorioVendedores onVisualizarOrcamento={handleVisualizarOrcamento} onNavigate={handleNavigate} />
-            )}
-            {view === 'finContasPagar' && (
-              <ContasPagar onVisualizarOrcamento={handleVisualizarOrcamento} onNavigate={handleNavigate} />
-            )}
-            {view === 'finContasReceber' && <ContasReceber onNavigate={handleNavigate} />}
-            {view === 'finLancamentos' && <Lancamentos onNavigate={handleNavigate} />}
-            {view === 'finRelatorios' && <RelatoriosBI onNavigate={handleNavigate} />}
 
             {/* Administração */}
             {view === 'categoriasFormas' && <CategoriasFormas />}
@@ -331,7 +337,6 @@ export default function GerarOrcamento() {
             )}
             {view === 'crmRelatorios' && <RelatoriosCRM />}
             {view === 'crmAtividades' && <ListaAtividades />}
-            {view === 'finKPIs' && <DashboardKPIs />}
 
             {/* Produção */}
             {view === 'prodDashboard' && (
