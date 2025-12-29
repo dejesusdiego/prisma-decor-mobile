@@ -56,6 +56,8 @@ import { DialogGerenciarImportacoes } from './dialogs/DialogGerenciarImportacoes
 import { DialogConciliarComRecebimento } from './dialogs/DialogConciliarComRecebimento';
 import { DialogConciliarComPagamento } from './dialogs/DialogConciliarComPagamento';
 import { AlertasReconciliacao } from './AlertasReconciliacao';
+import { AlertasOrcamentosConciliacao } from './AlertasOrcamentosConciliacao';
+import { SugestoesConciliacao } from './SugestoesConciliacao';
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -670,6 +672,9 @@ export function ConciliacaoBancaria() {
 
           {/* Alertas de Duplicados/Parciais */}
           <AlertasReconciliacao analise={analiseReconciliacao} />
+          
+          {/* Alertas de Orçamentos */}
+          <AlertasOrcamentosConciliacao />
 
           <div className="flex flex-wrap gap-2 justify-between">
             <div className="flex gap-2">
