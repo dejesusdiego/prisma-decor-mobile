@@ -41,6 +41,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { DialogComissao } from './dialogs/DialogComissao';
+import { BreadcrumbsFinanceiro } from './BreadcrumbsFinanceiro';
 import {
   BarChart,
   Bar,
@@ -66,9 +67,10 @@ const COLORS = ['hsl(var(--primary))', 'hsl(142.1 76.2% 36.3%)', 'hsl(221.2 83.2
 
 interface ComissoesProps {
   onVisualizarOrcamento?: (orcamentoId: string) => void;
+  onNavigate?: (view: string) => void;
 }
 
-export function Comissoes({ onVisualizarOrcamento }: ComissoesProps) {
+export function Comissoes({ onVisualizarOrcamento, onNavigate }: ComissoesProps) {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('todos');
@@ -234,6 +236,9 @@ export function Comissoes({ onVisualizarOrcamento }: ComissoesProps) {
 
   return (
     <div className="space-y-6">
+      {/* Breadcrumbs */}
+      <BreadcrumbsFinanceiro currentView="finComissoes" onNavigate={onNavigate} />
+      
       {/* Header */}
       <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
         <div>

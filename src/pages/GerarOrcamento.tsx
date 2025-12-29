@@ -285,23 +285,23 @@ export default function GerarOrcamento() {
             {view === 'calendarioGeral' && <CalendarioGeral />}
 
             {/* Seção Financeiro */}
-            {view === 'finDashboard' && <DashboardFinanceiro />}
-            {view === 'finFluxoPrevisto' && <FluxoCaixaPrevisto />}
+            {view === 'finDashboard' && <DashboardFinanceiro onNavigate={handleNavigate} />}
+            {view === 'finFluxoPrevisto' && <FluxoCaixaPrevisto onNavigate={handleNavigate} />}
             {view === 'finRentabilidade' && (
               <RelatorioRentabilidade onVisualizarOrcamento={handleVisualizarOrcamento} />
             )}
             {view === 'finComissoes' && (
-              <Comissoes onVisualizarOrcamento={handleVisualizarOrcamento} />
+              <Comissoes onVisualizarOrcamento={handleVisualizarOrcamento} onNavigate={handleNavigate} />
             )}
             {view === 'finVendedores' && (
               <RelatorioVendedores onVisualizarOrcamento={handleVisualizarOrcamento} />
             )}
             {view === 'finContasPagar' && (
-              <ContasPagar onVisualizarOrcamento={handleVisualizarOrcamento} />
+              <ContasPagar onVisualizarOrcamento={handleVisualizarOrcamento} onNavigate={handleNavigate} />
             )}
-            {view === 'finContasReceber' && <ContasReceber />}
-            {view === 'finLancamentos' && <Lancamentos />}
-            {view === 'finRelatorios' && <RelatoriosBI />}
+            {view === 'finContasReceber' && <ContasReceber onNavigate={handleNavigate} />}
+            {view === 'finLancamentos' && <Lancamentos onNavigate={handleNavigate} />}
+            {view === 'finRelatorios' && <RelatoriosBI onNavigate={handleNavigate} />}
 
             {/* Administração */}
             {view === 'categoriasFormas' && <CategoriasFormas />}

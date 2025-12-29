@@ -21,6 +21,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
+import { BreadcrumbsFinanceiro } from './BreadcrumbsFinanceiro';
 import {
   AreaChart,
   Area,
@@ -36,6 +37,10 @@ import {
   LineChart,
   Line
 } from 'recharts';
+
+interface FluxoCaixaPrevistoProps {
+  onNavigate?: (view: string) => void;
+}
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -63,7 +68,7 @@ const CENARIOS = {
   }
 };
 
-export function FluxoCaixaPrevisto() {
+export function FluxoCaixaPrevisto({ onNavigate }: FluxoCaixaPrevistoProps) {
   const [cenarioSelecionado, setCenarioSelecionado] = useState<'realista' | 'otimista' | 'pessimista'>('realista');
 
   // Buscar saldo atual (soma de todos os lançamentos)
@@ -334,6 +339,9 @@ export function FluxoCaixaPrevisto() {
 
   return (
     <div className="space-y-6">
+      {/* Breadcrumbs */}
+      <BreadcrumbsFinanceiro currentView="finFluxoPrevisto" onNavigate={onNavigate} />
+      
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>

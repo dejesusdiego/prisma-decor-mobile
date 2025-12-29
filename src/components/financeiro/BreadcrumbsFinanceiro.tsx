@@ -16,7 +16,10 @@ type FinanceiroView =
   | 'finLancamentos' 
   | 'finComissoes' 
   | 'finRelatorios'
-  | 'finCategoriasFormas';
+  | 'finCategoriasFormas'
+  | 'finRentabilidade'
+  | 'finVendedores'
+  | 'finKPIs';
 
 interface BreadcrumbsFinanceiroProps {
   currentView: FinanceiroView;
@@ -33,6 +36,9 @@ const viewConfig: Record<FinanceiroView, { label: string; icon: React.ElementTyp
   finComissoes: { label: 'Comissões', icon: Users, group: 'Operacional' },
   finCategoriasFormas: { label: 'Categorias', icon: LayoutDashboard, group: 'Configuração' },
   finRelatorios: { label: 'Relatórios & BI', icon: BarChart3, group: 'Análise' },
+  finRentabilidade: { label: 'Rentabilidade', icon: TrendingUp, group: 'Análise' },
+  finVendedores: { label: 'Vendedores', icon: Users, group: 'Análise' },
+  finKPIs: { label: 'KPIs', icon: BarChart3, group: 'Análise' },
 };
 
 export function BreadcrumbsFinanceiro({ currentView, onNavigate, subPage }: BreadcrumbsFinanceiroProps) {
