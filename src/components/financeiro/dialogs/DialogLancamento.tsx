@@ -1,8 +1,9 @@
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useFinanceiroInvalidation } from '@/hooks/useFinanceiroInvalidation';
 import { format } from 'date-fns';
 import {
   Dialog,
@@ -32,8 +33,8 @@ interface DialogLancamentoProps {
 }
 
 export function DialogLancamento({ open, onOpenChange, lancamento }: DialogLancamentoProps) {
-  const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { invalidateAfterLancamento } = useFinanceiroInvalidation();
   
   const { register, handleSubmit, reset, setValue, watch } = useForm({
     defaultValues: {
@@ -139,13 +140,8 @@ export function DialogLancamento({ open, onOpenChange, lancamento }: DialogLanca
       }
     },
     onSuccess: () => {
-      // Invalidação cruzada completa
-      queryClient.invalidateQueries({ queryKey: ['lancamentos'] });
-      queryClient.invalidateQueries({ queryKey: ['lancamentos-financeiros'] }); // Dashboard
-      queryClient.invalidateQueries({ queryKey: ['contas-receber'] });
-      queryClient.invalidateQueries({ queryKey: ['contas-receber-pendentes'] });
-      queryClient.invalidateQueries({ queryKey: ['saldo-atual-caixa'] }); // Fluxo previsto
-      queryClient.invalidateQueries({ queryKey: ['movimentacoes-extrato'] }); // Conciliação
+      // Invalidação cruzada usando hook centralizado
+      invalidateAfterLancamento();
       toast.success(lancamento ? 'Lançamento atualizado' : 'Lançamento criado');
       onOpenChange(false);
     },

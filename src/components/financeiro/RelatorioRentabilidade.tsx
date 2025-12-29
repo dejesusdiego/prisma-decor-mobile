@@ -13,6 +13,7 @@ import {
   BarChart3,
   Users
 } from 'lucide-react';
+import { BreadcrumbsFinanceiro } from './BreadcrumbsFinanceiro';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -72,9 +73,10 @@ interface RentabilidadeOrcamento {
 
 interface NavigateProps {
   onVisualizarOrcamento?: (id: string) => void;
+  onNavigate?: (view: string) => void;
 }
 
-export function RelatorioRentabilidade({ onVisualizarOrcamento }: NavigateProps) {
+export function RelatorioRentabilidade({ onVisualizarOrcamento, onNavigate }: NavigateProps) {
   const [periodo, setPeriodo] = useState<Periodo>('6m');
   const [searchTerm, setSearchTerm] = useState('');
   const [vendedorFilter, setVendedorFilter] = useState<string>('todos');
@@ -237,6 +239,9 @@ export function RelatorioRentabilidade({ onVisualizarOrcamento }: NavigateProps)
 
   return (
     <div className="space-y-6">
+      {/* Breadcrumbs */}
+      <BreadcrumbsFinanceiro currentView="finRentabilidade" onNavigate={onNavigate} />
+      
       {/* Header */}
       <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
         <div>

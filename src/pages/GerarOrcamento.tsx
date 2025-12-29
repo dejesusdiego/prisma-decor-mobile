@@ -288,13 +288,13 @@ export default function GerarOrcamento() {
             {view === 'finDashboard' && <DashboardFinanceiro onNavigate={handleNavigate} />}
             {view === 'finFluxoPrevisto' && <FluxoCaixaPrevisto onNavigate={handleNavigate} />}
             {view === 'finRentabilidade' && (
-              <RelatorioRentabilidade onVisualizarOrcamento={handleVisualizarOrcamento} />
+              <RelatorioRentabilidade onVisualizarOrcamento={handleVisualizarOrcamento} onNavigate={handleNavigate} />
             )}
             {view === 'finComissoes' && (
               <Comissoes onVisualizarOrcamento={handleVisualizarOrcamento} onNavigate={handleNavigate} />
             )}
             {view === 'finVendedores' && (
-              <RelatorioVendedores onVisualizarOrcamento={handleVisualizarOrcamento} />
+              <RelatorioVendedores onVisualizarOrcamento={handleVisualizarOrcamento} onNavigate={handleNavigate} />
             )}
             {view === 'finContasPagar' && (
               <ContasPagar onVisualizarOrcamento={handleVisualizarOrcamento} onNavigate={handleNavigate} />

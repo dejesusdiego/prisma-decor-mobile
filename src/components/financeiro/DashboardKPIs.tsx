@@ -41,6 +41,7 @@ import {
 import { format, subMonths, startOfMonth, endOfMonth, differenceInMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { MetasVendas } from './MetasVendas';
+import { BreadcrumbsFinanceiro } from './BreadcrumbsFinanceiro';
 
 type PeriodoFiltro = '3m' | '6m' | '12m' | 'todos';
 
@@ -360,6 +361,9 @@ export default function DashboardKPIs() {
 
   return (
     <div className="space-y-6">
+      {/* Breadcrumbs */}
+      <BreadcrumbsFinanceiro currentView="finKPIs" onNavigate={() => {}} />
+      
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>

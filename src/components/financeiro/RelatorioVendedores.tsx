@@ -53,6 +53,7 @@ import {
   Area
 } from 'recharts';
 import { cn } from '@/lib/utils';
+import { BreadcrumbsFinanceiro } from './BreadcrumbsFinanceiro';
 
 type Periodo = '3m' | '6m' | '12m' | 'all';
 
@@ -92,9 +93,10 @@ interface VendedorStats {
 
 interface RelatorioVendedoresProps {
   onVisualizarOrcamento?: (orcamentoId: string) => void;
+  onNavigate?: (view: string) => void;
 }
 
-export function RelatorioVendedores({ onVisualizarOrcamento }: RelatorioVendedoresProps) {
+export function RelatorioVendedores({ onVisualizarOrcamento, onNavigate }: RelatorioVendedoresProps) {
   const [periodo, setPeriodo] = useState<Periodo>('6m');
   const [vendedorSelecionado, setVendedorSelecionado] = useState<string>('todos');
 
@@ -284,6 +286,9 @@ export function RelatorioVendedores({ onVisualizarOrcamento }: RelatorioVendedor
 
   return (
     <div className="space-y-6">
+      {/* Breadcrumbs */}
+      <BreadcrumbsFinanceiro currentView="finVendedores" onNavigate={onNavigate} />
+      
       {/* Header */}
       <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
         <div>
