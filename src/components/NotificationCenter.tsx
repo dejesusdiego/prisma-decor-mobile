@@ -21,6 +21,8 @@ const TIPO_CONFIG: Record<string, { icon: React.ElementType; color: string; bgCo
   visita_nova: { icon: Calendar, color: 'text-purple-600', bgColor: 'bg-purple-100 dark:bg-purple-900/30' },
   orcamento_vencendo: { icon: AlertCircle, color: 'text-orange-600', bgColor: 'bg-orange-100 dark:bg-orange-900/30' },
   pagamento_atrasado: { icon: AlertCircle, color: 'text-red-600', bgColor: 'bg-red-100 dark:bg-red-900/30' },
+  pagamento_parcial: { icon: DollarSign, color: 'text-amber-600', bgColor: 'bg-amber-100 dark:bg-amber-900/30' },
+  parcela_vencer: { icon: Calendar, color: 'text-orange-600', bgColor: 'bg-orange-100 dark:bg-orange-900/30' },
   emprestimo_vencendo: { icon: RefreshCw, color: 'text-orange-600', bgColor: 'bg-orange-100 dark:bg-orange-900/30' },
   emprestimo_atrasado: { icon: AlertCircle, color: 'text-red-600', bgColor: 'bg-red-100 dark:bg-red-900/30' },
 };
