@@ -55,11 +55,13 @@ import { DialogCriarLancamentoDeExtrato } from './dialogs/DialogCriarLancamentoD
 import { DialogGerenciarImportacoes } from './dialogs/DialogGerenciarImportacoes';
 import { DialogConciliarComRecebimento } from './dialogs/DialogConciliarComRecebimento';
 import { DialogConciliarComPagamento } from './dialogs/DialogConciliarComPagamento';
+import { DialogConciliarComOrcamento } from './dialogs/DialogConciliarComOrcamento';
 import { AlertasReconciliacao } from './AlertasReconciliacao';
 import { AlertasOrcamentosConciliacao } from './AlertasOrcamentosConciliacao';
 import { SugestoesConciliacao } from './SugestoesConciliacao';
 import { DialogGerenciarPadroes } from './dialogs/DialogGerenciarPadroes';
 import { usePadroesConciliacao } from '@/hooks/usePadroesConciliacao';
+import { SugestaoOrcamento } from '@/hooks/useSugestoesConciliacao';
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -99,6 +101,11 @@ export function ConciliacaoBancaria() {
   const [pagamentoOpen, setPagamentoOpen] = useState(false);
   const [movimentacaoParaPagamento, setMovimentacaoParaPagamento] = useState<any>(null);
   const [contaParaPagamento, setContaParaPagamento] = useState<any>(null);
+
+  // Conciliar com orçamento (vincular diretamente)
+  const [orcamentoOpen, setOrcamentoOpen] = useState(false);
+  const [movimentacaoParaOrcamento, setMovimentacaoParaOrcamento] = useState<any>(null);
+  const [orcamentoParaVincular, setOrcamentoParaVincular] = useState<SugestaoOrcamento | null>(null);
 
   // Criar regras padrão ao carregar (uma vez por usuário)
   useEffect(() => {
@@ -590,6 +597,13 @@ export function ConciliacaoBancaria() {
     setPagamentoOpen(true);
   };
 
+  // Handler para vincular pagamento diretamente ao orçamento
+  const handleVincularOrcamento = (orcamento: SugestaoOrcamento, mov: any) => {
+    setOrcamentoParaVincular(orcamento);
+    setMovimentacaoParaOrcamento(mov);
+    setOrcamentoOpen(true);
+  };
+
   // Buscar código do orçamento relacionado a uma movimentação
   const getOrcamentoRelacionado = (mov: any) => {
     if (!mov.lancamento) return null;
@@ -936,6 +950,13 @@ export function ConciliacaoBancaria() {
         onOpenChange={setPagamentoOpen}
         movimentacao={movimentacaoParaPagamento}
         contaPagar={contaParaPagamento}
+      />
+
+      <DialogConciliarComOrcamento
+        open={orcamentoOpen}
+        onOpenChange={setOrcamentoOpen}
+        movimentacao={movimentacaoParaOrcamento}
+        orcamento={orcamentoParaVincular}
       />
     </div>
   );
