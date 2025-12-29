@@ -1,3 +1,7 @@
+// Re-export the new version
+export { ListaContatosV2 as ListaContatos } from './ListaContatosV2';
+
+/* OLD VERSION - Kept for reference
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';

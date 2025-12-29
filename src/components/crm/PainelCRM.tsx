@@ -1,3 +1,7 @@
+// Re-export the new version
+export { PainelCRMV2 as PainelCRM } from './PainelCRMV2';
+
+/* OLD VERSION - Kept for reference
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
