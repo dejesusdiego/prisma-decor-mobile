@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { format } from 'date-fns';
-import { Plus, FileCheck } from 'lucide-react';
+import { format, parseISO } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
+import { Plus, FileCheck, CalendarIcon } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -23,6 +25,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import { toast } from 'sonner';
 
 const formatCurrency = (value: number) => {
@@ -60,6 +68,8 @@ export function DialogCriarLancamentoDeExtrato({
     forma_pagamento_id: '',
     observacoes: ''
   });
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
 
   // Preencher form quando movimentacao mudar
   useEffect(() => {
@@ -73,8 +83,19 @@ export function DialogCriarLancamentoDeExtrato({
         forma_pagamento_id: '',
         observacoes: ''
       });
+      if (movimentacao.data_movimentacao) {
+        setSelectedDate(parseISO(movimentacao.data_movimentacao));
+      }
     }
   }, [movimentacao]);
+
+  const handleDateSelect = (date: Date | undefined) => {
+    setSelectedDate(date);
+    if (date) {
+      setForm(f => ({ ...f, data_lancamento: format(date, 'yyyy-MM-dd') }));
+    }
+    setDatePickerOpen(false);
+  };
 
   // Buscar categorias
   const { data: categorias = [] } = useQuery({
@@ -200,11 +221,33 @@ export function DialogCriarLancamentoDeExtrato({
               </div>
               <div className="space-y-1">
                 <Label>Data</Label>
-                <Input
-                  type="date"
-                  value={form.data_lancamento}
-                  onChange={e => setForm(f => ({ ...f, data_lancamento: e.target.value }))}
-                />
+                <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !selectedDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {selectedDate ? (
+                        format(selectedDate, "dd/MM/yyyy", { locale: ptBR })
+                      ) : (
+                        <span>Selecione</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={selectedDate}
+                      onSelect={handleDateSelect}
+                      initialFocus
+                      locale={ptBR}
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
             </div>
 

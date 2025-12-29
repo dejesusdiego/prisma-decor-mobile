@@ -1,10 +1,12 @@
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useFinanceiroInvalidation } from '@/hooks/useFinanceiroInvalidation';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
 import {
   Dialog,
   DialogContent,
@@ -22,9 +24,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
-import { Info, Wallet } from 'lucide-react';
+import { CalendarIcon, Wallet } from 'lucide-react';
 
 interface DialogLancamentoProps {
   open: boolean;
@@ -35,6 +43,8 @@ interface DialogLancamentoProps {
 export function DialogLancamento({ open, onOpenChange, lancamento }: DialogLancamentoProps) {
   const { user } = useAuth();
   const { invalidateAfterLancamento } = useFinanceiroInvalidation();
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
   
   const { register, handleSubmit, reset, setValue, watch } = useForm({
     defaultValues: {
@@ -100,6 +110,9 @@ export function DialogLancamento({ open, onOpenChange, lancamento }: DialogLanca
         forma_pagamento_id: lancamento.forma_pagamento_id || '',
         observacoes: lancamento.observacoes || ''
       });
+      if (lancamento.data_lancamento) {
+        setSelectedDate(parseISO(lancamento.data_lancamento));
+      }
     } else {
       reset({
         descricao: '',
@@ -110,8 +123,17 @@ export function DialogLancamento({ open, onOpenChange, lancamento }: DialogLanca
         forma_pagamento_id: '',
         observacoes: ''
       });
+      setSelectedDate(new Date());
     }
-  }, [lancamento, reset]);
+  }, [lancamento, reset, open]);
+
+  const handleDateSelect = (date: Date | undefined) => {
+    setSelectedDate(date);
+    if (date) {
+      setValue('data_lancamento', format(date, 'yyyy-MM-dd'));
+    }
+    setDatePickerOpen(false);
+  };
 
   const mutation = useMutation({
     mutationFn: async (data: any) => {
@@ -199,10 +221,33 @@ export function DialogLancamento({ open, onOpenChange, lancamento }: DialogLanca
             </div>
             <div className="space-y-2">
               <Label>Data *</Label>
-              <Input 
-                {...register('data_lancamento', { required: true })} 
-                type="date" 
-              />
+              <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !selectedDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {selectedDate ? (
+                      format(selectedDate, "dd/MM/yyyy", { locale: ptBR })
+                    ) : (
+                      <span>Selecione</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={handleDateSelect}
+                    initialFocus
+                    locale={ptBR}
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
 
