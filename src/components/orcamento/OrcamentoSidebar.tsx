@@ -62,6 +62,7 @@ export type View =
   | 'finComissoes'
   | 'finVendedores'
   | 'finKPIs'
+  | 'finConsolidado'
   | 'categoriasFormas'
   | 'crmPainel'
   | 'crmContatos'
@@ -119,6 +120,7 @@ const financeiroNavItems = [
   { id: 'finContasPagar' as View, label: 'Contas a Pagar', icon: ArrowUpCircle },
   { id: 'finContasReceber' as View, label: 'Contas a Receber', icon: ArrowDownCircle },
   { id: 'finLancamentos' as View, label: 'Lançamentos', icon: Receipt },
+  { id: 'finConsolidado' as View, label: 'Relatório Consolidado', icon: ClipboardList },
 ];
 
 // Itens da seção RELATÓRIOS & BI (admin only)

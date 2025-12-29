@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Search, Check, X } from 'lucide-react';
+import { Search, Check, X, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -24,7 +24,11 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
+import { SugestoesConciliacao } from '@/components/financeiro/SugestoesConciliacao';
+import { SugestoesPadroes } from '@/components/financeiro/SugestoesPadroes';
+import { usePadroesConciliacao } from '@/hooks/usePadroesConciliacao';
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -47,7 +51,9 @@ interface DialogConciliarManualProps {
 export function DialogConciliarManual({ open, onOpenChange, movimentacao }: DialogConciliarManualProps) {
   const [busca, setBusca] = useState('');
   const [lancamentoSelecionado, setLancamentoSelecionado] = useState<string | null>(null);
+  const [tabAtiva, setTabAtiva] = useState<'sugestoes' | 'todos'>('sugestoes');
   const queryClient = useQueryClient();
+  const { salvarPadrao } = usePadroesConciliacao();
 
   // Buscar lançamentos não conciliados
   const { data: lancamentos = [], isLoading } = useQuery({
@@ -70,7 +76,8 @@ export function DialogConciliarManual({ open, onOpenChange, movimentacao }: Dial
           descricao,
           valor,
           tipo,
-          categoria:categorias_financeiras(nome)
+          categoria_id,
+          categoria:categorias_financeiras(id, nome)
         `)
         .gte('data_lancamento', format(dataInicio, 'yyyy-MM-dd'))
         .lte('data_lancamento', format(dataFim, 'yyyy-MM-dd'))
@@ -92,18 +99,29 @@ export function DialogConciliarManual({ open, onOpenChange, movimentacao }: Dial
   });
 
   const conciliarMutation = useMutation({
-    mutationFn: async () => {
-      if (!movimentacao || !lancamentoSelecionado) return;
+    mutationFn: async (lancamentoId: string) => {
+      if (!movimentacao) return;
       
       const { error } = await supabase
         .from('movimentacoes_extrato')
         .update({ 
-          lancamento_id: lancamentoSelecionado,
+          lancamento_id: lancamentoId,
           conciliado: true 
         })
         .eq('id', movimentacao.id);
       
       if (error) throw error;
+
+      // Buscar dados do lançamento para salvar padrão
+      const lancamento = lancamentos.find(l => l.id === lancamentoId);
+      if (lancamento && movimentacao.descricao) {
+        salvarPadrao({
+          descricaoExtrato: movimentacao.descricao,
+          tipoConciliacao: 'lancamento',
+          categoriaId: lancamento.categoria_id || undefined,
+          tipoLancamento: lancamento.tipo
+        });
+      }
     },
     onSuccess: () => {
       toast.success('Movimentação conciliada com sucesso!');
@@ -144,7 +162,7 @@ export function DialogConciliarManual({ open, onOpenChange, movimentacao }: Dial
       toast.error('Selecione um lançamento para conciliar');
       return;
     }
-    conciliarMutation.mutate();
+    conciliarMutation.mutate(lancamentoSelecionado);
   };
 
   return (
@@ -179,77 +197,180 @@ export function DialogConciliarManual({ open, onOpenChange, movimentacao }: Dial
           </div>
         )}
 
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar por descrição ou valor..."
-            value={busca}
-            onChange={(e) => setBusca(e.target.value)}
-            className="pl-10"
-          />
-        </div>
+        {/* Sugestões Inteligentes */}
+        {movimentacao && (
+          <div className="space-y-3 mb-4">
+            <SugestoesConciliacao 
+              movimentacao={movimentacao}
+              onSelecionarRecebimento={(parcela) => {
+                toast.info(`Parcela ${parcela.numeroParcela} de ${parcela.clienteNome} selecionada. Use a aba Contas a Receber para conciliar.`);
+              }}
+              onSelecionarPagamento={(conta) => {
+                toast.info(`Conta "${conta.descricao}" selecionada. Use a aba Contas a Pagar para conciliar.`);
+              }}
+            />
+            <SugestoesPadroes 
+              descricaoExtrato={movimentacao.descricao}
+              tipoMovimento={movimentacao.tipo as 'credito' | 'debito'}
+            />
+          </div>
+        )}
 
-        <ScrollArea className="h-[300px] border rounded-lg">
-          {isLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
+        <Tabs value={tabAtiva} onValueChange={(v) => setTabAtiva(v as 'sugestoes' | 'todos')}>
+          <TabsList className="grid w-full grid-cols-2 mb-4">
+            <TabsTrigger value="sugestoes" className="gap-2">
+              <Sparkles className="h-4 w-4" />
+              Mais Prováveis
+            </TabsTrigger>
+            <TabsTrigger value="todos">Todos os Lançamentos</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="sugestoes">
+            <div className="relative mb-3">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por descrição ou valor..."
+                value={busca}
+                onChange={(e) => setBusca(e.target.value)}
+                className="pl-10"
+              />
             </div>
-          ) : lancamentosOrdenados.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-              <X className="h-8 w-8 mb-2 opacity-50" />
-              <p>Nenhum lançamento encontrado para conciliar</p>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-8"></TableHead>
-                  <TableHead>Data</TableHead>
-                  <TableHead>Descrição</TableHead>
-                  <TableHead>Categoria</TableHead>
-                  <TableHead className="text-right">Valor</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {lancamentosOrdenados.map((lanc) => {
-                  const isSelected = lancamentoSelecionado === lanc.id;
-                  const valorMatch = movimentacao && Math.abs(Number(lanc.valor) - movimentacao.valor) < 1;
-                  
-                  return (
-                    <TableRow
-                      key={lanc.id}
-                      className={`cursor-pointer ${isSelected ? 'bg-primary/10' : ''}`}
-                      onClick={() => setLancamentoSelecionado(lanc.id)}
-                    >
-                      <TableCell>
-                        <div className={`h-4 w-4 rounded-full border-2 flex items-center justify-center
-                          ${isSelected ? 'border-primary bg-primary' : 'border-muted-foreground'}`}
-                        >
-                          {isSelected && <Check className="h-3 w-3 text-primary-foreground" />}
-                        </div>
-                      </TableCell>
-                      <TableCell>{format(new Date(lanc.data_lancamento), "dd/MM/yyyy")}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          {lanc.descricao}
-                          {valorMatch && (
-                            <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
-                              Valor exato
-                            </Badge>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>{lanc.categoria?.nome || '-'}</TableCell>
-                      <TableCell className={`text-right font-medium ${lanc.tipo === 'entrada' ? 'text-green-600' : 'text-red-600'}`}>
-                        {lanc.tipo === 'entrada' ? '+' : '-'} {formatCurrency(Number(lanc.valor))}
-                      </TableCell>
+            <ScrollArea className="h-[250px] border rounded-lg">
+              {isLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
+                </div>
+              ) : lancamentosOrdenados.slice(0, 10).length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+                  <X className="h-8 w-8 mb-2 opacity-50" />
+                  <p>Nenhum lançamento encontrado</p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-8"></TableHead>
+                      <TableHead>Data</TableHead>
+                      <TableHead>Descrição</TableHead>
+                      <TableHead>Categoria</TableHead>
+                      <TableHead className="text-right">Valor</TableHead>
                     </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          )}
-        </ScrollArea>
+                  </TableHeader>
+                  <TableBody>
+                    {lancamentosOrdenados.slice(0, 10).map((lanc) => {
+                      const isSelected = lancamentoSelecionado === lanc.id;
+                      const valorMatch = movimentacao && Math.abs(Number(lanc.valor) - movimentacao.valor) < 1;
+                      
+                      return (
+                        <TableRow
+                          key={lanc.id}
+                          className={`cursor-pointer ${isSelected ? 'bg-primary/10' : ''}`}
+                          onClick={() => setLancamentoSelecionado(lanc.id)}
+                        >
+                          <TableCell>
+                            <div className={`h-4 w-4 rounded-full border-2 flex items-center justify-center
+                              ${isSelected ? 'border-primary bg-primary' : 'border-muted-foreground'}`}
+                            >
+                              {isSelected && <Check className="h-3 w-3 text-primary-foreground" />}
+                            </div>
+                          </TableCell>
+                          <TableCell>{format(new Date(lanc.data_lancamento), "dd/MM/yyyy")}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              {lanc.descricao}
+                              {valorMatch && (
+                                <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                                  Valor exato
+                                </Badge>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>{lanc.categoria?.nome || '-'}</TableCell>
+                          <TableCell className={`text-right font-medium ${lanc.tipo === 'entrada' ? 'text-green-600' : 'text-red-600'}`}>
+                            {lanc.tipo === 'entrada' ? '+' : '-'} {formatCurrency(Number(lanc.valor))}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              )}
+            </ScrollArea>
+          </TabsContent>
+
+          <TabsContent value="todos">
+            <div className="relative mb-3">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por descrição ou valor..."
+                value={busca}
+                onChange={(e) => setBusca(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <ScrollArea className="h-[250px] border rounded-lg">
+              {isLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
+                </div>
+              ) : lancamentosOrdenados.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+                  <X className="h-8 w-8 mb-2 opacity-50" />
+                  <p>Nenhum lançamento encontrado para conciliar</p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-8"></TableHead>
+                      <TableHead>Data</TableHead>
+                      <TableHead>Descrição</TableHead>
+                      <TableHead>Categoria</TableHead>
+                      <TableHead className="text-right">Valor</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {lancamentosOrdenados.map((lanc) => {
+                      const isSelected = lancamentoSelecionado === lanc.id;
+                      const valorMatch = movimentacao && Math.abs(Number(lanc.valor) - movimentacao.valor) < 1;
+                      
+                      return (
+                        <TableRow
+                          key={lanc.id}
+                          className={`cursor-pointer ${isSelected ? 'bg-primary/10' : ''}`}
+                          onClick={() => setLancamentoSelecionado(lanc.id)}
+                        >
+                          <TableCell>
+                            <div className={`h-4 w-4 rounded-full border-2 flex items-center justify-center
+                              ${isSelected ? 'border-primary bg-primary' : 'border-muted-foreground'}`}
+                            >
+                              {isSelected && <Check className="h-3 w-3 text-primary-foreground" />}
+                            </div>
+                          </TableCell>
+                          <TableCell>{format(new Date(lanc.data_lancamento), "dd/MM/yyyy")}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              {lanc.descricao}
+                              {valorMatch && (
+                                <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                                  Valor exato
+                                </Badge>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>{lanc.categoria?.nome || '-'}</TableCell>
+                          <TableCell className={`text-right font-medium ${lanc.tipo === 'entrada' ? 'text-green-600' : 'text-red-600'}`}>
+                            {lanc.tipo === 'entrada' ? '+' : '-'} {formatCurrency(Number(lanc.valor))}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              )}
+            </ScrollArea>
+          </TabsContent>
+        </Tabs>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
