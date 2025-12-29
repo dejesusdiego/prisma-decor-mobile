@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { FileText, Search, Link2, CheckCircle2, AlertCircle, Calendar, Plus } from 'lucide-react';
+import { FileText, Search, Link2, CheckCircle2, AlertCircle, Calendar } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -18,7 +18,7 @@ import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -26,17 +26,6 @@ import { cn } from '@/lib/utils';
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 };
-
-interface OrcamentoParaVincular {
-  id: string;
-  codigo: string;
-  clienteNome: string;
-  valorTotal: number;
-  status: string;
-  createdAt: string;
-  temContaReceber: boolean;
-  valorRecebido: number;
-}
 
 interface DialogVincularLancamentoAoOrcamentoProps {
   open: boolean;
@@ -52,7 +41,7 @@ export function DialogVincularLancamentoAoOrcamento({
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [busca, setBusca] = useState('');
-  const [lancamentoSelecionado, setLancamentoSelecionado] = useState<string>('');
+  const [lancamentosSelecionados, setLancamentosSelecionados] = useState<string[]>([]);
 
   // Buscar orçamento específico se fornecido
   const { data: orcamento } = useQuery({
@@ -119,52 +108,40 @@ export function DialogVincularLancamentoAoOrcamento({
     );
   }, [lancamentosDisponiveis, busca]);
 
+  // Calcular total selecionado
+  const totalSelecionado = useMemo(() => {
+    return lancamentosSelecionados.reduce((acc, id) => {
+      const lancamento = lancamentosDisponiveis.find(l => l.id === id);
+      return acc + (lancamento?.valor || 0);
+    }, 0);
+  }, [lancamentosSelecionados, lancamentosDisponiveis]);
+
+  const toggleLancamento = (id: string) => {
+    setLancamentosSelecionados(prev => 
+      prev.includes(id) 
+        ? prev.filter(x => x !== id)
+        : [...prev, id]
+    );
+  };
+
   const vincularMutation = useMutation({
     mutationFn: async () => {
-      if (!lancamentoSelecionado || !orcamentoId || !user || !orcamento) {
+      if (lancamentosSelecionados.length === 0 || !orcamentoId || !user || !orcamento) {
         throw new Error('Dados insuficientes');
       }
 
-      const lancamento = lancamentosDisponiveis.find(l => l.id === lancamentoSelecionado);
-      if (!lancamento) throw new Error('Lançamento não encontrado');
-
-      const valorRecebido = lancamento.valor;
+      const lancamentosParaVincular = lancamentosDisponiveis.filter(l => 
+        lancamentosSelecionados.includes(l.id)
+      );
+      
       const valorOrcamento = orcamento.total_com_desconto || orcamento.total_geral || 0;
       let contaReceberId: string;
-      let parcelaId: string;
 
       // Se já existe conta, usar a existente
       if (contaExistente) {
         contaReceberId = contaExistente.id;
-        
-        // Buscar parcela pendente mais próxima
-        const parcelasPendentes = (contaExistente.parcelas_receber || [])
-          .filter((p: any) => p.status === 'pendente')
-          .sort((a: any, b: any) => 
-            new Date(a.data_vencimento).getTime() - new Date(b.data_vencimento).getTime()
-          );
-        
-        if (parcelasPendentes.length > 0) {
-          parcelaId = parcelasPendentes[0].id;
-        } else {
-          // Criar nova parcela
-          const { data: novaParcela, error: erroNovaParcela } = await supabase
-            .from('parcelas_receber')
-            .insert({
-              conta_receber_id: contaReceberId,
-              numero_parcela: (contaExistente.parcelas_receber?.length || 0) + 1,
-              valor: valorRecebido,
-              data_vencimento: lancamento.data_lancamento,
-              status: 'pendente'
-            })
-            .select('id')
-            .single();
-          
-          if (erroNovaParcela) throw erroNovaParcela;
-          parcelaId = novaParcela.id;
-        }
       } else {
-        // Criar conta a receber com parcela única
+        // Criar conta a receber
         const { data: novaConta, error: erroConta } = await supabase
           .from('contas_receber')
           .insert({
@@ -173,10 +150,10 @@ export function DialogVincularLancamentoAoOrcamento({
             descricao: `Orçamento ${orcamento.codigo}`,
             valor_total: valorOrcamento,
             valor_pago: 0,
-            numero_parcelas: 1,
-            data_vencimento: lancamento.data_lancamento,
+            numero_parcelas: lancamentosParaVincular.length,
+            data_vencimento: lancamentosParaVincular[0].data_lancamento,
             status: 'pendente',
-            observacoes: 'Conta criada ao vincular lançamento existente',
+            observacoes: 'Conta criada ao vincular lançamentos existentes',
             created_by_user_id: user.id
           })
           .select('id')
@@ -184,74 +161,68 @@ export function DialogVincularLancamentoAoOrcamento({
 
         if (erroConta) throw erroConta;
         contaReceberId = novaConta.id;
+      }
 
-        // Criar parcela única com o valor do orçamento
+      // Processar cada lançamento selecionado
+      let valorTotalVinculado = 0;
+      const parcelasExistentes = contaExistente?.parcelas_receber || [];
+      let proximoNumeroParcela = parcelasExistentes.length + 1;
+
+      for (const lancamento of lancamentosParaVincular) {
+        // Criar parcela para este lançamento
         const { data: novaParcela, error: erroParcela } = await supabase
           .from('parcelas_receber')
           .insert({
             conta_receber_id: contaReceberId,
-            numero_parcela: 1,
-            valor: valorOrcamento,
+            numero_parcela: proximoNumeroParcela++,
+            valor: lancamento.valor,
             data_vencimento: lancamento.data_lancamento,
-            status: 'pendente'
+            data_pagamento: lancamento.data_lancamento,
+            status: 'pago'
           })
           .select('id')
           .single();
 
         if (erroParcela) throw erroParcela;
-        parcelaId = novaParcela.id;
-      }
 
-      // Vincular lançamento à parcela
-      const { error: erroLancamento } = await supabase
-        .from('lancamentos_financeiros')
-        .update({
-          parcela_receber_id: parcelaId
-        })
-        .eq('id', lancamentoSelecionado);
-
-      if (erroLancamento) throw erroLancamento;
-
-      // Atualizar parcela como paga
-      const { error: erroParcela } = await supabase
-        .from('parcelas_receber')
-        .update({
-          status: 'pago',
-          data_pagamento: lancamento.data_lancamento
-        })
-        .eq('id', parcelaId);
-
-      if (erroParcela) throw erroParcela;
-
-      // Atualizar conta receber
-      const { data: contaAtual } = await supabase
-        .from('contas_receber')
-        .select('valor_pago, valor_total')
-        .eq('id', contaReceberId)
-        .single();
-
-      if (contaAtual) {
-        const novoValorPago = (contaAtual.valor_pago || 0) + valorRecebido;
-        const novoStatus = novoValorPago >= contaAtual.valor_total ? 'pago' : 'parcial';
-        
-        await supabase
-          .from('contas_receber')
+        // Vincular lançamento à parcela
+        const { error: erroLancamento } = await supabase
+          .from('lancamentos_financeiros')
           .update({
-            valor_pago: novoValorPago,
-            status: novoStatus
+            parcela_receber_id: novaParcela.id
           })
-          .eq('id', contaReceberId);
+          .eq('id', lancamento.id);
+
+        if (erroLancamento) throw erroLancamento;
+
+        valorTotalVinculado += lancamento.valor;
       }
 
-      return { contaReceberId, parcelaId };
+      // Atualizar conta receber com o valor total vinculado
+      const valorPagoAtual = contaExistente?.valor_pago || 0;
+      const novoValorPago = valorPagoAtual + valorTotalVinculado;
+      const valorTotalConta = contaExistente?.valor_total || valorOrcamento;
+      const novoStatus = novoValorPago >= valorTotalConta ? 'pago' : 'parcial';
+      
+      await supabase
+        .from('contas_receber')
+        .update({
+          valor_pago: novoValorPago,
+          status: novoStatus,
+          numero_parcelas: proximoNumeroParcela - 1
+        })
+        .eq('id', contaReceberId);
+
+      return { contaReceberId, quantidadeVinculada: lancamentosParaVincular.length };
     },
-    onSuccess: () => {
-      toast.success('Lançamento vinculado ao orçamento com sucesso!');
+    onSuccess: (result) => {
+      toast.success(`${result.quantidadeVinculada} lançamento(s) vinculado(s) ao orçamento!`);
       queryClient.invalidateQueries({ queryKey: ['lancamentos-nao-vinculados'] });
       queryClient.invalidateQueries({ queryKey: ['contas-receber'] });
       queryClient.invalidateQueries({ queryKey: ['relatorio-conciliacao'] });
       queryClient.invalidateQueries({ queryKey: ['orcamentos'] });
-      setLancamentoSelecionado('');
+      queryClient.invalidateQueries({ queryKey: ['orcamento-financeiro'] });
+      setLancamentosSelecionados([]);
       onOpenChange(false);
     },
     onError: (error: Error) => {
@@ -259,7 +230,6 @@ export function DialogVincularLancamentoAoOrcamento({
     }
   });
 
-  const lancamentoInfo = lancamentosDisponiveis.find(l => l.id === lancamentoSelecionado);
   const valorOrcamento = orcamento ? (orcamento.total_com_desconto || orcamento.total_geral || 0) : 0;
 
   return (
@@ -268,10 +238,10 @@ export function DialogVincularLancamentoAoOrcamento({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Link2 className="h-5 w-5" />
-            Vincular Lançamento ao Orçamento
+            Vincular Lançamentos ao Orçamento
           </DialogTitle>
           <DialogDescription>
-            Selecione um lançamento existente para vincular a este orçamento
+            Selecione um ou mais lançamentos existentes para vincular a este orçamento
           </DialogDescription>
         </DialogHeader>
 
@@ -319,56 +289,62 @@ export function DialogVincularLancamentoAoOrcamento({
                 <p className="text-xs">Apenas lançamentos não vinculados aparecem aqui</p>
               </div>
             ) : (
-              <RadioGroup 
-                value={lancamentoSelecionado} 
-                onValueChange={setLancamentoSelecionado}
-                className="p-2 space-y-2"
-              >
-                {lancamentosFiltrados.map((lancamento) => (
-                  <div 
-                    key={lancamento.id}
-                    className={cn(
-                      "flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors",
-                      lancamentoSelecionado === lancamento.id 
-                        ? "border-primary bg-primary/5" 
-                        : "hover:bg-muted/50"
-                    )}
-                    onClick={() => setLancamentoSelecionado(lancamento.id)}
-                  >
-                    <RadioGroupItem value={lancamento.id} id={lancamento.id} />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{lancamento.descricao}</p>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <Calendar className="h-3 w-3" />
-                        <span>{format(new Date(lancamento.data_lancamento), 'dd/MM/yyyy', { locale: ptBR })}</span>
+              <div className="p-2 space-y-2">
+                {lancamentosFiltrados.map((lancamento) => {
+                  const isSelected = lancamentosSelecionados.includes(lancamento.id);
+                  return (
+                    <div 
+                      key={lancamento.id}
+                      className={cn(
+                        "flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors",
+                        isSelected 
+                          ? "border-primary bg-primary/5" 
+                          : "hover:bg-muted/50"
+                      )}
+                      onClick={() => toggleLancamento(lancamento.id)}
+                    >
+                      <Checkbox 
+                        checked={isSelected}
+                        onCheckedChange={() => toggleLancamento(lancamento.id)}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{lancamento.descricao}</p>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <Calendar className="h-3 w-3" />
+                          <span>{format(new Date(lancamento.data_lancamento), 'dd/MM/yyyy', { locale: ptBR })}</span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span className="font-semibold text-green-600">
+                          {formatCurrency(lancamento.valor)}
+                        </span>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <span className="font-semibold text-green-600">
-                        {formatCurrency(lancamento.valor)}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </RadioGroup>
+                  );
+                })}
+              </div>
             )}
           </ScrollArea>
 
-          {/* Info do Match */}
-          {lancamentoInfo && (
+          {/* Resumo da seleção */}
+          {lancamentosSelecionados.length > 0 && (
             <div className="p-3 border rounded-lg bg-green-50/50 dark:bg-green-950/20">
-              <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
-                <CheckCircle2 className="h-4 w-4" />
-                <span className="text-sm font-medium">Lançamento selecionado</span>
-              </div>
-              <div className="mt-2 text-sm text-muted-foreground">
-                Valor do lançamento: <span className="font-medium text-foreground">{formatCurrency(lancamentoInfo.valor)}</span>
-                {valorOrcamento > 0 && (
-                  <span className="ml-2">
-                    ({Math.round((lancamentoInfo.valor / valorOrcamento) * 100)}% do orçamento)
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
+                  <CheckCircle2 className="h-4 w-4" />
+                  <span className="text-sm font-medium">
+                    {lancamentosSelecionados.length} lançamento(s) selecionado(s)
                   </span>
-                )}
+                </div>
+                <span className="font-semibold text-green-600">
+                  {formatCurrency(totalSelecionado)}
+                </span>
               </div>
+              {valorOrcamento > 0 && (
+                <div className="mt-1 text-xs text-muted-foreground">
+                  {Math.round((totalSelecionado / valorOrcamento) * 100)}% do valor do orçamento
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -379,9 +355,9 @@ export function DialogVincularLancamentoAoOrcamento({
           </Button>
           <Button 
             onClick={() => vincularMutation.mutate()}
-            disabled={!lancamentoSelecionado || vincularMutation.isPending}
+            disabled={lancamentosSelecionados.length === 0 || vincularMutation.isPending}
           >
-            {vincularMutation.isPending ? 'Vinculando...' : 'Vincular Lançamento'}
+            {vincularMutation.isPending ? 'Vinculando...' : `Vincular ${lancamentosSelecionados.length} Lançamento(s)`}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, ChevronDown, AlertTriangle, Ruler, Package, Scissors, Wrench, Landmark, FileText } from 'lucide-react';
+import { ArrowLeft, ChevronDown, AlertTriangle, Ruler, Package, Scissors, Wrench, Landmark, FileText, Link2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import type { Cortina, Material, ServicoConfeccao, ServicoInstalacao } from '@/types/orcamento';
@@ -14,6 +14,7 @@ import { RelatorioConciliacaoOrcamento } from './RelatorioConciliacaoOrcamento';
 import { TimelineOrcamento } from './TimelineOrcamento';
 import { DialogGerarContaReceber } from './dialogs/DialogGerarContaReceber';
 import { DialogGerarCustos } from './dialogs/DialogGerarCustos';
+import { DialogVincularLancamentoAoOrcamento } from '@/components/financeiro/dialogs/DialogVincularLancamentoAoOrcamento';
 import { useOrcamentoFinanceiro } from '@/hooks/useOrcamentoFinanceiro';
 import { TipBanner } from '@/components/ui/TipBanner';
 import { HelpTooltip } from '@/components/ui/HelpTooltip';
@@ -55,6 +56,7 @@ export function VisualizarOrcamento({ orcamentoId, onVoltar }: VisualizarOrcamen
   // Diálogos
   const [dialogContaReceberOpen, setDialogContaReceberOpen] = useState(false);
   const [dialogCustosOpen, setDialogCustosOpen] = useState(false);
+  const [dialogVincularLancamentoOpen, setDialogVincularLancamentoOpen] = useState(false);
 
   // Hook de integração financeira
   const {
@@ -820,7 +822,17 @@ export function VisualizarOrcamento({ orcamentoId, onVoltar }: VisualizarOrcamen
               </div>
             </TabsContent>
 
-            <TabsContent value="conciliacao">
+            <TabsContent value="conciliacao" className="space-y-4">
+              <div className="flex justify-end">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setDialogVincularLancamentoOpen(true)}
+                >
+                  <Link2 className="h-4 w-4 mr-2" />
+                  Vincular Lançamento Existente
+                </Button>
+              </div>
               <RelatorioConciliacaoOrcamento orcamentoId={orcamentoId} />
             </TabsContent>
           </Tabs>
@@ -843,6 +855,11 @@ export function VisualizarOrcamento({ orcamentoId, onVoltar }: VisualizarOrcamen
             orcamento={orcamento}
             onConfirm={handleGerarCustos}
             isLoading={isGerandoContasPagar}
+          />
+          <DialogVincularLancamentoAoOrcamento
+            open={dialogVincularLancamentoOpen}
+            onOpenChange={setDialogVincularLancamentoOpen}
+            orcamentoId={orcamentoId}
           />
         </>
       )}
