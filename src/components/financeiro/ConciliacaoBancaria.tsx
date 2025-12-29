@@ -598,6 +598,9 @@ export function ConciliacaoBancaria() {
             </CardContent>
           </Card>
 
+          {/* Alertas de Duplicados/Parciais */}
+          <AlertasReconciliacao analise={analiseReconciliacao} />
+
           <div className="flex flex-wrap gap-2 justify-between">
             <div className="flex gap-2">
               <Button 
@@ -784,6 +787,7 @@ export function ConciliacaoBancaria() {
         onOpenChange={setRecebimentoOpen}
         movimentacao={movimentacaoParaRecebimento}
         parcela={parcelaParaRecebimento}
+        isPagamentoParcial={isPagamentoParcial}
       />
     </div>
   );
