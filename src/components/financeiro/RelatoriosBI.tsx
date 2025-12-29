@@ -15,11 +15,13 @@ import {
   Scale3D,
   RefreshCcw,
   Landmark,
-  Users
+  Users,
+  FileQuestion
 } from 'lucide-react';
 import { RelatorioEmprestimos } from './RelatorioEmprestimos';
 import { RelatorioDescontos } from './RelatorioDescontos';
 import { RelatorioOrcadoRealizado } from './RelatorioOrcadoRealizado';
+import { RelatorioLancamentosOrfaos } from './RelatorioLancamentosOrfaos';
 import { BreadcrumbsFinanceiro } from './BreadcrumbsFinanceiro';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -374,6 +376,10 @@ export function RelatoriosBI({ onNavigate }: RelatoriosBIProps) {
           <TabsTrigger value="descontos" className="gap-2">
             <Percent className="h-4 w-4" />
             <span className="hidden sm:inline">Descontos</span>
+          </TabsTrigger>
+          <TabsTrigger value="orfaos" className="gap-2">
+            <FileQuestion className="h-4 w-4" />
+            <span className="hidden sm:inline">Órfãos</span>
           </TabsTrigger>
         </TabsList>
 
@@ -803,7 +809,10 @@ export function RelatoriosBI({ onNavigate }: RelatoriosBIProps) {
           </Card>
         </TabsContent>
 
-        {/* Conciliação e Clientes agora estão em Contas a Receber */}
+        {/* Lançamentos Órfãos */}
+        <TabsContent value="orfaos">
+          <RelatorioLancamentosOrfaos />
+        </TabsContent>
       </Tabs>
     </div>
   );
