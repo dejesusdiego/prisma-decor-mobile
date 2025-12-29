@@ -43,6 +43,7 @@ import {
 } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { formatCurrency } from '@/lib/formatters';
 
 type TipoEvento = 
   | 'atividade_crm' 
@@ -76,7 +77,8 @@ const TIPOS_EVENTO: Record<TipoEvento, { label: string; cor: string; icone: Reac
   pedido_entrega: { label: 'Entregas', cor: 'bg-amber-500', icone: Package }
 };
 
-const formatCurrency = (value: number) => {
+// formatCurrency com valor inteiro para calendário (importado de formatters)
+const formatCurrencyCompact = (value: number) => {
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
     currency: 'BRL',

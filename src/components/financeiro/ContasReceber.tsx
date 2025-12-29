@@ -44,12 +44,9 @@ import { DialogContaReceber } from './dialogs/DialogContaReceber';
 import { DialogRegistrarRecebimento } from './dialogs/DialogRegistrarRecebimento';
 import { HelpTooltip } from '@/components/ui/HelpTooltip';
 import { TipBanner } from '@/components/ui/TipBanner';
+import { formatCurrency } from '@/lib/formatters';
 
 type StatusFilter = 'todos' | 'pendente' | 'parcial' | 'pago' | 'atrasado';
-
-const formatCurrency = (value: number) => {
-  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
-};
 
 const getStatusBadge = (status: string) => {
   switch (status) {
