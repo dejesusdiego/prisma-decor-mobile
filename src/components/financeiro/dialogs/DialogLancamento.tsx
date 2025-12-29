@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -48,20 +48,28 @@ export function DialogLancamento({ open, onOpenChange, lancamento }: DialogLanca
   });
 
   const tipoSelecionado = watch('tipo');
-  const categoriaId = watch('categoria_id');
+  
+  // Mapear tipo do lançamento para tipo da categoria
+  const getTipoCategoria = (tipo: string) => {
+    if (tipo === 'entrada') return 'receita';
+    if (tipo === 'emprestimo') return 'emprestimo';
+    return 'despesa';
+  };
 
   const { data: categorias = [] } = useQuery({
     queryKey: ['categorias-financeiras', tipoSelecionado],
     queryFn: async () => {
+      const tipoCategoria = getTipoCategoria(tipoSelecionado);
       const { data, error } = await supabase
         .from('categorias_financeiras')
         .select('*')
-        .eq('tipo', tipoSelecionado === 'entrada' ? 'receita' : 'despesa')
+        .eq('tipo', tipoCategoria)
         .eq('ativo', true)
         .order('nome');
       if (error) throw error;
       return data;
-    }
+    },
+    enabled: !!tipoSelecionado
   });
 
   const { data: formasPagamento = [] } = useQuery({
@@ -77,13 +85,8 @@ export function DialogLancamento({ open, onOpenChange, lancamento }: DialogLanca
     }
   });
 
-  // Verificar se a categoria selecionada é de empréstimo
-  const isEmprestimo = useMemo(() => {
-    if (!categoriaId || !categorias.length) return false;
-    const categoria = categorias.find(c => c.id === categoriaId);
-    return categoria?.nome?.toLowerCase().includes('empréstimo') || 
-           categoria?.nome?.toLowerCase().includes('emprestimo');
-  }, [categoriaId, categorias]);
+  // Verificar se o tipo selecionado é empréstimo
+  const isEmprestimo = tipoSelecionado === 'emprestimo';
 
   useEffect(() => {
     if (lancamento) {
@@ -170,10 +173,11 @@ export function DialogLancamento({ open, onOpenChange, lancamento }: DialogLanca
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="entrada">Entrada</SelectItem>
-                <SelectItem value="saida">Saída</SelectItem>
-              </SelectContent>
+                <SelectContent>
+                  <SelectItem value="entrada">Entrada</SelectItem>
+                  <SelectItem value="saida">Saída</SelectItem>
+                  <SelectItem value="emprestimo">Empréstimo</SelectItem>
+                </SelectContent>
             </Select>
           </div>
 
