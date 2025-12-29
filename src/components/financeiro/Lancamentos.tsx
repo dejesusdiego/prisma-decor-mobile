@@ -11,7 +11,8 @@ import {
   Trash2,
   ArrowUpCircle,
   ArrowDownCircle,
-  Download
+  Download,
+  RefreshCw
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,7 +36,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { DialogLancamento } from './dialogs/DialogLancamento';
 
-type TipoFilter = 'todos' | 'entrada' | 'saida';
+type TipoFilter = 'todos' | 'entrada' | 'saida' | 'emprestimo';
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -89,6 +90,7 @@ export function Lancamentos() {
   const totais = {
     entradas: filteredLancamentos.filter(l => l.tipo === 'entrada').reduce((acc, l) => acc + Number(l.valor), 0),
     saidas: filteredLancamentos.filter(l => l.tipo === 'saida').reduce((acc, l) => acc + Number(l.valor), 0),
+    emprestimos: filteredLancamentos.filter(l => l.tipo === 'emprestimo').reduce((acc, l) => acc + Number(l.valor), 0),
   };
 
   const handleEdit = (lancamento: any) => {
@@ -107,7 +109,7 @@ export function Lancamentos() {
     const rows = filteredLancamentos.map(l => [
       format(new Date(l.data_lancamento), 'dd/MM/yyyy'),
       l.descricao,
-      l.tipo === 'entrada' ? 'Entrada' : 'Saída',
+      l.tipo === 'entrada' ? 'Entrada' : l.tipo === 'emprestimo' ? 'Empréstimo' : 'Saída',
       l.categoria?.nome || '',
       l.valor
     ]);
@@ -143,7 +145,7 @@ export function Lancamentos() {
       </div>
 
       {/* Resumo */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
@@ -168,11 +170,25 @@ export function Lancamentos() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <RefreshCw className="h-4 w-4 text-violet-600" />
+              Empréstimos
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold text-violet-600">{formatCurrency(totais.emprestimos)}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Saldo</CardTitle>
           </CardHeader>
           <CardContent>
             <p className={`text-2xl font-bold ${totais.entradas - totais.saidas >= 0 ? 'text-green-600' : 'text-destructive'}`}>
               {formatCurrency(totais.entradas - totais.saidas)}
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              (empréstimos não afetam o saldo)
             </p>
           </CardContent>
         </Card>
@@ -198,6 +214,7 @@ export function Lancamentos() {
             <SelectItem value="todos">Todos</SelectItem>
             <SelectItem value="entrada">Entradas</SelectItem>
             <SelectItem value="saida">Saídas</SelectItem>
+            <SelectItem value="emprestimo">Empréstimos</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -243,6 +260,11 @@ export function Lancamentos() {
                           <ArrowDownCircle className="h-3 w-3 mr-1" />
                           Entrada
                         </Badge>
+                      ) : lancamento.tipo === 'emprestimo' ? (
+                        <Badge className="bg-violet-500/10 text-violet-600 hover:bg-violet-500/20">
+                          <RefreshCw className="h-3 w-3 mr-1" />
+                          Empréstimo
+                        </Badge>
                       ) : (
                         <Badge variant="destructive">
                           <ArrowUpCircle className="h-3 w-3 mr-1" />
@@ -261,7 +283,10 @@ export function Lancamentos() {
                       ) : '-'}
                     </TableCell>
                     <TableCell>{lancamento.forma_pagamento?.nome || '-'}</TableCell>
-                    <TableCell className={`font-medium ${lancamento.tipo === 'entrada' ? 'text-green-600' : 'text-destructive'}`}>
+                    <TableCell className={`font-medium ${
+                      lancamento.tipo === 'entrada' ? 'text-green-600' : 
+                      lancamento.tipo === 'emprestimo' ? 'text-violet-600' : 'text-destructive'
+                    }`}>
                       {lancamento.tipo === 'entrada' ? '+' : '-'} {formatCurrency(Number(lancamento.valor))}
                     </TableCell>
                     <TableCell className="text-right">
