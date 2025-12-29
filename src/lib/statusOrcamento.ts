@@ -26,6 +26,11 @@ export const STATUS_CONFIG = {
     color: 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300',
     badgeVariant: 'destructive' as const,
   },
+  cancelado: {
+    label: 'Cancelado',
+    color: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
+    badgeVariant: 'secondary' as const,
+  },
   pago_40: {
     label: 'Pago 40%',
     color: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/50 dark:text-cyan-300',
@@ -56,6 +61,7 @@ export const STATUS_LIST: StatusOrcamento[] = [
   'enviado',
   'sem_resposta',
   'recusado',
+  'cancelado',
   'pago_40',
   'pago_parcial',
   'pago_60',

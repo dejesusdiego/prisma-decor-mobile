@@ -32,6 +32,7 @@ interface DialogCondicoesPagamentoProps {
     cliente_nome: string;
     cliente_telefone: string;
     total_geral: number;
+    total_com_desconto?: number | null;
   } | null;
   novoStatus: string;
   onSuccess: () => void;
@@ -73,7 +74,7 @@ export function DialogCondicoesPagamento({
   });
 
   const numParcelas = parseInt(watch('numero_parcelas') || '1');
-  const valorTotal = orcamento?.total_geral || 0;
+  const valorTotal = orcamento?.total_com_desconto || orcamento?.total_geral || 0;
   const valorParcela = valorTotal / numParcelas;
 
   const mutation = useMutation({

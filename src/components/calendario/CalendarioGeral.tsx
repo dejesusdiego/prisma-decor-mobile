@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -23,7 +24,8 @@ import {
   FileText,
   Package,
   AlertCircle,
-  Filter
+  Filter,
+  ExternalLink
 } from 'lucide-react';
 import { 
   format, 
@@ -60,7 +62,9 @@ interface EventoCalendario {
   status?: string;
   cor: string;
   icone: React.ElementType;
-  link?: string;
+  referenciaId?: string; // ID para navegação
+  pedidoId?: string; // Para instalações
+  contatoId?: string; // Para atividades CRM
 }
 
 const TIPOS_EVENTO: Record<TipoEvento, { label: string; cor: string; icone: React.ElementType }> = {
@@ -82,6 +86,7 @@ const formatCurrency = (value: number) => {
 };
 
 export function CalendarioGeral() {
+  const navigate = useNavigate();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [filtrosAtivos, setFiltrosAtivos] = useState<Record<TipoEvento, boolean>>({
@@ -92,6 +97,36 @@ export function CalendarioGeral() {
     conta_receber: true,
     pedido_entrega: true
   });
+
+  // Função para navegar para a tela correspondente ao evento
+  const handleEventoClick = (evento: EventoCalendario) => {
+    switch (evento.tipo) {
+      case 'atividade_crm':
+        if (evento.contatoId) {
+          navigate(`/gerarorcamento?view=crm&contato=${evento.contatoId}`);
+        }
+        break;
+      case 'instalacao':
+        if (evento.pedidoId) {
+          navigate(`/gerarorcamento?view=producao&pedido=${evento.pedidoId}`);
+        }
+        break;
+      case 'visita':
+        navigate('/gerarorcamento?view=solicitacoesVisita');
+        break;
+      case 'conta_pagar':
+        navigate('/gerarorcamento?view=financeiro&tab=pagar');
+        break;
+      case 'conta_receber':
+        navigate('/gerarorcamento?view=financeiro&tab=receber');
+        break;
+      case 'pedido_entrega':
+        if (evento.pedidoId) {
+          navigate(`/gerarorcamento?view=producao&pedido=${evento.pedidoId}`);
+        }
+        break;
+    }
+  };
 
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
@@ -213,7 +248,8 @@ export function CalendarioGeral() {
           descricao: (a.contatos as any)?.nome || a.descricao,
           status: a.tipo,
           cor: TIPOS_EVENTO.atividade_crm.cor,
-          icone: TIPOS_EVENTO.atividade_crm.icone
+          icone: TIPOS_EVENTO.atividade_crm.icone,
+          contatoId: a.contato_id || undefined
         });
       });
     }
@@ -231,7 +267,8 @@ export function CalendarioGeral() {
           descricao: `${i.endereco}, ${i.cidade}`,
           status: i.status,
           cor: TIPOS_EVENTO.instalacao.cor,
-          icone: TIPOS_EVENTO.instalacao.icone
+          icone: TIPOS_EVENTO.instalacao.icone,
+          pedidoId: i.pedido_id
         });
       });
     }
@@ -248,7 +285,8 @@ export function CalendarioGeral() {
           descricao: `${v.cidade} - ${v.telefone}`,
           status: v.status,
           cor: TIPOS_EVENTO.visita.cor,
-          icone: TIPOS_EVENTO.visita.icone
+          icone: TIPOS_EVENTO.visita.icone,
+          referenciaId: v.id
         });
       });
     }
@@ -264,7 +302,8 @@ export function CalendarioGeral() {
           descricao: `${formatCurrency(c.valor)} - ${c.fornecedor || 'Sem fornecedor'}`,
           status: c.status,
           cor: c.status === 'atrasado' ? 'bg-red-600' : TIPOS_EVENTO.conta_pagar.cor,
-          icone: TIPOS_EVENTO.conta_pagar.icone
+          icone: TIPOS_EVENTO.conta_pagar.icone,
+          referenciaId: c.id
         });
       });
     }
@@ -280,7 +319,8 @@ export function CalendarioGeral() {
           descricao: formatCurrency(c.valor_total - c.valor_pago),
           status: c.status,
           cor: c.status === 'atrasado' ? 'bg-red-600' : TIPOS_EVENTO.conta_receber.cor,
-          icone: TIPOS_EVENTO.conta_receber.icone
+          icone: TIPOS_EVENTO.conta_receber.icone,
+          referenciaId: c.id
         });
       });
     }
@@ -298,7 +338,8 @@ export function CalendarioGeral() {
             descricao: `Status: ${p.status_producao}`,
             status: p.status_producao,
             cor: TIPOS_EVENTO.pedido_entrega.cor,
-            icone: TIPOS_EVENTO.pedido_entrega.icone
+            icone: TIPOS_EVENTO.pedido_entrega.icone,
+            pedidoId: p.id
           });
         }
       });
@@ -401,14 +442,18 @@ export function CalendarioGeral() {
                         return (
                           <div 
                             key={evento.id} 
-                            className="p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+                            onClick={() => handleEventoClick(evento)}
+                            className="p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors cursor-pointer group"
                           >
                             <div className="flex items-start gap-3">
                               <div className={cn("p-2 rounded-lg", evento.cor.replace('bg-', 'bg-').replace('500', '100'))}>
                                 <Icon className={cn("h-4 w-4", evento.cor.replace('bg-', 'text-'))} />
                               </div>
                               <div className="flex-1 min-w-0">
-                                <p className="font-medium text-sm truncate">{evento.titulo}</p>
+                                <div className="flex items-center gap-2">
+                                  <p className="font-medium text-sm truncate">{evento.titulo}</p>
+                                  <ExternalLink className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                                </div>
                                 {evento.hora && (
                                   <p className="text-xs text-muted-foreground flex items-center gap-1">
                                     <Clock className="h-3 w-3" />

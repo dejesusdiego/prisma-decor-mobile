@@ -443,7 +443,9 @@ export function useDashboardData(periodo: PeriodoFiltro = '30d'): DashboardData 
 
       // Alertas
       const hoje = new Date();
-      const alertasArr: OrcamentoAlerta[] = [];
+      
+      // Usar Map para garantir unicidade por ID de orçamento
+      const alertasMap = new Map<string, OrcamentoAlerta>();
 
       allOrcamentos.forEach((orc) => {
         const valor = getValorEfetivo(orc);
@@ -451,8 +453,8 @@ export function useDashboardData(periodo: PeriodoFiltro = '30d'): DashboardData 
         if (orc.status === 'enviado') {
           const diasSemResposta = differenceInDays(hoje, new Date(orc.updated_at));
           if (diasSemResposta >= 5) {
-            alertasArr.push({
-              id: orc.id,
+            alertasMap.set(`sem_resposta_${orc.id}`, {
+              id: `sem_resposta_${orc.id}`,
               codigo: orc.codigo,
               cliente_nome: orc.cliente_nome,
               tipo: 'sem_resposta',
@@ -467,8 +469,8 @@ export function useDashboardData(periodo: PeriodoFiltro = '30d'): DashboardData 
           const diasRestantes = differenceInDays(dataVencimento, hoje);
 
           if (diasRestantes < 0) {
-            alertasArr.push({
-              id: orc.id,
+            alertasMap.set(`vencido_${orc.id}`, {
+              id: `vencido_${orc.id}`,
               codigo: orc.codigo,
               cliente_nome: orc.cliente_nome,
               tipo: 'vencido',
@@ -476,8 +478,8 @@ export function useDashboardData(periodo: PeriodoFiltro = '30d'): DashboardData 
               valor,
             });
           } else if (diasRestantes <= 3) {
-            alertasArr.push({
-              id: orc.id,
+            alertasMap.set(`vencendo_${orc.id}`, {
+              id: `vencendo_${orc.id}`,
               codigo: orc.codigo,
               cliente_nome: orc.cliente_nome,
               tipo: 'vencendo',
@@ -487,6 +489,8 @@ export function useDashboardData(periodo: PeriodoFiltro = '30d'): DashboardData 
           }
         }
       });
+
+      const alertasArr = Array.from(alertasMap.values());
 
       alertasArr.sort((a, b) => {
         if (a.tipo === 'vencido' && b.tipo !== 'vencido') return -1;
