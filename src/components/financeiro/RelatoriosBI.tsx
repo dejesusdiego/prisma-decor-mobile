@@ -355,17 +355,21 @@ export function RelatoriosBI({ onNavigate }: RelatoriosBIProps) {
             <BarChart3 className="h-4 w-4" />
             <span className="hidden sm:inline">Faturamento</span>
           </TabsTrigger>
+          <TabsTrigger value="recorrentes" className="gap-2">
+            <Repeat className="h-4 w-4" />
+            <span className="hidden sm:inline">Recorrentes</span>
+          </TabsTrigger>
+          <TabsTrigger value="historico" className="gap-2">
+            <History className="h-4 w-4" />
+            <span className="hidden sm:inline">Histórico</span>
+          </TabsTrigger>
           <TabsTrigger value="rentabilidade" className="gap-2">
             <Scale3D className="h-4 w-4" />
             <span className="hidden sm:inline">Rentabilidade</span>
           </TabsTrigger>
           <TabsTrigger value="emprestimos" className="gap-2">
-            <RefreshCcw className="h-4 w-4" />
+            <Landmark className="h-4 w-4" />
             <span className="hidden sm:inline">Empréstimos</span>
-          </TabsTrigger>
-          <TabsTrigger value="recorrentes" className="gap-2">
-            <Repeat className="h-4 w-4" />
-            <span className="hidden sm:inline">Recorrentes</span>
           </TabsTrigger>
           <TabsTrigger value="descontos" className="gap-2">
             <Percent className="h-4 w-4" />
