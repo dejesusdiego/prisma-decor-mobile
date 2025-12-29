@@ -138,15 +138,21 @@ export function ConciliacaoBancaria() {
       
       if (extratoError) throw extratoError;
       
-      // Inserir movimentações
-      const movimentacoesInsert = dados.movimentacoes.map(m => ({
-        extrato_id: extrato.id,
-        data_movimentacao: m.data_movimentacao,
-        descricao: m.descricao,
-        valor: m.valor,
-        tipo: m.tipo,
-        numero_documento: m.numero_documento
-      }));
+      // Inserir movimentações - filtrar inválidas
+      const movimentacoesInsert = dados.movimentacoes
+        .filter(m => m.valor != null && !isNaN(m.valor) && m.data_movimentacao)
+        .map(m => ({
+          extrato_id: extrato.id,
+          data_movimentacao: m.data_movimentacao,
+          descricao: m.descricao || 'Sem descrição',
+          valor: m.valor,
+          tipo: m.tipo,
+          numero_documento: m.numero_documento
+        }));
+      
+      if (movimentacoesInsert.length === 0) {
+        throw new Error('Nenhuma movimentação válida encontrada no arquivo');
+      }
       
       const { error: movError } = await supabase
         .from('movimentacoes_extrato')
