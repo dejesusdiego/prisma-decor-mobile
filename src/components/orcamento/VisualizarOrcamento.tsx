@@ -2,13 +2,15 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ArrowLeft, ChevronDown, AlertTriangle, Ruler, Package, Scissors, Wrench } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ArrowLeft, ChevronDown, AlertTriangle, Ruler, Package, Scissors, Wrench, Landmark, FileText } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import type { Cortina, Material, ServicoConfeccao, ServicoInstalacao } from '@/types/orcamento';
 import { calcularConsumoDetalhado, calcularResumoConsolidado } from '@/lib/calculosOrcamento';
 import { fetchMateriaisPaginados } from '@/lib/fetchMateriaisPaginados';
 import { ResumoFinanceiroOrcamento } from './ResumoFinanceiroOrcamento';
+import { RelatorioConciliacaoOrcamento } from './RelatorioConciliacaoOrcamento';
 import { TimelineOrcamento } from './TimelineOrcamento';
 import { DialogGerarContaReceber } from './dialogs/DialogGerarContaReceber';
 import { DialogGerarCustos } from './dialogs/DialogGerarCustos';
@@ -754,53 +756,74 @@ export function VisualizarOrcamento({ orcamentoId, onVoltar }: VisualizarOrcamen
         </CardContent>
       </Card>
 
-      {/* Resumo Financeiro Integrado */}
-      <ResumoFinanceiroOrcamento 
-        orcamentoId={orcamentoId}
-        onGerarContaReceber={() => setDialogContaReceberOpen(true)}
-        onGerarContasPagar={() => setDialogCustosOpen(true)}
-        onVerDetalhes={() => {
-          toast({
-            title: 'Em breve',
-            description: 'Funcionalidade de detalhes financeiros em desenvolvimento'
-          });
-        }}
-      />
-
-      {/* Resumo de Custos do Orçamento */}
+      {/* Abas Financeiro */}
       <Card>
-        <CardHeader>
-          <CardTitle>Resumo de Custos</CardTitle>
+        <CardHeader className="pb-0">
+          <CardTitle className="flex items-center gap-2">
+            <Landmark className="h-5 w-5" />
+            Financeiro
+          </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex justify-between py-2 border-b">
-            <span className="text-muted-foreground">Subtotal Materiais</span>
-            <span className="font-medium">{formatCurrency(orcamento.subtotal_materiais)}</span>
-          </div>
-          <div className="flex justify-between py-2 border-b">
-            <span className="text-muted-foreground">Subtotal Mão de Obra (Costura)</span>
-            <span className="font-medium">{formatCurrency(orcamento.subtotal_mao_obra_costura)}</span>
-          </div>
-          <div className="flex justify-between py-2 border-b">
-            <span className="text-muted-foreground">Subtotal Instalação</span>
-            <span className="font-medium">{formatCurrency(orcamento.subtotal_instalacao)}</span>
-          </div>
-          <div className="flex justify-between py-2 border-b">
-            <span className="font-semibold">Custo Total</span>
-            <span className="font-semibold">{formatCurrency(orcamento.custo_total)}</span>
-          </div>
-          <div className="flex justify-between py-2 border-b">
-            <span className="text-muted-foreground">
-              Margem ({orcamento.margem_tipo} - {orcamento.margem_percent}%)
-            </span>
-            <span className="font-medium">
-              {formatCurrency((orcamento.total_geral || 0) - (orcamento.custo_total || 0))}
-            </span>
-          </div>
-          <div className="flex justify-between pt-3 border-t-2">
-            <span className="text-xl font-bold">Total para o Cliente</span>
-            <span className="text-xl font-bold text-primary">{formatCurrency(orcamento.total_geral)}</span>
-          </div>
+        <CardContent className="pt-4">
+          <Tabs defaultValue="resumo" className="w-full">
+            <TabsList className="grid w-full grid-cols-3 mb-4">
+              <TabsTrigger value="resumo" className="flex items-center gap-1.5">
+                <FileText className="h-4 w-4" />
+                Resumo
+              </TabsTrigger>
+              <TabsTrigger value="custos" className="flex items-center gap-1.5">
+                <Package className="h-4 w-4" />
+                Custos
+              </TabsTrigger>
+              <TabsTrigger value="conciliacao" className="flex items-center gap-1.5">
+                <Landmark className="h-4 w-4" />
+                Conciliação
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="resumo" className="space-y-4">
+              <ResumoFinanceiroOrcamento 
+                orcamentoId={orcamentoId}
+                onGerarContaReceber={() => setDialogContaReceberOpen(true)}
+                onGerarContasPagar={() => setDialogCustosOpen(true)}
+              />
+            </TabsContent>
+
+            <TabsContent value="custos" className="space-y-3">
+              <div className="flex justify-between py-2 border-b">
+                <span className="text-muted-foreground">Subtotal Materiais</span>
+                <span className="font-medium">{formatCurrency(orcamento.subtotal_materiais)}</span>
+              </div>
+              <div className="flex justify-between py-2 border-b">
+                <span className="text-muted-foreground">Subtotal Mão de Obra (Costura)</span>
+                <span className="font-medium">{formatCurrency(orcamento.subtotal_mao_obra_costura)}</span>
+              </div>
+              <div className="flex justify-between py-2 border-b">
+                <span className="text-muted-foreground">Subtotal Instalação</span>
+                <span className="font-medium">{formatCurrency(orcamento.subtotal_instalacao)}</span>
+              </div>
+              <div className="flex justify-between py-2 border-b">
+                <span className="font-semibold">Custo Total</span>
+                <span className="font-semibold">{formatCurrency(orcamento.custo_total)}</span>
+              </div>
+              <div className="flex justify-between py-2 border-b">
+                <span className="text-muted-foreground">
+                  Margem ({orcamento.margem_tipo} - {orcamento.margem_percent}%)
+                </span>
+                <span className="font-medium">
+                  {formatCurrency((orcamento.total_geral || 0) - (orcamento.custo_total || 0))}
+                </span>
+              </div>
+              <div className="flex justify-between pt-3 border-t-2">
+                <span className="text-xl font-bold">Total para o Cliente</span>
+                <span className="text-xl font-bold text-primary">{formatCurrency(orcamento.total_geral)}</span>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="conciliacao">
+              <RelatorioConciliacaoOrcamento orcamentoId={orcamentoId} />
+            </TabsContent>
+          </Tabs>
         </CardContent>
       </Card>
 
