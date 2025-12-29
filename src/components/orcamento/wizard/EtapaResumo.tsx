@@ -19,6 +19,7 @@ import { MateriaisAgrupados } from './MateriaisAgrupados';
 import { DebugCalculos } from './DebugCalculos';
 import { HistoricoDescontos, registrarHistoricoDesconto } from './HistoricoDescontos';
 import { useAuth } from '@/hooks/useAuth';
+import { formatCurrency, formatMeters } from '@/lib/formatters';
 
 interface EtapaResumoProps {
   orcamentoId: string;
@@ -130,16 +131,7 @@ export function EtapaResumo({
     return material || null;
   };
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    }).format(value);
-  };
-
-  const formatMeters = (value: number) => {
-    return value.toFixed(2) + 'm';
-  };
+  // formatCurrency e formatMeters agora são importados de @/lib/formatters
 
   const toggleCard = (index: number) => {
     setExpandedCards(prev => ({ ...prev, [index]: !prev[index] }));

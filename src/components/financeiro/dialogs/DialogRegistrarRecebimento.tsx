@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { Upload, X, FileText, Loader2 } from 'lucide-react';
+import { formatCurrency } from '@/lib/formatters';
 
 interface DialogRegistrarRecebimentoProps {
   open: boolean;
@@ -54,10 +55,6 @@ export function DialogRegistrarRecebimento({ open, onOpenChange, parcela }: Dial
       return data;
     }
   });
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
-  };
 
   useEffect(() => {
     if (open) {
