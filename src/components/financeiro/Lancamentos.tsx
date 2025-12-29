@@ -38,6 +38,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { toast } from 'sonner';
 import { DialogLancamento } from './dialogs/DialogLancamento';
 import { DialogDevolucaoEmprestimo } from './dialogs/DialogDevolucaoEmprestimo';
+import { BreadcrumbsFinanceiro } from './BreadcrumbsFinanceiro';
 
 type TipoFilter = 'todos' | 'entrada' | 'saida' | 'emprestimo';
 
@@ -64,7 +65,11 @@ const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 };
 
-export function Lancamentos() {
+interface LancamentosProps {
+  onNavigate?: (view: string) => void;
+}
+
+export function Lancamentos({ onNavigate }: LancamentosProps = {}) {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [tipoFilter, setTipoFilter] = useState<TipoFilter>('todos');
@@ -202,6 +207,9 @@ export function Lancamentos() {
 
   return (
     <div className="space-y-6">
+      {/* Breadcrumb */}
+      <BreadcrumbsFinanceiro currentView="finLancamentos" onNavigate={onNavigate} />
+      
       {/* Header */}
       <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
         <div>

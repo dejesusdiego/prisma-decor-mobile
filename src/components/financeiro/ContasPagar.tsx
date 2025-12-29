@@ -41,9 +41,11 @@ import { toast } from 'sonner';
 import { DialogContaPagar } from './dialogs/DialogContaPagar';
 import { HelpTooltip } from '@/components/ui/HelpTooltip';
 import { TipBanner } from '@/components/ui/TipBanner';
+import { BreadcrumbsFinanceiro } from './BreadcrumbsFinanceiro';
 
 interface ContasPagarProps {
   onVisualizarOrcamento?: (orcamentoId: string) => void;
+  onNavigate?: (view: string) => void;
 }
 type StatusFilter = 'todos' | 'pendente' | 'pago' | 'atrasado';
 
@@ -65,7 +67,7 @@ const getStatusBadge = (status: string, dataVencimento: string) => {
   return <Badge variant="secondary"><Clock className="h-3 w-3 mr-1" />Pendente</Badge>;
 };
 
-export function ContasPagar({ onVisualizarOrcamento }: ContasPagarProps) {
+export function ContasPagar({ onVisualizarOrcamento, onNavigate }: ContasPagarProps) {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('todos');
@@ -190,6 +192,9 @@ export function ContasPagar({ onVisualizarOrcamento }: ContasPagarProps) {
 
   return (
     <div className="space-y-6">
+      {/* Breadcrumb */}
+      <BreadcrumbsFinanceiro currentView="finContasPagar" onNavigate={onNavigate} />
+      
       {/* Header */}
       <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
         <div>

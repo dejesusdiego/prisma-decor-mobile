@@ -256,10 +256,17 @@ export function DialogRegistrarRecebimento({ open, onOpenChange, parcela }: Dial
       }
     },
     onSuccess: () => {
+      // Invalidação cruzada completa - atualiza todos os módulos relacionados
       queryClient.invalidateQueries({ queryKey: ['contas-receber'] });
+      queryClient.invalidateQueries({ queryKey: ['contas-receber-pendentes'] });
       queryClient.invalidateQueries({ queryKey: ['lancamentos'] });
+      queryClient.invalidateQueries({ queryKey: ['lancamentos-financeiros'] }); // Dashboard
       queryClient.invalidateQueries({ queryKey: ['orcamentos'] });
       queryClient.invalidateQueries({ queryKey: ['comissoes'] });
+      queryClient.invalidateQueries({ queryKey: ['parcelas-receber-previsao'] }); // Fluxo previsto
+      queryClient.invalidateQueries({ queryKey: ['saldo-atual-caixa'] }); // Saldo fluxo
+      queryClient.invalidateQueries({ queryKey: ['movimentacoes-extrato'] }); // Conciliação
+      queryClient.invalidateQueries({ queryKey: ['extratos-bancarios'] }); // Conciliação
       toast.success('Recebimento registrado com sucesso');
       onOpenChange(false);
     },
