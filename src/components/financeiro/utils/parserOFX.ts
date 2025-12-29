@@ -46,17 +46,22 @@ export function parseOFX(content: string): DadosExtrato {
     const checkNumMatch = transactionBlock.match(/<CHECKNUM>([^<\n]+)/);
     
     if (dtPostedMatch && trnAmtMatch) {
-      const valor = parseFloat(trnAmtMatch[1].replace(',', '.'));
-      const data = formatOFXDate(dtPostedMatch[1]);
-      const descricao = memoMatch?.[1]?.trim() || nameMatch?.[1]?.trim() || 'Sem descrição';
+      const valorStr = trnAmtMatch[1].replace(',', '.');
+      const valor = parseFloat(valorStr);
       
-      movimentacoes.push({
-        data_movimentacao: data,
-        descricao: descricao,
-        valor: Math.abs(valor),
-        tipo: valor >= 0 ? 'credito' : 'debito',
-        numero_documento: fitIdMatch?.[1] || checkNumMatch?.[1]
-      });
+      // Só adicionar se o valor for válido
+      if (!isNaN(valor)) {
+        const data = formatOFXDate(dtPostedMatch[1]);
+        const descricao = memoMatch?.[1]?.trim() || nameMatch?.[1]?.trim() || 'Sem descrição';
+        
+        movimentacoes.push({
+          data_movimentacao: data,
+          descricao: descricao,
+          valor: Math.abs(valor),
+          tipo: valor >= 0 ? 'credito' : 'debito',
+          numero_documento: fitIdMatch?.[1] || checkNumMatch?.[1]
+        });
+      }
     }
   }
   
