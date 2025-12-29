@@ -15,6 +15,12 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { 
   CheckCircle2, 
   Clock, 
@@ -22,10 +28,13 @@ import {
   TrendingUp, 
   ExternalLink,
   BarChart3,
-  Filter
+  Filter,
+  FileText,
+  Send
 } from 'lucide-react';
 import { useRelatorioConciliacaoConsolidado, OrcamentoConciliacaoResumo } from '@/hooks/useRelatorioConciliacaoConsolidado';
 import { formatCurrency, formatPercent, formatDate } from '@/lib/formatters';
+import { getStatusConfig } from '@/lib/statusOrcamento';
 
 interface RelatorioConciliacaoConsolidadoProps {
   onNavigateOrcamento?: (orcamentoId: string) => void;
@@ -33,9 +42,11 @@ interface RelatorioConciliacaoConsolidadoProps {
 
 export function RelatorioConciliacaoConsolidado({ onNavigateOrcamento }: RelatorioConciliacaoConsolidadoProps) {
   const [apenasComPendencias, setApenasComPendencias] = useState(false);
+  const [incluirNaoEnviados, setIncluirNaoEnviados] = useState(false);
   
   const { data, isLoading } = useRelatorioConciliacaoConsolidado({ 
-    apenasComPendencias 
+    apenasComPendencias,
+    incluirNaoEnviados
   });
 
   if (isLoading) {
@@ -86,18 +97,39 @@ export function RelatorioConciliacaoConsolidado({ onNavigateOrcamento }: Relator
             Visão geral da conciliação bancária de todos os orçamentos
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Switch
-            id="filtro-pendencias"
-            checked={apenasComPendencias}
-            onCheckedChange={setApenasComPendencias}
-          />
-          <Label htmlFor="filtro-pendencias" className="text-sm">
-            <Filter className="h-4 w-4 inline mr-1" />
-            Apenas pendências
-          </Label>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <Switch
+              id="filtro-nao-enviados"
+              checked={incluirNaoEnviados}
+              onCheckedChange={setIncluirNaoEnviados}
+            />
+            <Label htmlFor="filtro-nao-enviados" className="text-sm">
+              <FileText className="h-4 w-4 inline mr-1" />
+              Incluir não enviados
+            </Label>
+          </div>
+          <div className="flex items-center gap-2">
+            <Switch
+              id="filtro-pendencias"
+              checked={apenasComPendencias}
+              onCheckedChange={setApenasComPendencias}
+            />
+            <Label htmlFor="filtro-pendencias" className="text-sm">
+              <Filter className="h-4 w-4 inline mr-1" />
+              Apenas pendências
+            </Label>
+          </div>
         </div>
       </div>
+
+      {/* Info de filtro */}
+      {!incluirNaoEnviados && (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/30 rounded-lg px-3 py-2">
+          <Send className="h-4 w-4" />
+          Mostrando apenas orçamentos enviados ao cliente ou com pagamentos iniciados
+        </div>
+      )}
 
       {/* Cards de Resumo */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -197,12 +229,27 @@ export function RelatorioConciliacaoConsolidado({ onNavigateOrcamento }: Relator
                     </TableCell>
                   </TableRow>
                 ) : (
-                  orcamentos.map((orc) => (
+                  orcamentos.map((orc) => {
+                    const statusConfig = getStatusConfig(orc.status);
+                    return (
                     <TableRow key={orc.id}>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           {getStatusIcon(orc.statusConciliacao)}
                           <span className="font-medium">{orc.codigo}</span>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger>
+                                <Badge 
+                                  variant="outline" 
+                                  className={`text-[10px] px-1.5 py-0 ${statusConfig.color}`}
+                                >
+                                  {statusConfig.label}
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent>Status do orçamento no CRM</TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         </div>
                         <span className="text-xs text-muted-foreground">
                           {formatDate(orc.createdAt)}
@@ -245,7 +292,7 @@ export function RelatorioConciliacaoConsolidado({ onNavigateOrcamento }: Relator
                         )}
                       </TableCell>
                     </TableRow>
-                  ))
+                  )})
                 )}
               </TableBody>
             </Table>

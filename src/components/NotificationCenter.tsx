@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Bell, Check, CheckCheck, Trash2, X, AlertCircle, Calendar, Package, Eye, DollarSign, Clock, RefreshCw } from 'lucide-react';
+import { Bell, Check, CheckCheck, Trash2, X, AlertCircle, Calendar, Package, Eye, DollarSign, Clock, RefreshCw, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -25,6 +25,7 @@ const TIPO_CONFIG: Record<string, { icon: React.ElementType; color: string; bgCo
   parcela_vencer: { icon: Calendar, color: 'text-orange-600', bgColor: 'bg-orange-100 dark:bg-orange-900/30' },
   emprestimo_vencendo: { icon: RefreshCw, color: 'text-orange-600', bgColor: 'bg-orange-100 dark:bg-orange-900/30' },
   emprestimo_atrasado: { icon: AlertCircle, color: 'text-red-600', bgColor: 'bg-red-100 dark:bg-red-900/30' },
+  match_padrao: { icon: Zap, color: 'text-indigo-600', bgColor: 'bg-indigo-100 dark:bg-indigo-900/30' },
 };
 
 const PRIORIDADE_CONFIG: Record<string, { color: string }> = {
@@ -64,6 +65,7 @@ export function NotificationCenter({ onNavigate }: NotificationCenterProps) {
         conta_receber: 'finContasReceber',
         contato: 'crm',
         emprestimo: 'finRelatorios',
+        extrato: 'finConciliacao',
       };
       
       const view = navMap[notificacao.referencia_tipo];
