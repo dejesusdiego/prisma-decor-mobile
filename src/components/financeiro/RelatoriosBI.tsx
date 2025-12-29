@@ -332,7 +332,7 @@ export function RelatoriosBI() {
       </div>
 
       <Tabs defaultValue="dre" className="space-y-6">
-        <TabsList className="flex flex-wrap gap-1 h-auto p-1 w-full max-w-[1200px]">
+        <TabsList className="flex flex-wrap gap-1 h-auto p-1 w-full max-w-[900px]">
           <TabsTrigger value="dre" className="gap-2">
             <DollarSign className="h-4 w-4" />
             <span className="hidden sm:inline">DRE</span>
@@ -364,26 +364,6 @@ export function RelatoriosBI() {
           <TabsTrigger value="descontos" className="gap-2">
             <Percent className="h-4 w-4" />
             <span className="hidden sm:inline">Descontos</span>
-          </TabsTrigger>
-          <TabsTrigger value="historico" className="gap-2">
-            <History className="h-4 w-4" />
-            <span className="hidden sm:inline">Histórico</span>
-          </TabsTrigger>
-          <TabsTrigger value="conciliacao" className="gap-2">
-            <Landmark className="h-4 w-4" />
-            <span className="hidden sm:inline">Conciliação</span>
-          </TabsTrigger>
-        </TabsList>
-        
-        {/* Aba Clientes destacada */}
-        <TabsList className="w-auto">
-          <TabsTrigger 
-            value="clientes" 
-            className="gap-2 bg-primary/10 border border-primary/30 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-          >
-            <Users className="h-4 w-4" />
-            <span>Clientes</span>
-            <Badge variant="secondary" className="ml-1 text-xs px-1.5 py-0">Novo</Badge>
           </TabsTrigger>
         </TabsList>
 
@@ -813,15 +793,7 @@ export function RelatoriosBI() {
           </Card>
         </TabsContent>
 
-        {/* Conciliação Bancária */}
-        <TabsContent value="conciliacao" className="space-y-6">
-          <ConciliacaoBancaria />
-        </TabsContent>
-
-        {/* Relatório por Clientes */}
-        <TabsContent value="clientes" className="space-y-6">
-          <RelatorioConciliacaoClientes />
-        </TabsContent>
+        {/* Conciliação e Clientes agora estão em Contas a Receber */}
       </Tabs>
     </div>
   );
