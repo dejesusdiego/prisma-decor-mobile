@@ -40,6 +40,49 @@ export async function buscarRegrasAtivas(): Promise<RegrasConciliacao[]> {
   return (data || []) as RegrasConciliacao[];
 }
 
+// Criar regras padrão para um usuário (se ainda não existirem)
+export async function criarRegrasPadrao(userId: string): Promise<number> {
+  // Verificar se o usuário já tem regras
+  const { data: existentes } = await supabase
+    .from('regras_conciliacao')
+    .select('id')
+    .eq('created_by_user_id', userId)
+    .limit(1);
+
+  // Se já tem regras, não criar
+  if (existentes && existentes.length > 0) return 0;
+
+  // Criar regras padrão
+  const regrasParaInserir = REGRAS_PADRAO.map((r, idx) => ({
+    ...r,
+    ordem: idx,
+    created_by_user_id: userId
+  }));
+
+  const { error } = await supabase
+    .from('regras_conciliacao')
+    .insert(regrasParaInserir);
+
+  if (error) throw error;
+  return regrasParaInserir.length;
+}
+
+// Regras padrão que serão criadas automaticamente
+export const REGRAS_PADRAO = [
+  { nome: 'Tarifas Bancárias', descricao_contem: 'TARIFA', acao: 'ignorar' as const, ativo: true },
+  { nome: 'IOF', descricao_contem: 'IOF', acao: 'ignorar' as const, ativo: true },
+  { nome: 'TED Tarifa', descricao_contem: 'TED TARIFA', acao: 'ignorar' as const, ativo: true },
+  { nome: 'DOC Tarifa', descricao_contem: 'DOC TARIFA', acao: 'ignorar' as const, ativo: true },
+  { nome: 'Taxa Manutenção', descricao_contem: 'MANUTENCAO', acao: 'ignorar' as const, ativo: true },
+  { nome: 'Pacote Serviços', descricao_contem: 'PACOTE SERVICO', acao: 'ignorar' as const, ativo: true },
+  { nome: 'Resgate RDB', descricao_contem: 'RESGATE RDB', acao: 'criar_lancamento' as const, tipo_lancamento: 'entrada', ativo: true },
+  { nome: 'Aplicação RDB', descricao_contem: 'APLICACAO RDB', acao: 'criar_lancamento' as const, tipo_lancamento: 'saida', ativo: true },
+  { nome: 'Resgate CDB', descricao_contem: 'RESGATE CDB', acao: 'criar_lancamento' as const, tipo_lancamento: 'entrada', ativo: true },
+  { nome: 'Aplicação CDB', descricao_contem: 'APLICACAO CDB', acao: 'criar_lancamento' as const, tipo_lancamento: 'saida', ativo: true },
+  { nome: 'Rendimento', descricao_contem: 'RENDIMENTO', acao: 'criar_lancamento' as const, tipo_lancamento: 'entrada', ativo: true },
+  { nome: 'Juros Crédito', descricao_contem: 'JUROS CREDITO', acao: 'criar_lancamento' as const, tipo_lancamento: 'entrada', ativo: true },
+];
+
 // Verificar se a descrição corresponde à regra
 function matchDescricao(descricao: string, padrao: string): boolean {
   return descricao.toLowerCase().includes(padrao.toLowerCase());
@@ -119,12 +162,5 @@ export async function aplicarRegrasMovimentacoes(
   return resultados;
 }
 
-// Regras padrão sugeridas
-export const REGRAS_SUGERIDAS = [
-  { nome: 'Tarifas Bancárias', descricao_contem: 'TARIFA', acao: 'ignorar' },
-  { nome: 'IOF', descricao_contem: 'IOF', acao: 'ignorar' },
-  { nome: 'TED Enviada (Tarifa)', descricao_contem: 'TED TARIFA', acao: 'ignorar' },
-  { nome: 'Resgate RDB', descricao_contem: 'RESGATE RDB', acao: 'criar_lancamento' },
-  { nome: 'Aplicação RDB', descricao_contem: 'APLICACAO RDB', acao: 'criar_lancamento' },
-  { nome: 'Rendimento Poupança', descricao_contem: 'RENDIMENTO', acao: 'criar_lancamento' },
-];
+// Alias for backwards compatibility (used in DialogRegrasConciliacao)
+export const REGRAS_SUGERIDAS = REGRAS_PADRAO;

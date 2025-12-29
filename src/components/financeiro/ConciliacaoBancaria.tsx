@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -14,7 +14,8 @@ import {
   Link2Off,
   RefreshCw,
   Plus,
-  Zap
+  Zap,
+  Receipt
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -44,12 +45,13 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import { parseExtrato, autoMatch, DadosExtrato } from './utils/parserOFX';
-import { buscarRegrasAtivas, aplicarRegrasMovimentacoes } from './utils/aplicarRegras';
+import { buscarRegrasAtivas, aplicarRegrasMovimentacoes, criarRegrasPadrao } from './utils/aplicarRegras';
 import { DialogConciliarManual } from './dialogs/DialogConciliarManual';
 import { DialogPreviaExtrato } from './dialogs/DialogPreviaExtrato';
 import { DialogRegrasConciliacao } from './dialogs/DialogRegrasConciliacao';
 import { DialogCriarLancamentoDeExtrato } from './dialogs/DialogCriarLancamentoDeExtrato';
 import { DialogGerenciarImportacoes } from './dialogs/DialogGerenciarImportacoes';
+import { DialogConciliarComRecebimento } from './dialogs/DialogConciliarComRecebimento';
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -74,6 +76,25 @@ export function ConciliacaoBancaria() {
   // Criar lançamento state
   const [criarLancamentoOpen, setCriarLancamentoOpen] = useState(false);
   const [movimentacaoParaLancamento, setMovimentacaoParaLancamento] = useState<any>(null);
+
+  // Conciliar com recebimento state
+  const [recebimentoOpen, setRecebimentoOpen] = useState(false);
+  const [movimentacaoParaRecebimento, setMovimentacaoParaRecebimento] = useState<any>(null);
+  const [parcelaParaRecebimento, setParcelaParaRecebimento] = useState<any>(null);
+
+  // Criar regras padrão ao carregar (uma vez por usuário)
+  useEffect(() => {
+    if (user?.id) {
+      criarRegrasPadrao(user.id).then(count => {
+        if (count > 0) {
+          toast.success(`${count} regras padrão criadas automaticamente`);
+          queryClient.invalidateQueries({ queryKey: ['regras-conciliacao'] });
+        }
+      }).catch(() => {
+        // Silently fail - user may already have rules
+      });
+    }
+  }, [user?.id]);
 
   // Buscar extratos importados
   const { data: extratos = [] } = useQuery({
@@ -226,14 +247,103 @@ export function ConciliacaoBancaria() {
     },
   });
 
-  // Auto-conciliar
+  // Buscar parcelas a receber pendentes para conciliação inteligente
+  const { data: parcelasPendentes = [] } = useQuery({
+    queryKey: ['parcelas-para-conciliacao', extratoSelecionado],
+    queryFn: async () => {
+      const extrato = extratos.find(e => e.id === extratoSelecionado);
+      if (!extrato) return [];
+
+      const { data, error } = await supabase
+        .from('parcelas_receber')
+        .select(`
+          id, numero_parcela, valor, data_vencimento, status,
+          conta_receber:contas_receber(
+            id, cliente_nome, cliente_telefone, orcamento_id,
+            orcamento:orcamentos(id, codigo, cliente_nome)
+          )
+        `)
+        .eq('status', 'pendente')
+        .gte('data_vencimento', extrato.data_inicio || '2020-01-01')
+        .lte('data_vencimento', extrato.data_fim || '2099-12-31');
+
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!extratoSelecionado
+  });
+
+  // Auto-conciliar (agora com parcelas também)
   const autoConciliarMutation = useMutation({
     mutationFn: async () => {
-      if (!extratoSelecionado) return;
+      if (!extratoSelecionado || !user) return { lancamentos: 0, parcelas: 0 };
       
-      const movPendentes = movimentacoes.filter(m => !m.conciliado && !m.ignorado);
+      const movPendentes = movimentacoes.filter(m => !m.conciliado && !m.ignorado && m.tipo === 'credito');
       const extrato = extratos.find(e => e.id === extratoSelecionado);
-      if (!extrato) return;
+      if (!extrato) return { lancamentos: 0, parcelas: 0 };
+
+      let parcelasCount = 0;
+      let lancamentosCount = 0;
+
+      // 1. PRIMEIRO: Tentar match com parcelas a receber (créditos)
+      for (const mov of movPendentes) {
+        const parcelaMatch = parcelasPendentes.find(p => 
+          Math.abs(Number(p.valor) - Number(mov.valor)) < 1
+        );
+
+        if (parcelaMatch && parcelaMatch.conta_receber) {
+          // Criar lançamento e registrar recebimento
+          const { data: lancamento } = await supabase
+            .from('lancamentos_financeiros')
+            .insert({
+              descricao: `Recebimento: ${parcelaMatch.conta_receber.cliente_nome} - Parcela ${parcelaMatch.numero_parcela}`,
+              valor: mov.valor,
+              data_lancamento: mov.data_movimentacao,
+              tipo: 'entrada',
+              parcela_receber_id: parcelaMatch.id,
+              created_by_user_id: user.id
+            })
+            .select('id')
+            .single();
+
+          if (lancamento) {
+            // Atualizar movimentação
+            await supabase
+              .from('movimentacoes_extrato')
+              .update({ lancamento_id: lancamento.id, conciliado: true })
+              .eq('id', mov.id);
+
+            // Atualizar parcela
+            await supabase
+              .from('parcelas_receber')
+              .update({ status: 'pago', data_pagamento: mov.data_movimentacao })
+              .eq('id', parcelaMatch.id);
+
+            // Atualizar conta_receber
+            const { data: contaAtual } = await supabase
+              .from('contas_receber')
+              .select('valor_pago, valor_total')
+              .eq('id', parcelaMatch.conta_receber.id)
+              .single();
+
+            if (contaAtual) {
+              const novoValorPago = (contaAtual.valor_pago || 0) + mov.valor;
+              await supabase
+                .from('contas_receber')
+                .update({
+                  valor_pago: novoValorPago,
+                  status: novoValorPago >= contaAtual.valor_total ? 'pago' : 'parcial'
+                })
+                .eq('id', parcelaMatch.conta_receber.id);
+            }
+
+            parcelasCount++;
+          }
+        }
+      }
+
+      // 2. DEPOIS: Match com lançamentos existentes (restantes)
+      const movRestantes = movimentacoes.filter(m => !m.conciliado && !m.ignorado);
       
       const { data: lancamentos } = await supabase
         .from('lancamentos_financeiros')
@@ -241,48 +351,56 @@ export function ConciliacaoBancaria() {
         .gte('data_lancamento', extrato.data_inicio)
         .lte('data_lancamento', extrato.data_fim);
       
-      if (!lancamentos || lancamentos.length === 0) return;
-      
-      const { data: jaConciliados } = await supabase
-        .from('movimentacoes_extrato')
-        .select('lancamento_id')
-        .not('lancamento_id', 'is', null);
-      
-      const idsJaConciliados = new Set((jaConciliados || []).map(m => m.lancamento_id));
-      const lancamentosDisponiveis = lancamentos.filter(l => !idsJaConciliados.has(l.id));
-      
-      const movParaMatch = movPendentes.map(m => ({
-        id: m.id,
-        data: m.data_movimentacao,
-        valor: Number(m.valor),
-        descricao: m.descricao
-      }));
-      
-      const lancParaMatch = lancamentosDisponiveis.map(l => ({
-        id: l.id,
-        data: l.data_lancamento,
-        valor: Number(l.valor),
-        descricao: l.descricao
-      }));
-      
-      const matches = autoMatch(movParaMatch, lancParaMatch);
-      
-      for (const match of matches) {
-        await supabase
+      if (lancamentos && lancamentos.length > 0) {
+        const { data: jaConciliados } = await supabase
           .from('movimentacoes_extrato')
-          .update({ lancamento_id: match.lancamentoId, conciliado: true })
-          .eq('id', match.movimentacaoId);
+          .select('lancamento_id')
+          .not('lancamento_id', 'is', null);
+        
+        const idsJaConciliados = new Set((jaConciliados || []).map(m => m.lancamento_id));
+        const lancamentosDisponiveis = lancamentos.filter(l => !idsJaConciliados.has(l.id));
+        
+        const movParaMatch = movRestantes.map(m => ({
+          id: m.id,
+          data: m.data_movimentacao,
+          valor: Number(m.valor),
+          descricao: m.descricao
+        }));
+        
+        const lancParaMatch = lancamentosDisponiveis.map(l => ({
+          id: l.id,
+          data: l.data_lancamento,
+          valor: Number(l.valor),
+          descricao: l.descricao
+        }));
+        
+        const matches = autoMatch(movParaMatch, lancParaMatch);
+        
+        for (const match of matches) {
+          await supabase
+            .from('movimentacoes_extrato')
+            .update({ lancamento_id: match.lancamentoId, conciliado: true })
+            .eq('id', match.movimentacaoId);
+        }
+        
+        lancamentosCount = matches.length;
       }
       
-      return matches.length;
+      return { lancamentos: lancamentosCount, parcelas: parcelasCount };
     },
-    onSuccess: (count) => {
-      if (count && count > 0) {
-        toast.success(`${count} movimentação(ões) conciliada(s)`);
+    onSuccess: (result) => {
+      const total = (result?.lancamentos || 0) + (result?.parcelas || 0);
+      if (total > 0) {
+        const msgs: string[] = [];
+        if (result?.parcelas) msgs.push(`${result.parcelas} recebimento(s)`);
+        if (result?.lancamentos) msgs.push(`${result.lancamentos} lançamento(s)`);
+        toast.success(`Conciliados: ${msgs.join(', ')}`);
       } else {
         toast.info('Nenhuma correspondência encontrada');
       }
       queryClient.invalidateQueries({ queryKey: ['movimentacoes-extrato'] });
+      queryClient.invalidateQueries({ queryKey: ['parcelas-para-conciliacao'] });
+      queryClient.invalidateQueries({ queryKey: ['contas-receber'] });
     }
   });
 
@@ -338,6 +456,18 @@ export function ConciliacaoBancaria() {
   const handleCriarLancamento = (mov: any) => {
     setMovimentacaoParaLancamento(mov);
     setCriarLancamentoOpen(true);
+  };
+
+  // Buscar parcela correspondente para botão de recebimento
+  const buscarParcelaMatch = (mov: any) => {
+    if (mov.tipo !== 'credito') return null;
+    return parcelasPendentes.find(p => Math.abs(Number(p.valor) - Number(mov.valor)) < 1);
+  };
+
+  const handleRegistrarRecebimento = (mov: any, parcela: any) => {
+    setMovimentacaoParaRecebimento(mov);
+    setParcelaParaRecebimento(parcela);
+    setRecebimentoOpen(true);
   };
 
   const movimentacoesFiltradas = movimentacoes.filter(m => {
@@ -528,6 +658,30 @@ export function ConciliacaoBancaria() {
                                       </TooltipTrigger>
                                       <TooltipContent>Criar lançamento</TooltipContent>
                                     </Tooltip>
+                                    {/* Botão de recebimento se houver parcela match */}
+                                    {(() => {
+                                      const parcelaMatch = buscarParcelaMatch(mov);
+                                      if (parcelaMatch) {
+                                        return (
+                                          <Tooltip>
+                                            <TooltipTrigger asChild>
+                                              <Button 
+                                                variant="ghost" 
+                                                size="icon"
+                                                className="text-green-600"
+                                                onClick={() => handleRegistrarRecebimento(mov, parcelaMatch)}
+                                              >
+                                                <Receipt className="h-4 w-4" />
+                                              </Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                              Recebimento: {parcelaMatch.conta_receber?.cliente_nome}
+                                            </TooltipContent>
+                                          </Tooltip>
+                                        );
+                                      }
+                                      return null;
+                                    })()}
                                     <Tooltip>
                                       <TooltipTrigger asChild>
                                         <Button variant="ghost" size="icon" onClick={() => { setMovimentacaoParaConciliar(mov); setDialogConciliarOpen(true); }}>
@@ -590,6 +744,13 @@ export function ConciliacaoBancaria() {
         open={criarLancamentoOpen}
         onOpenChange={setCriarLancamentoOpen}
         movimentacao={movimentacaoParaLancamento}
+      />
+
+      <DialogConciliarComRecebimento
+        open={recebimentoOpen}
+        onOpenChange={setRecebimentoOpen}
+        movimentacao={movimentacaoParaRecebimento}
+        parcela={parcelaParaRecebimento}
       />
     </div>
   );
