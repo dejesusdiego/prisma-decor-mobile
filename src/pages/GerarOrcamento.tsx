@@ -19,6 +19,7 @@ import { ContasPagar } from '@/components/financeiro/ContasPagar';
 import { ContasReceber } from '@/components/financeiro/ContasReceber';
 import { Lancamentos } from '@/components/financeiro/Lancamentos';
 import { RelatoriosBI } from '@/components/financeiro/RelatoriosBI';
+import { RelatorioConciliacaoConsolidado } from '@/components/financeiro/RelatorioConciliacaoConsolidado';
 import { CategoriasFormas } from '@/components/financeiro/CategoriasFormas';
 import { RelatorioRentabilidade } from '@/components/financeiro/RelatorioRentabilidade';
 import { Comissoes } from '@/components/financeiro/Comissoes';
@@ -64,6 +65,7 @@ const ADMIN_ONLY_VIEWS: View[] = [
   'finContasReceber',
   'finLancamentos',
   'finRelatorios',
+  'finConsolidado',
   'categoriasFormas',
   'crmRelatorios',
   'prodDashboard',
@@ -191,6 +193,7 @@ export default function GerarOrcamento() {
       case 'finFluxoPrevisto': return 'Fluxo de Caixa Previsto';
       case 'finRentabilidade': return 'Rentabilidade por Orçamento';
       case 'finComissoes': return 'Comissões';
+      case 'finConsolidado': return 'Relatório Consolidado';
       case 'categoriasFormas': return 'Categorias e Formas de Pagamento';
       case 'crmPainel': return 'Painel CRM';
       case 'crmContatos': return 'Contatos';
@@ -306,6 +309,9 @@ export default function GerarOrcamento() {
                 {view === 'finLancamentos' && <Lancamentos onNavigate={handleNavigate} />}
                 {view === 'finRelatorios' && <RelatoriosBI onNavigate={handleNavigate} />}
                 {view === 'finKPIs' && <DashboardKPIs />}
+                {view === 'finConsolidado' && (
+                  <RelatorioConciliacaoConsolidado onNavigateOrcamento={handleVisualizarOrcamento} />
+                )}
               </FinanceiroProvider>
             )}
 

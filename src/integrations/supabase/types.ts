@@ -1309,6 +1309,56 @@ export type Database = {
           },
         ]
       }
+      padroes_conciliacao: {
+        Row: {
+          ativo: boolean
+          categoria_id: string | null
+          confianca: number
+          created_at: string
+          created_by_user_id: string
+          id: string
+          padrao_descricao: string
+          tipo_conciliacao: string
+          tipo_lancamento: string | null
+          ultima_utilizacao: string
+          vezes_usado: number
+        }
+        Insert: {
+          ativo?: boolean
+          categoria_id?: string | null
+          confianca?: number
+          created_at?: string
+          created_by_user_id: string
+          id?: string
+          padrao_descricao: string
+          tipo_conciliacao: string
+          tipo_lancamento?: string | null
+          ultima_utilizacao?: string
+          vezes_usado?: number
+        }
+        Update: {
+          ativo?: boolean
+          categoria_id?: string | null
+          confianca?: number
+          created_at?: string
+          created_by_user_id?: string
+          id?: string
+          padrao_descricao?: string
+          tipo_conciliacao?: string
+          tipo_lancamento?: string | null
+          ultima_utilizacao?: string
+          vezes_usado?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "padroes_conciliacao_categoria_id_fkey"
+            columns: ["categoria_id"]
+            isOneToOne: false
+            referencedRelation: "categorias_financeiras"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       parcelas_receber: {
         Row: {
           conta_receber_id: string
