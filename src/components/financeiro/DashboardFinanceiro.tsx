@@ -25,6 +25,7 @@ import { ListaContasPendentes } from './ListaContasPendentes';
 import { ListaLancamentosRecentes } from './ListaLancamentosRecentes';
 import { AlertasVencimento } from './AlertasVencimento';
 import { SeletorPeriodoGlobal } from './SeletorPeriodoGlobal';
+import { BreadcrumbsFinanceiro } from './BreadcrumbsFinanceiro';
 import { usePeriodoFinanceiro, PeriodoFinanceiro } from '@/contexts/FinanceiroContext';
 import { format, subMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -131,6 +132,9 @@ export function DashboardFinanceiro({ onNavigate }: DashboardFinanceiroProps) {
 
   return (
     <div className="space-y-6">
+      {/* Breadcrumb */}
+      <BreadcrumbsFinanceiro currentView="finDashboard" onNavigate={onNavigate} />
+      
       {/* Header com período global */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>

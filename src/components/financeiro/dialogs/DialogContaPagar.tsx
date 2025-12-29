@@ -126,7 +126,13 @@ export function DialogContaPagar({ open, onOpenChange, conta }: DialogContaPagar
       }
     },
     onSuccess: () => {
+      // Invalidação cruzada completa
       queryClient.invalidateQueries({ queryKey: ['contas-pagar'] });
+      queryClient.invalidateQueries({ queryKey: ['contas-pagar-pendentes'] });
+      queryClient.invalidateQueries({ queryKey: ['contas-pagar-previsao'] }); // Fluxo previsto
+      queryClient.invalidateQueries({ queryKey: ['contas-recorrentes-previsao'] });
+      queryClient.invalidateQueries({ queryKey: ['lancamentos-financeiros'] }); // Dashboard
+      queryClient.invalidateQueries({ queryKey: ['saldo-atual-caixa'] });
       toast.success(conta ? 'Conta atualizada' : 'Conta criada');
       onOpenChange(false);
     },

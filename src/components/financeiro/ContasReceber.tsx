@@ -51,6 +51,7 @@ import { TipBanner } from '@/components/ui/TipBanner';
 import { formatCurrency } from '@/lib/formatters';
 import { ConciliacaoBancaria } from './ConciliacaoBancaria';
 import { RelatorioConciliacaoClientes } from './RelatorioConciliacaoClientes';
+import { BreadcrumbsFinanceiro } from './BreadcrumbsFinanceiro';
 
 type StatusFilter = 'todos' | 'pendente' | 'parcial' | 'pago' | 'atrasado';
 
@@ -69,9 +70,10 @@ const getStatusBadge = (status: string) => {
 
 interface ContasReceberProps {
   defaultTab?: 'parcelas' | 'conciliacao' | 'clientes';
+  onNavigate?: (view: string) => void;
 }
 
-export function ContasReceber({ defaultTab = 'parcelas' }: ContasReceberProps) {
+export function ContasReceber({ defaultTab = 'parcelas', onNavigate }: ContasReceberProps) {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState(defaultTab);
   const [searchTerm, setSearchTerm] = useState('');
@@ -155,6 +157,13 @@ export function ContasReceber({ defaultTab = 'parcelas' }: ContasReceberProps) {
 
   return (
     <div className="space-y-6">
+      {/* Breadcrumb */}
+      <BreadcrumbsFinanceiro 
+        currentView="finContasReceber" 
+        onNavigate={onNavigate}
+        subPage={activeTab === 'conciliacao' ? 'Conciliação' : activeTab === 'clientes' ? 'Por Cliente' : undefined}
+      />
+      
       {/* Header */}
       <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
         <div>

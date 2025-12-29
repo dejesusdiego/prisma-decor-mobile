@@ -139,8 +139,13 @@ export function DialogLancamento({ open, onOpenChange, lancamento }: DialogLanca
       }
     },
     onSuccess: () => {
+      // Invalidação cruzada completa
       queryClient.invalidateQueries({ queryKey: ['lancamentos'] });
+      queryClient.invalidateQueries({ queryKey: ['lancamentos-financeiros'] }); // Dashboard
       queryClient.invalidateQueries({ queryKey: ['contas-receber'] });
+      queryClient.invalidateQueries({ queryKey: ['contas-receber-pendentes'] });
+      queryClient.invalidateQueries({ queryKey: ['saldo-atual-caixa'] }); // Fluxo previsto
+      queryClient.invalidateQueries({ queryKey: ['movimentacoes-extrato'] }); // Conciliação
       toast.success(lancamento ? 'Lançamento atualizado' : 'Lançamento criado');
       onOpenChange(false);
     },
