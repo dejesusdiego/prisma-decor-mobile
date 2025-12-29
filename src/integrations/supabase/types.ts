@@ -1050,6 +1050,7 @@ export type Database = {
           ignorado: boolean | null
           lancamento_id: string | null
           numero_documento: string | null
+          regra_aplicada_id: string | null
           tipo: string | null
           valor: number
         }
@@ -1063,6 +1064,7 @@ export type Database = {
           ignorado?: boolean | null
           lancamento_id?: string | null
           numero_documento?: string | null
+          regra_aplicada_id?: string | null
           tipo?: string | null
           valor: number
         }
@@ -1076,6 +1078,7 @@ export type Database = {
           ignorado?: boolean | null
           lancamento_id?: string | null
           numero_documento?: string | null
+          regra_aplicada_id?: string | null
           tipo?: string | null
           valor?: number
         }
@@ -1092,6 +1095,13 @@ export type Database = {
             columns: ["lancamento_id"]
             isOneToOne: false
             referencedRelation: "lancamentos_financeiros"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "movimentacoes_extrato_regra_aplicada_id_fkey"
+            columns: ["regra_aplicada_id"]
+            isOneToOne: false
+            referencedRelation: "regras_conciliacao"
             referencedColumns: ["id"]
           },
         ]
@@ -1405,6 +1415,56 @@ export type Database = {
             columns: ["orcamento_id"]
             isOneToOne: false
             referencedRelation: "orcamentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      regras_conciliacao: {
+        Row: {
+          acao: string
+          ativo: boolean | null
+          categoria_id: string | null
+          created_at: string | null
+          created_by_user_id: string
+          descricao_contem: string
+          id: string
+          nome: string
+          ordem: number | null
+          tipo_lancamento: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          acao?: string
+          ativo?: boolean | null
+          categoria_id?: string | null
+          created_at?: string | null
+          created_by_user_id: string
+          descricao_contem: string
+          id?: string
+          nome: string
+          ordem?: number | null
+          tipo_lancamento?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          acao?: string
+          ativo?: boolean | null
+          categoria_id?: string | null
+          created_at?: string | null
+          created_by_user_id?: string
+          descricao_contem?: string
+          id?: string
+          nome?: string
+          ordem?: number | null
+          tipo_lancamento?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "regras_conciliacao_categoria_id_fkey"
+            columns: ["categoria_id"]
+            isOneToOne: false
+            referencedRelation: "categorias_financeiras"
             referencedColumns: ["id"]
           },
         ]
