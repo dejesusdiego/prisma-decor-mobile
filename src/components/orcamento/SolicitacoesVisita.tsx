@@ -282,57 +282,9 @@ _Prisma Interiores - Transformando ambientes_ ✨`;
         prev.map(s => s.id === id ? { ...s, status: newStatus } : s)
       );
       
-      // Se status mudou para "confirmada", criar contato automaticamente e abrir WhatsApp
-      if (newStatus === "confirmada" && solicitacao && user) {
-        // Verificar se já existe contato com este telefone
-        const { data: contatoExistente } = await supabase
-          .from("contatos")
-          .select("id")
-          .eq("telefone", solicitacao.telefone)
-          .maybeSingle();
-
-        if (!contatoExistente) {
-          // Criar novo contato automaticamente
-          const { error: contatoError } = await supabase
-            .from("contatos")
-            .insert([{
-              nome: solicitacao.nome,
-              email: solicitacao.email.includes("@whatsapp.manual") ? null : solicitacao.email,
-              telefone: solicitacao.telefone,
-              cidade: solicitacao.cidade,
-              endereco: solicitacao.endereco,
-              tipo: 'lead',
-              origem: 'site',
-              observacoes: solicitacao.mensagem ? `Mensagem inicial: ${solicitacao.mensagem}` : null,
-              created_by_user_id: user.id
-            }]);
-
-          if (!contatoError) {
-            toast.success("Contato criado automaticamente no CRM!");
-          }
-        }
-
-        // Criar atividade de visita
-        const { data: contato } = await supabase
-          .from("contatos")
-          .select("id")
-          .eq("telefone", solicitacao.telefone)
-          .maybeSingle();
-
-        if (contato) {
-          await supabase
-            .from("atividades_crm")
-            .insert([{
-              tipo: 'visita',
-              titulo: `Visita confirmada - ${solicitacao.cidade}`,
-              descricao: `Visita agendada para ${format(parseISO(solicitacao.data_agendada), "dd/MM/yyyy", { locale: ptBR })} às ${solicitacao.horario_agendado}`,
-              contato_id: contato.id,
-              data_atividade: new Date(`${solicitacao.data_agendada}T${solicitacao.horario_agendado.split(' - ')[0]}:00`).toISOString(),
-              data_lembrete: solicitacao.data_agendada,
-              created_by_user_id: user.id
-            }]);
-        }
-
+      // Se status mudou para "confirmada", abrir WhatsApp
+      // O trigger do banco cuida da criação de contato e atividade CRM automaticamente
+      if (newStatus === "confirmada" && solicitacao) {
         const message = formatWhatsAppConfirmationMessage(solicitacao);
         const whatsappUrl = `${formatWhatsAppLink(solicitacao.telefone)}?text=${encodeURIComponent(message)}`;
         
@@ -629,6 +581,7 @@ _Prisma Interiores - Transformando ambientes_ ✨`;
             <SelectItem value="todos">Todos os status</SelectItem>
             <SelectItem value="pendente">Pendente</SelectItem>
             <SelectItem value="confirmada">Confirmada</SelectItem>
+            <SelectItem value="sem_resposta">Sem Resposta</SelectItem>
             <SelectItem value="realizada">Realizada</SelectItem>
             <SelectItem value="cancelada">Cancelada</SelectItem>
           </SelectContent>
@@ -683,10 +636,12 @@ _Prisma Interiores - Transformando ambientes_ ✨`;
                         )}
                         <div>
                           <div className="font-medium">{solicitacao.nome}</div>
-                          <div className="text-sm text-muted-foreground flex items-center gap-1">
-                            <Mail className="h-3 w-3" />
-                            {solicitacao.email}
-                          </div>
+                          {!solicitacao.email.includes("@whatsapp.manual") && (
+                            <div className="text-sm text-muted-foreground flex items-center gap-1">
+                              <Mail className="h-3 w-3" />
+                              {solicitacao.email}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </TableCell>
