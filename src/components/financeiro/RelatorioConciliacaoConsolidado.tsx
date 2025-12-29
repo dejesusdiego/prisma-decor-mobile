@@ -30,11 +30,13 @@ import {
   BarChart3,
   Filter,
   FileText,
-  Send
+  Send,
+  Link2
 } from 'lucide-react';
 import { useRelatorioConciliacaoConsolidado, OrcamentoConciliacaoResumo } from '@/hooks/useRelatorioConciliacaoConsolidado';
 import { formatCurrency, formatPercent, formatDate } from '@/lib/formatters';
 import { getStatusConfig } from '@/lib/statusOrcamento';
+import { DialogVincularLancamentoAoOrcamento } from './dialogs/DialogVincularLancamentoAoOrcamento';
 
 interface RelatorioConciliacaoConsolidadoProps {
   onNavigateOrcamento?: (orcamentoId: string) => void;
@@ -43,11 +45,18 @@ interface RelatorioConciliacaoConsolidadoProps {
 export function RelatorioConciliacaoConsolidado({ onNavigateOrcamento }: RelatorioConciliacaoConsolidadoProps) {
   const [apenasComPendencias, setApenasComPendencias] = useState(false);
   const [incluirNaoEnviados, setIncluirNaoEnviados] = useState(false);
+  const [dialogVincularOpen, setDialogVincularOpen] = useState(false);
+  const [orcamentoParaVincular, setOrcamentoParaVincular] = useState<string | null>(null);
   
   const { data, isLoading } = useRelatorioConciliacaoConsolidado({ 
     apenasComPendencias,
     incluirNaoEnviados
   });
+
+  const handleVincularLancamento = (orcamentoId: string) => {
+    setOrcamentoParaVincular(orcamentoId);
+    setDialogVincularOpen(true);
+  };
 
   if (isLoading) {
     return (
@@ -281,15 +290,33 @@ export function RelatorioConciliacaoConsolidado({ onNavigateOrcamento }: Relator
                         {getStatusBadge(orc.statusConciliacao)}
                       </TableCell>
                       <TableCell>
-                        {onNavigateOrcamento && (
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => onNavigateOrcamento(orc.id)}
-                          >
-                            <ExternalLink className="h-4 w-4" />
-                          </Button>
-                        )}
+                        <div className="flex items-center gap-1">
+                          {orc.statusConciliacao !== 'completo' && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm"
+                                    onClick={() => handleVincularLancamento(orc.id)}
+                                  >
+                                    <Link2 className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Vincular lançamento existente</TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
+                          {onNavigateOrcamento && (
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => onNavigateOrcamento(orc.id)}
+                            >
+                              <ExternalLink className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   )})
@@ -315,6 +342,13 @@ export function RelatorioConciliacaoConsolidado({ onNavigateOrcamento }: Relator
           Pendente de conciliação
         </div>
       </div>
+
+      {/* Dialog de vinculação */}
+      <DialogVincularLancamentoAoOrcamento
+        open={dialogVincularOpen}
+        onOpenChange={setDialogVincularOpen}
+        orcamentoId={orcamentoParaVincular}
+      />
     </div>
   );
 }
