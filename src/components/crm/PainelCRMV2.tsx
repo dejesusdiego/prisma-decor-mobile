@@ -15,9 +15,14 @@ import {
   ChevronRight,
   Flame,
   CalendarClock,
-  ArrowRight
+  ArrowRight,
+  Wrench,
+  Package,
+  CheckCircle2,
+  CreditCard
 } from 'lucide-react';
 import { useCRMMetrics, useAtividades } from '@/hooks/useCRMData';
+import { useDashboardUnificado } from '@/hooks/useDashboardUnificado';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow, format, isToday, isTomorrow, isPast } from 'date-fns';
@@ -54,6 +59,7 @@ interface PainelCRMV2Props {
 export function PainelCRMV2({ onVerContato, onVerOrcamento }: PainelCRMV2Props) {
   const { data: metrics, isLoading: loadingMetrics } = useCRMMetrics();
   const { data: atividadesRecentes, isLoading: loadingAtividades } = useAtividades();
+  const { data: dashboardData, isLoading: loadingDashboard } = useDashboardUnificado();
   
   // Buscar ações urgentes
   const { data: acoesUrgentes, isLoading: loadingAcoes } = useQuery({
@@ -158,25 +164,25 @@ export function PainelCRMV2({ onVerContato, onVerOrcamento }: PainelCRMV2Props) 
       color: 'text-emerald-500'
     },
     {
-      title: 'Taxa Conversão',
-      value: `${(metrics?.orcamentos?.taxaConversao || 0).toFixed(0)}%`,
-      description: `${metrics?.orcamentos?.porStatus.pago || 0} vendas fechadas`,
-      icon: TrendingUp,
-      color: 'text-blue-500'
+      title: 'A Receber',
+      value: formatCurrency(dashboardData?.metricas.totalAReceber || 0),
+      description: dashboardData?.metricas.totalVencido ? `R$ ${(dashboardData.metricas.totalVencido / 1000).toFixed(0)}k vencido` : 'Nada vencido',
+      icon: CreditCard,
+      color: dashboardData?.metricas.totalVencido ? 'text-red-500' : 'text-blue-500'
     },
     {
-      title: 'Contatos',
-      value: metrics?.contatos.total || 0,
-      description: `${metrics?.contatos.lead || 0} leads · ${metrics?.contatos.cliente || 0} clientes`,
-      icon: Users,
-      color: 'text-primary'
+      title: 'Em Produção',
+      value: dashboardData?.metricas.pedidosEmProducao || 0,
+      description: `${dashboardData?.metricas.pedidosProntos || 0} prontos · ${dashboardData?.metricas.instalacoesEstaSemana || 0} instalações`,
+      icon: Wrench,
+      color: 'text-purple-500'
     },
     {
       title: 'Tarefas Hoje',
-      value: acoesUrgentes?.atividades.length || 0,
-      description: acoesUrgentes?.atividades.length ? 'Pendentes' : 'Nenhuma pendente',
+      value: dashboardData?.metricas.followUpsPendentes || 0,
+      description: (dashboardData?.metricas.followUpsPendentes || 0) > 0 ? 'Pendentes' : 'Nenhuma pendente',
       icon: CalendarClock,
-      color: (acoesUrgentes?.atividades.length || 0) > 0 ? 'text-amber-500' : 'text-muted-foreground'
+      color: (dashboardData?.metricas.followUpsPendentes || 0) > 0 ? 'text-amber-500' : 'text-muted-foreground'
     }
   ];
 
