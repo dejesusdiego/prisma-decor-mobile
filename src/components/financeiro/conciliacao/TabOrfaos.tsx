@@ -71,45 +71,15 @@ interface OrcamentoParaVincular {
   created_at: string;
 }
 
-const normalizarTexto = (texto: string): string => {
-  return texto
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9\s]/g, '')
-    .trim();
-};
-
-const calcularSimilaridade = (texto1: string, texto2: string): number => {
-  const t1 = normalizarTexto(texto1);
-  const t2 = normalizarTexto(texto2);
-  
-  if (t1.includes(t2) || t2.includes(t1)) {
-    return 100;
-  }
-  
-  const palavras1 = t1.split(/\s+/).filter(p => p.length > 2);
-  const palavras2 = t2.split(/\s+/).filter(p => p.length > 2);
-  
-  if (palavras1.length === 0 || palavras2.length === 0) return 0;
-  
-  let coincidencias = 0;
-  for (const p1 of palavras1) {
-    for (const p2 of palavras2) {
-      if (p1.includes(p2) || p2.includes(p1)) {
-        coincidencias++;
-        break;
-      }
-    }
-  }
-  
-  return Math.round((coincidencias / Math.max(palavras1.length, palavras2.length)) * 100);
-};
+import { 
+  calcularScoreCombinado, 
+  ScoreConciliacao 
+} from '@/lib/conciliacaoInteligente';
 
 interface SugestaoAutomatica {
   lancamento: LancamentoOrfao;
   orcamento: OrcamentoParaVincular;
-  similaridade: number;
+  score: ScoreConciliacao;
 }
 
 interface TabOrfaosProps {
@@ -193,14 +163,24 @@ export function TabOrfaos({ dataInicio }: TabOrfaosProps) {
     const sugestoes: SugestaoAutomatica[] = [];
     
     for (const lancamento of lancamentosOrfaos) {
-      let melhorMatch: { orcamento: OrcamentoParaVincular; similaridade: number } | null = null;
+      let melhorMatch: { orcamento: OrcamentoParaVincular; score: ScoreConciliacao } | null = null;
       
       for (const orcamento of orcamentos) {
-        const similaridade = calcularSimilaridade(lancamento.descricao, orcamento.cliente_nome);
+        const valorOrcamento = orcamento.total_com_desconto || orcamento.total_geral || 0;
         
-        if (similaridade >= 50) {
-          if (!melhorMatch || similaridade > melhorMatch.similaridade) {
-            melhorMatch = { orcamento, similaridade };
+        const score = calcularScoreCombinado(
+          lancamento.descricao,
+          orcamento.cliente_nome,
+          lancamento.valor,
+          valorOrcamento,
+          lancamento.data_lancamento,
+          orcamento.created_at
+        );
+        
+        // Aceitar matches com score >= 40 (mínimo para sugestão)
+        if (score.scoreTotal >= 40) {
+          if (!melhorMatch || score.scoreTotal > melhorMatch.score.scoreTotal) {
+            melhorMatch = { orcamento, score };
           }
         }
       }
@@ -209,12 +189,13 @@ export function TabOrfaos({ dataInicio }: TabOrfaosProps) {
         sugestoes.push({
           lancamento,
           orcamento: melhorMatch.orcamento,
-          similaridade: melhorMatch.similaridade
+          score: melhorMatch.score
         });
       }
     }
     
-    sugestoes.sort((a, b) => b.similaridade - a.similaridade);
+    // Ordenar por score total (maior primeiro)
+    sugestoes.sort((a, b) => b.score.scoreTotal - a.score.scoreTotal);
     
     setSugestoesAuto(sugestoes);
     setDialogAutoOpen(true);
@@ -612,12 +593,21 @@ export function TabOrfaos({ dataInicio }: TabOrfaosProps) {
                 <Card key={index} className="p-4">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-2">
+                      <div className="flex items-center gap-2 mb-2 flex-wrap">
                         <Badge 
-                          variant={sugestao.similaridade >= 80 ? "default" : "secondary"}
-                          className={sugestao.similaridade >= 80 ? "bg-green-500" : ""}
+                          variant={sugestao.score.confianca === 'alta' ? "default" : "secondary"}
+                          className={cn(
+                            sugestao.score.confianca === 'alta' && "bg-green-500",
+                            sugestao.score.confianca === 'media' && "bg-amber-500"
+                          )}
                         >
-                          {sugestao.similaridade}% match
+                          {sugestao.score.scoreTotal}% match
+                        </Badge>
+                        <Badge variant="outline" className="text-xs">
+                          Nome: {sugestao.score.scoreNome}%
+                        </Badge>
+                        <Badge variant="outline" className="text-xs">
+                          Valor: {sugestao.score.scoreValor}%
                         </Badge>
                         <span className="text-xs text-muted-foreground">
                           {format(new Date(sugestao.lancamento.data_lancamento), 'dd/MM/yyyy', { locale: ptBR })}
