@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, ChevronDown, AlertTriangle, Ruler, Package, Scissors, Wrench, Landmark, FileText, Link2 } from 'lucide-react';
+import { ArrowLeft, ChevronDown, AlertTriangle, Ruler, Package, Scissors, Wrench, Landmark, FileText, Link2, CreditCard } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import type { Cortina, Material, ServicoConfeccao, ServicoInstalacao } from '@/types/orcamento';
@@ -15,6 +15,7 @@ import { TimelineOrcamento } from './TimelineOrcamento';
 import { DialogGerarContaReceber } from './dialogs/DialogGerarContaReceber';
 import { DialogGerarCustos } from './dialogs/DialogGerarCustos';
 import { DialogVincularLancamentoAoOrcamento } from '@/components/financeiro/dialogs/DialogVincularLancamentoAoOrcamento';
+import { DialogPagamentoRapidoOrcamento } from './dialogs/DialogPagamentoRapidoOrcamento';
 import { useOrcamentoFinanceiro } from '@/hooks/useOrcamentoFinanceiro';
 import { TipBanner } from '@/components/ui/TipBanner';
 import { HelpTooltip } from '@/components/ui/HelpTooltip';
@@ -57,6 +58,7 @@ export function VisualizarOrcamento({ orcamentoId, onVoltar }: VisualizarOrcamen
   const [dialogContaReceberOpen, setDialogContaReceberOpen] = useState(false);
   const [dialogCustosOpen, setDialogCustosOpen] = useState(false);
   const [dialogVincularLancamentoOpen, setDialogVincularLancamentoOpen] = useState(false);
+  const [dialogPagamentoRapidoOpen, setDialogPagamentoRapidoOpen] = useState(false);
 
   // Hook de integração financeira
   const {
@@ -784,6 +786,15 @@ export function VisualizarOrcamento({ orcamentoId, onVoltar }: VisualizarOrcamen
             </TabsList>
 
             <TabsContent value="resumo" className="space-y-4">
+              {/* Botão de pagamento rápido */}
+              {['enviado', 'aceito', 'pago_parcial', 'pago_40', 'pago_60'].includes(orcamento.status) && (
+                <div className="flex justify-end">
+                  <Button onClick={() => setDialogPagamentoRapidoOpen(true)}>
+                    <CreditCard className="h-4 w-4 mr-2" />
+                    Registrar Pagamento
+                  </Button>
+                </div>
+              )}
               <ResumoFinanceiroOrcamento 
                 orcamentoId={orcamentoId}
                 onGerarContaReceber={() => setDialogContaReceberOpen(true)}
@@ -860,6 +871,15 @@ export function VisualizarOrcamento({ orcamentoId, onVoltar }: VisualizarOrcamen
             open={dialogVincularLancamentoOpen}
             onOpenChange={setDialogVincularLancamentoOpen}
             orcamentoId={orcamentoId}
+          />
+          <DialogPagamentoRapidoOrcamento
+            open={dialogPagamentoRapidoOpen}
+            onOpenChange={setDialogPagamentoRapidoOpen}
+            orcamentoId={orcamentoId}
+            orcamentoCodigo={orcamento.codigo}
+            clienteNome={orcamento.cliente_nome}
+            valorTotal={orcamento.total_com_desconto ?? orcamento.total_geral ?? 0}
+            valorPago={valorRecebido}
           />
         </>
       )}

@@ -60,6 +60,7 @@ import { AlertasReconciliacao } from './AlertasReconciliacao';
 import { AlertasOrcamentosConciliacao } from './AlertasOrcamentosConciliacao';
 import { SugestoesConciliacao } from './SugestoesConciliacao';
 import { DialogGerenciarPadroes } from './dialogs/DialogGerenciarPadroes';
+import { DialogRevisaoImportacao } from './dialogs/DialogRevisaoImportacao';
 import { usePadroesConciliacao } from '@/hooks/usePadroesConciliacao';
 import { SugestaoOrcamento } from '@/hooks/useSugestoesConciliacao';
 
@@ -105,6 +106,10 @@ export function ConciliacaoBancaria() {
   // Conciliar com orçamento (vincular diretamente)
   const [orcamentoOpen, setOrcamentoOpen] = useState(false);
   const [movimentacaoParaOrcamento, setMovimentacaoParaOrcamento] = useState<any>(null);
+
+  // Wizard de revisão pós-importação
+  const [revisaoOpen, setRevisaoOpen] = useState(false);
+  const [extratoParaRevisao, setExtratoParaRevisao] = useState<{ id: string; nome: string } | null>(null);
   const [orcamentoParaVincular, setOrcamentoParaVincular] = useState<SugestaoOrcamento | null>(null);
 
   // Criar regras padrão ao carregar (uma vez por usuário)
@@ -267,43 +272,9 @@ export function ConciliacaoBancaria() {
       setDadosPrevia(null);
       setArquivoPrevia(null);
 
-      // Verificar matches de alta probabilidade e criar notificações
-      if (user) {
-        const { data: movsCriadas } = await supabase
-          .from('movimentacoes_extrato')
-          .select('id, descricao, valor, tipo, conciliado, ignorado')
-          .eq('extrato_id', data.extrato.id);
-
-        if (movsCriadas && movsCriadas.length > 0) {
-          const matches = verificarMatchesAlta(movsCriadas.map(m => ({
-            id: m.id,
-            descricao: m.descricao,
-            valor: Number(m.valor),
-            tipo: m.tipo || 'debito',
-            conciliado: m.conciliado,
-            ignorado: m.ignorado
-          })));
-
-          // Criar notificações para matches de alta probabilidade
-          if (matches.length > 0) {
-            const notificacoesInsert = matches.slice(0, 5).map(match => ({
-              user_id: user.id,
-              tipo: 'match_padrao',
-              titulo: 'Sugestão de conciliação',
-              mensagem: `"${match.descricao.substring(0, 40)}..." pode ser ${match.categoria?.nome || match.padrao.tipo_conciliacao} (${match.matchScore}% confiança)`,
-              prioridade: 'alta',
-              referencia_tipo: 'extrato',
-              referencia_id: data.extrato.id
-            }));
-
-            await supabase.from('notificacoes').insert(notificacoesInsert);
-            
-            if (matches.length > 0) {
-              toast.info(`${matches.length} sugestão(ões) de conciliação detectada(s)`);
-            }
-          }
-        }
-      }
+      // Abrir wizard de revisão pós-importação
+      setExtratoParaRevisao({ id: data.extrato.id, nome: arquivoPrevia?.name || 'Extrato' });
+      setRevisaoOpen(true);
     },
     onError: (error: Error) => {
       toast.error('Erro ao importar: ' + error.message);
@@ -958,6 +929,15 @@ export function ConciliacaoBancaria() {
         movimentacao={movimentacaoParaOrcamento}
         orcamento={orcamentoParaVincular}
       />
+
+      {extratoParaRevisao && (
+        <DialogRevisaoImportacao
+          open={revisaoOpen}
+          onOpenChange={setRevisaoOpen}
+          extratoId={extratoParaRevisao.id}
+          nomeArquivo={extratoParaRevisao.nome}
+        />
+      )}
     </div>
   );
 }
