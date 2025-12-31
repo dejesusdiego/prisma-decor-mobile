@@ -65,18 +65,22 @@ interface ParcelaDetalhe {
 
 type FiltroStatus = 'todos' | 'em_dia' | 'parcial' | 'atrasado';
 
-export function TabClientes() {
+interface TabClientesProps {
+  dataInicio?: string;
+}
+
+export function TabClientes({ dataInicio }: TabClientesProps) {
   const [busca, setBusca] = useState('');
   const [filtroStatus, setFiltroStatus] = useState<FiltroStatus>('todos');
   const [clientesExpandidos, setClientesExpandidos] = useState<Set<string>>(new Set());
 
   const { data: dadosContas = [], isLoading } = useQuery({
-    queryKey: ['relatorio-conciliacao-clientes'],
+    queryKey: ['relatorio-conciliacao-clientes', dataInicio],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('contas_receber')
         .select(`
-          id, cliente_nome, cliente_telefone, valor_total, valor_pago, status,
+          id, cliente_nome, cliente_telefone, valor_total, valor_pago, status, created_at,
           orcamento:orcamentos(id, codigo),
           parcelas:parcelas_receber(
             id, numero_parcela, valor, data_vencimento, data_pagamento, status
@@ -84,6 +88,11 @@ export function TabClientes() {
         `)
         .order('cliente_nome');
 
+      if (dataInicio) {
+        query = query.gte('created_at', dataInicio);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       return data || [];
     }
