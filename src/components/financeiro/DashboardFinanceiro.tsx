@@ -24,6 +24,7 @@ import { GraficoCategoriaDespesas } from './charts/GraficoCategoriaDespesas';
 import { ListaContasPendentes } from './ListaContasPendentes';
 import { ListaLancamentosRecentes } from './ListaLancamentosRecentes';
 import { AlertasVencimento } from './AlertasVencimento';
+import { WidgetPendenciasFinanceiras } from './WidgetPendenciasFinanceiras';
 import { SeletorPeriodoGlobal } from './SeletorPeriodoGlobal';
 import { BreadcrumbsFinanceiro } from './BreadcrumbsFinanceiro';
 import { usePeriodoFinanceiro, PeriodoFinanceiro } from '@/contexts/FinanceiroContext';
@@ -300,7 +301,10 @@ export function DashboardFinanceiro({ onNavigate }: DashboardFinanceiroProps) {
       </div>
 
       {/* Alertas e Listas */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        {/* Widget de Pendências */}
+        <WidgetPendenciasFinanceiras onNavigate={handleNavigate} />
+
         {/* Alertas de Vencimento */}
         <AlertasVencimento />
 
