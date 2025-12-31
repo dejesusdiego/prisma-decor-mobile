@@ -1230,6 +1230,7 @@ export type Database = {
           created_at: string
           created_by_user_id: string
           custo_total: number | null
+          custos_gerados: boolean | null
           desconto_tipo: string | null
           desconto_valor: number | null
           endereco: string
@@ -1256,6 +1257,7 @@ export type Database = {
           created_at?: string
           created_by_user_id: string
           custo_total?: number | null
+          custos_gerados?: boolean | null
           desconto_tipo?: string | null
           desconto_valor?: number | null
           endereco?: string
@@ -1282,6 +1284,7 @@ export type Database = {
           created_at?: string
           created_by_user_id?: string
           custo_total?: number | null
+          custos_gerados?: boolean | null
           desconto_tipo?: string | null
           desconto_valor?: number | null
           endereco?: string
