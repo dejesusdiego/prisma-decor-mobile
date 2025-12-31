@@ -16,9 +16,7 @@ import {
   ChevronDown,
   ChevronUp,
   ExternalLink,
-  FileText,
   Landmark,
-  Users,
   Receipt
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -40,7 +38,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
@@ -49,8 +46,6 @@ import { DialogRegistrarRecebimento } from './dialogs/DialogRegistrarRecebimento
 import { HelpTooltip } from '@/components/ui/HelpTooltip';
 import { TipBanner } from '@/components/ui/TipBanner';
 import { formatCurrency } from '@/lib/formatters';
-import { ConciliacaoBancaria } from './ConciliacaoBancaria';
-import { RelatorioConciliacaoClientes } from './RelatorioConciliacaoClientes';
 import { BreadcrumbsFinanceiro } from './BreadcrumbsFinanceiro';
 
 type StatusFilter = 'todos' | 'pendente' | 'parcial' | 'pago' | 'atrasado';
@@ -69,13 +64,11 @@ const getStatusBadge = (status: string) => {
 };
 
 interface ContasReceberProps {
-  defaultTab?: 'parcelas' | 'conciliacao' | 'clientes';
   onNavigate?: (view: string) => void;
 }
 
-export function ContasReceber({ defaultTab = 'parcelas', onNavigate }: ContasReceberProps) {
+export function ContasReceber({ onNavigate }: ContasReceberProps) {
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState(defaultTab);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('todos');
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -161,50 +154,36 @@ export function ContasReceber({ defaultTab = 'parcelas', onNavigate }: ContasRec
       <BreadcrumbsFinanceiro 
         currentView="finContasReceber" 
         onNavigate={onNavigate}
-        subPage={activeTab === 'conciliacao' ? 'Conciliação' : activeTab === 'clientes' ? 'Por Cliente' : undefined}
       />
       
       {/* Header */}
       <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Contas a Receber</h1>
-          <p className="text-muted-foreground">Gerencie seus recebíveis, conciliação e relatórios</p>
+          <p className="text-muted-foreground">Gerencie seus recebíveis e parcelas</p>
         </div>
-        <Button onClick={handleNew}>
-          <Plus className="h-4 w-4 mr-2" />
-          Nova Conta
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => onNavigate?.('finConciliacao')}>
+            <Landmark className="h-4 w-4 mr-2" />
+            Ir para Conciliação
+          </Button>
+          <Button onClick={handleNew}>
+            <Plus className="h-4 w-4 mr-2" />
+            Nova Conta
+          </Button>
+        </div>
       </div>
 
-      {/* Tabs de navegação integrada */}
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)} className="space-y-6">
-        <TabsList className="grid w-full max-w-md grid-cols-3">
-          <TabsTrigger value="parcelas" className="gap-2">
-            <Receipt className="h-4 w-4" />
-            <span className="hidden sm:inline">Parcelas</span>
-          </TabsTrigger>
-          <TabsTrigger value="conciliacao" className="gap-2">
-            <Landmark className="h-4 w-4" />
-            <span className="hidden sm:inline">Conciliação</span>
-          </TabsTrigger>
-          <TabsTrigger value="clientes" className="gap-2">
-            <Users className="h-4 w-4" />
-            <span className="hidden sm:inline">Por Cliente</span>
-          </TabsTrigger>
-        </TabsList>
-
-        {/* Aba Parcelas - Conteúdo original */}
-        <TabsContent value="parcelas" className="space-y-6">
-          {/* Resumo */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  <HelpTooltip content="Valor total de parcelas ainda não pagas">
-                    Pendente
-                  </HelpTooltip>
-                </CardTitle>
-              </CardHeader>
+      {/* Resumo */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              <HelpTooltip content="Valor total de parcelas ainda não pagas">
+                Pendente
+              </HelpTooltip>
+            </CardTitle>
+          </CardHeader>
               <CardContent>
                 <p className="text-2xl font-bold text-yellow-600">{formatCurrency(totais.pendente)}</p>
               </CardContent>
@@ -422,18 +401,6 @@ export function ContasReceber({ defaultTab = 'parcelas', onNavigate }: ContasRec
               </Table>
             </CardContent>
           </Card>
-        </TabsContent>
-
-        {/* Aba Conciliação */}
-        <TabsContent value="conciliacao">
-          <ConciliacaoBancaria />
-        </TabsContent>
-
-        {/* Aba Por Cliente */}
-        <TabsContent value="clientes">
-          <RelatorioConciliacaoClientes />
-        </TabsContent>
-      </Tabs>
 
       <DialogContaReceber
         open={dialogOpen}

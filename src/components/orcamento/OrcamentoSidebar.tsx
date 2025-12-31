@@ -53,6 +53,7 @@ export type View =
   | 'solicitacoesVisita'
   | 'calendarioGeral'
   | 'finDashboard'
+  | 'finConciliacao'
   | 'finContasPagar'
   | 'finContasReceber'
   | 'finLancamentos'
@@ -114,13 +115,13 @@ const producaoNavItems = [
 // Itens da seção FINANCEIRO (admin only) - apenas operacional
 const financeiroNavItems = [
   { id: 'finDashboard' as View, label: 'Visão Geral', icon: LayoutDashboard },
+  { id: 'finConciliacao' as View, label: 'Conciliação Bancária', icon: Wallet },
+  { id: 'finContasReceber' as View, label: 'Contas a Receber', icon: ArrowDownCircle },
+  { id: 'finContasPagar' as View, label: 'Contas a Pagar', icon: ArrowUpCircle },
+  { id: 'finLancamentos' as View, label: 'Lançamentos', icon: Receipt },
   { id: 'finFluxoPrevisto' as View, label: 'Fluxo Previsto', icon: TrendingUp },
   { id: 'finRentabilidade' as View, label: 'Rentabilidade', icon: DollarSign },
   { id: 'finComissoes' as View, label: 'Comissões', icon: Users },
-  { id: 'finContasPagar' as View, label: 'Contas a Pagar', icon: ArrowUpCircle },
-  { id: 'finContasReceber' as View, label: 'Contas a Receber', icon: ArrowDownCircle },
-  { id: 'finLancamentos' as View, label: 'Lançamentos', icon: Receipt },
-  { id: 'finConsolidado' as View, label: 'Relatório Consolidado', icon: ClipboardList },
 ];
 
 // Itens da seção RELATÓRIOS & BI (admin only)

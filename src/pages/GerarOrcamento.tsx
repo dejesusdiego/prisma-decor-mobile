@@ -20,6 +20,7 @@ import { ContasReceber } from '@/components/financeiro/ContasReceber';
 import { Lancamentos } from '@/components/financeiro/Lancamentos';
 import { RelatoriosBI } from '@/components/financeiro/RelatoriosBI';
 import { RelatorioConciliacaoConsolidado } from '@/components/financeiro/RelatorioConciliacaoConsolidado';
+import { CentralConciliacao } from '@/components/financeiro/CentralConciliacao';
 import { CategoriasFormas } from '@/components/financeiro/CategoriasFormas';
 import { RelatorioRentabilidade } from '@/components/financeiro/RelatorioRentabilidade';
 import { Comissoes } from '@/components/financeiro/Comissoes';
@@ -56,6 +57,7 @@ const ADMIN_ONLY_VIEWS: View[] = [
   'solicitacoesVisita',
   'calendarioGeral',
   'finDashboard',
+  'finConciliacao',
   'finFluxoPrevisto',
   'finRentabilidade',
   'finComissoes',
@@ -183,6 +185,7 @@ export default function GerarOrcamento() {
       case 'ajustesSistema': return 'Ajustes do Sistema';
       case 'solicitacoesVisita': return 'Solicitações de Visita';
       case 'calendarioGeral': return 'Calendário Geral';
+      case 'finConciliacao': return 'Conciliação Bancária';
       case 'finContasPagar': return 'Contas a Pagar';
       case 'finContasReceber': return 'Contas a Receber';
       case 'finLancamentos': return 'Lançamentos';
@@ -292,6 +295,12 @@ export default function GerarOrcamento() {
             {view.startsWith('fin') && (
               <FinanceiroProvider>
                 {view === 'finDashboard' && <DashboardFinanceiro onNavigate={handleNavigate} />}
+                {view === 'finConciliacao' && (
+                  <CentralConciliacao 
+                    onNavigate={handleNavigate} 
+                    onNavigateOrcamento={handleVisualizarOrcamento} 
+                  />
+                )}
                 {view === 'finFluxoPrevisto' && <FluxoCaixaPrevisto onNavigate={handleNavigate} />}
                 {view === 'finRentabilidade' && (
                   <RelatorioRentabilidade onVisualizarOrcamento={handleVisualizarOrcamento} onNavigate={handleNavigate} />
