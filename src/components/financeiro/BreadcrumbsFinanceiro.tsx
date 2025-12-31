@@ -10,6 +10,7 @@ import {
 
 type FinanceiroView = 
   | 'finDashboard' 
+  | 'finConciliacao'
   | 'finFluxoPrevisto' 
   | 'finContasReceber' 
   | 'finContasPagar' 
@@ -29,6 +30,7 @@ interface BreadcrumbsFinanceiroProps {
 
 const viewConfig: Record<FinanceiroView, { label: string; icon: React.ElementType; group: string }> = {
   finDashboard: { label: 'Visão Geral', icon: LayoutDashboard, group: 'Operacional' },
+  finConciliacao: { label: 'Conciliação Bancária', icon: Landmark, group: 'Operacional' },
   finFluxoPrevisto: { label: 'Fluxo de Caixa', icon: TrendingUp, group: 'Operacional' },
   finContasReceber: { label: 'Contas a Receber', icon: Receipt, group: 'Operacional' },
   finContasPagar: { label: 'Contas a Pagar', icon: FileText, group: 'Operacional' },

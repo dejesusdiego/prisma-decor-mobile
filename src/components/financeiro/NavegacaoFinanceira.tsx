@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils';
 
 export type FinanceiroView = 
   | 'finDashboard' 
+  | 'finConciliacao'
   | 'finContasPagar' 
   | 'finContasReceber' 
   | 'finLancamentos' 
@@ -34,6 +35,7 @@ interface NavegacaoFinanceiraProps {
 
 const navItems = [
   { id: 'finDashboard' as FinanceiroView, label: 'Visão Geral', icon: BarChart3 },
+  { id: 'finConciliacao' as FinanceiroView, label: 'Conciliação', icon: Landmark },
   { id: 'finFluxoPrevisto' as FinanceiroView, label: 'Fluxo', icon: TrendingUp },
   { id: 'finContasReceber' as FinanceiroView, label: 'A Receber', icon: ArrowDownCircle },
   { id: 'finContasPagar' as FinanceiroView, label: 'A Pagar', icon: ArrowUpCircle },
