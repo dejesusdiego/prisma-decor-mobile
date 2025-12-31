@@ -112,7 +112,11 @@ interface SugestaoAutomatica {
   similaridade: number;
 }
 
-export function TabOrfaos() {
+interface TabOrfaosProps {
+  dataInicio?: string;
+}
+
+export function TabOrfaos({ dataInicio }: TabOrfaosProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [busca, setBusca] = useState('');
@@ -126,7 +130,7 @@ export function TabOrfaos() {
   const [processandoAuto, setProcessandoAuto] = useState(false);
 
   const { data: lancamentosOrfaos = [], isLoading } = useQuery({
-    queryKey: ['lancamentos-orfaos', filtroTipo],
+    queryKey: ['lancamentos-orfaos', filtroTipo, dataInicio],
     queryFn: async () => {
       let query = supabase
         .from('lancamentos_financeiros')
@@ -140,6 +144,10 @@ export function TabOrfaos() {
 
       if (filtroTipo !== 'todos') {
         query = query.eq('tipo', filtroTipo);
+      }
+
+      if (dataInicio) {
+        query = query.gte('data_lancamento', dataInicio);
       }
 
       const { data, error } = await query;

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -22,6 +22,13 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { 
   CheckCircle2, 
   Clock, 
@@ -34,14 +41,19 @@ import {
   Send,
   Link2,
   FileQuestion,
-  Users
+  Users,
+  Download
 } from 'lucide-react';
+import { subDays, subMonths, format } from 'date-fns';
 import { useRelatorioConciliacaoConsolidado, OrcamentoConciliacaoResumo } from '@/hooks/useRelatorioConciliacaoConsolidado';
 import { formatCurrency, formatPercent, formatDate } from '@/lib/formatters';
 import { getStatusConfig } from '@/lib/statusOrcamento';
 import { DialogVincularLancamentoAoOrcamento } from './dialogs/DialogVincularLancamentoAoOrcamento';
 import { TabOrfaos } from './conciliacao/TabOrfaos';
 import { TabClientes } from './conciliacao/TabClientes';
+import { toast } from 'sonner';
+
+type PeriodoFiltro = 'todos' | '30dias' | '3meses' | '6meses' | '12meses';
 
 interface RelatorioConciliacaoConsolidadoProps {
   onNavigateOrcamento?: (orcamentoId: string) => void;
@@ -53,15 +65,55 @@ export function RelatorioConciliacaoConsolidado({ onNavigateOrcamento }: Relator
   const [dialogVincularOpen, setDialogVincularOpen] = useState(false);
   const [orcamentoParaVincular, setOrcamentoParaVincular] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('consolidado');
+  const [periodoFiltro, setPeriodoFiltro] = useState<PeriodoFiltro>('todos');
+
+  const dataFiltro = useMemo(() => {
+    const hoje = new Date();
+    switch (periodoFiltro) {
+      case '30dias':
+        return subDays(hoje, 30);
+      case '3meses':
+        return subMonths(hoje, 3);
+      case '6meses':
+        return subMonths(hoje, 6);
+      case '12meses':
+        return subMonths(hoje, 12);
+      default:
+        return undefined;
+    }
+  }, [periodoFiltro]);
   
   const { data, isLoading } = useRelatorioConciliacaoConsolidado({ 
     apenasComPendencias,
-    incluirNaoEnviados
+    incluirNaoEnviados,
+    dataInicio: dataFiltro ? format(dataFiltro, 'yyyy-MM-dd') : undefined
   });
 
   const handleVincularLancamento = (orcamentoId: string) => {
     setOrcamentoParaVincular(orcamentoId);
     setDialogVincularOpen(true);
+  };
+
+  const exportarCSV = () => {
+    if (!data) return;
+    
+    let csvContent = '';
+    let fileName = '';
+    
+    if (activeTab === 'consolidado') {
+      csvContent = 'Código,Cliente,Valor Total,Recebido,Conciliado,Status\n';
+      data.orcamentos.forEach(orc => {
+        csvContent += `"${orc.codigo}","${orc.clienteNome}",${orc.valorTotal},${orc.valorRecebido},${orc.valorRecebidoConciliado},"${orc.statusConciliacao}"\n`;
+      });
+      fileName = 'conciliacao-consolidado.csv';
+    }
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = fileName;
+    link.click();
+    toast.success('Arquivo CSV exportado com sucesso!');
   };
 
   if (isLoading) {
@@ -101,8 +153,8 @@ export function RelatorioConciliacaoConsolidado({ onNavigateOrcamento }: Relator
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+      {/* Header com filtro global e exportação */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-semibold flex items-center gap-2">
             <BarChart3 className="h-5 w-5" />
@@ -111,6 +163,24 @@ export function RelatorioConciliacaoConsolidado({ onNavigateOrcamento }: Relator
           <p className="text-sm text-muted-foreground">
             Conciliação bancária, lançamentos órfãos e visão por cliente
           </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Select value={periodoFiltro} onValueChange={(v: PeriodoFiltro) => setPeriodoFiltro(v)}>
+            <SelectTrigger className="w-[160px]">
+              <SelectValue placeholder="Período" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todo o período</SelectItem>
+              <SelectItem value="30dias">Últimos 30 dias</SelectItem>
+              <SelectItem value="3meses">Últimos 3 meses</SelectItem>
+              <SelectItem value="6meses">Últimos 6 meses</SelectItem>
+              <SelectItem value="12meses">Últimos 12 meses</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button variant="outline" size="sm" onClick={exportarCSV} disabled={activeTab !== 'consolidado'}>
+            <Download className="h-4 w-4 mr-2" />
+            Exportar
+          </Button>
         </div>
       </div>
 
@@ -373,12 +443,12 @@ export function RelatorioConciliacaoConsolidado({ onNavigateOrcamento }: Relator
 
         {/* Tab Órfãos */}
         <TabsContent value="orfaos">
-          <TabOrfaos />
+          <TabOrfaos dataInicio={dataFiltro ? format(dataFiltro, 'yyyy-MM-dd') : undefined} />
         </TabsContent>
 
         {/* Tab Por Cliente */}
         <TabsContent value="clientes">
-          <TabClientes />
+          <TabClientes dataInicio={dataFiltro ? format(dataFiltro, 'yyyy-MM-dd') : undefined} />
         </TabsContent>
       </Tabs>
 

@@ -40,6 +40,7 @@ export interface RelatorioConsolidado {
 
 interface FiltrosRelatorio {
   periodo?: { inicio: Date; fim: Date };
+  dataInicio?: string;
   status?: string[];
   apenasComPendencias?: boolean;
   incluirNaoEnviados?: boolean;
@@ -78,6 +79,8 @@ export function useRelatorioConciliacaoConsolidado(filtros?: FiltrosRelatorio) {
         query = query
           .gte('created_at', filtros.periodo.inicio.toISOString())
           .lte('created_at', filtros.periodo.fim.toISOString());
+      } else if (filtros?.dataInicio) {
+        query = query.gte('created_at', filtros.dataInicio);
       }
 
       const { data: orcamentos } = await query;
