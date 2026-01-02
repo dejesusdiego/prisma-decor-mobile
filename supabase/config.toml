@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.generate-recurring-bills]
 verify_jwt = false
+
+[functions.check-production-delays]
+verify_jwt = false
