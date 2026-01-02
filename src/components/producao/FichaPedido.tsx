@@ -46,6 +46,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { HelpTooltip } from '@/components/ui/HelpTooltip';
+import { ListaMateriaisPedido } from './ListaMateriaisPedido';
 
 interface FichaPedidoProps {
   pedidoId: string;
@@ -360,6 +361,12 @@ export function FichaPedido({ pedidoId, onVoltar, onAgendarInstalacao }: FichaPe
           </div>
         </CardContent>
       </Card>
+
+      {/* Lista de Materiais */}
+      <ListaMateriaisPedido 
+        pedidoId={pedido.id} 
+        statusPedido={pedido.status_producao} 
+      />
 
       {/* Histórico */}
       <Card>
