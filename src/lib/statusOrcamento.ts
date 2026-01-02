@@ -74,6 +74,11 @@ export const STATUS_TOTALMENTE_PAGO: StatusOrcamento[] = ['pago'];
 export const STATUS_CONCILIACAO_VALIDOS: StatusOrcamento[] = ['enviado', 'sem_resposta', 'pago_40', 'pago_parcial', 'pago_60', 'pago'];
 export const STATUS_PIPELINE_ATIVOS: StatusOrcamento[] = ['enviado', 'sem_resposta', 'pago_40', 'pago_parcial', 'pago_60'];
 
+// Status que permitem gerar contas a receber (cliente confirmou pagamento)
+export const STATUS_PERMITE_CONTA_RECEBER: StatusOrcamento[] = ['pago_40', 'pago_parcial', 'pago_60', 'pago'];
+
+// Status que indicam negócio perdido/cancelado
+export const STATUS_NEGOCIO_PERDIDO: StatusOrcamento[] = ['recusado', 'cancelado'];
 export function getStatusConfig(status: string) {
   return STATUS_CONFIG[status as StatusOrcamento] || STATUS_CONFIG.rascunho;
 }

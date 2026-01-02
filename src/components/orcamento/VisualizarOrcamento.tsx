@@ -797,6 +797,7 @@ export function VisualizarOrcamento({ orcamentoId, onVoltar }: VisualizarOrcamen
               )}
               <ResumoFinanceiroOrcamento 
                 orcamentoId={orcamentoId}
+                statusOrcamento={orcamento?.status}
                 onGerarContaReceber={() => setDialogContaReceberOpen(true)}
                 onGerarContasPagar={() => setDialogCustosOpen(true)}
               />

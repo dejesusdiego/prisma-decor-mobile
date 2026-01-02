@@ -11,13 +11,16 @@ import {
   ArrowDownCircle,
   ArrowUpCircle,
   Receipt,
-  PiggyBank
+  PiggyBank,
+  Info
 } from 'lucide-react';
 import { useOrcamentoFinanceiro } from '@/hooks/useOrcamentoFinanceiro';
 import { formatCurrency } from '@/lib/formatters';
+import { STATUS_PERMITE_CONTA_RECEBER, type StatusOrcamento } from '@/lib/statusOrcamento';
 
 interface ResumoFinanceiroOrcamentoProps {
   orcamentoId: string;
+  statusOrcamento?: string;
   onGerarContaReceber?: () => void;
   onGerarContasPagar?: () => void;
   onVerDetalhes?: () => void;
@@ -25,6 +28,7 @@ interface ResumoFinanceiroOrcamentoProps {
 
 export function ResumoFinanceiroOrcamento({ 
   orcamentoId,
+  statusOrcamento,
   onGerarContaReceber,
   onGerarContasPagar,
   onVerDetalhes
@@ -166,17 +170,36 @@ export function ResumoFinanceiroOrcamento({
 
         {/* Ações */}
         <div className="flex flex-wrap gap-2 pt-2 border-t">
-          {!temContaReceber && onGerarContaReceber && (
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={onGerarContaReceber}
-              className="text-xs"
-            >
-              <Receipt className="h-3 w-3 mr-1" />
-              Gerar Conta a Receber
-            </Button>
-          )}
+          {/* Verificar se status permite gerar conta a receber */}
+          {(() => {
+            const podeGerarContaReceber = statusOrcamento && 
+              STATUS_PERMITE_CONTA_RECEBER.includes(statusOrcamento as StatusOrcamento);
+            
+            if (!temContaReceber && onGerarContaReceber && podeGerarContaReceber) {
+              return (
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={onGerarContaReceber}
+                  className="text-xs"
+                >
+                  <Receipt className="h-3 w-3 mr-1" />
+                  Gerar Conta a Receber
+                </Button>
+              );
+            }
+            
+            if (!temContaReceber && !podeGerarContaReceber && statusOrcamento) {
+              return (
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Info className="h-3 w-3" />
+                  <span>Conta a receber liberada após confirmação do cliente</span>
+                </div>
+              );
+            }
+            
+            return null;
+          })()}
           
           {!temContasPagar && custoTotal > 0 && onGerarContasPagar && (
             <Button 
