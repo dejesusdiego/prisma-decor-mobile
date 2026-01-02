@@ -85,11 +85,6 @@ export function CortinaCard({
         trilhos: trilhosList.length,
         total: tecidosList.length + forrosList.length + trilhosList.length
       });
-
-      toast({
-        title: 'Materiais carregados',
-        description: `${tecidosList.length} tecidos, ${forrosList.length} forros, ${trilhosList.length} trilhos disponíveis`,
-      });
     } catch (error) {
       console.error('Erro ao carregar materiais:', error);
       toast({
@@ -257,18 +252,9 @@ export function CortinaCard({
       custos.custoCostura = custoCosturaTotal;
       custos.custoTotal = custos.custoTecido + custos.custoForro + custos.custoTrilho + custoCosturaTotal + custos.custoInstalacao;
 
-      // Garantir tipos corretos para os campos de barra
-      const barraCmValue = Math.round(Number(cortina.barraCm) || 0);
-      const barraForroCmValue = Number(cortina.barraForroCm) || 0;
-      
-      console.log('🔍 BARRA DEBUG PRE-SAVE:', {
-        'cortina.barraCm': cortina.barraCm,
-        'cortina.barraForroCm': cortina.barraForroCm,
-        'typeof barraCm': typeof cortina.barraCm,
-        'typeof barraForroCm': typeof cortina.barraForroCm,
-        'barraCmValue (to save)': barraCmValue,
-        'barraForroCmValue (to save)': barraForroCmValue
-      });
+      // Usar valores diretamente - conversão única, sem arredondamentos desnecessários
+      const barraCmValue = cortina.barraCm ?? 0;
+      const barraForroCmValue = cortina.barraForroCm ?? 0;
 
       const dadosCortina = {
         orcamento_id: orcamentoId,
@@ -299,11 +285,6 @@ export function CortinaCard({
         servicos_adicionais_ids: cortina.servicosAdicionaisIds || [],
       };
 
-      console.log('💾 dadosCortina a enviar para DB:', {
-        barra_cm: dadosCortina.barra_cm,
-        barra_forro_cm: dadosCortina.barra_forro_cm
-      });
-
       let result;
       if (cortina.id) {
         result = await supabase
@@ -321,15 +302,8 @@ export function CortinaCard({
       }
 
       if (result.error) {
-        console.error('❌ Erro do Supabase:', result.error);
         throw result.error;
       }
-
-      console.log('✅ Cortina salva com sucesso:', result.data.id);
-      console.log('📥 Dados retornados do DB:', {
-        barra_cm: result.data.barra_cm,
-        barra_forro_cm: result.data.barra_forro_cm
-      });
 
       onUpdate({ ...cortina, id: result.data.id, tipoProduto: 'cortina', ...custos });
 
