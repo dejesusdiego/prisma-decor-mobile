@@ -1078,6 +1078,59 @@ export type Database = {
         }
         Relationships: []
       }
+      materiais_pedido: {
+        Row: {
+          categoria: string
+          created_at: string | null
+          data_recebimento: string | null
+          id: string
+          material_id: string
+          nome_material: string
+          observacoes: string | null
+          pedido_id: string
+          quantidade_necessaria: number
+          recebido: boolean | null
+          recebido_por: string | null
+          unidade: string | null
+        }
+        Insert: {
+          categoria: string
+          created_at?: string | null
+          data_recebimento?: string | null
+          id?: string
+          material_id: string
+          nome_material: string
+          observacoes?: string | null
+          pedido_id: string
+          quantidade_necessaria?: number
+          recebido?: boolean | null
+          recebido_por?: string | null
+          unidade?: string | null
+        }
+        Update: {
+          categoria?: string
+          created_at?: string | null
+          data_recebimento?: string | null
+          id?: string
+          material_id?: string
+          nome_material?: string
+          observacoes?: string | null
+          pedido_id?: string
+          quantidade_necessaria?: number
+          recebido?: boolean | null
+          recebido_por?: string | null
+          unidade?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "materiais_pedido_pedido_id_fkey"
+            columns: ["pedido_id"]
+            isOneToOne: false
+            referencedRelation: "pedidos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       movimentacoes_extrato: {
         Row: {
           conciliado: boolean | null
@@ -1729,6 +1782,10 @@ export type Database = {
     }
     Functions: {
       atualizar_contas_atrasadas: { Args: never; Returns: undefined }
+      calcular_previsao_entrega: {
+        Args: { p_orcamento_id: string }
+        Returns: string
+      }
       gerar_codigo_orcamento: { Args: never; Returns: string }
       gerar_numero_pedido: { Args: never; Returns: string }
       has_role: {

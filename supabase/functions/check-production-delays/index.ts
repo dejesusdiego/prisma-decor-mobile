@@ -48,11 +48,12 @@ serve(async (req) => {
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
-  } catch (error) {
-    console.error('Erro na verificação de atrasos:', error);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error('Erro na verificação de atrasos:', errorMessage);
     return new Response(JSON.stringify({ 
       success: false,
-      error: error.message,
+      error: errorMessage,
       timestamp: new Date().toISOString()
     }), {
       status: 500,
