@@ -60,6 +60,7 @@ export type View =
   | 'finRelatorios'
   | 'finFluxoPrevisto'
   | 'finRentabilidade'
+  | 'finMargemReal'
   | 'finComissoes'
   | 'finVendedores'
   | 'finKPIs'
@@ -123,6 +124,7 @@ const financeiroNavItems = [
 const relatoriosBINavItems = [
   { id: 'finKPIs' as View, label: 'KPIs do Negócio', icon: Target },
   { id: 'finVendedores' as View, label: 'Desempenho Vendedores', icon: Users },
+  { id: 'finMargemReal' as View, label: 'Margem Real', icon: TrendingUp },
   { id: 'finRelatorios' as View, label: 'Análise Financeira', icon: DollarSign },
   { id: 'crmRelatorios' as View, label: 'Análise Comercial', icon: TrendingUp },
   { id: 'prodRelatorio' as View, label: 'Análise Produção', icon: Factory },
