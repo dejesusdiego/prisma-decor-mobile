@@ -1,6 +1,8 @@
+import { useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -8,19 +10,42 @@ import {
   Receipt, 
   Target,
   ArrowRight,
-  Percent
+  Percent,
+  AlertTriangle
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/formatters';
 import { useDashboardExecutivoMetricas } from '@/hooks/useDashboardExecutivoMetricas';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface DashboardExecutivoMetricasProps {
   onNavigate: (view: string) => void;
 }
 
+const LIMIAR_ALERTA_MARGEM = -10; // Alerta se margem realizada for 10% menor que projetada
+
 export function DashboardExecutivoMetricas({ onNavigate }: DashboardExecutivoMetricasProps) {
   const { data, isLoading } = useDashboardExecutivoMetricas();
   const metricas = data?.metricas;
+  const orcamentosComMargemBaixa = data?.orcamentosComMargemBaixa || [];
+
+  // Alerta quando margem média está abaixo do limiar
+  useEffect(() => {
+    if (!metricas) return;
+    
+    const diferencaMargem = metricas.margemMediaRealizada - metricas.margemMediaProjetada;
+    
+    if (diferencaMargem < LIMIAR_ALERTA_MARGEM) {
+      toast.warning('Atenção: Margem abaixo do esperado', {
+        description: `A margem realizada está ${Math.abs(diferencaMargem).toFixed(1)}% abaixo da projetada`,
+        duration: 8000,
+        action: {
+          label: 'Ver detalhes',
+          onClick: () => onNavigate('finMargemReal')
+        }
+      });
+    }
+  }, [metricas, onNavigate]);
 
   if (isLoading) {
     return (
@@ -41,6 +66,7 @@ export function DashboardExecutivoMetricas({ onNavigate }: DashboardExecutivoMet
 
   const diferencaMargem = (metricas?.margemMediaRealizada || 0) - (metricas?.margemMediaProjetada || 0);
   const margemPositiva = diferencaMargem >= 0;
+  const margemCritica = diferencaMargem < LIMIAR_ALERTA_MARGEM;
 
   return (
     <div className="space-y-6">
@@ -113,6 +139,69 @@ export function DashboardExecutivoMetricas({ onNavigate }: DashboardExecutivoMet
           </CardContent>
         </Card>
       </div>
+
+      {/* Alerta de margem crítica */}
+      {margemCritica && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Margem abaixo do esperado</AlertTitle>
+          <AlertDescription className="flex items-center justify-between">
+            <span>
+              A margem realizada está {Math.abs(diferencaMargem).toFixed(1)}% abaixo da projetada. 
+              {orcamentosComMargemBaixa.length > 0 && 
+                ` ${orcamentosComMargemBaixa.length} orçamento(s) com margem crítica.`
+              }
+            </span>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => onNavigate('finMargemReal')}
+              className="ml-4"
+            >
+              Analisar
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Lista de orçamentos com margem baixa */}
+      {orcamentosComMargemBaixa.length > 0 && (
+        <Card className="border-red-200 dark:border-red-900 bg-red-50/50 dark:bg-red-950/20">
+          <CardContent className="p-4">
+            <h4 className="font-medium text-red-700 dark:text-red-400 mb-3 flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4" />
+              Orçamentos com Margem Crítica (&gt;10% abaixo)
+            </h4>
+            <div className="space-y-2">
+              {orcamentosComMargemBaixa.slice(0, 5).map((orc) => (
+                <div 
+                  key={orc.id}
+                  className="flex items-center justify-between p-2 rounded bg-background/50"
+                >
+                  <div>
+                    <span className="font-medium">{orc.codigo}</span>
+                    <span className="text-muted-foreground ml-2">{orc.cliente}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm text-muted-foreground">
+                      Proj: {orc.margemProjetada.toFixed(0)}%
+                    </span>
+                    <span className="text-sm font-medium text-red-600">
+                      Real: {orc.margemReal.toFixed(0)}%
+                    </span>
+                    <TrendingDown className="h-4 w-4 text-red-500" />
+                  </div>
+                </div>
+              ))}
+              {orcamentosComMargemBaixa.length > 5 && (
+                <p className="text-sm text-muted-foreground text-center pt-2">
+                  + {orcamentosComMargemBaixa.length - 5} orçamento(s)
+                </p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Card de ação */}
       <Card className="bg-muted/30">

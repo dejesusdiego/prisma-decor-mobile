@@ -25,6 +25,15 @@ interface ProjecaoMensal {
   pipelineConvertido: number;
 }
 
+interface OrcamentoMargemBaixa {
+  id: string;
+  codigo: string;
+  cliente: string;
+  margemProjetada: number;
+  margemReal: number;
+  diferenca: number;
+}
+
 export function useDashboardExecutivoMetricas() {
   return useQuery({
     queryKey: ['dashboard-executivo-metricas'],
@@ -34,7 +43,7 @@ export function useDashboardExecutivoMetricas() {
       // Buscar orçamentos pagos para LTV e Ticket Médio
       const { data: orcamentosPagos } = await supabase
         .from('orcamentos')
-        .select('id, cliente_telefone, total_com_desconto, total_geral, custo_total, margem_percent')
+        .select('id, codigo, cliente_nome, cliente_telefone, total_com_desconto, total_geral, custo_total, margem_percent')
         .in('status', ['pago', 'pago_parcial', 'pago_40', 'instalado', 'concluido']);
       
       // Buscar contas receber para margem realizada
@@ -90,16 +99,36 @@ export function useDashboardExecutivoMetricas() {
       
       let somaMargemReal = 0;
       let countMargemReal = 0;
+      const orcamentosComMargemBaixa: OrcamentoMargemBaixa[] = [];
+      const LIMIAR_MARGEM_CRITICA = -10;
       
       (orcamentosPagos || []).forEach(orc => {
         const recebido = recebidoPorOrcamento.get(orc.id) || 0;
         const custo = custoPorOrcamento.get(orc.id) || (orc.custo_total || 0);
         if (recebido > 0) {
           const margemReal = ((recebido - custo) / recebido) * 100;
+          const margemProjetada = orc.margem_percent || 0;
+          const diferenca = margemReal - margemProjetada;
+          
           somaMargemReal += margemReal;
           countMargemReal++;
+          
+          // Identificar orçamentos com margem crítica
+          if (diferenca < LIMIAR_MARGEM_CRITICA) {
+            orcamentosComMargemBaixa.push({
+              id: orc.id,
+              codigo: orc.codigo || orc.id.substring(0, 8),
+              cliente: orc.cliente_nome || 'Cliente',
+              margemProjetada,
+              margemReal,
+              diferenca
+            });
+          }
         }
       });
+      
+      // Ordenar por diferença (pior primeiro)
+      orcamentosComMargemBaixa.sort((a, b) => a.diferenca - b.diferenca);
       
       const margemMediaRealizada = countMargemReal > 0 ? somaMargemReal / countMargemReal : 0;
       
@@ -112,10 +141,10 @@ export function useDashboardExecutivoMetricas() {
         totalOrcamentosPagos
       };
       
-      // === Tendência Semanal (últimas 8 semanas) ===
+      // === Tendência Semanal (últimas 12 semanas para suportar filtros) ===
       const tendencias: TendenciaSemanal[] = [];
       
-      for (let i = 7; i >= 0; i--) {
+      for (let i = 11; i >= 0; i--) {
         const inicioSemana = startOfWeek(subWeeks(hoje, i), { weekStartsOn: 1 });
         const fimSemana = new Date(inicioSemana);
         fimSemana.setDate(fimSemana.getDate() + 6);
@@ -225,7 +254,8 @@ export function useDashboardExecutivoMetricas() {
       return {
         metricas,
         tendencias,
-        projecaoMensal
+        projecaoMensal,
+        orcamentosComMargemBaixa
       };
     },
     refetchInterval: 300000, // 5 minutos

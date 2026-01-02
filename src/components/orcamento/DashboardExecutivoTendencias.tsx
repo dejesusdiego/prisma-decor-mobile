@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { 
   TrendingUp, 
   TrendingDown,
@@ -25,10 +27,23 @@ import {
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
+type PeriodoFiltro = '4sem' | '8sem' | '12sem';
+
+const PERIODOS: { id: PeriodoFiltro; label: string; semanas: number }[] = [
+  { id: '4sem', label: '4 semanas', semanas: 4 },
+  { id: '8sem', label: '8 semanas', semanas: 8 },
+  { id: '12sem', label: '12 semanas', semanas: 12 },
+];
+
 export function DashboardExecutivoTendencias() {
+  const [periodoSelecionado, setPeriodoSelecionado] = useState<PeriodoFiltro>('8sem');
   const { data, isLoading } = useDashboardExecutivoMetricas();
-  const tendencias = data?.tendencias || [];
+  const tendenciasCompletas = data?.tendencias || [];
   const projecao = data?.projecaoMensal;
+
+  // Filtrar tendências baseado no período selecionado
+  const semanasParaMostrar = PERIODOS.find(p => p.id === periodoSelecionado)?.semanas || 8;
+  const tendencias = tendenciasCompletas.slice(-semanasParaMostrar);
 
   if (isLoading) {
     return (
@@ -50,6 +65,24 @@ export function DashboardExecutivoTendencias() {
 
   return (
     <div className="space-y-6">
+      {/* Filtro de Período */}
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-medium text-muted-foreground">Período de análise</h3>
+        <div className="flex gap-1">
+          {PERIODOS.map((periodo) => (
+            <Button
+              key={periodo.id}
+              variant={periodoSelecionado === periodo.id ? "default" : "outline"}
+              size="sm"
+              onClick={() => setPeriodoSelecionado(periodo.id)}
+              className="text-xs"
+            >
+              {periodo.label}
+            </Button>
+          ))}
+        </div>
+      </div>
+
       {/* Gráficos lado a lado */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Gráfico de Receita Semanal */}
