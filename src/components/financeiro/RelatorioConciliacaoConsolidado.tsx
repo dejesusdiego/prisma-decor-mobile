@@ -393,7 +393,7 @@ export function RelatorioConciliacaoConsolidado({ onNavigateOrcamento }: Relator
                             </span>
                           </TableCell>
                           <TableCell>
-                            <span className="truncate max-w-[150px] block">{orc.clienteNome}</span>
+                            <span className="truncate max-w-[200px] block" title={orc.clienteNome}>{orc.clienteNome}</span>
                           </TableCell>
                           <TableCell className="text-right">
                             {formatCurrency(orc.valorTotal)}
