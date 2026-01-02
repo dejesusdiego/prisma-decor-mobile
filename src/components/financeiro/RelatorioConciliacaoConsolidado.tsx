@@ -45,7 +45,7 @@ import {
   Download
 } from 'lucide-react';
 import { subDays, subMonths, format } from 'date-fns';
-import { useRelatorioConciliacaoConsolidado, OrcamentoConciliacaoResumo } from '@/hooks/useRelatorioConciliacaoConsolidado';
+import { useRelatorioConciliacaoConsolidado, OrcamentoConciliacaoResumo, FiltroStatusPagamento } from '@/hooks/useRelatorioConciliacaoConsolidado';
 import { formatCurrency, formatPercent, formatDate } from '@/lib/formatters';
 import { getStatusConfig } from '@/lib/statusOrcamento';
 import { DialogVincularLancamentoAoOrcamento } from './dialogs/DialogVincularLancamentoAoOrcamento';
@@ -62,6 +62,7 @@ interface RelatorioConciliacaoConsolidadoProps {
 export function RelatorioConciliacaoConsolidado({ onNavigateOrcamento }: RelatorioConciliacaoConsolidadoProps) {
   const [apenasComPendencias, setApenasComPendencias] = useState(false);
   const [incluirNaoEnviados, setIncluirNaoEnviados] = useState(false);
+  const [filtroStatusPagamento, setFiltroStatusPagamento] = useState<FiltroStatusPagamento>('todos');
   const [dialogVincularOpen, setDialogVincularOpen] = useState(false);
   const [orcamentoParaVincular, setOrcamentoParaVincular] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('consolidado');
@@ -86,6 +87,7 @@ export function RelatorioConciliacaoConsolidado({ onNavigateOrcamento }: Relator
   const { data, isLoading } = useRelatorioConciliacaoConsolidado({ 
     apenasComPendencias,
     incluirNaoEnviados,
+    filtroStatusPagamento,
     dataInicio: dataFiltro ? format(dataFiltro, 'yyyy-MM-dd') : undefined
   });
 
@@ -205,11 +207,26 @@ export function RelatorioConciliacaoConsolidado({ onNavigateOrcamento }: Relator
         <TabsContent value="consolidado" className="space-y-6">
           {/* Filtros específicos do consolidado */}
           <div className="flex flex-wrap items-center gap-4">
+            <Select 
+              value={filtroStatusPagamento} 
+              onValueChange={(v: FiltroStatusPagamento) => setFiltroStatusPagamento(v)}
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Status de pagamento" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos válidos</SelectItem>
+                <SelectItem value="pagos">Apenas pagos (40%+)</SelectItem>
+                <SelectItem value="totalmente_pago">Totalmente pagos</SelectItem>
+              </SelectContent>
+            </Select>
+            
             <div className="flex items-center gap-2">
               <Switch
                 id="filtro-nao-enviados"
                 checked={incluirNaoEnviados}
                 onCheckedChange={setIncluirNaoEnviados}
+                disabled={filtroStatusPagamento !== 'todos'}
               />
               <Label htmlFor="filtro-nao-enviados" className="text-sm">
                 <FileText className="h-4 w-4 inline mr-1" />
@@ -230,7 +247,19 @@ export function RelatorioConciliacaoConsolidado({ onNavigateOrcamento }: Relator
           </div>
 
           {/* Info de filtro */}
-          {!incluirNaoEnviados && (
+          {filtroStatusPagamento === 'pagos' && (
+            <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 dark:bg-green-900/20 rounded-lg px-3 py-2">
+              <CheckCircle2 className="h-4 w-4" />
+              Mostrando apenas orçamentos com pagamento iniciado (40%, 50%, 60% ou 100%)
+            </div>
+          )}
+          {filtroStatusPagamento === 'totalmente_pago' && (
+            <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 dark:bg-green-900/20 rounded-lg px-3 py-2">
+              <CheckCircle2 className="h-4 w-4" />
+              Mostrando apenas orçamentos 100% pagos
+            </div>
+          )}
+          {filtroStatusPagamento === 'todos' && !incluirNaoEnviados && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/30 rounded-lg px-3 py-2">
               <Send className="h-4 w-4" />
               Mostrando apenas orçamentos enviados ao cliente ou com pagamentos iniciados
