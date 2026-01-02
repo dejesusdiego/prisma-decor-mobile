@@ -105,7 +105,7 @@ export function ListaLancamentosRecentes({ lancamentos, isLoading }: ListaLancam
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <ScrollArea className="h-[350px] pr-4">
+        <ScrollArea className="h-[320px] pr-4">
           {lancamentos.length === 0 ? (
             <div className="h-full flex items-center justify-center text-muted-foreground">
               Nenhum lançamento no período

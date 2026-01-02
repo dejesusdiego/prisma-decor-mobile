@@ -301,7 +301,7 @@ export function DashboardFinanceiro({ onNavigate }: DashboardFinanceiroProps) {
       </div>
 
       {/* Alertas e Listas */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
         {/* Widget de Pendências */}
         <WidgetPendenciasFinanceiras onNavigate={handleNavigate} />
 

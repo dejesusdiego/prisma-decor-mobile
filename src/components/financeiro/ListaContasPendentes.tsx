@@ -128,24 +128,24 @@ export function ListaContasPendentes({ contasPagar, contasReceber, isLoading }: 
       <CardContent>
         <Tabs defaultValue="pagar">
           <TabsList className="w-full mb-4">
-            <TabsTrigger value="pagar" className="flex-1 gap-2">
-              <ArrowDownCircle className="h-4 w-4" />
-              A Pagar
-              <Badge variant="secondary" className="ml-1 h-5 px-1.5">
+            <TabsTrigger value="pagar" className="flex-1 gap-1 text-xs sm:text-sm">
+              <ArrowDownCircle className="h-3.5 w-3.5 shrink-0" />
+              <span className="hidden sm:inline">A </span>Pagar
+              <Badge variant="secondary" className="h-5 px-1 text-xs">
                 {contasPagar.length}
               </Badge>
             </TabsTrigger>
-            <TabsTrigger value="receber" className="flex-1 gap-2">
-              <ArrowUpCircle className="h-4 w-4" />
-              A Receber
-              <Badge variant="secondary" className="ml-1 h-5 px-1.5">
+            <TabsTrigger value="receber" className="flex-1 gap-1 text-xs sm:text-sm">
+              <ArrowUpCircle className="h-3.5 w-3.5 shrink-0" />
+              <span className="hidden sm:inline">A </span>Receber
+              <Badge variant="secondary" className="h-5 px-1 text-xs">
                 {contasReceber.length}
               </Badge>
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="pagar" className="mt-0">
-            <ScrollArea className="h-[280px] pr-4">
+            <ScrollArea className="h-[320px] pr-4">
               {contasPagar.length === 0 ? (
                 <div className="h-full flex items-center justify-center text-muted-foreground">
                   Nenhuma conta a pagar pendente
@@ -161,7 +161,7 @@ export function ListaContasPendentes({ contasPagar, contasReceber, isLoading }: 
           </TabsContent>
 
           <TabsContent value="receber" className="mt-0">
-            <ScrollArea className="h-[280px] pr-4">
+            <ScrollArea className="h-[320px] pr-4">
               {contasReceber.length === 0 ? (
                 <div className="h-full flex items-center justify-center text-muted-foreground">
                   Nenhuma conta a receber pendente
