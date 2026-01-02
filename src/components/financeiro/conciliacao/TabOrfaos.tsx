@@ -14,7 +14,10 @@ import {
   AlertCircle,
   Filter,
   Wand2,
-  Loader2
+  Loader2,
+  EyeOff,
+  Star,
+  Eye
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -22,6 +25,9 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
@@ -45,6 +51,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -59,6 +71,8 @@ interface LancamentoOrfao {
   data_lancamento: string;
   tipo: string;
   categoria?: { nome: string } | null;
+  ignorado?: boolean;
+  motivo_ignorado?: string | null;
 }
 
 interface OrcamentoParaVincular {
@@ -82,6 +96,20 @@ interface SugestaoAutomatica {
   score: ScoreConciliacao;
 }
 
+interface MelhorMatch {
+  orcamento: OrcamentoParaVincular;
+  score: ScoreConciliacao;
+}
+
+const MOTIVOS_IGNORAR = [
+  'Taxa bancária',
+  'Transferência interna',
+  'Estorno/Devolução',
+  'IOF/Tarifa',
+  'Ajuste contábil',
+  'Outro'
+];
+
 interface TabOrfaosProps {
   dataInicio?: string;
 }
@@ -91,6 +119,7 @@ export function TabOrfaos({ dataInicio }: TabOrfaosProps) {
   const queryClient = useQueryClient();
   const [busca, setBusca] = useState('');
   const [filtroTipo, setFiltroTipo] = useState<'todos' | 'entrada' | 'saida'>('entrada');
+  const [incluirIgnorados, setIncluirIgnorados] = useState(false);
   const [selecionados, setSelecionados] = useState<string[]>([]);
   const [dialogOrcamentoOpen, setDialogOrcamentoOpen] = useState(false);
   const [buscaOrcamento, setBuscaOrcamento] = useState('');
@@ -98,14 +127,19 @@ export function TabOrfaos({ dataInicio }: TabOrfaosProps) {
   const [dialogAutoOpen, setDialogAutoOpen] = useState(false);
   const [sugestoesAuto, setSugestoesAuto] = useState<SugestaoAutomatica[]>([]);
   const [processandoAuto, setProcessandoAuto] = useState(false);
+  
+  // Estado para dialog de ignorar
+  const [dialogIgnorarOpen, setDialogIgnorarOpen] = useState(false);
+  const [motivoIgnorar, setMotivoIgnorar] = useState('Taxa bancária');
+  const [motivoOutro, setMotivoOutro] = useState('');
 
   const { data: lancamentosOrfaos = [], isLoading } = useQuery({
-    queryKey: ['lancamentos-orfaos', filtroTipo, dataInicio],
+    queryKey: ['lancamentos-orfaos', filtroTipo, dataInicio, incluirIgnorados],
     queryFn: async () => {
       let query = supabase
         .from('lancamentos_financeiros')
         .select(`
-          id, descricao, valor, data_lancamento, tipo,
+          id, descricao, valor, data_lancamento, tipo, ignorado, motivo_ignorado,
           categoria:categorias_financeiras(nome)
         `)
         .is('parcela_receber_id', null)
@@ -114,6 +148,10 @@ export function TabOrfaos({ dataInicio }: TabOrfaosProps) {
 
       if (filtroTipo !== 'todos') {
         query = query.eq('tipo', filtroTipo);
+      }
+
+      if (!incluirIgnorados) {
+        query = query.or('ignorado.is.null,ignorado.eq.false');
       }
 
       if (dataInicio) {
@@ -141,14 +179,67 @@ export function TabOrfaos({ dataInicio }: TabOrfaosProps) {
     }
   });
 
+  // Calcular melhor match para cada lançamento (para destaque visual)
+  const scoresMap = useMemo(() => {
+    const map = new Map<string, MelhorMatch>();
+    
+    for (const lancamento of lancamentosOrfaos) {
+      if (lancamento.ignorado) continue;
+      
+      let melhorMatch: MelhorMatch | null = null;
+      
+      for (const orcamento of orcamentos) {
+        const valorOrcamento = orcamento.total_com_desconto || orcamento.total_geral || 0;
+        
+        const score = calcularScoreCombinado(
+          lancamento.descricao,
+          orcamento.cliente_nome,
+          lancamento.valor,
+          valorOrcamento,
+          lancamento.data_lancamento,
+          orcamento.created_at
+        );
+        
+        if (score.scoreTotal >= 40) {
+          if (!melhorMatch || score.scoreTotal > melhorMatch.score.scoreTotal) {
+            melhorMatch = { orcamento, score };
+          }
+        }
+      }
+      
+      if (melhorMatch) {
+        map.set(lancamento.id, melhorMatch);
+      }
+    }
+    
+    return map;
+  }, [lancamentosOrfaos, orcamentos]);
+
+  // Busca avançada: descrição, cliente do match sugerido, código do orçamento
   const lancamentosFiltrados = useMemo(() => {
-    if (!busca.trim()) return lancamentosOrfaos;
-    const termo = busca.toLowerCase();
-    return lancamentosOrfaos.filter(l => 
-      l.descricao.toLowerCase().includes(termo) ||
-      formatCurrency(l.valor).includes(termo)
-    );
-  }, [lancamentosOrfaos, busca]);
+    let filtrados = lancamentosOrfaos;
+    
+    if (busca.trim()) {
+      const termo = busca.toLowerCase();
+      filtrados = lancamentosOrfaos.filter(l => {
+        // Busca na descrição
+        if (l.descricao.toLowerCase().includes(termo)) return true;
+        // Busca no valor
+        if (formatCurrency(l.valor).includes(termo)) return true;
+        
+        // Busca no orçamento sugerido (cliente + código)
+        const match = scoresMap.get(l.id);
+        if (match) {
+          if (match.orcamento.cliente_nome.toLowerCase().includes(termo)) return true;
+          if (match.orcamento.codigo.toLowerCase().includes(termo)) return true;
+        }
+        
+        return false;
+      });
+    }
+    
+    return filtrados;
+  }, [lancamentosOrfaos, busca, scoresMap]);
 
   const orcamentosFiltrados = useMemo(() => {
     if (!buscaOrcamento.trim()) return orcamentos;
@@ -163,6 +254,8 @@ export function TabOrfaos({ dataInicio }: TabOrfaosProps) {
     const sugestoes: SugestaoAutomatica[] = [];
     
     for (const lancamento of lancamentosOrfaos) {
+      if (lancamento.ignorado) continue;
+      
       let melhorMatch: { orcamento: OrcamentoParaVincular; score: ScoreConciliacao } | null = null;
       
       for (const orcamento of orcamentos) {
@@ -177,7 +270,6 @@ export function TabOrfaos({ dataInicio }: TabOrfaosProps) {
           orcamento.created_at
         );
         
-        // Aceitar matches com score >= 40 (mínimo para sugestão)
         if (score.scoreTotal >= 40) {
           if (!melhorMatch || score.scoreTotal > melhorMatch.score.scoreTotal) {
             melhorMatch = { orcamento, score };
@@ -194,20 +286,25 @@ export function TabOrfaos({ dataInicio }: TabOrfaosProps) {
       }
     }
     
-    // Ordenar por score total (maior primeiro)
     sugestoes.sort((a, b) => b.score.scoreTotal - a.score.scoreTotal);
     
     setSugestoesAuto(sugestoes);
     setDialogAutoOpen(true);
   };
 
+  // Contar ignorados
+  const totalIgnorados = useMemo(() => {
+    return lancamentosOrfaos.filter(l => l.ignorado).length;
+  }, [lancamentosOrfaos]);
+
   const totais = useMemo(() => {
+    const naoIgnorados = lancamentosOrfaos.filter(l => !l.ignorado);
     const selecionadosData = lancamentosOrfaos.filter(l => selecionados.includes(l.id));
     return {
       quantidade: selecionados.length,
       valor: selecionadosData.reduce((acc, l) => acc + l.valor, 0),
-      totalOrfaos: lancamentosOrfaos.length,
-      valorTotalOrfaos: lancamentosOrfaos.reduce((acc, l) => acc + l.valor, 0)
+      totalOrfaos: naoIgnorados.length,
+      valorTotalOrfaos: naoIgnorados.reduce((acc, l) => acc + l.valor, 0)
     };
   }, [selecionados, lancamentosOrfaos]);
 
@@ -218,12 +315,70 @@ export function TabOrfaos({ dataInicio }: TabOrfaosProps) {
   };
 
   const selecionarTodos = () => {
-    if (selecionados.length === lancamentosFiltrados.length) {
+    const naoIgnorados = lancamentosFiltrados.filter(l => !l.ignorado);
+    if (selecionados.length === naoIgnorados.length) {
       setSelecionados([]);
     } else {
-      setSelecionados(lancamentosFiltrados.map(l => l.id));
+      setSelecionados(naoIgnorados.map(l => l.id));
     }
   };
+
+  // Mutation para ignorar lançamentos
+  const ignorarMutation = useMutation({
+    mutationFn: async () => {
+      if (selecionados.length === 0) {
+        throw new Error('Nenhum lançamento selecionado');
+      }
+      
+      const motivo = motivoIgnorar === 'Outro' ? motivoOutro : motivoIgnorar;
+      
+      const { error } = await supabase
+        .from('lancamentos_financeiros')
+        .update({ 
+          ignorado: true, 
+          motivo_ignorado: motivo 
+        })
+        .in('id', selecionados);
+      
+      if (error) throw error;
+      return { quantidade: selecionados.length };
+    },
+    onSuccess: (result) => {
+      toast.success(`${result.quantidade} lançamento(s) ignorado(s)`);
+      queryClient.invalidateQueries({ queryKey: ['lancamentos-orfaos'] });
+      setSelecionados([]);
+      setDialogIgnorarOpen(false);
+      setMotivoIgnorar('Taxa bancária');
+      setMotivoOutro('');
+    },
+    onError: (error: Error) => {
+      toast.error('Erro: ' + error.message);
+    }
+  });
+
+  // Mutation para desfazer ignorar
+  const desfazerIgnorarMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      const { error } = await supabase
+        .from('lancamentos_financeiros')
+        .update({ 
+          ignorado: false, 
+          motivo_ignorado: null 
+        })
+        .in('id', ids);
+      
+      if (error) throw error;
+      return { quantidade: ids.length };
+    },
+    onSuccess: (result) => {
+      toast.success(`${result.quantidade} lançamento(s) restaurado(s)`);
+      queryClient.invalidateQueries({ queryKey: ['lancamentos-orfaos'] });
+      setSelecionados([]);
+    },
+    onError: (error: Error) => {
+      toast.error('Erro: ' + error.message);
+    }
+  });
 
   const vincularMutation = useMutation({
     mutationFn: async () => {
@@ -339,10 +494,67 @@ export function TabOrfaos({ dataInicio }: TabOrfaosProps) {
     );
   }
 
+  // Renderizar badge de match sugerido
+  const renderMatchBadge = (lancamentoId: string) => {
+    const match = scoresMap.get(lancamentoId);
+    if (!match) return <span className="text-muted-foreground text-xs">-</span>;
+    
+    const { score, orcamento } = match;
+    const isAlta = score.scoreTotal >= 70;
+    const isMedia = score.scoreTotal >= 50 && score.scoreTotal < 70;
+    
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className="flex items-center gap-1">
+              {isAlta && <Star className="h-3 w-3 text-green-500 fill-green-500" />}
+              <Badge 
+                variant={isAlta ? "default" : isMedia ? "secondary" : "outline"}
+                className={cn(
+                  "text-xs cursor-help",
+                  isAlta && "bg-green-500 hover:bg-green-600",
+                  isMedia && "bg-amber-500 hover:bg-amber-600 text-white"
+                )}
+              >
+                {score.scoreTotal}% {orcamento.codigo}
+              </Badge>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent side="left" className="max-w-xs">
+            <div className="space-y-1">
+              <p className="font-medium">{orcamento.cliente_nome}</p>
+              <p className="text-xs">
+                Valor: {formatCurrency(orcamento.total_com_desconto || orcamento.total_geral || 0)}
+              </p>
+              <div className="flex gap-2 text-xs">
+                <span>Nome: {score.scoreNome}%</span>
+                <span>Valor: {score.scoreValor}%</span>
+                <span>Data: {score.scoreData}%</span>
+              </div>
+            </div>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  };
+
+  // Determinar cor da borda da linha
+  const getRowBorderClass = (lancamentoId: string, ignorado?: boolean) => {
+    if (ignorado) return "border-l-4 border-l-muted opacity-60";
+    
+    const match = scoresMap.get(lancamentoId);
+    if (!match) return "";
+    
+    if (match.score.scoreTotal >= 70) return "border-l-4 border-l-green-500";
+    if (match.score.scoreTotal >= 50) return "border-l-4 border-l-amber-500";
+    return "";
+  };
+
   return (
     <div className="space-y-6">
       {/* KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <Card>
           <CardContent className="pt-4">
             <div className="flex items-center gap-2">
@@ -359,6 +571,15 @@ export function TabOrfaos({ dataInicio }: TabOrfaosProps) {
               <span className="text-sm text-muted-foreground">Valor Total</span>
             </div>
             <p className="text-2xl font-bold text-green-600">{formatCurrency(totais.valorTotalOrfaos)}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4">
+            <div className="flex items-center gap-2">
+              <EyeOff className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">Ignorados</span>
+            </div>
+            <p className="text-2xl font-bold text-muted-foreground">{totalIgnorados}</p>
           </CardContent>
         </Card>
         <Card>
@@ -389,20 +610,45 @@ export function TabOrfaos({ dataInicio }: TabOrfaosProps) {
               <FileQuestion className="h-5 w-5" />
               Lançamentos Órfãos
             </CardTitle>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <Button 
                 variant="outline" 
                 onClick={executarAutoConciliacao}
-                disabled={lancamentosOrfaos.length === 0 || orcamentos.length === 0}
+                disabled={lancamentosOrfaos.filter(l => !l.ignorado).length === 0 || orcamentos.length === 0}
               >
                 <Wand2 className="h-4 w-4 mr-2" />
                 Auto-Conciliar
               </Button>
               {selecionados.length > 0 && (
-                <Button onClick={() => setDialogOrcamentoOpen(true)}>
-                  <Link2 className="h-4 w-4 mr-2" />
-                  Vincular {selecionados.length}
-                </Button>
+                <>
+                  {selecionados.some(id => lancamentosOrfaos.find(l => l.id === id)?.ignorado) ? (
+                    <Button 
+                      variant="outline"
+                      onClick={() => {
+                        const idsIgnorados = selecionados.filter(id => 
+                          lancamentosOrfaos.find(l => l.id === id)?.ignorado
+                        );
+                        desfazerIgnorarMutation.mutate(idsIgnorados);
+                      }}
+                      disabled={desfazerIgnorarMutation.isPending}
+                    >
+                      <Eye className="h-4 w-4 mr-2" />
+                      Restaurar {selecionados.filter(id => lancamentosOrfaos.find(l => l.id === id)?.ignorado).length}
+                    </Button>
+                  ) : (
+                    <Button 
+                      variant="outline"
+                      onClick={() => setDialogIgnorarOpen(true)}
+                    >
+                      <EyeOff className="h-4 w-4 mr-2" />
+                      Ignorar {selecionados.length}
+                    </Button>
+                  )}
+                  <Button onClick={() => setDialogOrcamentoOpen(true)}>
+                    <Link2 className="h-4 w-4 mr-2" />
+                    Vincular {selecionados.length}
+                  </Button>
+                </>
               )}
             </div>
           </div>
@@ -412,7 +658,7 @@ export function TabOrfaos({ dataInicio }: TabOrfaosProps) {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Buscar lançamento..."
+                placeholder="Buscar por descrição, cliente ou código do orçamento..."
                 value={busca}
                 onChange={(e) => setBusca(e.target.value)}
                 className="pl-9"
@@ -429,6 +675,16 @@ export function TabOrfaos({ dataInicio }: TabOrfaosProps) {
                 <SelectItem value="saida">Saídas</SelectItem>
               </SelectContent>
             </Select>
+            <div className="flex items-center gap-2">
+              <Switch
+                id="incluir-ignorados"
+                checked={incluirIgnorados}
+                onCheckedChange={setIncluirIgnorados}
+              />
+              <Label htmlFor="incluir-ignorados" className="text-sm text-muted-foreground whitespace-nowrap">
+                Mostrar ignorados
+              </Label>
+            </div>
           </div>
 
           <ScrollArea className="h-[400px]">
@@ -437,20 +693,21 @@ export function TabOrfaos({ dataInicio }: TabOrfaosProps) {
                 <TableRow>
                   <TableHead className="w-12">
                     <Checkbox
-                      checked={selecionados.length === lancamentosFiltrados.length && lancamentosFiltrados.length > 0}
+                      checked={selecionados.length === lancamentosFiltrados.filter(l => !l.ignorado).length && lancamentosFiltrados.filter(l => !l.ignorado).length > 0}
                       onCheckedChange={selecionarTodos}
                     />
                   </TableHead>
                   <TableHead>Data</TableHead>
                   <TableHead>Descrição</TableHead>
                   <TableHead>Categoria</TableHead>
+                  <TableHead>Match Sugerido</TableHead>
                   <TableHead className="text-right">Valor</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {lancamentosFiltrados.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                    <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
                       <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-green-500" />
                       <p>Nenhum lançamento órfão encontrado!</p>
                       <p className="text-xs">Todos os lançamentos estão vinculados.</p>
@@ -461,8 +718,9 @@ export function TabOrfaos({ dataInicio }: TabOrfaosProps) {
                     <TableRow 
                       key={lancamento.id}
                       className={cn(
-                        "cursor-pointer",
-                        selecionados.includes(lancamento.id) && "bg-primary/5"
+                        "cursor-pointer transition-colors",
+                        selecionados.includes(lancamento.id) && "bg-primary/5",
+                        getRowBorderClass(lancamento.id, lancamento.ignorado)
                       )}
                       onClick={() => toggleSelecionado(lancamento.id)}
                     >
@@ -478,16 +736,41 @@ export function TabOrfaos({ dataInicio }: TabOrfaosProps) {
                           {format(new Date(lancamento.data_lancamento), 'dd/MM/yyyy', { locale: ptBR })}
                         </div>
                       </TableCell>
-                      <TableCell className="max-w-[300px] truncate">
-                        {lancamento.descricao}
+                      <TableCell className="max-w-[250px]">
+                        <div className="flex items-center gap-2">
+                          {lancamento.ignorado && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <EyeOff className="h-3 w-3 text-muted-foreground shrink-0" />
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Ignorado: {lancamento.motivo_ignorado}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
+                          <span className="truncate">{lancamento.descricao}</span>
+                        </div>
                       </TableCell>
                       <TableCell>
                         {lancamento.categoria?.nome || '-'}
                       </TableCell>
+                      <TableCell>
+                        {lancamento.ignorado ? (
+                          <Badge variant="outline" className="text-xs text-muted-foreground">
+                            {lancamento.motivo_ignorado}
+                          </Badge>
+                        ) : (
+                          renderMatchBadge(lancamento.id)
+                        )}
+                      </TableCell>
                       <TableCell className="text-right">
                         <span className={cn(
                           "font-medium",
-                          lancamento.tipo === 'entrada' ? "text-green-600" : "text-red-600"
+                          lancamento.ignorado 
+                            ? "text-muted-foreground"
+                            : lancamento.tipo === 'entrada' ? "text-green-600" : "text-red-600"
                         )}>
                           {lancamento.tipo === 'entrada' ? '+' : '-'} {formatCurrency(lancamento.valor)}
                         </span>
@@ -500,6 +783,62 @@ export function TabOrfaos({ dataInicio }: TabOrfaosProps) {
           </ScrollArea>
         </CardContent>
       </Card>
+
+      {/* Dialog para ignorar lançamentos */}
+      <Dialog open={dialogIgnorarOpen} onOpenChange={setDialogIgnorarOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <EyeOff className="h-5 w-5" />
+              Ignorar Lançamentos
+            </DialogTitle>
+            <DialogDescription>
+              Marcar {selecionados.length} lançamento(s) como ignorado(s). 
+              Eles não aparecerão na lista padrão de órfãos.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Motivo</Label>
+              <Select value={motivoIgnorar} onValueChange={setMotivoIgnorar}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {MOTIVOS_IGNORAR.map(motivo => (
+                    <SelectItem key={motivo} value={motivo}>{motivo}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {motivoIgnorar === 'Outro' && (
+              <div className="space-y-2">
+                <Label>Especifique o motivo</Label>
+                <Textarea
+                  placeholder="Descreva o motivo..."
+                  value={motivoOutro}
+                  onChange={(e) => setMotivoOutro(e.target.value)}
+                  rows={2}
+                />
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogIgnorarOpen(false)}>
+              Cancelar
+            </Button>
+            <Button 
+              onClick={() => ignorarMutation.mutate()}
+              disabled={ignorarMutation.isPending || (motivoIgnorar === 'Outro' && !motivoOutro.trim())}
+            >
+              {ignorarMutation.isPending ? 'Ignorando...' : `Ignorar ${selecionados.length} Lançamento(s)`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Dialog para selecionar orçamento */}
       <Dialog open={dialogOrcamentoOpen} onOpenChange={setDialogOrcamentoOpen}>
