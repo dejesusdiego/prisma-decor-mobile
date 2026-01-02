@@ -73,12 +73,5 @@ export function getOrigemConfig(origem: string | null) {
   return ORIGENS_CONFIG[origem as keyof typeof ORIGENS_CONFIG] || ORIGENS_CONFIG.outro;
 }
 
-export function formatCurrency(value: number | null) {
-  if (!value) return 'R$ 0';
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0
-  }).format(value);
-}
+// Re-export formatCurrency from centralized location for backwards compatibility
+export { formatCurrency } from './formatters';

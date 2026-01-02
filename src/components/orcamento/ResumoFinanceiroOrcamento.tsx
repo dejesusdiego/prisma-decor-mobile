@@ -14,7 +14,7 @@ import {
   PiggyBank
 } from 'lucide-react';
 import { useOrcamentoFinanceiro } from '@/hooks/useOrcamentoFinanceiro';
-import { formatCurrency } from '@/lib/calculosStatus';
+import { formatCurrency } from '@/lib/formatters';
 
 interface ResumoFinanceiroOrcamentoProps {
   orcamentoId: string;
