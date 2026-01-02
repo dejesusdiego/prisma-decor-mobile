@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -23,7 +23,10 @@ import {
   GripVertical
 } from 'lucide-react';
 import { useProducaoData, STATUS_ITEM_LABELS, PRIORIDADE_LABELS, ItemPedido, Pedido } from '@/hooks/useProducaoData';
+import { usePedidosFinanceiros, StatusFinanceiroPedido } from '@/hooks/usePedidoFinanceiro';
 import { TipBanner } from '@/components/ui/TipBanner';
+import { AlertaFinanceiroProducao } from './AlertaFinanceiroProducao';
+import { BadgeStatusFinanceiro } from './BadgeStatusFinanceiro';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -38,6 +41,7 @@ import {
   closestCenter,
 } from '@dnd-kit/core';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
+
 const KANBAN_COLUMNS = [
   { id: 'fila', label: 'Na Fila', icon: Package, color: 'bg-gray-500' },
   { id: 'corte', label: 'Corte', icon: Scissors, color: 'bg-orange-500' },
@@ -49,10 +53,18 @@ const KANBAN_COLUMNS = [
 
 interface ItemWithPedido extends ItemPedido {
   pedidoInfo: Pedido;
+  statusFinanceiro?: StatusFinanceiroPedido;
 }
 
 export function KanbanProducao() {
   const { pedidos, isLoading, atualizarStatusItem, isUpdating, refetch } = useProducaoData();
+  
+  // Buscar status financeiro de todos os pedidos
+  const pedidoIds = useMemo(() => 
+    pedidos.filter(p => !['entregue', 'cancelado'].includes(p.status_producao)).map(p => p.id),
+    [pedidos]
+  );
+  const { data: statusFinanceiroMap } = usePedidosFinanceiros(pedidoIds);
   const [filtroPrioridade, setFiltroPrioridade] = useState<string>('todas');
 
   // Real-time subscription for item status changes
@@ -91,14 +103,15 @@ export function KanbanProducao() {
     };
   }, [refetch]);
 
-  // Flatten items from all pedidos
+  // Flatten items from all pedidos com status financeiro
   const allItems: ItemWithPedido[] = pedidos
     .filter(p => !['entregue', 'cancelado'].includes(p.status_producao))
     .filter(p => filtroPrioridade === 'todas' || p.prioridade === filtroPrioridade)
     .flatMap(pedido => 
       (pedido.itens_pedido || []).map(item => ({
         ...item,
-        pedidoInfo: pedido
+        pedidoInfo: pedido,
+        statusFinanceiro: statusFinanceiroMap?.[pedido.id],
       }))
     );
 
@@ -154,6 +167,9 @@ export function KanbanProducao() {
 
   return (
     <div className="space-y-4">
+      {/* Alerta de Pendências Financeiras */}
+      <AlertaFinanceiroProducao pedidoIds={pedidoIds} />
+      
       <TipBanner
         id="kanban-producao-tip"
         title="Kanban de Produção"
@@ -302,6 +318,7 @@ function DraggableCard({
   isUpdating: boolean;
   onMove: (itemId: string, novoStatus: string) => void;
 }) {
+  const isBloqueado = item.statusFinanceiro?.statusLiberacao === 'bloqueado';
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: item.id,
   });
@@ -320,6 +337,7 @@ function DraggableCard({
         "p-3 rounded-lg border bg-card hover:shadow-md transition-all cursor-grab active:cursor-grabbing",
         item.pedidoInfo.prioridade === 'urgente' && "border-red-500/50 bg-red-500/5",
         item.pedidoInfo.prioridade === 'alta' && "border-orange-500/50 bg-orange-500/5",
+        isBloqueado && "border-red-300 bg-red-50/50 dark:bg-red-950/20",
         isDragging && "opacity-50 shadow-lg"
       )}
       {...attributes}
@@ -331,7 +349,7 @@ function DraggableCard({
           <GripVertical className="h-4 w-4 text-muted-foreground" />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 flex-wrap">
             <span className="text-xs font-medium text-muted-foreground">
               {item.pedidoInfo.numero_pedido}
             </span>
@@ -341,6 +359,8 @@ function DraggableCard({
             >
               {prioridadeInfo.label}
             </Badge>
+            {/* Badge de Status Financeiro */}
+            <BadgeStatusFinanceiro status={item.statusFinanceiro} size="sm" />
           </div>
           <p className="font-medium text-sm truncate">
             {item.cortina_item?.nome_identificacao || 'Item sem nome'}
