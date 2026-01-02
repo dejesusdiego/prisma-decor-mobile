@@ -382,12 +382,12 @@ export function EtapaCliente({ dados, orcamentoId, onAvancar, onCancelar }: Etap
               <HelpTooltip content="Selecione o vendedor para cálculo automático de comissão" side="right" />
             </Label>
             <Select
-              value={formData.vendedorId || ''}
+              value={formData.vendedorId || 'none'}
               onValueChange={(value) => {
                 const vendedor = vendedores.find(v => v.vendedor_user_id === value);
                 setFormData({ 
                   ...formData, 
-                  vendedorId: value || undefined,
+                  vendedorId: value === 'none' ? undefined : value,
                   vendedorNome: vendedor?.vendedor_nome || undefined
                 });
               }}
@@ -398,7 +398,7 @@ export function EtapaCliente({ dados, orcamentoId, onAvancar, onCancelar }: Etap
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Nenhum vendedor</SelectItem>
+                <SelectItem value="none">Nenhum vendedor</SelectItem>
                 {vendedores.map((v) => (
                   <SelectItem key={v.vendedor_user_id || v.vendedor_nome} value={v.vendedor_user_id || v.vendedor_nome}>
                     <div className="flex items-center gap-2">
