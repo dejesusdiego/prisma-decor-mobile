@@ -26,8 +26,10 @@ import {
   Eye,
   Package,
   Calendar,
-  DollarSign
+  DollarSign,
+  Download
 } from 'lucide-react';
+import { gerarCSV, downloadCSV } from '@/lib/parserCSVMateriais';
 import { useProducaoData, STATUS_PRODUCAO_LABELS, PRIORIDADE_LABELS } from '@/hooks/useProducaoData';
 import { usePedidosFinanceiros, STATUS_LIBERACAO_LABELS } from '@/hooks/usePedidoFinanceiro';
 import { AlertaFinanceiroProducao } from './AlertaFinanceiroProducao';
@@ -144,11 +146,44 @@ export function ListaPedidos({ onVerPedido }: ListaPedidosProps) {
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Package className="h-5 w-5" />
-            Pedidos em Produção
-            <Badge variant="secondary" className="ml-2">{pedidosFiltrados.length}</Badge>
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Package className="h-5 w-5" />
+              Pedidos em Produção
+              <Badge variant="secondary" className="ml-2">{pedidosFiltrados.length}</Badge>
+            </CardTitle>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const colunas = [
+                  { campo: 'numero', titulo: 'Número' },
+                  { campo: 'orcamento', titulo: 'Orçamento' },
+                  { campo: 'cliente', titulo: 'Cliente' },
+                  { campo: 'data_entrada', titulo: 'Data Entrada' },
+                  { campo: 'previsao', titulo: 'Previsão' },
+                  { campo: 'status', titulo: 'Status' },
+                  { campo: 'prioridade', titulo: 'Prioridade' },
+                  { campo: 'valor', titulo: 'Valor' },
+                ];
+                const dados = pedidosFiltrados.map(p => ({
+                  numero: p.numero_pedido,
+                  orcamento: p.orcamento?.codigo || '',
+                  cliente: p.orcamento?.cliente_nome || '',
+                  data_entrada: format(new Date(p.data_entrada), 'dd/MM/yyyy', { locale: ptBR }),
+                  previsao: p.previsao_entrega ? format(new Date(p.previsao_entrega), 'dd/MM/yyyy', { locale: ptBR }) : '',
+                  status: STATUS_PRODUCAO_LABELS[p.status_producao]?.label || p.status_producao,
+                  prioridade: PRIORIDADE_LABELS[p.prioridade]?.label || p.prioridade,
+                  valor: formatCurrency(p.orcamento?.total_com_desconto || p.orcamento?.total_geral),
+                }));
+                const csv = gerarCSV(dados, colunas);
+                downloadCSV(csv, `pedidos-${format(new Date(), 'yyyy-MM-dd')}.csv`);
+              }}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Exportar CSV
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           {pedidosFiltrados.length === 0 ? (

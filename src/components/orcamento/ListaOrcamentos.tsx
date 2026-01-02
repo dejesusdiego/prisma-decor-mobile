@@ -19,7 +19,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { ArrowLeft, Edit, Copy, FileDown, Search, Trash2, Eye, Receipt, CheckCircle2, Clock, AlertCircle, Banknote } from 'lucide-react';
+import { ArrowLeft, Edit, Copy, FileDown, Search, Trash2, Eye, Receipt, CheckCircle2, Clock, AlertCircle, Banknote, Download } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
@@ -30,6 +30,8 @@ import { STATUS_CONFIG, STATUS_LIST, getStatusConfig, getStatusLabel, StatusOrca
 import { DialogCondicoesPagamento } from '@/components/financeiro/dialogs/DialogCondicoesPagamento';
 import { DialogGerarContasPagar } from '@/components/financeiro/dialogs/DialogGerarContasPagar';
 import { useDuplicarOrcamento } from '@/hooks/useDuplicarOrcamento';
+import { gerarCSV, downloadCSV } from '@/lib/parserCSVMateriais';
+import { format } from 'date-fns';
 
 interface ContaReceberInfo {
   id: string;
@@ -379,12 +381,50 @@ export function ListaOrcamentos({ onVoltar, onEditar, onVisualizar, onVerFinance
           <ArrowLeft className="mr-2 h-4 w-4" />
           Voltar ao Início
         </Button>
-        {onVerFinanceiro && (
-          <Button variant="outline" onClick={onVerFinanceiro}>
-            <Receipt className="mr-2 h-4 w-4" />
-            Ver Financeiro
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => {
+              const colunas = [
+                { campo: 'codigo', titulo: 'Código' },
+                { campo: 'cliente_nome', titulo: 'Cliente' },
+                { campo: 'cliente_telefone', titulo: 'Telefone' },
+                { campo: 'endereco', titulo: 'Endereço' },
+                { campo: 'cidade', titulo: 'Cidade' },
+                { campo: 'data', titulo: 'Data' },
+                { campo: 'total_geral', titulo: 'Total' },
+                { campo: 'custo_total', titulo: 'Custo' },
+                { campo: 'margem', titulo: 'Margem %' },
+                { campo: 'status', titulo: 'Status' },
+              ];
+              const dados = orcamentosFiltrados.map(orc => ({
+                codigo: orc.codigo,
+                cliente_nome: orc.cliente_nome,
+                cliente_telefone: orc.cliente_telefone,
+                endereco: orc.endereco || '',
+                cidade: (orc as any).cidade || '',
+                data: format(new Date(orc.created_at), 'dd/MM/yyyy'),
+                total_geral: (orc.total_geral || 0).toFixed(2).replace('.', ','),
+                custo_total: (orc.custo_total || 0).toFixed(2).replace('.', ','),
+                margem: ((orc as any).margem_percent || 0).toFixed(1).replace('.', ','),
+                status: getStatusLabel(orc.status as StatusOrcamento),
+              }));
+              const csv = gerarCSV(dados, colunas);
+              downloadCSV(csv, `orcamentos-${format(new Date(), 'yyyy-MM-dd')}.csv`);
+              toast({ title: 'CSV exportado', description: `${dados.length} orçamentos exportados.` });
+            }}
+          >
+            <Download className="mr-2 h-4 w-4" />
+            Exportar CSV
           </Button>
-        )}
+          {onVerFinanceiro && (
+            <Button variant="outline" onClick={onVerFinanceiro}>
+              <Receipt className="mr-2 h-4 w-4" />
+              Ver Financeiro
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Contadores de Status */}

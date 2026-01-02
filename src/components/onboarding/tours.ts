@@ -5,6 +5,8 @@ export interface TourStep {
   position?: 'top' | 'bottom' | 'left' | 'right';
 }
 
+export type TourId = 'dashboard' | 'wizard' | 'crm';
+
 export const DASHBOARD_TOUR: TourStep[] = [
   {
     id: 'sidebar',
@@ -38,29 +40,50 @@ export const DASHBOARD_TOUR: TourStep[] = [
   },
 ];
 
-export const NOVO_ORCAMENTO_TOUR: TourStep[] = [
+export const WIZARD_TOUR: TourStep[] = [
+  // Etapa 1 - Cliente
   {
-    id: 'etapa-cliente',
-    title: 'Dados do Cliente',
-    description: 'Preencha os dados do cliente. O telefone é usado para vincular automaticamente ao CRM.',
+    id: 'wizard-telefone',
+    title: 'Telefone e Vínculo CRM',
+    description: 'O telefone é usado para vincular automaticamente ao CRM. Se o contato existir, os dados serão preenchidos.',
     position: 'right',
   },
   {
-    id: 'adicionar-produto',
+    id: 'wizard-vendedor',
+    title: 'Vendedor Responsável',
+    description: 'Selecione o vendedor para cálculo automático de comissão.',
+    position: 'right',
+  },
+  // Etapa 2 - Produtos
+  {
+    id: 'wizard-adicionar-produtos',
     title: 'Adicionar Produtos',
-    description: 'Adicione cortinas, persianas, papéis de parede e outros produtos ao orçamento.',
+    description: 'Clique nos botões para adicionar cortinas, persianas, acessórios e outros produtos.',
     position: 'bottom',
   },
   {
-    id: 'calculos-automaticos',
-    title: 'Cálculos Automáticos',
-    description: 'Os custos são calculados automaticamente com base nos materiais e serviços selecionados.',
-    position: 'left',
+    id: 'wizard-lista-produtos',
+    title: 'Reordenar Itens',
+    description: 'Arraste os itens pelo ícone de grade para reorganizar a ordem no orçamento.',
+    position: 'top',
+  },
+  // Etapa 3 - Resumo
+  {
+    id: 'wizard-margem',
+    title: 'Margem de Lucro',
+    description: 'Escolha a margem de lucro: Padrão (61,5%), Promoção (50%) ou Personalizada.',
+    position: 'right',
   },
   {
-    id: 'gerar-pdf',
+    id: 'wizard-desconto',
+    title: 'Aplicar Desconto',
+    description: 'Aplique desconto por percentual ou valor fixo. O histórico de descontos é registrado.',
+    position: 'right',
+  },
+  {
+    id: 'wizard-gerar-pdf',
     title: 'Gerar PDF',
-    description: 'Finalize gerando o PDF do orçamento para enviar ao cliente.',
+    description: 'Finalize gerando o PDF para enviar ao cliente. Escolha a validade do orçamento.',
     position: 'top',
   },
 ];
