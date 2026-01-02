@@ -98,7 +98,7 @@ function AlertaItem({ alerta, onDismiss, onAction }: {
               ) : (
                 <ArrowDownCircle className="h-4 w-4 text-red-500 shrink-0" />
               )}
-              <span className="truncate">{alerta.titulo}</span>
+              <span className="truncate max-w-[120px] xl:max-w-[160px]">{alerta.titulo}</span>
             </p>
             <p className="text-xs text-muted-foreground mt-0.5 truncate">
               {alerta.descricao}
@@ -136,7 +136,7 @@ function AlertaItem({ alerta, onDismiss, onAction }: {
             <Button
               variant="ghost"
               size="sm"
-              className="h-6 px-2 text-xs"
+              className="h-6 px-2 text-xs shrink-0 whitespace-nowrap"
               onClick={() => onAction(alerta)}
             >
               {isParcela ? 'Receber' : 'Pagar'}
@@ -375,7 +375,7 @@ export function AlertasVencimento() {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <ScrollArea className="h-[300px] pr-2">
+        <ScrollArea className="h-[320px] pr-2">
           <div className="space-y-2">
             {alertasOrdenados.map((alerta) => (
               <AlertaItem 
