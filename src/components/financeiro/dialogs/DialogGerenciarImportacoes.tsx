@@ -160,7 +160,7 @@ export function DialogGerenciarImportacoes({ onSelectExtrato }: DialogGerenciarI
                 <TableBody>
                   {extratos.map((ext) => (
                     <TableRow key={ext.id}>
-                      <TableCell className="font-medium max-w-[150px] truncate">
+                      <TableCell className="font-medium max-w-[200px] truncate" title={ext.nome_arquivo}>
                         {ext.nome_arquivo}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">

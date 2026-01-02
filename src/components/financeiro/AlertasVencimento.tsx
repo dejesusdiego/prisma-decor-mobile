@@ -98,7 +98,7 @@ function AlertaItem({ alerta, onDismiss, onAction }: {
               ) : (
                 <ArrowDownCircle className="h-4 w-4 text-red-500 shrink-0" />
               )}
-              <span className="truncate max-w-[120px] xl:max-w-[160px]">{alerta.titulo}</span>
+              <span className="truncate max-w-[180px] xl:max-w-[220px]" title={alerta.titulo}>{alerta.titulo}</span>
             </p>
             <p className="text-xs text-muted-foreground mt-0.5 truncate">
               {alerta.descricao}
@@ -127,7 +127,7 @@ function AlertaItem({ alerta, onDismiss, onAction }: {
                 : `Em ${Math.abs(alerta.diasAtraso || 0)}d`
               }
             </Badge>
-            <span className="text-sm font-semibold">
+            <span className="text-sm font-semibold shrink-0 whitespace-nowrap">
               {formatCurrency(alerta.valor)}
             </span>
           </div>

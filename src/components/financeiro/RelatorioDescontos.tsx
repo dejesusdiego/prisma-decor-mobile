@@ -481,7 +481,7 @@ export function RelatorioDescontos() {
                             {format(new Date(orc.created_at), 'dd/MM/yy', { locale: ptBR })}
                           </div>
                         </TableCell>
-                        <TableCell className="max-w-[120px] truncate">
+                        <TableCell className="max-w-[180px] truncate" title={orc.cliente_nome}>
                           {orc.cliente_nome}
                         </TableCell>
                         <TableCell className="text-right">

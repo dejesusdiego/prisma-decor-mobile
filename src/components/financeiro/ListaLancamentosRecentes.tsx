@@ -50,11 +50,12 @@ function LancamentoItem({ lancamento }: { lancamento: LancamentoRecente }) {
                 <span className="text-muted-foreground">•</span>
                 <Badge 
                   variant="outline" 
-                  className="text-xs px-1.5 py-0"
+                  className="text-xs px-1.5 py-0 shrink-0 whitespace-nowrap max-w-[100px] truncate"
                   style={{ 
                     borderColor: lancamento.categoriaCor,
                     color: lancamento.categoriaCor,
                   }}
+                  title={lancamento.categoria}
                 >
                   {lancamento.categoria}
                 </Badge>

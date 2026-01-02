@@ -75,14 +75,14 @@ function ContaItem({ conta }: { conta: ContaPendente }) {
           )}
         </div>
       </div>
-      <div className="flex flex-col items-end gap-1 ml-2">
+      <div className="flex flex-col items-end gap-1 ml-2 shrink-0">
         <span className={cn(
-          "font-semibold text-sm",
+          "font-semibold text-sm whitespace-nowrap",
           conta.tipo === 'pagar' ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"
         )}>
           {formatCurrency(conta.valor)}
         </span>
-        <Badge variant="outline" className={cn("text-xs px-1.5 py-0", vencimento.className)}>
+        <Badge variant="outline" className={cn("text-xs px-1.5 py-0 whitespace-nowrap shrink-0", vencimento.className)}>
           {vencimento.label}
         </Badge>
       </div>
