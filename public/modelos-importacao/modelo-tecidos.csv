@@ -1,0 +1,5 @@
+codigo_item;nome;categoria;unidade;largura_metro;preco_custo;linha;cor;tipo
+TEC-001;Linho Natural Premium;tecido;M;2,80;45,90;Linho Natural;Bege;TECIDO
+TEC-002;Linho Natural Branco;tecido;M;2,80;45,90;Linho Natural;Branco;TECIDO
+FOR-001;Forro Blackout Bege;forro;M;2,80;28,50;Blackout;Bege;FORRO
+FOR-002;Forro Blackout Branco;forro;M;2,80;28,50;Blackout;Branco;FORRO

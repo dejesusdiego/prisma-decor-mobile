@@ -1,0 +1,5 @@
+codigo_item;nome;categoria;unidade;preco_custo;linha;cor;tipo
+PAP-001;Papel de Parede Geométrico Cinza;papel;ROLO;180,00;Geométrico;Cinza;VINÍLICO
+PAP-002;Papel de Parede Floral Bege;papel;ROLO;195,00;Floral;Bege;VINÍLICO
+PAP-003;Papel de Parede Listrado Azul;papel;ROLO;165,00;Listrado;Azul;TNT
+PAP-004;Papel de Parede Texturizado Branco;papel;ROLO;145,00;Texturizado;Branco;TNT
