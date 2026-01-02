@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -24,9 +24,13 @@ import {
   Filter,
   Eye,
   Package,
-  Calendar
+  Calendar,
+  DollarSign
 } from 'lucide-react';
 import { useProducaoData, STATUS_PRODUCAO_LABELS, PRIORIDADE_LABELS } from '@/hooks/useProducaoData';
+import { usePedidosFinanceiros, STATUS_LIBERACAO_LABELS } from '@/hooks/usePedidoFinanceiro';
+import { AlertaFinanceiroProducao } from './AlertaFinanceiroProducao';
+import { BadgeStatusFinanceiro } from './BadgeStatusFinanceiro';
 import { format, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -40,6 +44,10 @@ export function ListaPedidos({ onVerPedido }: ListaPedidosProps) {
   const [busca, setBusca] = useState('');
   const [filtroStatus, setFiltroStatus] = useState<string>('todos');
   const [filtroPrioridade, setFiltroPrioridade] = useState<string>('todas');
+  const [filtroFinanceiro, setFiltroFinanceiro] = useState<string>('todos');
+
+  const pedidoIds = useMemo(() => pedidos.map(p => p.id), [pedidos]);
+  const { data: statusFinanceiroMap } = usePedidosFinanceiros(pedidoIds);
 
   const pedidosFiltrados = pedidos.filter(pedido => {
     const matchBusca = busca === '' || 
@@ -50,7 +58,13 @@ export function ListaPedidos({ onVerPedido }: ListaPedidosProps) {
     const matchStatus = filtroStatus === 'todos' || pedido.status_producao === filtroStatus;
     const matchPrioridade = filtroPrioridade === 'todas' || pedido.prioridade === filtroPrioridade;
     
-    return matchBusca && matchStatus && matchPrioridade;
+    const statusFin = statusFinanceiroMap?.[pedido.id];
+    let matchFinanceiro = filtroFinanceiro === 'todos';
+    if (!matchFinanceiro && statusFin) {
+      matchFinanceiro = statusFin.statusLiberacao === filtroFinanceiro;
+    }
+    
+    return matchBusca && matchStatus && matchPrioridade && matchFinanceiro;
   });
 
   const formatCurrency = (value: number | null | undefined) => {
@@ -69,7 +83,8 @@ export function ListaPedidos({ onVerPedido }: ListaPedidosProps) {
 
   return (
     <div className="space-y-4">
-      {/* Filtros */}
+      <AlertaFinanceiroProducao pedidoIds={pedidoIds} />
+
       <Card>
         <CardContent className="pt-4">
           <div className="flex flex-col md:flex-row gap-4">
@@ -83,7 +98,7 @@ export function ListaPedidos({ onVerPedido }: ListaPedidosProps) {
               />
             </div>
             
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <Select value={filtroStatus} onValueChange={setFiltroStatus}>
                 <SelectTrigger className="w-[180px]">
                   <Filter className="h-4 w-4 mr-2" />
@@ -108,20 +123,30 @@ export function ListaPedidos({ onVerPedido }: ListaPedidosProps) {
                   ))}
                 </SelectContent>
               </Select>
+
+              <Select value={filtroFinanceiro} onValueChange={setFiltroFinanceiro}>
+                <SelectTrigger className="w-[180px]">
+                  <DollarSign className="h-4 w-4 mr-2" />
+                  <SelectValue placeholder="Status Financeiro" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos</SelectItem>
+                  {Object.entries(STATUS_LIBERACAO_LABELS).map(([key, info]) => (
+                    <SelectItem key={key} value={key}>{info.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Tabela */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Package className="h-5 w-5" />
             Pedidos em Produção
-            <Badge variant="secondary" className="ml-2">
-              {pedidosFiltrados.length}
-            </Badge>
+            <Badge variant="secondary" className="ml-2">{pedidosFiltrados.length}</Badge>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -140,6 +165,7 @@ export function ListaPedidos({ onVerPedido }: ListaPedidosProps) {
                     <TableHead>Itens</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Prioridade</TableHead>
+                    <TableHead>Financeiro</TableHead>
                     <TableHead>Previsão</TableHead>
                     <TableHead>Valor</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
@@ -149,36 +175,33 @@ export function ListaPedidos({ onVerPedido }: ListaPedidosProps) {
                   {pedidosFiltrados.map(pedido => {
                     const statusInfo = STATUS_PRODUCAO_LABELS[pedido.status_producao];
                     const prioridadeInfo = PRIORIDADE_LABELS[pedido.prioridade];
+                    const statusFinanceiro = statusFinanceiroMap?.[pedido.id];
                     const diasRestantes = pedido.previsao_entrega 
                       ? differenceInDays(new Date(pedido.previsao_entrega), new Date())
                       : null;
                     const isAtrasado = diasRestantes !== null && diasRestantes < 0;
+                    const isBloqueado = statusFinanceiro?.statusLiberacao === 'bloqueado';
                     
                     return (
                       <TableRow 
                         key={pedido.id}
                         className={cn(
                           "cursor-pointer hover:bg-muted/50",
-                          isAtrasado && "bg-destructive/5"
+                          isAtrasado && "bg-destructive/5",
+                          isBloqueado && "bg-red-50/50 dark:bg-red-950/10"
                         )}
                         onClick={() => onVerPedido(pedido.id)}
                       >
                         <TableCell>
                           <div>
                             <p className="font-medium">{pedido.numero_pedido}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {pedido.orcamento?.codigo}
-                            </p>
+                            <p className="text-xs text-muted-foreground">{pedido.orcamento?.codigo}</p>
                           </div>
                         </TableCell>
                         <TableCell>
                           <div>
-                            <p className="font-medium truncate max-w-[200px]">
-                              {pedido.orcamento?.cliente_nome}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {pedido.orcamento?.cidade}
-                            </p>
+                            <p className="font-medium truncate max-w-[200px]">{pedido.orcamento?.cliente_nome}</p>
+                            <p className="text-xs text-muted-foreground">{pedido.orcamento?.cidade}</p>
                           </div>
                         </TableCell>
                         <TableCell>
@@ -188,14 +211,13 @@ export function ListaPedidos({ onVerPedido }: ListaPedidosProps) {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge className={cn(statusInfo.color, "text-white")}>
-                            {statusInfo.label}
-                          </Badge>
+                          <Badge className={cn(statusInfo.color, "text-white")}>{statusInfo.label}</Badge>
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline" className={cn(prioridadeInfo.color, "text-white border-0")}>
-                            {prioridadeInfo.label}
-                          </Badge>
+                          <Badge variant="outline" className={cn(prioridadeInfo.color, "text-white border-0")}>{prioridadeInfo.label}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <BadgeStatusFinanceiro status={statusFinanceiro} />
                         </TableCell>
                         <TableCell>
                           {pedido.previsao_entrega ? (
@@ -209,18 +231,9 @@ export function ListaPedidos({ onVerPedido }: ListaPedidosProps) {
                             <span className="text-muted-foreground">-</span>
                           )}
                         </TableCell>
-                        <TableCell>
-                          {formatCurrency(pedido.orcamento?.total_com_desconto || pedido.orcamento?.total_geral)}
-                        </TableCell>
+                        <TableCell>{formatCurrency(pedido.orcamento?.total_com_desconto || pedido.orcamento?.total_geral)}</TableCell>
                         <TableCell className="text-right">
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onVerPedido(pedido.id);
-                            }}
-                          >
+                          <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); onVerPedido(pedido.id); }}>
                             <Eye className="h-4 w-4" />
                           </Button>
                         </TableCell>
