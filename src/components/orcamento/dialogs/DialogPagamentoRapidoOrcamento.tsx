@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useFinanceiroInvalidation } from '@/hooks/useFinanceiroInvalidation';
+import { registrarAtividadePagamento } from '@/lib/crmIntegration';
 import {
   Dialog,
   DialogContent,
@@ -37,6 +38,7 @@ interface DialogPagamentoRapidoOrcamentoProps {
   clienteNome: string;
   valorTotal: number;
   valorPago: number;
+  contatoId?: string | null;
 }
 
 const formatCurrency = (value: number) => {
@@ -50,7 +52,8 @@ export function DialogPagamentoRapidoOrcamento({
   orcamentoCodigo,
   clienteNome,
   valorTotal,
-  valorPago
+  valorPago,
+  contatoId
 }: DialogPagamentoRapidoOrcamentoProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -218,6 +221,20 @@ export function DialogPagamentoRapidoOrcamento({
           .eq('id', orcamentoId);
       }
 
+      // 6. CRIAR ATIVIDADE NO CRM
+      const novoPercentualPago = ((valorPago + valor) / valorTotal) * 100;
+      await registrarAtividadePagamento({
+        contatoId: contatoId || null,
+        orcamentoId,
+        orcamentoCodigo,
+        clienteNome,
+        valor,
+        numeroParcela: parcelaPendente?.numero_parcela || 1,
+        totalParcelas: contaReceber?.parcelas_receber?.length || 1,
+        percentualPago: novoPercentualPago,
+        userId: user.id,
+      });
+
       return { valor, conciliado: !!movimentacaoSelecionada };
     },
     onSuccess: (result) => {
@@ -228,6 +245,8 @@ export function DialogPagamentoRapidoOrcamento({
       queryClient.invalidateQueries({ queryKey: ['orcamento-financeiro'] });
       queryClient.invalidateQueries({ queryKey: ['conta-receber-orcamento'] });
       queryClient.invalidateQueries({ queryKey: ['orcamentos'] });
+      queryClient.invalidateQueries({ queryKey: ['atividades-crm'] });
+      queryClient.invalidateQueries({ queryKey: ['jornada-cliente'] });
       onOpenChange(false);
     },
     onError: (error: Error) => {
