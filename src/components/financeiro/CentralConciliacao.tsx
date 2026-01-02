@@ -6,14 +6,12 @@ import {
   Upload, 
   FileText, 
   AlertCircle, 
-  Users,
   CheckCircle2,
   Clock
 } from 'lucide-react';
 import { ConciliacaoBancaria } from './ConciliacaoBancaria';
 import { TabOrfaos } from './conciliacao/TabOrfaos';
 import { RelatorioConciliacaoConsolidado } from './RelatorioConciliacaoConsolidado';
-import { RelatorioConciliacaoClientes } from './RelatorioConciliacaoClientes';
 import { BreadcrumbsFinanceiro } from './BreadcrumbsFinanceiro';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -59,6 +57,9 @@ export function CentralConciliacao({ onNavigate, onNavigateOrcamento }: CentralC
     }
   });
 
+  // Total de pendências (movimentações + órfãos)
+  const totalPendencias = (stats?.movPendentes || 0) + (stats?.orfaos || 0);
+
   return (
     <div className="space-y-4">
       {/* Breadcrumbs */}
@@ -77,22 +78,22 @@ export function CentralConciliacao({ onNavigate, onNavigateOrcamento }: CentralC
         </div>
       </div>
 
-      {/* Cards de resumo */}
-      <div className="grid gap-4 md:grid-cols-4">
+      {/* Cards de resumo - Simplificados para 3 */}
+      <div className="grid gap-4 md:grid-cols-3">
         <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setActiveTab('importar')}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Movimentações Pendentes</CardTitle>
+            <CardTitle className="text-sm font-medium">Pendentes de Conciliação</CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.movPendentes || 0}</div>
+            <div className="text-2xl font-bold">{totalPendencias}</div>
             <p className="text-xs text-muted-foreground">
-              Para conciliar
+              {stats?.movPendentes || 0} movimentações + {stats?.orfaos || 0} órfãos
             </p>
           </CardContent>
         </Card>
 
-        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setActiveTab('orfaos')}>
+        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setActiveTab('pendencias')}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Lançamentos Órfãos</CardTitle>
             <AlertCircle className="h-4 w-4 text-muted-foreground" />
@@ -105,7 +106,7 @@ export function CentralConciliacao({ onNavigate, onNavigateOrcamento }: CentralC
           </CardContent>
         </Card>
 
-        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setActiveTab('consolidado')}>
+        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setActiveTab('relatorio')}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Parcelas Pendentes</CardTitle>
             <FileText className="h-4 w-4 text-muted-foreground" />
@@ -117,27 +118,14 @@ export function CentralConciliacao({ onNavigate, onNavigateOrcamento }: CentralC
             </p>
           </CardContent>
         </Card>
-
-        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setActiveTab('clientes')}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Por Cliente</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">→</div>
-            <p className="text-xs text-muted-foreground">
-              Ver detalhamento
-            </p>
-          </CardContent>
-        </Card>
       </div>
 
-      {/* Abas principais */}
+      {/* Abas principais - Simplificadas para 3 */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
+        <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-grid">
           <TabsTrigger value="importar" className="gap-2">
             <Upload className="h-4 w-4" />
-            <span className="hidden sm:inline">Importar & Conciliar</span>
+            <span className="hidden sm:inline">Importar Extrato</span>
             <span className="sm:hidden">Importar</span>
             {stats?.movPendentes && stats.movPendentes > 0 && (
               <Badge variant="secondary" className="ml-1">
@@ -145,25 +133,20 @@ export function CentralConciliacao({ onNavigate, onNavigateOrcamento }: CentralC
               </Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="orfaos" className="gap-2">
+          <TabsTrigger value="pendencias" className="gap-2">
             <AlertCircle className="h-4 w-4" />
-            <span className="hidden sm:inline">Órfãos</span>
-            <span className="sm:hidden">Órfãos</span>
+            <span className="hidden sm:inline">Conciliar Pendências</span>
+            <span className="sm:hidden">Pendências</span>
             {stats?.orfaos && stats.orfaos > 0 && (
               <Badge variant="destructive" className="ml-1">
                 {stats.orfaos}
               </Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="consolidado" className="gap-2">
+          <TabsTrigger value="relatorio" className="gap-2">
             <FileText className="h-4 w-4" />
-            <span className="hidden sm:inline">Por Orçamento</span>
-            <span className="sm:hidden">Orçamento</span>
-          </TabsTrigger>
-          <TabsTrigger value="clientes" className="gap-2">
-            <Users className="h-4 w-4" />
-            <span className="hidden sm:inline">Por Cliente</span>
-            <span className="sm:hidden">Cliente</span>
+            <span className="hidden sm:inline">Relatório</span>
+            <span className="sm:hidden">Relatório</span>
           </TabsTrigger>
         </TabsList>
 
@@ -171,7 +154,7 @@ export function CentralConciliacao({ onNavigate, onNavigateOrcamento }: CentralC
           <ConciliacaoBancaria />
         </TabsContent>
 
-        <TabsContent value="orfaos" className="space-y-4">
+        <TabsContent value="pendencias" className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle>Lançamentos Órfãos</CardTitle>
@@ -185,12 +168,8 @@ export function CentralConciliacao({ onNavigate, onNavigateOrcamento }: CentralC
           </Card>
         </TabsContent>
 
-        <TabsContent value="consolidado" className="space-y-4">
+        <TabsContent value="relatorio" className="space-y-4">
           <RelatorioConciliacaoConsolidado onNavigateOrcamento={onNavigateOrcamento} />
-        </TabsContent>
-
-        <TabsContent value="clientes" className="space-y-4">
-          <RelatorioConciliacaoClientes />
         </TabsContent>
       </Tabs>
     </div>
