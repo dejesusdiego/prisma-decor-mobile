@@ -43,8 +43,7 @@ import { toast } from 'sonner';
 import { useUserRole } from '@/hooks/useUserRole';
 
 export type View = 
-  | 'dashboardExecutivo'
-  | 'dashboardUnificado'
+  | 'home'
   | 'dashboard' 
   | 'novoOrcamento' 
   | 'listaOrcamentos' 
@@ -84,18 +83,12 @@ interface OrcamentoSidebarProps {
   onNavigate: (view: View) => void;
 }
 
-// Itens da seção PRINCIPAL - Dashboards e visões gerais
-const principalNavItems = [
-  { id: 'dashboardExecutivo' as View, label: 'Executivo', icon: Target, adminOnly: true },
-  { id: 'dashboardUnificado' as View, label: 'Orç + Financeiro', icon: LayoutDashboard, adminOnly: true },
-  { id: 'dashboard' as View, label: 'Orçamentos', icon: Home },
-  { id: 'calendarioGeral' as View, label: 'Calendário', icon: Calendar, adminOnly: true },
-];
-
 // Itens da seção ORÇAMENTOS
 const orcamentosNavItems = [
+  { id: 'dashboard' as View, label: 'Visão Geral', icon: LayoutDashboard },
   { id: 'listaOrcamentos' as View, label: 'Meus Orçamentos', icon: FileText },
   { id: 'solicitacoesVisita' as View, label: 'Solicitações de Visita', icon: CalendarCheck, adminOnly: true },
+  { id: 'calendarioGeral' as View, label: 'Calendário', icon: Calendar, adminOnly: true },
 ];
 
 // Itens da seção CRM (simplificado - Pipeline unificado)
@@ -146,7 +139,7 @@ interface SectionConfig {
   id: string;
   title: string;
   icon: React.ElementType;
-  items: typeof principalNavItems;
+  items: typeof orcamentosNavItems;
   adminOnly?: boolean;
 }
 
@@ -162,7 +155,7 @@ const getInitialSections = (): Record<string, boolean> => {
   } catch (e) {
     console.error('Error reading sidebar sections from localStorage:', e);
   }
-  return { principal: true, orcamentos: true, crm: true, producao: true, financeiro: true, relatoriosBI: true, administracao: false };
+  return { orcamentos: true, crm: true, producao: true, financeiro: true, relatoriosBI: true, administracao: false };
 };
 
 const getInitialCollapsed = (): boolean => {
@@ -186,7 +179,6 @@ export function OrcamentoSidebar({ currentView, onNavigate }: OrcamentoSidebarPr
   const [openSections, setOpenSections] = useState<Record<string, boolean>>(getInitialSections);
 
   const sections: SectionConfig[] = [
-    { id: 'principal', title: 'Principal', icon: Home, items: principalNavItems },
     { id: 'orcamentos', title: 'Orçamentos', icon: ClipboardList, items: orcamentosNavItems },
     { id: 'crm', title: 'CRM', icon: Target, items: crmNavItems },
     { id: 'producao', title: 'Produção', icon: Factory, items: producaoNavItems, adminOnly: true },
@@ -500,8 +492,45 @@ export function OrcamentoSidebar({ currentView, onNavigate }: OrcamentoSidebarPr
         </Button>
       </div>
 
-      {/* Botão Novo Orçamento - Fixo no topo */}
-      <div className="p-3 shrink-0">
+      {/* Home Button + Novo Orçamento - Fixos no topo */}
+      <div className="p-3 space-y-2 shrink-0">
+        {/* Home - Dashboard Executivo (admin) ou Dashboard Orçamentos (user) */}
+        {isAdmin ? (
+          collapsed ? (
+            <Tooltip delayDuration={0}>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => onNavigate('home')}
+                  className={cn(
+                    "w-full flex items-center justify-center p-2.5 rounded-lg transition-all",
+                    currentView === 'home' 
+                      ? "bg-primary text-primary-foreground" 
+                      : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                  )}
+                >
+                  <Home className="h-5 w-5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="font-medium bg-popover border z-50">
+                Visão Geral
+              </TooltipContent>
+            </Tooltip>
+          ) : (
+            <button
+              onClick={() => onNavigate('home')}
+              className={cn(
+                "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all",
+                currentView === 'home' 
+                  ? "bg-primary text-primary-foreground" 
+                  : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+              )}
+            >
+              <Home className="h-5 w-5" />
+              <span className="font-medium">Visão Geral</span>
+            </button>
+          )
+        ) : null}
+
         {renderNovoOrcamentoButton()}
       </div>
 
