@@ -14,7 +14,8 @@ import {
   Target,
   AlertTriangle,
   Sparkles,
-  Info
+  Info,
+  Users
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -22,6 +23,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { BreadcrumbsFinanceiro } from './BreadcrumbsFinanceiro';
+import { AlertaFluxoNegativo } from './AlertaFluxoNegativo';
+import { useHistoricoPagamentos } from '@/hooks/useHistoricoPagamentos';
 import {
   AreaChart,
   Area,
@@ -70,6 +73,9 @@ const CENARIOS = {
 
 export function FluxoCaixaPrevisto({ onNavigate }: FluxoCaixaPrevistoProps) {
   const [cenarioSelecionado, setCenarioSelecionado] = useState<'realista' | 'otimista' | 'pessimista'>('realista');
+
+  // Hook de histórico de pagamentos para análise inteligente
+  const { metricas: metricasHistorico } = useHistoricoPagamentos();
 
   // Buscar saldo atual (soma de todos os lançamentos)
   const { data: saldoAtual = 0 } = useQuery({
@@ -390,6 +396,67 @@ export function FluxoCaixaPrevisto({ onNavigate }: FluxoCaixaPrevistoProps) {
           </div>
         </div>
       </div>
+
+      {/* Alerta de Fluxo Negativo Inteligente */}
+      <AlertaFluxoNegativo
+        saldoAtual={saldoAtual}
+        saldoPrevisto={
+          cenarioSelecionado === 'otimista' ? totais.saldoOtimista :
+          cenarioSelecionado === 'pessimista' ? totais.saldoPessimista :
+          totais.saldoRealista
+        }
+        cenario={cenarioSelecionado}
+        valorEmRisco={metricasHistorico.valorEmRisco}
+        clientesRisco={metricasHistorico.clientesRisco}
+        onNavigateContasReceber={() => onNavigate?.('finContasReceber')}
+        onNavigateContasPagar={() => onNavigate?.('finContasPagar')}
+      />
+
+      {/* Card de Métricas de Inadimplência */}
+      {metricasHistorico.taxaInadimplencia > 5 && (
+        <Card className="border-amber-500/30 bg-amber-500/5">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <Users className="h-4 w-4 text-amber-500" />
+              Análise de Inadimplência (Histórico Real)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div>
+                <p className="text-xs text-muted-foreground">Taxa de Atraso</p>
+                <p className={cn(
+                  "text-lg font-bold",
+                  metricasHistorico.taxaInadimplencia > 15 ? "text-destructive" : "text-amber-600"
+                )}>
+                  {metricasHistorico.taxaInadimplencia.toFixed(1)}%
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Dias Atraso Médio</p>
+                <p className="text-lg font-bold text-foreground">
+                  {metricasHistorico.diasAtrasoMedioGeral.toFixed(0)} dias
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Valor em Risco</p>
+                <p className="text-lg font-bold text-destructive">
+                  {formatCurrency(metricasHistorico.valorEmRisco)}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Fator Projeção Sugerido</p>
+                <p className="text-lg font-bold text-foreground">
+                  {(metricasHistorico.fatorInadimplenciaSugerido * 100).toFixed(0)}%
+                  <span className="text-xs font-normal text-muted-foreground ml-1">
+                    (vs 30% padrão)
+                  </span>
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Cards de Resumo */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
