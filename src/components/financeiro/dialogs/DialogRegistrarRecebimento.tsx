@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useFinanceiroInvalidation } from '@/hooks/useFinanceiroInvalidation';
+import { registrarAtividadePagamento } from '@/lib/crmIntegration';
 import { format } from 'date-fns';
 import {
   Dialog,
@@ -82,10 +83,10 @@ export function DialogRegistrarRecebimento({ open, onOpenChange, parcela }: Dial
       
       if (errorParcela) throw errorParcela;
 
-      // 2. Buscar conta a receber com dados do orçamento
+      // 2. Buscar conta a receber com dados do orçamento e contato
       const { data: conta, error: errorConta } = await supabase
         .from('contas_receber')
-        .select('*, parcelas:parcelas_receber(*), orcamento:orcamentos(id, codigo, cliente_nome, total_geral, total_com_desconto)')
+        .select('*, parcelas:parcelas_receber(*), orcamento:orcamentos(id, codigo, cliente_nome, total_geral, total_com_desconto, contato_id)')
         .eq('id', parcela.conta_receber_id)
         .single();
       
@@ -111,10 +112,12 @@ export function DialogRegistrarRecebimento({ open, onOpenChange, parcela }: Dial
       
       if (errorUpdateConta) throw errorUpdateConta;
 
+      // Calcular percentual pago para uso em múltiplos lugares
+      const valorTotalOrcamento = Number(conta.orcamento?.total_com_desconto ?? conta.orcamento?.total_geral ?? conta.valor_total) || 0;
+      const percentualPago = valorTotalOrcamento > 0 ? (novoValorPago / valorTotalOrcamento) * 100 : 0;
+
       // 5. SINCRONIZAR STATUS DO ORÇAMENTO baseado no percentual pago
       if (conta.orcamento_id) {
-        const valorTotalOrcamento = Number(conta.orcamento?.total_com_desconto ?? conta.orcamento?.total_geral ?? conta.valor_total) || 0;
-        const percentualPago = valorTotalOrcamento > 0 ? (novoValorPago / valorTotalOrcamento) * 100 : 0;
 
         // Buscar percentual anterior para verificar se cruzou um marco
         const percentualAnterior = valorTotalOrcamento > 0 
@@ -214,7 +217,7 @@ export function DialogRegistrarRecebimento({ open, onOpenChange, parcela }: Dial
             .from('comissoes')
             .insert({
               orcamento_id: conta.orcamento_id,
-              vendedor_nome: 'Vendedor Padrão', // Pode ser configurado posteriormente
+              vendedor_nome: 'Vendedor Padrão',
               percentual: percentualComissao,
               valor_base: valorParcelaRecebida,
               valor_comissao: valorComissao,
@@ -223,6 +226,20 @@ export function DialogRegistrarRecebimento({ open, onOpenChange, parcela }: Dial
               created_by_user_id: user.id
             });
         }
+
+        // 7. CRIAR ATIVIDADE NO CRM
+        const totalParcelas = conta.parcelas?.length || 1;
+        await registrarAtividadePagamento({
+          contatoId: conta.orcamento?.contato_id || null,
+          orcamentoId: conta.orcamento_id,
+          orcamentoCodigo: conta.orcamento?.codigo || conta.descricao || '',
+          clienteNome: conta.orcamento?.cliente_nome || conta.cliente_nome,
+          valor: Number(parcela.valor),
+          numeroParcela: parcela.numero_parcela,
+          totalParcelas,
+          percentualPago: percentualPago,
+          userId: user.id,
+        });
       }
 
       // 7. Upload de comprovante se houver arquivo
@@ -262,6 +279,8 @@ export function DialogRegistrarRecebimento({ open, onOpenChange, parcela }: Dial
       invalidateAfterRecebimento();
       invalidateComissoes();
       queryClient.invalidateQueries({ queryKey: ['orcamentos'] });
+      queryClient.invalidateQueries({ queryKey: ['atividades-crm'] });
+      queryClient.invalidateQueries({ queryKey: ['jornada-cliente'] });
       toast.success('Recebimento registrado com sucesso');
       onOpenChange(false);
     },

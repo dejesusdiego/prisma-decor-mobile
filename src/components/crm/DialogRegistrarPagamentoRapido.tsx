@@ -27,6 +27,7 @@ import { CalendarIcon, DollarSign, CreditCard } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { registrarAtividadePagamento } from '@/lib/crmIntegration';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -39,6 +40,10 @@ interface DialogRegistrarPagamentoRapidoProps {
   valorParcela: number;
   clienteNome: string;
   numeroParcela: number;
+  contatoId?: string | null;
+  orcamentoId?: string | null;
+  orcamentoCodigo?: string;
+  totalParcelas?: number;
 }
 
 export function DialogRegistrarPagamentoRapido({
@@ -47,7 +52,11 @@ export function DialogRegistrarPagamentoRapido({
   parcelaId,
   valorParcela,
   clienteNome,
-  numeroParcela
+  numeroParcela,
+  contatoId,
+  orcamentoId,
+  orcamentoCodigo,
+  totalParcelas = 1
 }: DialogRegistrarPagamentoRapidoProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -134,6 +143,23 @@ export function DialogRegistrarPagamentoRapido({
         });
       
       if (erroLancamento) throw erroLancamento;
+
+      // 5. CRIAR ATIVIDADE NO CRM
+      const percentualPago = contaAtual.valor_total > 0 
+        ? (novoValorPago / contaAtual.valor_total) * 100 
+        : 0;
+
+      await registrarAtividadePagamento({
+        contatoId: contatoId || null,
+        orcamentoId: orcamentoId || '',
+        orcamentoCodigo: orcamentoCodigo || '',
+        clienteNome,
+        valor: parseFloat(valorPago),
+        numeroParcela,
+        totalParcelas,
+        percentualPago,
+        userId: user?.id || '',
+      });
     },
     onSuccess: () => {
       toast.success('Pagamento registrado com sucesso!');
@@ -142,6 +168,8 @@ export function DialogRegistrarPagamentoRapido({
       queryClient.invalidateQueries({ queryKey: ['lancamentos'] });
       queryClient.invalidateQueries({ queryKey: ['contato-financeiro'] });
       queryClient.invalidateQueries({ queryKey: ['jornada-cliente'] });
+      queryClient.invalidateQueries({ queryKey: ['atividades-crm'] });
+      queryClient.invalidateQueries({ queryKey: ['atividades'] });
       onOpenChange(false);
     },
     onError: (error) => {
