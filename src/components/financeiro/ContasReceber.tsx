@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
+import { calcularStatusDinamico, isPagamentoCompleto } from '@/lib/calculosFinanceiros';
 import { 
   Plus, 
   Search, 
@@ -50,10 +51,15 @@ import { BreadcrumbsFinanceiro } from './BreadcrumbsFinanceiro';
 
 type StatusFilter = 'todos' | 'pendente' | 'parcial' | 'pago' | 'atrasado';
 
-const getStatusBadge = (status: string) => {
+const getStatusBadge = (status: string, temDiferenca?: boolean) => {
   switch (status) {
     case 'pago':
-      return <Badge className="bg-green-500/10 text-green-600 hover:bg-green-500/20"><CheckCircle className="h-3 w-3 mr-1" />Pago</Badge>;
+      return (
+        <Badge className="bg-green-500/10 text-green-600 hover:bg-green-500/20">
+          <CheckCircle className="h-3 w-3 mr-1" />
+          Pago{temDiferenca ? '*' : ''}
+        </Badge>
+      );
     case 'parcial':
       return <Badge className="bg-blue-500/10 text-blue-600 hover:bg-blue-500/20"><Clock className="h-3 w-3 mr-1" />Parcial</Badge>;
     case 'atrasado':
@@ -94,6 +100,35 @@ export function ContasReceber({ onNavigate }: ContasReceberProps) {
     }
   });
 
+  // Calcular status dinâmico (atrasado) baseado na data de vencimento
+  const contasComStatusDinamico = useMemo(() => {
+    return contas.map(conta => {
+      if (conta.status === 'pago') return { ...conta, statusExibicao: 'pago' };
+      
+      // Verificar se tem parcelas vencidas não pagas
+      const hoje = new Date();
+      hoje.setHours(0, 0, 0, 0);
+      
+      const temParcelaAtrasada = conta.parcelas?.some((p: any) => {
+        if (p.status === 'pago') return false;
+        const vencParcela = new Date(p.data_vencimento);
+        vencParcela.setHours(0, 0, 0, 0);
+        return vencParcela < hoje;
+      });
+      
+      // Verificar se a conta principal está vencida
+      const vencimentoConta = new Date(conta.data_vencimento);
+      vencimentoConta.setHours(0, 0, 0, 0);
+      const contaVencida = vencimentoConta < hoje && conta.status !== 'pago';
+      
+      if (temParcelaAtrasada || contaVencida) {
+        return { ...conta, statusExibicao: 'atrasado' };
+      }
+      
+      return { ...conta, statusExibicao: conta.status };
+    });
+  }, [contas]);
+
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from('contas_receber').delete().eq('id', id);
@@ -108,19 +143,19 @@ export function ContasReceber({ onNavigate }: ContasReceberProps) {
     }
   });
 
-  const filteredContas = contas.filter(conta => {
+  const filteredContas = contasComStatusDinamico.filter(conta => {
     const matchesSearch = conta.cliente_nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
       conta.descricao.toLowerCase().includes(searchTerm.toLowerCase());
     
     if (statusFilter === 'todos') return matchesSearch;
-    return matchesSearch && conta.status === statusFilter;
+    return matchesSearch && conta.statusExibicao === statusFilter;
   });
 
   const totais = {
-    pendente: filteredContas.filter(c => c.status === 'pendente').reduce((acc, c) => acc + Number(c.valor_total) - Number(c.valor_pago), 0),
-    parcial: filteredContas.filter(c => c.status === 'parcial').reduce((acc, c) => acc + Number(c.valor_total) - Number(c.valor_pago), 0),
-    pago: filteredContas.filter(c => c.status === 'pago').reduce((acc, c) => acc + Number(c.valor_total), 0),
-    atrasado: filteredContas.filter(c => c.status === 'atrasado').reduce((acc, c) => acc + Number(c.valor_total) - Number(c.valor_pago), 0),
+    pendente: filteredContas.filter(c => c.statusExibicao === 'pendente').reduce((acc, c) => acc + Number(c.valor_total) - Number(c.valor_pago), 0),
+    parcial: filteredContas.filter(c => c.statusExibicao === 'parcial').reduce((acc, c) => acc + Number(c.valor_total) - Number(c.valor_pago), 0),
+    pago: filteredContas.filter(c => c.statusExibicao === 'pago').reduce((acc, c) => acc + Number(c.valor_total), 0),
+    atrasado: filteredContas.filter(c => c.statusExibicao === 'atrasado').reduce((acc, c) => acc + Number(c.valor_total) - Number(c.valor_pago), 0),
   };
 
   const handleEdit = (conta: any) => {
@@ -333,7 +368,7 @@ export function ContasReceber({ onNavigate }: ContasReceberProps) {
                             </TableCell>
                             <TableCell className="font-medium">{formatCurrency(Number(conta.valor_total))}</TableCell>
                             <TableCell className="text-green-600">{formatCurrency(Number(conta.valor_pago))}</TableCell>
-                            <TableCell>{getStatusBadge(conta.status)}</TableCell>
+                            <TableCell>{getStatusBadge(conta.statusExibicao, conta.statusExibicao === 'pago' && Number(conta.valor_pago) < Number(conta.valor_total))}</TableCell>
                             <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                               <div className="flex justify-end gap-1">
                                 <Button
@@ -374,7 +409,7 @@ export function ContasReceber({ onNavigate }: ContasReceberProps) {
                                           <span className="text-sm font-medium">
                                             {formatCurrency(Number(parcela.valor))}
                                           </span>
-                                          {getStatusBadge(parcela.status)}
+                                          {getStatusBadge(calcularStatusDinamico(parcela.status, parcela.data_vencimento))}
                                         </div>
                                         {parcela.status !== 'pago' && (
                                           <Button

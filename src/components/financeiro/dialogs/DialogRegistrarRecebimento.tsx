@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useFinanceiroInvalidation } from '@/hooks/useFinanceiroInvalidation';
 import { registrarAtividadePagamento } from '@/lib/crmIntegration';
+import { isPagamentoCompleto } from '@/lib/calculosFinanceiros';
 import { format } from 'date-fns';
 import {
   Dialog,
@@ -101,12 +102,15 @@ export function DialogRegistrarRecebimento({ open, onOpenChange, parcela }: Dial
       const todasPagas = conta.parcelas.every(
         (p: any) => p.status === 'pago' || p.id === parcela.id
       );
+      
+      // Usar tolerância para considerar pago mesmo com pequenas diferenças (até R$ 5 ou 0.5%)
+      const considerarPago = todasPagas || isPagamentoCompleto(Number(conta.valor_total), novoValorPago);
 
       const { error: errorUpdateConta } = await supabase
         .from('contas_receber')
         .update({
           valor_pago: novoValorPago,
-          status: todasPagas ? 'pago' : 'parcial'
+          status: considerarPago ? 'pago' : 'parcial'
         })
         .eq('id', parcela.conta_receber_id);
       
@@ -127,7 +131,10 @@ export function DialogRegistrarRecebimento({ open, onOpenChange, parcela }: Dial
         let novoStatusOrcamento: string | null = null;
         let marcoAtingido: number | null = null;
         
-        if (percentualPago >= 100 && percentualAnterior < 100) {
+        // Tolerância: considerar 100% se >= 99.5% (equivalente a ~0.5% de margem)
+        const TOLERANCIA_PERCENTUAL = 99.5;
+        
+        if ((percentualPago >= 100 || percentualPago >= TOLERANCIA_PERCENTUAL) && percentualAnterior < TOLERANCIA_PERCENTUAL) {
           novoStatusOrcamento = 'pago';
           marcoAtingido = 100;
         } else if (percentualPago >= 60 && percentualAnterior < 60) {

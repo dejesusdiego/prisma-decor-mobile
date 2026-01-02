@@ -2,6 +2,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { getValorEfetivo, getPercentualPago, calcularValorRecebido, calcularValorAReceber } from './calculosStatus';
 import { addMonths, format } from 'date-fns';
 
+// Tolerância para considerar pagamento completo (0.5% ou R$ 5)
+const TOLERANCIA_PERCENTUAL = 99.5;
+
 // Tipos para integração
 export interface OrcamentoBase {
   id: string;
@@ -346,7 +349,8 @@ export async function sincronizarStatusOrcamento(
   const percentual = (valorPago / valorTotal) * 100;
   let novoStatus: string | null = null;
 
-  if (percentual >= 100) {
+  // Usar tolerância para considerar pago (99.5% ou mais)
+  if (percentual >= TOLERANCIA_PERCENTUAL) {
     novoStatus = 'pago';
   } else if (percentual >= 60) {
     novoStatus = 'pago_60';
