@@ -934,6 +934,8 @@ export type Database = {
           descricao: string
           forma_pagamento_id: string | null
           id: string
+          ignorado: boolean | null
+          motivo_ignorado: string | null
           observacoes: string | null
           parcela_receber_id: string | null
           tipo: string
@@ -950,6 +952,8 @@ export type Database = {
           descricao: string
           forma_pagamento_id?: string | null
           id?: string
+          ignorado?: boolean | null
+          motivo_ignorado?: string | null
           observacoes?: string | null
           parcela_receber_id?: string | null
           tipo: string
@@ -966,6 +970,8 @@ export type Database = {
           descricao?: string
           forma_pagamento_id?: string | null
           id?: string
+          ignorado?: boolean | null
+          motivo_ignorado?: string | null
           observacoes?: string | null
           parcela_receber_id?: string | null
           tipo?: string
