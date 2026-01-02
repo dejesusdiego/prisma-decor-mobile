@@ -23,6 +23,7 @@ import {
   GripVertical
 } from 'lucide-react';
 import { useProducaoData, STATUS_ITEM_LABELS, PRIORIDADE_LABELS, ItemPedido, Pedido } from '@/hooks/useProducaoData';
+import { Input } from '@/components/ui/input';
 import { usePedidosFinanceiros, StatusFinanceiroPedido } from '@/hooks/usePedidoFinanceiro';
 import { TipBanner } from '@/components/ui/TipBanner';
 import { AlertaFinanceiroProducao } from './AlertaFinanceiroProducao';
@@ -57,7 +58,7 @@ interface ItemWithPedido extends ItemPedido {
 }
 
 export function KanbanProducao() {
-  const { pedidos, isLoading, atualizarStatusItem, isUpdating, refetch } = useProducaoData();
+  const { pedidos, isLoading, atualizarStatusItem, atualizarResponsavelItem, isUpdating, refetch } = useProducaoData();
   
   // Buscar status financeiro de todos os pedidos
   const pedidoIds = useMemo(() => 
@@ -66,6 +67,7 @@ export function KanbanProducao() {
   );
   const { data: statusFinanceiroMap } = usePedidosFinanceiros(pedidoIds);
   const [filtroPrioridade, setFiltroPrioridade] = useState<string>('todas');
+  const [filtroResponsavel, setFiltroResponsavel] = useState<string>('todos');
 
   // Real-time subscription for item status changes
   useEffect(() => {
@@ -113,7 +115,16 @@ export function KanbanProducao() {
         pedidoInfo: pedido,
         statusFinanceiro: statusFinanceiroMap?.[pedido.id],
       }))
-    );
+    )
+    .filter(item => filtroResponsavel === 'todos' || item.responsavel === filtroResponsavel);
+
+  // Lista única de responsáveis
+  const responsaveisUnicos = Array.from(new Set(
+    pedidos
+      .flatMap(p => p.itens_pedido || [])
+      .map(i => i.responsavel)
+      .filter(Boolean)
+  )) as string[];
 
   const getItemsByStatus = (status: string) => 
     allItems.filter(item => item.status_item === status);
@@ -180,11 +191,11 @@ export function KanbanProducao() {
       </TipBanner>
 
       {/* Filtros */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 flex-wrap">
         <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground">Prioridade:</span>
           <Select value={filtroPrioridade} onValueChange={setFiltroPrioridade}>
-            <SelectTrigger className="w-[150px]">
+            <SelectTrigger className="w-[130px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -196,6 +207,22 @@ export function KanbanProducao() {
             </SelectContent>
           </Select>
         </div>
+        
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground">Responsável:</span>
+          <Select value={filtroResponsavel} onValueChange={setFiltroResponsavel}>
+            <SelectTrigger className="w-[150px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos</SelectItem>
+              {responsaveisUnicos.map(r => (
+                <SelectItem key={r} value={r}>{r}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        
         <div className="text-sm text-muted-foreground">
           {allItems.length} item(s) em produção
         </div>
@@ -244,6 +271,10 @@ export function KanbanProducao() {
                             nextCol={nextCol}
                             isUpdating={isUpdating}
                             onMove={handleMoveItem}
+                            onChangeResponsavel={(itemId, responsavel) => 
+                              atualizarResponsavelItem({ itemId, responsavel })
+                            }
+                            responsaveisExistentes={responsaveisUnicos}
                           />
                         );
                       })
@@ -310,14 +341,20 @@ function DraggableCard({
   prevCol, 
   nextCol, 
   isUpdating, 
-  onMove 
+  onMove,
+  onChangeResponsavel,
+  responsaveisExistentes,
 }: { 
   item: ItemWithPedido;
   prevCol?: typeof KANBAN_COLUMNS[0];
   nextCol?: typeof KANBAN_COLUMNS[0];
   isUpdating: boolean;
   onMove: (itemId: string, novoStatus: string) => void;
+  onChangeResponsavel: (itemId: string, responsavel: string | null) => void;
+  responsaveisExistentes: string[];
 }) {
+  const [editandoResponsavel, setEditandoResponsavel] = useState(false);
+  const [novoResponsavel, setNovoResponsavel] = useState(item.responsavel || '');
   const isBloqueado = item.statusFinanceiro?.statusLiberacao === 'bloqueado';
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: item.id,
@@ -386,11 +423,11 @@ function DraggableCard({
       </div>
 
       {/* Actions */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-1">
         <Button
           variant="ghost"
           size="icon"
-          className="h-7 w-7"
+          className="h-7 w-7 shrink-0"
           disabled={!prevCol || isUpdating}
           onClick={(e) => {
             e.stopPropagation();
@@ -400,16 +437,74 @@ function DraggableCard({
           <ChevronLeft className="h-4 w-4" />
         </Button>
         
-        {item.responsavel && (
-          <span className="text-xs text-muted-foreground">
-            {item.responsavel}
-          </span>
-        )}
+        {/* Responsável - clicável para editar */}
+        <div 
+          className="flex-1 text-center cursor-pointer min-w-0"
+          onClick={(e) => {
+            e.stopPropagation();
+            setEditandoResponsavel(true);
+          }}
+        >
+          {editandoResponsavel ? (
+            <Select 
+              value={novoResponsavel || '__novo__'}
+              onValueChange={(val) => {
+                if (val === '__novo__') {
+                  // Manter aberto para digitar
+                } else if (val === '__limpar__') {
+                  onChangeResponsavel(item.id, null);
+                  setEditandoResponsavel(false);
+                  setNovoResponsavel('');
+                } else {
+                  onChangeResponsavel(item.id, val);
+                  setEditandoResponsavel(false);
+                  setNovoResponsavel(val);
+                }
+              }}
+              onOpenChange={(open) => {
+                if (!open) setEditandoResponsavel(false);
+              }}
+              open={editandoResponsavel}
+            >
+              <SelectTrigger className="h-6 text-xs w-full" onClick={(e) => e.stopPropagation()}>
+                <SelectValue placeholder="Responsável" />
+              </SelectTrigger>
+              <SelectContent onClick={(e) => e.stopPropagation()}>
+                <SelectItem value="__limpar__" className="text-muted-foreground">
+                  (Sem responsável)
+                </SelectItem>
+                {responsaveisExistentes.map(r => (
+                  <SelectItem key={r} value={r}>{r}</SelectItem>
+                ))}
+                {/* Campo para digitar novo */}
+                <div className="px-2 py-1 border-t">
+                  <Input
+                    placeholder="Novo responsável..."
+                    className="h-7 text-xs"
+                    value={novoResponsavel}
+                    onChange={(e) => setNovoResponsavel(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && novoResponsavel.trim()) {
+                        onChangeResponsavel(item.id, novoResponsavel.trim());
+                        setEditandoResponsavel(false);
+                      }
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </div>
+              </SelectContent>
+            </Select>
+          ) : (
+            <span className="text-xs text-muted-foreground truncate block">
+              {item.responsavel || 'Atribuir'}
+            </span>
+          )}
+        </div>
         
         <Button
           variant="ghost"
           size="icon"
-          className="h-7 w-7"
+          className="h-7 w-7 shrink-0"
           disabled={!nextCol || isUpdating}
           onClick={(e) => {
             e.stopPropagation();

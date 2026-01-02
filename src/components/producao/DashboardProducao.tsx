@@ -11,11 +11,13 @@ import {
   LayoutGrid,
   Calendar,
   ArrowRight,
-  Layers
+  Layers,
+  FileBarChart
 } from 'lucide-react';
 import { useProducaoData, STATUS_PRODUCAO_LABELS, PRIORIDADE_LABELS } from '@/hooks/useProducaoData';
 import { TipBanner } from '@/components/ui/TipBanner';
 import { HelpTooltip } from '@/components/ui/HelpTooltip';
+import { PainelCapacidadeEtapas } from './PainelCapacidadeEtapas';
 import { format, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -189,7 +191,14 @@ export function DashboardProducao({ onNavigate }: DashboardProducaoProps) {
           <Calendar className="h-4 w-4" />
           Agenda de Instalações
         </Button>
+        <Button variant="outline" onClick={() => onNavigate('prodRelatorio')} className="gap-2">
+          <FileBarChart className="h-4 w-4" />
+          Relatórios
+        </Button>
       </div>
+
+      {/* Painel de Capacidade por Etapa */}
+      <PainelCapacidadeEtapas />
 
       {/* Pedidos Prioritários */}
       <Card>
