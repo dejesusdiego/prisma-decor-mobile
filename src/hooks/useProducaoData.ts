@@ -230,6 +230,25 @@ export function useProducaoData() {
     },
   });
 
+  // Mutation para atualizar responsável do item
+  const atualizarResponsavelItemMutation = useMutation({
+    mutationFn: async ({ itemId, responsavel }: { itemId: string; responsavel: string | null }) => {
+      const { error } = await supabase
+        .from('itens_pedido')
+        .update({ responsavel })
+        .eq('id', itemId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pedidos'] });
+      toast.success('Responsável atualizado');
+    },
+    onError: (error) => {
+      toast.error('Erro ao atualizar responsável: ' + error.message);
+    },
+  });
+
   // Mutation para atualizar status do pedido
   const atualizarStatusPedidoMutation = useMutation({
     mutationFn: async ({ pedidoId, novoStatus }: { pedidoId: string; novoStatus: string }) => {
@@ -331,10 +350,11 @@ export function useProducaoData() {
     },
     fetchHistorico,
     atualizarStatusItem: atualizarStatusItemMutation.mutate,
+    atualizarResponsavelItem: atualizarResponsavelItemMutation.mutate,
     atualizarStatusPedido: atualizarStatusPedidoMutation.mutate,
     atualizarPrioridade: atualizarPrioridadeMutation.mutate,
     criarInstalacao: criarInstalacaoMutation.mutate,
     atualizarInstalacao: atualizarInstalacaoMutation.mutate,
-    isUpdating: atualizarStatusItemMutation.isPending || atualizarStatusPedidoMutation.isPending,
+    isUpdating: atualizarStatusItemMutation.isPending || atualizarStatusPedidoMutation.isPending || atualizarResponsavelItemMutation.isPending,
   };
 }

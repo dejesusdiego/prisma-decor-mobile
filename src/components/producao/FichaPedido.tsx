@@ -30,8 +30,11 @@ import {
   Printer,
   FileText,
   Truck,
-  History
+  History,
+  FileDown
 } from 'lucide-react';
+import { gerarPdfProducao } from '@/lib/gerarPdfProducao';
+import { toast } from 'sonner';
 import { 
   useProducaoData, 
   STATUS_PRODUCAO_LABELS, 
@@ -113,6 +116,21 @@ export function FichaPedido({ pedidoId, onVoltar, onAgendarInstalacao }: FichaPe
         </div>
         
         <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={async () => {
+              try {
+                await gerarPdfProducao(pedidoId);
+                toast.success('PDF de produção gerado!');
+              } catch (error) {
+                toast.error('Erro ao gerar PDF');
+              }
+            }}
+          >
+            <FileDown className="h-4 w-4 mr-2" />
+            Ficha PDF
+          </Button>
           <Button variant="outline" size="sm" onClick={() => window.print()}>
             <Printer className="h-4 w-4 mr-2" />
             Imprimir
