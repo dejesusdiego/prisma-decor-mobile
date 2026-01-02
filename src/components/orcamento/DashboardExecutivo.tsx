@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import { useDashboardUnificado, ProximaAcao } from '@/hooks/useDashboardUnificado';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   TrendingUp,
   DollarSign,
@@ -23,12 +25,16 @@ import {
   Factory,
   Calendar,
   ChevronRight,
-  LayoutDashboard
+  LayoutDashboard,
+  BarChart3,
+  LineChart
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/formatters';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { DashboardExecutivoMetricas } from './DashboardExecutivoMetricas';
+import { DashboardExecutivoTendencias } from './DashboardExecutivoTendencias';
 
 interface DashboardExecutivoProps {
   onNavigate: (view: string, params?: Record<string, string>) => void;
@@ -104,6 +110,7 @@ const AcaoCard = ({ acao, onNavigate }: { acao: ProximaAcao; onNavigate: Dashboa
 };
 
 export function DashboardExecutivo({ onNavigate }: DashboardExecutivoProps) {
+  const [activeTab, setActiveTab] = useState('visao-geral');
   const { data, isLoading, refetch } = useDashboardUnificado();
   const metricas = data?.metricas;
   const proximasAcoes = data?.proximasAcoes || [];
@@ -145,6 +152,26 @@ export function DashboardExecutivo({ onNavigate }: DashboardExecutivoProps) {
           <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
         </Button>
       </div>
+
+      {/* Tabs de navegação */}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full max-w-md grid-cols-3">
+          <TabsTrigger value="visao-geral" className="gap-2">
+            <LayoutDashboard className="h-4 w-4" />
+            <span className="hidden sm:inline">Visão Geral</span>
+          </TabsTrigger>
+          <TabsTrigger value="metricas" className="gap-2">
+            <BarChart3 className="h-4 w-4" />
+            <span className="hidden sm:inline">Métricas</span>
+          </TabsTrigger>
+          <TabsTrigger value="tendencias" className="gap-2">
+            <LineChart className="h-4 w-4" />
+            <span className="hidden sm:inline">Tendências</span>
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Aba Visão Geral - conteúdo original */}
+        <TabsContent value="visao-geral" className="mt-6 space-y-6">
 
       {/* KPIs principais - 4 colunas */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -386,6 +413,18 @@ export function DashboardExecutivo({ onNavigate }: DashboardExecutivoProps) {
           )}
         </div>
       )}
+        </TabsContent>
+
+        {/* Aba Métricas Avançadas */}
+        <TabsContent value="metricas" className="mt-6">
+          <DashboardExecutivoMetricas onNavigate={onNavigate} />
+        </TabsContent>
+
+        {/* Aba Tendências */}
+        <TabsContent value="tendencias" className="mt-6">
+          <DashboardExecutivoTendencias />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

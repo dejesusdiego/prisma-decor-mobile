@@ -23,6 +23,7 @@ import { RelatorioConciliacaoConsolidado } from '@/components/financeiro/Relator
 import { CentralConciliacao } from '@/components/financeiro/CentralConciliacao';
 import { CategoriasFormas } from '@/components/financeiro/CategoriasFormas';
 import { RelatorioRentabilidade } from '@/components/financeiro/RelatorioRentabilidade';
+import { RelatorioMargemReal } from '@/components/financeiro/RelatorioMargemReal';
 import { Comissoes } from '@/components/financeiro/Comissoes';
 import { RelatorioVendedores } from '@/components/financeiro/RelatorioVendedores';
 import DashboardKPIs from '@/components/financeiro/DashboardKPIs';
@@ -60,6 +61,7 @@ const ADMIN_ONLY_VIEWS: View[] = [
   'finConciliacao',
   'finFluxoPrevisto',
   'finRentabilidade',
+  'finMargemReal',
   'finComissoes',
   'finVendedores',
   'finKPIs',
@@ -195,6 +197,7 @@ export default function GerarOrcamento() {
       case 'prodRelatorio': return 'Análise Produção';
       case 'finFluxoPrevisto': return 'Fluxo de Caixa Previsto';
       case 'finRentabilidade': return 'Rentabilidade por Orçamento';
+      case 'finMargemReal': return 'Margem Real por Orçamento';
       case 'finComissoes': return 'Comissões';
       case 'finConsolidado': return 'Relatório Consolidado';
       case 'categoriasFormas': return 'Categorias e Formas de Pagamento';
@@ -312,6 +315,9 @@ export default function GerarOrcamento() {
                 {view === 'finFluxoPrevisto' && <FluxoCaixaPrevisto onNavigate={handleNavigate} />}
                 {view === 'finRentabilidade' && (
                   <RelatorioRentabilidade onVisualizarOrcamento={handleVisualizarOrcamento} onNavigate={handleNavigate} />
+                )}
+                {view === 'finMargemReal' && (
+                  <RelatorioMargemReal onBack={() => handleNavigate('home')} />
                 )}
                 {view === 'finComissoes' && (
                   <Comissoes onVisualizarOrcamento={handleVisualizarOrcamento} onNavigate={handleNavigate} />
