@@ -15,7 +15,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { ChevronDown, ChevronUp, Trash2, Copy, Loader2, Check } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { toast } from '@/hooks/use-toast';
 import type { Cortina, Material } from '@/types/orcamento';
 import { OPCOES_AMBIENTE } from '@/types/orcamento';
 import { MaterialSelector } from './MaterialSelector';
@@ -33,14 +33,13 @@ interface PersianaCardProps {
 }
 
 export function PersianaCard({
-  persiana: persianaInicial,
+  persiana,
   orcamentoId,
   onUpdate,
   onRemove,
   onDuplicate,
 }: PersianaCardProps) {
-  const [persiana, setPersiana] = useState<Cortina>(persianaInicial);
-  const [expanded, setExpanded] = useState(!persianaInicial.id);
+  const [expanded, setExpanded] = useState(!persiana.id);
   const [materiais, setMateriais] = useState<Material[]>([]);
   const [loadingMateriais, setLoadingMateriais] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -71,12 +70,16 @@ export function PersianaCard({
 
   const handleChange = (updates: Partial<Cortina>) => {
     setHasChanges(true);
-    setPersiana(prev => ({ ...prev, ...updates }));
+    onUpdate({ ...persiana, ...updates });
   };
 
   const salvarPersiana = async () => {
     if (!persiana.nomeIdentificacao || !persiana.tipoCortina || !persiana.ambiente || persiana.precoUnitario === undefined || persiana.precoUnitario === null) {
-      toast.error("Preencha todos os campos obrigatórios (nome, tipo, ambiente e orçamento fábrica)");
+      toast({
+        title: 'Campos obrigatórios',
+        description: 'Preencha todos os campos obrigatórios (nome, tipo, ambiente e orçamento fábrica)',
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -144,7 +147,6 @@ export function PersianaCard({
         custoInstalacao,
       };
       
-      setPersiana(persianaAtualizada);
       onUpdate(persianaAtualizada);
       setHasChanges(false);
       setJustSaved(true);
@@ -156,11 +158,18 @@ export function PersianaCard({
         setTimeout(() => cardRef.current?.classList.remove('success-flash'), 600);
       }
       
-      toast.success('Persiana salva com sucesso!');
+      toast({
+        title: 'Sucesso',
+        description: 'Persiana salva com sucesso!',
+      });
       setExpanded(false);
     } catch (error) {
       console.error('Erro ao salvar persiana:', error);
-      toast.error('Erro ao salvar persiana');
+      toast({
+        title: 'Erro',
+        description: 'Erro ao salvar persiana',
+        variant: 'destructive',
+      });
     } finally {
       setSaving(false);
     }
