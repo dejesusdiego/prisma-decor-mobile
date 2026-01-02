@@ -16,10 +16,11 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import type { DadosOrcamento } from '@/types/orcamento';
 import { useContatoByTelefone } from '@/hooks/useCRMData';
-import { User, Loader2, UserPlus } from 'lucide-react';
+import { User, Loader2, UserPlus, Users } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { HelpTooltip } from '@/components/ui/HelpTooltip';
 import { TipBanner } from '@/components/ui/TipBanner';
+import { useQuery } from '@tanstack/react-query';
 
 interface EtapaClienteProps {
   dados: DadosOrcamento;
@@ -37,6 +38,40 @@ export function EtapaCliente({ dados, orcamentoId, onAvancar, onCancelar }: Etap
   
   // Hook para buscar contato pelo telefone
   const { data: contatoEncontrado, isLoading: buscandoContato } = useContatoByTelefone(telefoneDebounced);
+
+  // Buscar lista de vendedores (usuários do sistema)
+  const { data: vendedores = [] } = useQuery({
+    queryKey: ['vendedores-lista'],
+    queryFn: async () => {
+      // Buscar configurações de comissão para listar vendedores cadastrados
+      const { data: configComissao } = await supabase
+        .from('configuracoes_comissao')
+        .select('vendedor_user_id, vendedor_nome')
+        .eq('ativo', true);
+      
+      if (configComissao && configComissao.length > 0) {
+        return configComissao;
+      }
+      
+      // Fallback: buscar vendedores únicos das comissões existentes
+      const { data: comissoes } = await supabase
+        .from('comissoes')
+        .select('vendedor_nome, vendedor_user_id')
+        .order('vendedor_nome');
+      
+      const vendedoresUnicos = new Map<string, { vendedor_user_id: string | null; vendedor_nome: string }>();
+      comissoes?.forEach(c => {
+        if (c.vendedor_nome && !vendedoresUnicos.has(c.vendedor_nome)) {
+          vendedoresUnicos.set(c.vendedor_nome, {
+            vendedor_user_id: c.vendedor_user_id,
+            vendedor_nome: c.vendedor_nome
+          });
+        }
+      });
+      
+      return Array.from(vendedoresUnicos.values());
+    }
+  });
 
   // Debounce do telefone para não fazer muitas requisições
   useEffect(() => {
@@ -148,7 +183,8 @@ export function EtapaCliente({ dados, orcamentoId, onAvancar, onCancelar }: Etap
             cidade: formData.cidade,
             endereco: formData.endereco,
             observacoes: formData.observacoes || null,
-            contato_id: contatoId, // Vincular contato
+            contato_id: contatoId,
+            vendedor_id: formData.vendedorId || null,
           })
           .eq('id', orcamentoId);
 
@@ -174,8 +210,9 @@ export function EtapaCliente({ dados, orcamentoId, onAvancar, onCancelar }: Etap
             margem_percent: 61.5,
             status: 'rascunho',
             created_by_user_id: user.id,
-            codigo: '', // Será gerado pelo trigger
-            contato_id: contatoId, // Vincular contato
+            codigo: '',
+            contato_id: contatoId,
+            vendedor_id: formData.vendedorId || null,
           })
           .select()
           .single();
@@ -336,6 +373,47 @@ export function EtapaCliente({ dados, orcamentoId, onAvancar, onCancelar }: Etap
               required
               placeholder="Digite o endereço completo"
             />
+          </div>
+
+          {/* Seletor de Vendedor */}
+          <div className="space-y-2">
+            <Label htmlFor="vendedor" className="flex items-center gap-1">
+              Vendedor Responsável
+              <HelpTooltip content="Selecione o vendedor para cálculo automático de comissão" side="right" />
+            </Label>
+            <Select
+              value={formData.vendedorId || ''}
+              onValueChange={(value) => {
+                const vendedor = vendedores.find(v => v.vendedor_user_id === value);
+                setFormData({ 
+                  ...formData, 
+                  vendedorId: value || undefined,
+                  vendedorNome: vendedor?.vendedor_nome || undefined
+                });
+              }}
+            >
+              <SelectTrigger id="vendedor">
+                <SelectValue placeholder="Selecione o vendedor (opcional)">
+                  {formData.vendedorNome || 'Selecione o vendedor (opcional)'}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Nenhum vendedor</SelectItem>
+                {vendedores.map((v) => (
+                  <SelectItem key={v.vendedor_user_id || v.vendedor_nome} value={v.vendedor_user_id || v.vendedor_nome}>
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4 text-muted-foreground" />
+                      <span>{v.vendedor_nome}</span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {formData.vendedorNome && (
+              <p className="text-xs text-muted-foreground">
+                Comissão será calculada automaticamente para {formData.vendedorNome}
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">

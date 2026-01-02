@@ -83,10 +83,10 @@ export function DialogRegistrarRecebimento({ open, onOpenChange, parcela }: Dial
       
       if (errorParcela) throw errorParcela;
 
-      // 2. Buscar conta a receber com dados do orçamento e contato
+      // 2. Buscar conta a receber com dados do orçamento, contato e vendedor
       const { data: conta, error: errorConta } = await supabase
         .from('contas_receber')
-        .select('*, parcelas:parcelas_receber(*), orcamento:orcamentos(id, codigo, cliente_nome, total_geral, total_com_desconto, contato_id)')
+        .select('*, parcelas:parcelas_receber(*), orcamento:orcamentos(id, codigo, cliente_nome, total_geral, total_com_desconto, contato_id, vendedor_id)')
         .eq('id', parcela.conta_receber_id)
         .single();
       
@@ -198,8 +198,37 @@ export function DialogRegistrarRecebimento({ open, onOpenChange, parcela }: Dial
 
       // 6. Criar comissão automaticamente se houver orçamento vinculado
       if (conta.orcamento_id && conta.orcamento && user) {
-        // Buscar configuração de comissão padrão (5%)
-        const percentualComissao = 5;
+        // Buscar vendedor do orçamento e sua configuração de comissão
+        const vendedorId = conta.orcamento.vendedor_id;
+        let vendedorNome = 'Vendedor Padrão';
+        let percentualComissao = 5;
+
+        if (vendedorId) {
+          // Buscar configuração de comissão do vendedor
+          const { data: configComissao } = await supabase
+            .from('configuracoes_comissao')
+            .select('vendedor_nome, percentual_padrao')
+            .eq('vendedor_user_id', vendedorId)
+            .eq('ativo', true)
+            .maybeSingle();
+          
+          if (configComissao) {
+            vendedorNome = configComissao.vendedor_nome;
+            percentualComissao = Number(configComissao.percentual_padrao);
+          } else {
+            // Fallback: buscar email do usuário vendedor
+            const { data: userVendedor } = await supabase
+              .from('user_roles')
+              .select('user_id')
+              .eq('user_id', vendedorId)
+              .maybeSingle();
+            
+            if (userVendedor) {
+              vendedorNome = `Vendedor ${vendedorId.slice(0, 8)}`;
+            }
+          }
+        }
+
         const valorParcelaRecebida = Number(parcela.valor);
         const valorComissao = (valorParcelaRecebida * percentualComissao) / 100;
 
@@ -217,7 +246,8 @@ export function DialogRegistrarRecebimento({ open, onOpenChange, parcela }: Dial
             .from('comissoes')
             .insert({
               orcamento_id: conta.orcamento_id,
-              vendedor_nome: 'Vendedor Padrão',
+              vendedor_nome: vendedorNome,
+              vendedor_user_id: vendedorId || null,
               percentual: percentualComissao,
               valor_base: valorParcelaRecebida,
               valor_comissao: valorComissao,
