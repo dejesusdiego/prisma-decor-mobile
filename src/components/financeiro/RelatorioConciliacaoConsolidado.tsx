@@ -7,7 +7,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Table,
   TableBody,
@@ -40,7 +39,6 @@ import {
   FileText,
   Send,
   Link2,
-  FileQuestion,
   Users,
   Download
 } from 'lucide-react';
@@ -49,11 +47,11 @@ import { useRelatorioConciliacaoConsolidado, OrcamentoConciliacaoResumo, FiltroS
 import { formatCurrency, formatPercent, formatDate } from '@/lib/formatters';
 import { getStatusConfig } from '@/lib/statusOrcamento';
 import { DialogVincularLancamentoAoOrcamento } from './dialogs/DialogVincularLancamentoAoOrcamento';
-import { TabOrfaos } from './conciliacao/TabOrfaos';
 import { TabClientes } from './conciliacao/TabClientes';
 import { toast } from 'sonner';
 
 type PeriodoFiltro = 'todos' | '30dias' | '3meses' | '6meses' | '12meses';
+type VisualizacaoRelatorio = 'orcamento' | 'cliente';
 
 interface RelatorioConciliacaoConsolidadoProps {
   onNavigateOrcamento?: (orcamentoId: string) => void;
@@ -65,8 +63,8 @@ export function RelatorioConciliacaoConsolidado({ onNavigateOrcamento }: Relator
   const [filtroStatusPagamento, setFiltroStatusPagamento] = useState<FiltroStatusPagamento>('todos');
   const [dialogVincularOpen, setDialogVincularOpen] = useState(false);
   const [orcamentoParaVincular, setOrcamentoParaVincular] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState('consolidado');
   const [periodoFiltro, setPeriodoFiltro] = useState<PeriodoFiltro>('todos');
+  const [visualizacao, setVisualizacao] = useState<VisualizacaoRelatorio>('orcamento');
 
   const dataFiltro = useMemo(() => {
     const hoje = new Date();
@@ -99,21 +97,15 @@ export function RelatorioConciliacaoConsolidado({ onNavigateOrcamento }: Relator
   const exportarCSV = () => {
     if (!data) return;
     
-    let csvContent = '';
-    let fileName = '';
-    
-    if (activeTab === 'consolidado') {
-      csvContent = 'Código,Cliente,Valor Total,Recebido,Conciliado,Status\n';
-      data.orcamentos.forEach(orc => {
-        csvContent += `"${orc.codigo}","${orc.clienteNome}",${orc.valorTotal},${orc.valorRecebido},${orc.valorRecebidoConciliado},"${orc.statusConciliacao}"\n`;
-      });
-      fileName = 'conciliacao-consolidado.csv';
-    }
+    const csvContent = 'Código,Cliente,Valor Total,Recebido,Conciliado,Status\n' +
+      data.orcamentos.map(orc => 
+        `"${orc.codigo}","${orc.clienteNome}",${orc.valorTotal},${orc.valorRecebido},${orc.valorRecebidoConciliado},"${orc.statusConciliacao}"`
+      ).join('\n');
     
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = fileName;
+    link.download = 'conciliacao-consolidado.csv';
     link.click();
     toast.success('Arquivo CSV exportado com sucesso!');
   };
@@ -160,52 +152,62 @@ export function RelatorioConciliacaoConsolidado({ onNavigateOrcamento }: Relator
         <div>
           <h2 className="text-xl font-semibold flex items-center gap-2">
             <BarChart3 className="h-5 w-5" />
-            Central de Conciliação
+            Relatório de Conciliação
           </h2>
           <p className="text-sm text-muted-foreground">
-            Conciliação bancária, lançamentos órfãos e visão por cliente
+            Visão consolidada de recebimentos e conciliação bancária
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Toggle Cliente/Orçamento */}
+          <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
+            <Button
+              variant={visualizacao === 'orcamento' ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={() => setVisualizacao('orcamento')}
+              className="h-8"
+            >
+              <BarChart3 className="h-4 w-4 mr-1" />
+              <span className="hidden sm:inline">Por Orçamento</span>
+            </Button>
+            <Button
+              variant={visualizacao === 'cliente' ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={() => setVisualizacao('cliente')}
+              className="h-8"
+            >
+              <Users className="h-4 w-4 mr-1" />
+              <span className="hidden sm:inline">Por Cliente</span>
+            </Button>
+          </div>
           <Select value={periodoFiltro} onValueChange={(v: PeriodoFiltro) => setPeriodoFiltro(v)}>
-            <SelectTrigger className="w-[160px]">
+            <SelectTrigger className="w-[140px]">
               <SelectValue placeholder="Período" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="todos">Todo o período</SelectItem>
-              <SelectItem value="30dias">Últimos 30 dias</SelectItem>
-              <SelectItem value="3meses">Últimos 3 meses</SelectItem>
-              <SelectItem value="6meses">Últimos 6 meses</SelectItem>
-              <SelectItem value="12meses">Últimos 12 meses</SelectItem>
+              <SelectItem value="todos">Todo período</SelectItem>
+              <SelectItem value="30dias">30 dias</SelectItem>
+              <SelectItem value="3meses">3 meses</SelectItem>
+              <SelectItem value="6meses">6 meses</SelectItem>
+              <SelectItem value="12meses">12 meses</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" size="sm" onClick={exportarCSV} disabled={activeTab !== 'consolidado'}>
+          <Button variant="outline" size="sm" onClick={exportarCSV} disabled={visualizacao !== 'orcamento'}>
             <Download className="h-4 w-4 mr-2" />
-            Exportar
+            <span className="hidden sm:inline">Exportar</span>
           </Button>
         </div>
       </div>
 
-      {/* Tabs para diferentes visões */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="consolidado" className="flex items-center gap-2">
-            <BarChart3 className="h-4 w-4" />
-            <span className="hidden sm:inline">Consolidado</span>
-          </TabsTrigger>
-          <TabsTrigger value="orfaos" className="flex items-center gap-2">
-            <FileQuestion className="h-4 w-4" />
-            <span className="hidden sm:inline">Órfãos</span>
-          </TabsTrigger>
-          <TabsTrigger value="clientes" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            <span className="hidden sm:inline">Por Cliente</span>
-          </TabsTrigger>
-        </TabsList>
+      {/* Visão por Cliente */}
+      {visualizacao === 'cliente' && (
+        <TabClientes dataInicio={dataFiltro ? format(dataFiltro, 'yyyy-MM-dd') : undefined} />
+      )}
 
-        {/* Tab Consolidado - Conteúdo original */}
-        <TabsContent value="consolidado" className="space-y-6">
-          {/* Filtros específicos do consolidado */}
+      {/* Visão por Orçamento */}
+      {visualizacao === 'orcamento' && (
+        <>
+          {/* Filtros específicos */}
           <div className="flex flex-wrap items-center gap-4">
             <Select 
               value={filtroStatusPagamento} 
@@ -468,18 +470,8 @@ export function RelatorioConciliacaoConsolidado({ onNavigateOrcamento }: Relator
               Pendente de conciliação
             </div>
           </div>
-        </TabsContent>
-
-        {/* Tab Órfãos */}
-        <TabsContent value="orfaos">
-          <TabOrfaos dataInicio={dataFiltro ? format(dataFiltro, 'yyyy-MM-dd') : undefined} />
-        </TabsContent>
-
-        {/* Tab Por Cliente */}
-        <TabsContent value="clientes">
-          <TabClientes dataInicio={dataFiltro ? format(dataFiltro, 'yyyy-MM-dd') : undefined} />
-        </TabsContent>
-      </Tabs>
+        </>
+      )}
 
       {/* Dialog de vinculação */}
       <DialogVincularLancamentoAoOrcamento
