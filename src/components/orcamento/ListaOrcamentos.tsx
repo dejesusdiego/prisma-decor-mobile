@@ -24,10 +24,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import { DialogValidade } from './DialogValidade';
+import { DialogDuplicarOrcamento } from './dialogs/DialogDuplicarOrcamento';
 import { gerarPdfOrcamento } from '@/lib/gerarPdfOrcamento';
 import { STATUS_CONFIG, STATUS_LIST, getStatusConfig, getStatusLabel, StatusOrcamento } from '@/lib/statusOrcamento';
 import { DialogCondicoesPagamento } from '@/components/financeiro/dialogs/DialogCondicoesPagamento';
 import { DialogGerarContasPagar } from '@/components/financeiro/dialogs/DialogGerarContasPagar';
+import { useDuplicarOrcamento } from '@/hooks/useDuplicarOrcamento';
 
 interface ContaReceberInfo {
   id: string;
@@ -84,6 +86,11 @@ export function ListaOrcamentos({ onVoltar, onEditar, onVisualizar, onVerFinance
   // Estado para o dialog de contas a pagar
   const [dialogContasPagarOpen, setDialogContasPagarOpen] = useState(false);
   const [orcamentoParaContasPagar, setOrcamentoParaContasPagar] = useState<Orcamento | null>(null);
+
+  // Estado para o dialog de duplicar orçamento
+  const [dialogDuplicarOpen, setDialogDuplicarOpen] = useState(false);
+  const [orcamentoParaDuplicar, setOrcamentoParaDuplicar] = useState<Orcamento | null>(null);
+  const duplicarMutation = useDuplicarOrcamento();
 
   useEffect(() => {
     carregarOrcamentos();
@@ -229,84 +236,30 @@ export function ListaOrcamentos({ onVoltar, onEditar, onVisualizar, onVerFinance
     setDialogContasPagarOpen(true);
   };
 
-  const duplicarOrcamento = async (orcamentoId: string) => {
-    try {
-      const { data: orcOriginal, error: orcError } = await supabase
-        .from('orcamentos')
-        .select('*')
-        .eq('id', orcamentoId)
-        .single();
+  const abrirDialogDuplicar = (orcamento: Orcamento) => {
+    setOrcamentoParaDuplicar(orcamento);
+    setDialogDuplicarOpen(true);
+  };
 
-      if (orcError) throw orcError;
-
-      const { data: cortinasOriginais, error: cortinasError } = await supabase
-        .from('cortina_items')
-        .select('*')
-        .eq('orcamento_id', orcamentoId);
-
-      if (cortinasError) throw cortinasError;
-
-      const { data: novoOrc, error: novoOrcError } = await supabase
-        .from('orcamentos')
-        .insert({
-          cliente_nome: orcOriginal.cliente_nome,
-          cliente_telefone: orcOriginal.cliente_telefone,
-          endereco: orcOriginal.endereco,
-          observacoes: orcOriginal.observacoes,
-          margem_tipo: orcOriginal.margem_tipo,
-          margem_percent: orcOriginal.margem_percent,
-          status: 'rascunho',
-          created_by_user_id: user?.id,
-          codigo: '',
-        })
-        .select()
-        .single();
-
-      if (novoOrcError) throw novoOrcError;
-
-      if (cortinasOriginais && cortinasOriginais.length > 0) {
-        const novasCortinas = cortinasOriginais.map((cortina) => ({
-          orcamento_id: novoOrc.id,
-          nome_identificacao: cortina.nome_identificacao,
-          largura: cortina.largura,
-          altura: cortina.altura,
-          quantidade: cortina.quantidade,
-          tipo_cortina: cortina.tipo_cortina,
-          tecido_id: cortina.tecido_id,
-          forro_id: cortina.forro_id,
-          trilho_id: cortina.trilho_id,
-          precisa_instalacao: cortina.precisa_instalacao,
-          pontos_instalacao: cortina.pontos_instalacao,
-          custo_tecido: cortina.custo_tecido,
-          custo_forro: cortina.custo_forro,
-          custo_trilho: cortina.custo_trilho,
-          custo_costura: cortina.custo_costura,
-          custo_instalacao: cortina.custo_instalacao,
-          custo_total: cortina.custo_total,
-          preco_venda: cortina.preco_venda,
-        }));
-
-        const { error: cortinasInsertError } = await supabase
-          .from('cortina_items')
-          .insert(novasCortinas);
-
-        if (cortinasInsertError) throw cortinasInsertError;
+  const handleConfirmarDuplicar = (novoClienteNome: string) => {
+    if (!orcamentoParaDuplicar || !user) return;
+    
+    duplicarMutation.mutate(
+      { 
+        orcamentoId: orcamentoParaDuplicar.id, 
+        userId: user.id,
+        novoClienteNome 
+      },
+      {
+        onSuccess: (novoOrcamento) => {
+          setDialogDuplicarOpen(false);
+          setOrcamentoParaDuplicar(null);
+          carregarOrcamentos();
+          // Redirecionar para edição do novo orçamento
+          onEditar(novoOrcamento.id);
+        },
       }
-
-      toast({
-        title: 'Sucesso',
-        description: 'Orçamento duplicado com sucesso',
-      });
-
-      carregarOrcamentos();
-    } catch (error) {
-      console.error('Erro ao duplicar orçamento:', error);
-      toast({
-        title: 'Erro',
-        description: 'Não foi possível duplicar o orçamento',
-        variant: 'destructive',
-      });
-    }
+    );
   };
 
   const excluirOrcamento = async (orcamentoId: string, codigo: string) => {
@@ -623,7 +576,7 @@ export function ListaOrcamentos({ onVoltar, onEditar, onVisualizar, onVerFinance
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => duplicarOrcamento(orc.id)}
+                              onClick={() => abrirDialogDuplicar(orc)}
                               title="Duplicar"
                             >
                               <Copy className="h-4 w-4" />
@@ -677,6 +630,15 @@ export function ListaOrcamentos({ onVoltar, onEditar, onVisualizar, onVerFinance
         onOpenChange={setDialogContasPagarOpen}
         orcamento={orcamentoParaContasPagar}
         onSuccess={handleContasPagarSuccess}
+      />
+
+      <DialogDuplicarOrcamento
+        open={dialogDuplicarOpen}
+        onOpenChange={setDialogDuplicarOpen}
+        codigoOriginal={orcamentoParaDuplicar?.codigo || ''}
+        clienteNomeOriginal={orcamentoParaDuplicar?.cliente_nome || ''}
+        onConfirmar={handleConfirmarDuplicar}
+        isLoading={duplicarMutation.isPending}
       />
     </div>
   );

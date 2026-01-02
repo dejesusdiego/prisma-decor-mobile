@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AdminRoute } from "@/components/AdminRoute";
+import { OnboardingProvider } from "@/components/onboarding/OnboardingProvider";
 import Index from "./pages/Index";
 import OurProducts from "./pages/OurProducts";
 import Auth from "./pages/Auth";
@@ -23,30 +24,32 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/nossos-produtos" element={<OurProducts />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route 
-              path="/gerarorcamento" 
-              element={
-                <ProtectedRoute>
-                  <GerarOrcamento />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/gerenciarusuarios" 
-              element={
-                <AdminRoute>
-                  <GerenciarUsuarios />
-                </AdminRoute>
-              } 
-            />
-            <Route path="/documentacao" element={<Documentacao />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <OnboardingProvider>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/nossos-produtos" element={<OurProducts />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route 
+                path="/gerarorcamento" 
+                element={
+                  <ProtectedRoute>
+                    <GerarOrcamento />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/gerenciarusuarios" 
+                element={
+                  <AdminRoute>
+                    <GerenciarUsuarios />
+                  </AdminRoute>
+                } 
+              />
+              <Route path="/documentacao" element={<Documentacao />} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </OnboardingProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
