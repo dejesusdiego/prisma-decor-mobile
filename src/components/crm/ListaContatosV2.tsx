@@ -61,8 +61,11 @@ import {
   Wrench,
   Calendar,
   DollarSign,
-  CheckCircle2
+  CheckCircle2,
+  Download
 } from 'lucide-react';
+import { gerarCSV, downloadCSV } from '@/lib/parserCSVMateriais';
+import { format } from 'date-fns';
 import { useContatosComMetricas, ContatoComMetricas } from '@/hooks/useContatoComMetricas';
 import { Contato } from '@/hooks/useCRMData';
 import { useDeleteContato } from '@/hooks/useCRMData';
@@ -249,10 +252,47 @@ export function ListaContatosV2({ onVerContato }: ListaContatosProps) {
             </TabsTrigger>
           </TabsList>
           {activeTab === 'lista' && (
-            <Button onClick={handleNovoContato} size="sm">
-              <Plus className="h-4 w-4 mr-2" />
-              Novo Contato
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const colunas = [
+                    { campo: 'nome', titulo: 'Nome' },
+                    { campo: 'telefone', titulo: 'Telefone' },
+                    { campo: 'email', titulo: 'Email' },
+                    { campo: 'cidade', titulo: 'Cidade' },
+                    { campo: 'endereco', titulo: 'Endereço' },
+                    { campo: 'tipo', titulo: 'Tipo' },
+                    { campo: 'origem', titulo: 'Origem' },
+                    { campo: 'tags', titulo: 'Tags' },
+                    { campo: 'valor_total', titulo: 'Valor Total' },
+                    { campo: 'temperatura', titulo: 'Temperatura' },
+                  ];
+                  const dados = contatosFiltrados.map(c => ({
+                    nome: c.nome,
+                    telefone: c.telefone || '',
+                    email: c.email || '',
+                    cidade: c.cidade || '',
+                    endereco: c.endereco || '',
+                    tipo: c.tipo,
+                    origem: c.origem || '',
+                    tags: (c.tags || []).join(', '),
+                    valor_total: (c.valor_total_gasto || 0).toFixed(2).replace('.', ','),
+                    temperatura: c.temperatura || '',
+                  }));
+                  const csv = gerarCSV(dados, colunas);
+                  downloadCSV(csv, `contatos-${format(new Date(), 'yyyy-MM-dd')}.csv`);
+                }}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Exportar CSV
+              </Button>
+              <Button onClick={handleNovoContato} size="sm">
+                <Plus className="h-4 w-4 mr-2" />
+                Novo Contato
+              </Button>
+            </div>
           )}
         </div>
 

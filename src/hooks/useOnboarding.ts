@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 
-export type TourId = 'dashboard' | 'novo_orcamento' | 'crm' | 'financeiro' | 'producao';
+export type TourId = 'dashboard' | 'wizard' | 'crm' | 'financeiro' | 'producao';
 
 interface OnboardingState {
   completedTours: TourId[];
