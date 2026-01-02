@@ -1,4 +1,3 @@
-import { useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,6 +20,7 @@ import { OPCOES_AMBIENTE } from '@/types/orcamento';
 import { CardStatusBadge, getCardStatus, getCardStatusClass } from '@/components/ui/CardStatusBadge';
 import { CharacterCounter } from '@/components/ui/CharacterCounter';
 import { cn } from '@/lib/utils';
+import { useCardState } from '@/hooks/useCardState';
 
 interface OutrosCardProps {
   outro: Cortina;
@@ -37,11 +37,14 @@ export function OutrosCard({
   onRemove,
   onDuplicate,
 }: OutrosCardProps) {
-  const [saving, setSaving] = useState(false);
-  const [justSaved, setJustSaved] = useState(false);
-  const [expanded, setExpanded] = useState(!outro.id);
-  const [hasChanges, setHasChanges] = useState(false);
-  const cardRef = useRef<HTMLDivElement>(null);
+  const {
+    saving, setSaving,
+    justSaved,
+    expanded, setExpanded,
+    hasChanges, setHasChanges,
+    cardRef,
+    markSaved
+  } = useCardState({ initialExpanded: !outro.id });
   
   const cardStatus = getCardStatus(outro.id, hasChanges);
   const MAX_OBS_LENGTH = 500;
@@ -110,23 +113,13 @@ export function OutrosCard({
       if (result.error) throw result.error;
 
       onUpdate({ ...outro, id: result.data.id, custoInstalacao, custoTotal });
-      setHasChanges(false);
-      setJustSaved(true);
-      setTimeout(() => setJustSaved(false), 2000);
-
-      // Flash de sucesso
-      if (cardRef.current) {
-        cardRef.current.classList.add('success-flash');
-        setTimeout(() => cardRef.current?.classList.remove('success-flash'), 600);
-      }
 
       toast({
         title: 'Sucesso',
         description: 'Item salvo com sucesso',
       });
 
-      // Colapsar após salvar
-      setExpanded(false);
+      markSaved();
     } catch (error) {
       console.error('Erro ao salvar item:', error);
       toast({

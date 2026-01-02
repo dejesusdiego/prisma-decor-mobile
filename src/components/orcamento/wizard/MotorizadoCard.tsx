@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,6 +23,7 @@ import { fetchMateriaisPaginados } from '@/lib/fetchMateriaisPaginados';
 import { CardStatusBadge, getCardStatus, getCardStatusClass } from '@/components/ui/CardStatusBadge';
 import { CharacterCounter } from '@/components/ui/CharacterCounter';
 import { cn } from '@/lib/utils';
+import { useCardState } from '@/hooks/useCardState';
 
 interface MotorizadoCardProps {
   motorizado: Cortina;
@@ -39,14 +40,18 @@ export function MotorizadoCard({
   onRemove,
   onDuplicate,
 }: MotorizadoCardProps) {
-  const [saving, setSaving] = useState(false);
-  const [justSaved, setJustSaved] = useState(false);
-  const [expanded, setExpanded] = useState(!motorizado.id);
   const [materiais, setMateriais] = useState<Material[]>([]);
   const [material, setMaterial] = useState<Material | null>(null);
   const [loading, setLoading] = useState(true);
-  const [hasChanges, setHasChanges] = useState(false);
-  const cardRef = useRef<HTMLDivElement>(null);
+  
+  const {
+    saving, setSaving,
+    justSaved,
+    expanded, setExpanded,
+    hasChanges, setHasChanges,
+    cardRef,
+    markSaved
+  } = useCardState({ initialExpanded: !motorizado.id });
   
   const cardStatus = getCardStatus(motorizado.id, hasChanges);
   const MAX_OBS_LENGTH = 500;
@@ -173,22 +178,13 @@ export function MotorizadoCard({
       if (result.error) throw result.error;
 
       onUpdate({ ...motorizado, id: result.data.id, custoInstalacao, custoTotal });
-      setHasChanges(false);
-      setJustSaved(true);
-      setTimeout(() => setJustSaved(false), 2000);
-
-      // Flash de sucesso
-      if (cardRef.current) {
-        cardRef.current.classList.add('success-flash');
-        setTimeout(() => cardRef.current?.classList.remove('success-flash'), 600);
-      }
 
       toast({
         title: 'Sucesso',
         description: 'Sistema motorizado salvo com sucesso',
       });
 
-      setExpanded(false);
+      markSaved();
     } catch (error) {
       console.error('Erro ao salvar motorizado:', error);
       toast({

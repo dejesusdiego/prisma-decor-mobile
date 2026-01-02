@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,6 +28,7 @@ import { fetchMateriaisPaginados } from '@/lib/fetchMateriaisPaginados';
 import { CardStatusBadge, getCardStatus, getCardStatusClass } from '@/components/ui/CardStatusBadge';
 import { CharacterCounter } from '@/components/ui/CharacterCounter';
 import { cn } from '@/lib/utils';
+import { useCardState } from '@/hooks/useCardState';
 
 interface CortinaCardProps {
   cortina: Cortina;
@@ -48,13 +49,17 @@ export function CortinaCard({
   const [forros, setForros] = useState<Material[]>([]);
   const [trilhos, setTrilhos] = useState<Material[]>([]);
   const [servicosConfeccao, setServicosConfeccao] = useState<ServicoConfeccao[]>([]);
-  const [saving, setSaving] = useState(false);
-  const [justSaved, setJustSaved] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [expanded, setExpanded] = useState(!cortina.id);
   const [servicosAdicionaisOpen, setServicosAdicionaisOpen] = useState(false);
-  const [hasChanges, setHasChanges] = useState(false);
-  const cardRef = useRef<HTMLDivElement>(null);
+  
+  const {
+    saving, setSaving,
+    justSaved,
+    expanded, setExpanded,
+    hasChanges, setHasChanges,
+    cardRef,
+    markSaved
+  } = useCardState({ initialExpanded: !cortina.id });
   
   const { configuracoes } = useConfiguracoes();
   const cardStatus = getCardStatus(cortina.id, hasChanges);
@@ -68,7 +73,6 @@ export function CortinaCard({
   const carregarMateriais = async () => {
     setLoading(true);
     try {
-      // Buscar materiais com paginação para contornar limite de 1000
       const [tecidosList, forrosList, trilhosList] = await Promise.all([
         fetchMateriaisPaginados('tecido', true),
         fetchMateriaisPaginados('forro', true),
@@ -78,13 +82,6 @@ export function CortinaCard({
       setTecidos(tecidosList);
       setForros(forrosList);
       setTrilhos(trilhosList);
-
-      console.log('📦 Materiais carregados do banco:', {
-        tecidos: tecidosList.length,
-        forros: forrosList.length,
-        trilhos: trilhosList.length,
-        total: tecidosList.length + forrosList.length + trilhosList.length
-      });
     } catch (error) {
       console.error('Erro ao carregar materiais:', error);
       toast({
@@ -113,7 +110,6 @@ export function CortinaCard({
   };
 
   const handleChange = (field: keyof Cortina, value: any) => {
-    console.log(`📝 handleChange: ${field} = ${value} (tipo: ${typeof value})`);
     const novosDados = { ...cortina, [field]: value };
     setHasChanges(true);
     onUpdate(novosDados);
@@ -151,23 +147,6 @@ export function CortinaCard({
         setSaving(false);
         return;
       }
-
-      console.log('🔍 Salvando cortina:', {
-        tecidoId: cortina.tecidoId,
-        forroId: cortina.forroId,
-        trilhoId: cortina.trilhoId,
-        tipoCortina: cortina.tipoCortina,
-        servicosAdicionais: cortina.servicosAdicionaisIds,
-        barraCm: cortina.barraCm,
-        barraForroCm: cortina.barraForroCm
-      });
-
-      console.log('📊 Valores da barra no momento do save:', {
-        'cortina.barraCm': cortina.barraCm,
-        'cortina.barraForroCm': cortina.barraForroCm,
-        'tipo barraCm': typeof cortina.barraCm,
-        'tipo barraForroCm': typeof cortina.barraForroCm
-      });
 
       // Obter serviços configurados para este tipo de cortina
       const servicosConfigurados = configuracoes.servicosPorTipoCortina[cortina.tipoCortina] || [];
@@ -224,10 +203,6 @@ export function CortinaCard({
         cortina.forroId ? forros.find(f => f.id === cortina.forroId || f.codigo_item === cortina.forroId) : null,
         cortina.trilhoId ? trilhos.find(t => t.id === cortina.trilhoId || t.codigo_item === cortina.trilhoId) : null
       ].filter(Boolean);
-
-      console.log('📦 Materiais selecionados:', materiaisSelecionados.length);
-      console.log('🔧 Serviços de confecção:', servicosParaCalculo.map(s => s.nome_modelo));
-      console.log('🔨 Serviço de instalação:', instalacaoData?.nome);
 
       // Calcular custo de costura somando todos os serviços (multiplicado pela quantidade)
       const trilho = cortina.trilhoId ? trilhos.find(t => t.id === cortina.trilhoId || t.codigo_item === cortina.trilhoId) : null;
@@ -312,20 +287,9 @@ export function CortinaCard({
         description: 'Cortina salva com sucesso',
       });
       
-      setHasChanges(false);
-      setJustSaved(true);
-      setTimeout(() => setJustSaved(false), 2000);
-      
-      // Flash de sucesso no card
-      if (cardRef.current) {
-        cardRef.current.classList.add('success-flash');
-        setTimeout(() => cardRef.current?.classList.remove('success-flash'), 600);
-      }
-      
-      // Colapsar após salvar
-      setExpanded(false);
+      markSaved();
     } catch (error: any) {
-      console.error('❌ Erro ao salvar cortina:', error);
+      console.error('Erro ao salvar cortina:', error);
       toast({
         title: 'Erro',
         description: error.message || 'Não foi possível salvar a cortina',
