@@ -1,0 +1,5 @@
+codigo_item;nome;categoria;unidade;preco_custo;tipo;linha;potencia
+MOT-001;Motor Somfy RTS 10Nm;motorizado;UN;850,00;MOTOR;Somfy RTS;10Nm
+MOT-002;Motor Somfy RTS 20Nm;motorizado;UN;1050,00;MOTOR;Somfy RTS;20Nm
+MOT-003;Motor Tubular 15Nm Wifi;motorizado;UN;680,00;MOTOR;Smart Home;15Nm
+MOT-004;Controle Remoto Somfy 5 Canais;motorizado;UN;180,00;CONTROLE;Somfy RTS;

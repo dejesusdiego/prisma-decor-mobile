@@ -1,0 +1,5 @@
+codigo_item;nome;categoria;unidade;preco_custo;tipo;linha;cor
+TRI-001;Trilho Wave Branco;trilho;M;35,00;WAVE;Wave;Branco
+TRI-002;Trilho Wave Preto;trilho;M;35,00;WAVE;Wave;Preto
+TRI-003;Trilho Suisso Branco;trilho;M;42,00;SUISSO;Suisso;Branco
+TRI-004;Trilho Americano Cromado;trilho;M;55,00;AMERICANO;Americano;Cromado

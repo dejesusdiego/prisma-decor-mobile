@@ -5,10 +5,11 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Edit, Power, Trash2, Loader2 } from 'lucide-react';
+import { Plus, Search, Edit, Power, Trash2, Loader2, Download } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { DialogServicoConfeccao } from './DialogServicoConfeccao';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { gerarCSV, downloadCSV } from '@/lib/parserCSVMateriais';
 
 interface ServicoConfeccao {
   id: string;
@@ -156,10 +157,33 @@ export function ListaServicosConfeccao() {
           </Select>
         </div>
 
-        <Button onClick={() => { setServicoEditando(null); setDialogAberto(true); }}>
-          <Plus className="h-4 w-4 mr-2" />
-          Novo Serviço
-        </Button>
+        <div className="flex items-center gap-2">
+          {servicosFiltrados.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const colunas = [
+                  { campo: 'codigo_item', titulo: 'codigo_item' },
+                  { campo: 'nome_modelo', titulo: 'nome_modelo' },
+                  { campo: 'unidade', titulo: 'unidade' },
+                  { campo: 'preco_custo', titulo: 'preco_custo' },
+                  { campo: 'ativo', titulo: 'ativo' },
+                ];
+                const csv = gerarCSV(servicosFiltrados, colunas);
+                downloadCSV(csv, `servicos-confeccao-${new Date().toISOString().split('T')[0]}.csv`);
+                toast({ title: 'Exportação concluída', description: `${servicosFiltrados.length} serviços exportados` });
+              }}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Exportar CSV
+            </Button>
+          )}
+          <Button onClick={() => { setServicoEditando(null); setDialogAberto(true); }}>
+            <Plus className="h-4 w-4 mr-2" />
+            Novo Serviço
+          </Button>
+        </div>
       </div>
 
       {loading ? (

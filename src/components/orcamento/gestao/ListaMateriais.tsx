@@ -6,10 +6,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, Search, Edit, Power, Trash2, Loader2, CheckSquare, Square, Edit3 } from 'lucide-react';
+import { Plus, Search, Edit, Power, Trash2, Loader2, CheckSquare, Square, Edit3, Download } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { DialogMaterial } from './DialogMaterial';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { gerarCSV, downloadCSV } from '@/lib/parserCSVMateriais';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 
@@ -462,23 +463,53 @@ export function ListaMateriais() {
 
         <div className="flex items-center gap-2">
           {materiaisFiltrados.length > 0 && (
-            <Button
-              variant="outline"
-              onClick={handleSelecionarTodos}
-              size="sm"
-            >
-              {itensSelecionados.size === materiaisFiltrados.length ? (
-                <>
-                  <Square className="h-4 w-4 mr-2" />
-                  Desmarcar Todos
-                </>
-              ) : (
-                <>
-                  <CheckSquare className="h-4 w-4 mr-2" />
-                  Selecionar Todos
-                </>
-              )}
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const colunas = [
+                    { campo: 'codigo_item', titulo: 'codigo_item' },
+                    { campo: 'nome', titulo: 'nome' },
+                    { campo: 'categoria', titulo: 'categoria' },
+                    { campo: 'unidade', titulo: 'unidade' },
+                    { campo: 'largura_metro', titulo: 'largura_metro' },
+                    { campo: 'preco_custo', titulo: 'preco_custo' },
+                    { campo: 'linha', titulo: 'linha' },
+                    { campo: 'cor', titulo: 'cor' },
+                    { campo: 'tipo', titulo: 'tipo' },
+                    { campo: 'aplicacao', titulo: 'aplicacao' },
+                    { campo: 'potencia', titulo: 'potencia' },
+                    { campo: 'area_min_fat', titulo: 'area_min_fat' },
+                    { campo: 'ativo', titulo: 'ativo' },
+                    { campo: 'fornecedor', titulo: 'fornecedor' },
+                  ];
+                  const csv = gerarCSV(materiaisFiltrados, colunas);
+                  downloadCSV(csv, `materiais-${categoriaFiltro}-${new Date().toISOString().split('T')[0]}.csv`);
+                  toast({ title: 'Exportação concluída', description: `${materiaisFiltrados.length} materiais exportados` });
+                }}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Exportar CSV
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleSelecionarTodos}
+                size="sm"
+              >
+                {itensSelecionados.size === materiaisFiltrados.length ? (
+                  <>
+                    <Square className="h-4 w-4 mr-2" />
+                    Desmarcar Todos
+                  </>
+                ) : (
+                  <>
+                    <CheckSquare className="h-4 w-4 mr-2" />
+                    Selecionar Todos
+                  </>
+                )}
+              </Button>
+            </>
           )}
           <Button onClick={handleNovoMaterial}>
             <Plus className="h-4 w-4 mr-2" />

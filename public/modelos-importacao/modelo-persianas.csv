@@ -1,0 +1,5 @@
+codigo_item;nome;categoria;unidade;preco_custo;tipo;linha;cor;area_min_fat
+PER-001;Persiana Rolo Tela Solar 3%;persiana;M2;185,00;ROLO;Tela Solar;Branco;0,50
+PER-002;Persiana Rolo Blackout;persiana;M2;165,00;ROLO;Blackout;Bege;0,50
+PER-003;Persiana Horizontal Alumínio 25mm;persiana;M2;145,00;HORIZONTAL;Alumínio;Branco;0,40
+PER-004;Persiana Vertical PVC 89mm;persiana;M2;125,00;VERTICAL;PVC;Gelo;0,60

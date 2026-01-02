@@ -1,0 +1,5 @@
+codigo_item;nome;categoria;unidade;preco_custo;tipo;linha;aplicacao
+ACE-001;Presilha Wave Branca;acessorio;UN;2,50;PRESILHA;Wave;Cortina Wave
+ACE-002;Presilha Wave Preta;acessorio;UN;2,50;PRESILHA;Wave;Cortina Wave
+ACE-003;Gancho S Inox;acessorio;UN;1,80;GANCHO;Universal;Cortina Tradicional
+ACE-004;Argola Cromada 35mm;acessorio;UN;3,20;ARGOLA;Varão;Cortina Varão
