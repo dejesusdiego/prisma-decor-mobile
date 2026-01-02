@@ -4,6 +4,8 @@ export interface DadosOrcamento {
   cidade: string;
   endereco: string;
   observacoes?: string;
+  vendedorId?: string;
+  vendedorNome?: string;
 }
 
 export interface Cortina {

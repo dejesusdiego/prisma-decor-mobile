@@ -234,6 +234,39 @@ export type Database = {
           },
         ]
       }
+      configuracoes_comissao: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          created_by_user_id: string
+          id: string
+          percentual_padrao: number
+          updated_at: string
+          vendedor_nome: string
+          vendedor_user_id: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          created_by_user_id: string
+          id?: string
+          percentual_padrao?: number
+          updated_at?: string
+          vendedor_nome: string
+          vendedor_user_id: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          created_by_user_id?: string
+          id?: string
+          percentual_padrao?: number
+          updated_at?: string
+          vendedor_nome?: string
+          vendedor_user_id?: string
+        }
+        Relationships: []
+      }
       configuracoes_sistema: {
         Row: {
           chave: string
@@ -1247,6 +1280,7 @@ export type Database = {
           total_geral: number | null
           updated_at: string
           validade_dias: number | null
+          vendedor_id: string | null
         }
         Insert: {
           cidade?: string | null
@@ -1274,6 +1308,7 @@ export type Database = {
           total_geral?: number | null
           updated_at?: string
           validade_dias?: number | null
+          vendedor_id?: string | null
         }
         Update: {
           cidade?: string | null
@@ -1301,6 +1336,7 @@ export type Database = {
           total_geral?: number | null
           updated_at?: string
           validade_dias?: number | null
+          vendedor_id?: string | null
         }
         Relationships: [
           {
