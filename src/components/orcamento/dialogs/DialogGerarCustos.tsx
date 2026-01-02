@@ -25,7 +25,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
-import { formatCurrency } from '@/lib/calculosStatus';
+import { formatCurrency } from '@/lib/formatters';
 
 interface CustoItem {
   id: string;

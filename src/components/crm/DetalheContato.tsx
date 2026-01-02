@@ -33,21 +33,12 @@ import { useJornadaCliente, AlertaContextual } from '@/hooks/useJornadaCliente';
 import { DialogContato } from './DialogContato';
 import { DialogAtividade } from './DialogAtividade';
 import { JornadaCliente } from './JornadaCliente';
-import { AlertasContextuais } from './AlertasContextuais';
+import { AlertasContextuaisComAcoes } from './AlertasContextuaisComAcoes';
 import { format, formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { useState, useMemo } from 'react';
-
-const formatCurrency = (value: number | null) => {
-  if (!value) return 'R$ 0';
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0
-  }).format(value);
-};
+import { formatCurrency } from '@/lib/formatters';
 
 const TIPO_CONFIG: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' }> = {
   lead: { label: 'Lead', variant: 'secondary' },
@@ -250,7 +241,7 @@ export function DetalheContato({ contatoId, onVoltar, onVisualizarOrcamento }: D
         )}
 
         {/* Alertas Contextuais */}
-        <AlertasContextuais alertas={alertas} onAcao={handleAlertaAcao} />
+        <AlertasContextuaisComAcoes alertas={alertas} contatoId={contatoId} />
 
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Informações do Contato */}

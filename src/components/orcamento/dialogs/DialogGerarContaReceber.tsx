@@ -29,7 +29,7 @@ import { format, addMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
-import { formatCurrency } from '@/lib/calculosStatus';
+import { formatCurrency } from '@/lib/formatters';
 
 const formSchema = z.object({
   numeroParcelas: z.number().min(1).max(24),

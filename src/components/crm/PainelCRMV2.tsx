@@ -29,15 +29,7 @@ import { formatDistanceToNow, format, isToday, isTomorrow, isPast } from 'date-f
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { STATUS_PIPELINE_CONFIG } from '@/lib/mapearStatusEtapa';
-
-const formatCurrency = (value: number) => {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0
-  }).format(value);
-};
+import { formatCurrency } from '@/lib/formatters';
 
 const TIPO_ATIVIDADE_ICONS: Record<string, React.ReactNode> = {
   ligacao: <Phone className="h-4 w-4" />,

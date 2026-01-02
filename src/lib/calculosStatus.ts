@@ -97,15 +97,9 @@ export function getOrdemFunil(status: string): number {
   return ordem[status] ?? 99;
 }
 
-/**
- * Formata valor como moeda brasileira
- */
-export function formatCurrency(value: number): string {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  }).format(value);
-}
+// Re-export formatCurrency from centralized location for backwards compatibility
+import { formatCurrency } from './formatters';
+export { formatCurrency };
 
 /**
  * Formata valor de forma compacta (ex: R$ 1,2M)
