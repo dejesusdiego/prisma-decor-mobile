@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { TruncatedText } from '@/components/ui/TruncatedText';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Table,
@@ -476,7 +477,7 @@ export function ListaContatosV2({ onVerContato }: ListaContatosProps) {
                                 {contato.email && (
                                   <div className="flex items-center gap-1.5 text-muted-foreground">
                                     <Mail className="h-3 w-3" />
-                                    <span className="truncate max-w-[150px]">{contato.email}</span>
+                                    <TruncatedText text={contato.email} maxWidth="150px" className="text-sm" />
                                   </div>
                                 )}
                               </div>

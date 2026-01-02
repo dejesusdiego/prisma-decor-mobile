@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
+import { TruncatedText } from '@/components/ui/TruncatedText';
 import {
   Table,
   TableBody,
@@ -200,7 +201,7 @@ export function ListaPedidos({ onVerPedido }: ListaPedidosProps) {
                         </TableCell>
                         <TableCell>
                           <div>
-                            <p className="font-medium truncate max-w-[200px]">{pedido.orcamento?.cliente_nome}</p>
+                            <TruncatedText text={pedido.orcamento?.cliente_nome || ''} maxWidth="200px" className="font-medium" />
                             <p className="text-xs text-muted-foreground">{pedido.orcamento?.cidade}</p>
                           </div>
                         </TableCell>

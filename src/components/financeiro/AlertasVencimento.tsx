@@ -5,7 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
-import { 
+import { TruncatedText } from '@/components/ui/TruncatedText';
+import {
   AlertTriangle, 
   Bell, 
   Calendar, 
@@ -98,7 +99,7 @@ function AlertaItem({ alerta, onDismiss, onAction }: {
               ) : (
                 <ArrowDownCircle className="h-4 w-4 text-red-500 shrink-0" />
               )}
-              <span className="truncate max-w-[180px] xl:max-w-[220px]" title={alerta.titulo}>{alerta.titulo}</span>
+              <TruncatedText text={alerta.titulo} maxWidth="180px" className="xl:max-w-[220px]" />
             </p>
             <p className="text-xs text-muted-foreground mt-0.5 truncate">
               {alerta.descricao}
