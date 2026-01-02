@@ -24,6 +24,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { CalendarIcon, Package } from 'lucide-react';
+import { TruncatedText } from '@/components/ui/TruncatedText';
 import { useProducaoData, Pedido, TURNO_LABELS } from '@/hooks/useProducaoData';
 import { useAuth } from '@/hooks/useAuth';
 import { format } from 'date-fns';
@@ -139,9 +140,7 @@ export function DialogAgendarInstalacao({
                       <div className="flex items-center gap-2">
                         <span className="font-medium">{pedido.numero_pedido}</span>
                         <span className="text-muted-foreground">-</span>
-                        <span className="text-sm truncate max-w-[200px]">
-                          {pedido.orcamento?.cliente_nome}
-                        </span>
+                        <TruncatedText text={pedido.orcamento?.cliente_nome || ''} maxWidth="200px" className="text-sm" />
                       </div>
                     </SelectItem>
                   ))}

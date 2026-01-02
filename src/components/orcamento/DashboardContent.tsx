@@ -12,7 +12,8 @@ import {
   Target,
   Wallet,
   Clock,
-  Timer
+  Timer,
+  HelpCircle
 } from "lucide-react";
 import { GraficoFaturamentoMensal } from "./charts/GraficoFaturamentoMensal";
 import { FunilVendas } from "./charts/FunilVendas";
@@ -28,6 +29,9 @@ import { formatCurrency, formatCompact } from "@/lib/calculosStatus";
 import { getStatusConfig } from "@/lib/statusOrcamento";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { OnboardingStep } from "@/components/onboarding/OnboardingStep";
+import { useOnboardingContext } from "@/components/onboarding/OnboardingProvider";
+import { DASHBOARD_TOUR } from "@/components/onboarding/tours";
 
 interface DashboardContentProps {
   onNovoOrcamento: () => void;
@@ -58,6 +62,11 @@ export function DashboardContent({
     refetch 
   } = useDashboardData(periodo);
 
+  // Onboarding tour
+  const { activeTour, currentStep, nextStep, prevStep, skipTour, completeTour, startTour, isTourCompleted } = useOnboardingContext();
+  const isDashboardTourActive = activeTour === 'dashboard';
+  const tourSteps = DASHBOARD_TOUR;
+
   const periodoLabel = () => {
     switch (periodo) {
       case '7d': return 'Últimos 7 dias';
@@ -82,36 +91,85 @@ export function DashboardContent({
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">Dashboard de Orçamentos</h1>
-          <p className="text-muted-foreground">{periodoLabel()}</p>
+        <div className="flex items-center gap-3">
+          <div>
+            <h1 className="text-2xl font-bold">Dashboard de Orçamentos</h1>
+            <p className="text-muted-foreground">{periodoLabel()}</p>
+          </div>
+          {!isTourCompleted('dashboard') && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => startTour('dashboard')}
+              className="text-muted-foreground hover:text-primary"
+            >
+              <HelpCircle className="h-4 w-4 mr-1" />
+              Tour
+            </Button>
+          )}
         </div>
         <div className="flex items-center gap-2">
-          <Select value={periodo} onValueChange={(v) => setPeriodo(v as PeriodoFiltro)}>
-            <SelectTrigger className="w-[160px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="7d">Últimos 7 dias</SelectItem>
-              <SelectItem value="30d">Últimos 30 dias</SelectItem>
-              <SelectItem value="90d">Últimos 90 dias</SelectItem>
-              <SelectItem value="12m">Últimos 12 meses</SelectItem>
-              <SelectItem value="mes_atual">Mês atual</SelectItem>
-              <SelectItem value="all">Todo período</SelectItem>
-            </SelectContent>
-          </Select>
+          <OnboardingStep
+            active={isDashboardTourActive && currentStep === 3}
+            stepNumber={4}
+            totalSteps={tourSteps.length}
+            title={tourSteps[3]?.title || ''}
+            description={tourSteps[3]?.description || ''}
+            position="bottom"
+            onNext={nextStep}
+            onPrev={prevStep}
+            onSkip={skipTour}
+            onComplete={() => completeTour('dashboard')}
+          >
+            <Select value={periodo} onValueChange={(v) => setPeriodo(v as PeriodoFiltro)}>
+              <SelectTrigger className="w-[160px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="7d">Últimos 7 dias</SelectItem>
+                <SelectItem value="30d">Últimos 30 dias</SelectItem>
+                <SelectItem value="90d">Últimos 90 dias</SelectItem>
+                <SelectItem value="12m">Últimos 12 meses</SelectItem>
+                <SelectItem value="mes_atual">Mês atual</SelectItem>
+                <SelectItem value="all">Todo período</SelectItem>
+              </SelectContent>
+            </Select>
+          </OnboardingStep>
           <Button variant="outline" size="icon" onClick={refetch} disabled={isLoading}>
             <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
           </Button>
-          <Button onClick={onNovoOrcamento}>
-            <Plus className="h-4 w-4 mr-2" />
-            Novo Orçamento
-          </Button>
+          <OnboardingStep
+            active={isDashboardTourActive && currentStep === 1}
+            stepNumber={2}
+            totalSteps={tourSteps.length}
+            title={tourSteps[1]?.title || ''}
+            description={tourSteps[1]?.description || ''}
+            position="bottom"
+            onNext={nextStep}
+            onPrev={prevStep}
+            onSkip={skipTour}
+          >
+            <Button onClick={onNovoOrcamento}>
+              <Plus className="h-4 w-4 mr-2" />
+              Novo Orçamento
+            </Button>
+          </OnboardingStep>
         </div>
       </div>
 
       {/* Stats Cards com Tendências */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <OnboardingStep
+        active={isDashboardTourActive && currentStep === 2}
+        stepNumber={3}
+        totalSteps={tourSteps.length}
+        title={tourSteps[2]?.title || ''}
+        description={tourSteps[2]?.description || ''}
+        position="bottom"
+        onNext={nextStep}
+        onPrev={prevStep}
+        onSkip={skipTour}
+      >
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {isLoading ? (
           <StatsCardSkeleton count={5} />
         ) : (
@@ -208,7 +266,8 @@ export function DashboardContent({
             </Card>
           </>
         )}
-      </div>
+        </div>
+      </OnboardingStep>
 
       {/* Charts Row 1: Faturamento + Funil */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -286,65 +345,78 @@ export function DashboardContent({
               onVisualizarOrcamento={onVisualizarOrcamento}
             />
 
-            <Card className="lg:col-span-2">
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-muted-foreground" />
-                  Orçamentos Recentes
-                </CardTitle>
-                <Button variant="ghost" size="sm" onClick={onMeusOrcamentos}>
-                  Ver todos
-                  <ArrowUpRight className="h-4 w-4 ml-1" />
-                </Button>
-              </CardHeader>
-              <CardContent>
-                {recentOrcamentos.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>Nenhum orçamento encontrado</p>
-                    <Button variant="outline" className="mt-4" onClick={onNovoOrcamento}>
-                      Criar primeiro orçamento
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {recentOrcamentos.slice(0, 5).map((orc) => {
-                      const statusConfig = getStatusConfig(orc.status);
-                      return (
-                        <div
-                          key={orc.id}
-                          onClick={() => onVisualizarOrcamento(orc.id)}
-                          className="flex items-center justify-between p-3 border rounded-lg cursor-pointer hover:bg-accent/50 transition-colors"
-                        >
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium">{orc.codigo}</span>
-                              <Badge 
-                                variant={statusConfig.badgeVariant as any}
-                                className="text-xs"
-                              >
-                                {statusConfig.label}
-                              </Badge>
+            <OnboardingStep
+              active={isDashboardTourActive && currentStep === 4}
+              stepNumber={5}
+              totalSteps={tourSteps.length}
+              title={tourSteps[4]?.title || ''}
+              description={tourSteps[4]?.description || ''}
+              position="top"
+              onNext={nextStep}
+              onPrev={prevStep}
+              onSkip={skipTour}
+              onComplete={() => completeTour('dashboard')}
+            >
+              <Card className="lg:col-span-2">
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    Orçamentos Recentes
+                  </CardTitle>
+                  <Button variant="ghost" size="sm" onClick={onMeusOrcamentos}>
+                    Ver todos
+                    <ArrowUpRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  {recentOrcamentos.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>Nenhum orçamento encontrado</p>
+                      <Button variant="outline" className="mt-4" onClick={onNovoOrcamento}>
+                        Criar primeiro orçamento
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {recentOrcamentos.slice(0, 5).map((orc) => {
+                        const statusConfig = getStatusConfig(orc.status);
+                        return (
+                          <div
+                            key={orc.id}
+                            onClick={() => onVisualizarOrcamento(orc.id)}
+                            className="flex items-center justify-between p-3 border rounded-lg cursor-pointer hover:bg-accent/50 transition-colors"
+                          >
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium">{orc.codigo}</span>
+                                <Badge 
+                                  variant={statusConfig.badgeVariant as any}
+                                  className="text-xs"
+                                >
+                                  {statusConfig.label}
+                                </Badge>
+                              </div>
+                              <p className="text-sm text-muted-foreground truncate">
+                                {orc.cliente_nome}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {format(new Date(orc.created_at), "dd/MM/yyyy", { locale: ptBR })}
+                              </p>
                             </div>
-                            <p className="text-sm text-muted-foreground truncate">
-                              {orc.cliente_nome}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {format(new Date(orc.created_at), "dd/MM/yyyy", { locale: ptBR })}
-                            </p>
+                            <div className="text-right shrink-0">
+                              <p className="font-medium">
+                                {formatCurrency(orc.total_com_desconto || orc.total_geral || 0)}
+                              </p>
+                            </div>
                           </div>
-                          <div className="text-right shrink-0">
-                            <p className="font-medium">
-                              {formatCurrency(orc.total_com_desconto || orc.total_geral || 0)}
-                            </p>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                        );
+                      })}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </OnboardingStep>
           </>
         )}
       </div>

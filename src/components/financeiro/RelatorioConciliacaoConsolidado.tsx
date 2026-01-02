@@ -7,6 +7,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { TruncatedText } from '@/components/ui/TruncatedText';
 import {
   Table,
   TableBody,
@@ -393,7 +394,7 @@ export function RelatorioConciliacaoConsolidado({ onNavigateOrcamento }: Relator
                             </span>
                           </TableCell>
                           <TableCell>
-                            <span className="truncate max-w-[200px] block" title={orc.clienteNome}>{orc.clienteNome}</span>
+                            <TruncatedText text={orc.clienteNome} maxWidth="200px" />
                           </TableCell>
                           <TableCell className="text-right">
                             {formatCurrency(orc.valorTotal)}
