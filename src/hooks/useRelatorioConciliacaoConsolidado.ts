@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { STATUS_CONCILIACAO_VALIDOS, STATUS_COM_PAGAMENTO, STATUS_TOTALMENTE_PAGO } from '@/lib/statusOrcamento';
 
 export interface OrcamentoConciliacaoResumo {
   id: string;
@@ -38,16 +39,16 @@ export interface RelatorioConsolidado {
   };
 }
 
+export type FiltroStatusPagamento = 'todos' | 'pagos' | 'totalmente_pago';
+
 interface FiltrosRelatorio {
   periodo?: { inicio: Date; fim: Date };
   dataInicio?: string;
   status?: string[];
   apenasComPendencias?: boolean;
   incluirNaoEnviados?: boolean;
+  filtroStatusPagamento?: FiltroStatusPagamento;
 }
-
-// Status válidos para conciliação - exclui rascunhos e não enviados por padrão
-const STATUS_VALIDOS_CONCILIACAO = ['enviado', 'sem_resposta', 'pago_40', 'pago_parcial', 'pago_60', 'pago', 'aceito'];
 
 export function useRelatorioConciliacaoConsolidado(filtros?: FiltrosRelatorio) {
   return useQuery({
@@ -67,12 +68,21 @@ export function useRelatorioConciliacaoConsolidado(filtros?: FiltrosRelatorio) {
         .order('created_at', { ascending: false })
         .limit(100);
 
-      // Aplicar filtro de status padrão (não incluir rascunhos/não enviados)
-      if (filtros?.status && filtros.status.length > 0) {
-        query = query.in('status', filtros.status);
+      // Determinar quais status filtrar
+      let statusParaFiltrar: string[] = [];
+      
+      if (filtros?.filtroStatusPagamento === 'pagos') {
+        statusParaFiltrar = [...STATUS_COM_PAGAMENTO];
+      } else if (filtros?.filtroStatusPagamento === 'totalmente_pago') {
+        statusParaFiltrar = [...STATUS_TOTALMENTE_PAGO];
+      } else if (filtros?.status && filtros.status.length > 0) {
+        statusParaFiltrar = filtros.status;
       } else if (!filtros?.incluirNaoEnviados) {
-        // Por padrão, filtrar apenas orçamentos que já foram enviados/pagos
-        query = query.in('status', STATUS_VALIDOS_CONCILIACAO);
+        statusParaFiltrar = [...STATUS_CONCILIACAO_VALIDOS];
+      }
+      
+      if (statusParaFiltrar.length > 0) {
+        query = query.in('status', statusParaFiltrar);
       }
 
       if (filtros?.periodo) {

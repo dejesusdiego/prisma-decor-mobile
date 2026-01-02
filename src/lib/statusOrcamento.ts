@@ -68,6 +68,12 @@ export const STATUS_LIST: StatusOrcamento[] = [
   'pago',
 ];
 
+// Grupos de status para uso centralizado
+export const STATUS_COM_PAGAMENTO: StatusOrcamento[] = ['pago_40', 'pago_parcial', 'pago_60', 'pago'];
+export const STATUS_TOTALMENTE_PAGO: StatusOrcamento[] = ['pago'];
+export const STATUS_CONCILIACAO_VALIDOS: StatusOrcamento[] = ['enviado', 'sem_resposta', 'pago_40', 'pago_parcial', 'pago_60', 'pago'];
+export const STATUS_PIPELINE_ATIVOS: StatusOrcamento[] = ['enviado', 'sem_resposta', 'pago_40', 'pago_parcial', 'pago_60'];
+
 export function getStatusConfig(status: string) {
   return STATUS_CONFIG[status as StatusOrcamento] || STATUS_CONFIG.rascunho;
 }

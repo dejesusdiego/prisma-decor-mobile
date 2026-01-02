@@ -132,7 +132,7 @@ export function TabOrfaos({ dataInicio }: TabOrfaosProps) {
       const { data, error } = await supabase
         .from('orcamentos')
         .select('id, codigo, cliente_nome, total_com_desconto, total_geral, status, created_at')
-        .in('status', ['enviado', 'sem_resposta', 'pago_parcial', '40_pago', '60_pago'])
+        .in('status', ['enviado', 'sem_resposta', 'pago_40', 'pago_parcial', 'pago_60', 'pago'])
         .order('created_at', { ascending: false })
         .limit(200);
 
