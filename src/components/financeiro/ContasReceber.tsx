@@ -101,16 +101,26 @@ export function ContasReceber({ onNavigate }: ContasReceberProps) {
   });
 
   // Calcular status dinâmico (atrasado) baseado na data de vencimento
+  // PRIORIDADE: Primeiro verifica se está pago (ou deveria estar pela tolerância)
   const contasComStatusDinamico = useMemo(() => {
     return contas.map(conta => {
-      if (conta.status === 'pago') return { ...conta, statusExibicao: 'pago' };
+      // PRIMEIRO: Verificar se está pago OU deveria estar pago pela tolerância
+      const deveriaSerpago = conta.status === 'pago' || 
+        isPagamentoCompleto(Number(conta.valor_total), Number(conta.valor_pago));
       
-      // Verificar se tem parcelas vencidas não pagas
+      if (deveriaSerpago) {
+        return { ...conta, statusExibicao: 'pago' };
+      }
+      
+      // DEPOIS: Verificar atraso apenas para contas NÃO pagas
       const hoje = new Date();
       hoje.setHours(0, 0, 0, 0);
       
       const temParcelaAtrasada = conta.parcelas?.some((p: any) => {
-        if (p.status === 'pago') return false;
+        // Verificar tolerância na parcela também
+        const parcelaPaga = p.status === 'pago';
+        if (parcelaPaga) return false;
+        
         const vencParcela = new Date(p.data_vencimento);
         vencParcela.setHours(0, 0, 0, 0);
         return vencParcela < hoje;
@@ -119,7 +129,7 @@ export function ContasReceber({ onNavigate }: ContasReceberProps) {
       // Verificar se a conta principal está vencida
       const vencimentoConta = new Date(conta.data_vencimento);
       vencimentoConta.setHours(0, 0, 0, 0);
-      const contaVencida = vencimentoConta < hoje && conta.status !== 'pago';
+      const contaVencida = vencimentoConta < hoje;
       
       if (temParcelaAtrasada || contaVencida) {
         return { ...conta, statusExibicao: 'atrasado' };
