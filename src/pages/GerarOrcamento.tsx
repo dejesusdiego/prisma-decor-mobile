@@ -7,6 +7,7 @@ import { LogOut } from 'lucide-react';
 import { OrcamentoSidebar, type View } from '@/components/orcamento/OrcamentoSidebar';
 import { DashboardContent } from '@/components/orcamento/DashboardContent';
 import { DashboardUnificado } from '@/components/orcamento/DashboardUnificado';
+import { DashboardExecutivo } from '@/components/orcamento/DashboardExecutivo';
 import { NovoOrcamento } from '@/components/orcamento/NovoOrcamento';
 import { ListaOrcamentos } from '@/components/orcamento/ListaOrcamentos';
 import { VisualizarOrcamento } from '@/components/orcamento/VisualizarOrcamento';
@@ -51,6 +52,7 @@ interface ClienteDataFromVisita {
 
 // Views restritas apenas para admins
 const ADMIN_ONLY_VIEWS: View[] = [
+  'dashboardExecutivo',
   'dashboardUnificado',
   'gestaoMateriais', 
   'ajustesSistema', 
@@ -177,6 +179,7 @@ export default function GerarOrcamento() {
 
   const getPageTitle = () => {
     switch (view) {
+      case 'dashboardExecutivo': return '';
       case 'dashboardUnificado': return '';
       case 'novoOrcamento': return orcamentoEditandoId ? 'Editar Orçamento' : 'Novo Orçamento';
       case 'listaOrcamentos': return 'Meus Orçamentos';
@@ -221,7 +224,7 @@ export default function GerarOrcamento() {
         {/* Top bar */}
         <header className="h-16 border-b bg-card/50 backdrop-blur-sm flex items-center justify-between px-6 sticky top-0 z-10">
           <div>
-            {view !== 'dashboard' && view !== 'finDashboard' && view !== 'dashboardUnificado' && (
+            {view !== 'dashboard' && view !== 'finDashboard' && view !== 'dashboardUnificado' && view !== 'dashboardExecutivo' && (
               <h2 className="text-lg font-semibold text-foreground">{getPageTitle()}</h2>
             )}
           </div>
@@ -238,6 +241,18 @@ export default function GerarOrcamento() {
         {/* Main content */}
         <main className="flex-1 overflow-y-auto p-6">
           <div className="max-w-7xl mx-auto">
+            {view === 'dashboardExecutivo' && (
+              <DashboardExecutivo onNavigate={(v, params) => {
+                if (params?.id && v === 'visualizar') {
+                  handleVisualizarOrcamento(params.id);
+                } else if (params?.contatoId && v === 'crmContatos') {
+                  handleVerContato(params.contatoId);
+                } else {
+                  handleNavigate(v as View);
+                }
+              }} />
+            )}
+
             {view === 'dashboardUnificado' && (
               <DashboardUnificado onNavigate={handleNavigate} />
             )}
