@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 export type TourId = 'dashboard' | 'wizard' | 'crm' | 'financeiro' | 'producao';
 
@@ -22,7 +23,7 @@ function getStoredState(): OnboardingState {
   return { completedTours: [], skipped: false, lastSeen: null };
 }
 
-function saveState(state: OnboardingState) {
+function saveLocalState(state: OnboardingState) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   } catch (e) {
@@ -30,19 +31,79 @@ function saveState(state: OnboardingState) {
   }
 }
 
-export function useOnboarding() {
+export function useOnboarding(userId?: string) {
   const [state, setState] = useState<OnboardingState>(getStoredState);
   const [activeTour, setActiveTour] = useState<TourId | null>(null);
   const [currentStep, setCurrentStep] = useState(0);
   const [showWelcome, setShowWelcome] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
+  // Buscar estado do banco de dados quando userId mudar
   useEffect(() => {
-    // Mostrar welcome apenas se nunca viu e não pulou
-    const stored = getStoredState();
-    if (!stored.lastSeen && !stored.skipped) {
-      setShowWelcome(true);
+    if (!userId) {
+      setIsLoading(false);
+      return;
     }
-  }, []);
+
+    const fetchOnboardingState = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('user_onboarding')
+          .select('*')
+          .eq('user_id', userId)
+          .maybeSingle();
+
+        if (error) {
+          console.error('Erro ao buscar onboarding:', error);
+          setIsLoading(false);
+          return;
+        }
+
+        if (data) {
+          // Usuário já tem registro - não mostrar welcome
+          const dbState: OnboardingState = {
+            completedTours: (data.completed_tours || []) as TourId[],
+            skipped: data.skipped || false,
+            lastSeen: data.first_seen_at,
+          };
+          setState(dbState);
+          saveLocalState(dbState);
+          setShowWelcome(false);
+        } else {
+          // Primeira vez do usuário - mostrar welcome e criar registro
+          setShowWelcome(true);
+          await supabase.from('user_onboarding').insert({
+            user_id: userId,
+            completed_tours: [],
+            skipped: false,
+          });
+        }
+      } catch (e) {
+        console.error('Erro ao processar onboarding:', e);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchOnboardingState();
+  }, [userId]);
+
+  const saveToDatabase = useCallback(async (newState: OnboardingState) => {
+    if (!userId) return;
+
+    try {
+      await supabase
+        .from('user_onboarding')
+        .update({
+          completed_tours: newState.completedTours,
+          skipped: newState.skipped,
+          last_seen_at: new Date().toISOString(),
+        })
+        .eq('user_id', userId);
+    } catch (e) {
+      console.error('Erro ao salvar onboarding no banco:', e);
+    }
+  }, [userId]);
 
   const isTourCompleted = useCallback((tourId: TourId) => {
     return state.completedTours.includes(tourId);
@@ -69,10 +130,11 @@ export function useOnboarding() {
       lastSeen: new Date().toISOString(),
     };
     setState(newState);
-    saveState(newState);
+    saveLocalState(newState);
+    saveToDatabase(newState);
     setActiveTour(null);
     setCurrentStep(0);
-  }, [state]);
+  }, [state, saveToDatabase]);
 
   const skipTour = useCallback(() => {
     const newState = {
@@ -81,11 +143,12 @@ export function useOnboarding() {
       lastSeen: new Date().toISOString(),
     };
     setState(newState);
-    saveState(newState);
+    saveLocalState(newState);
+    saveToDatabase(newState);
     setActiveTour(null);
     setCurrentStep(0);
     setShowWelcome(false);
-  }, [state]);
+  }, [state, saveToDatabase]);
 
   const dismissWelcome = useCallback(() => {
     const newState = {
@@ -93,20 +156,37 @@ export function useOnboarding() {
       lastSeen: new Date().toISOString(),
     };
     setState(newState);
-    saveState(newState);
+    saveLocalState(newState);
+    saveToDatabase(newState);
     setShowWelcome(false);
-  }, [state]);
+  }, [state, saveToDatabase]);
 
-  const resetOnboarding = useCallback(() => {
+  const resetOnboarding = useCallback(async () => {
     const newState: OnboardingState = {
       completedTours: [],
       skipped: false,
       lastSeen: null,
     };
     setState(newState);
-    saveState(newState);
+    saveLocalState(newState);
+    
+    if (userId) {
+      try {
+        await supabase
+          .from('user_onboarding')
+          .update({
+            completed_tours: [],
+            skipped: false,
+            last_seen_at: null,
+          })
+          .eq('user_id', userId);
+      } catch (e) {
+        console.error('Erro ao resetar onboarding no banco:', e);
+      }
+    }
+    
     setShowWelcome(true);
-  }, []);
+  }, [userId]);
 
   return {
     activeTour,
@@ -114,6 +194,7 @@ export function useOnboarding() {
     showWelcome,
     isSkipped: state.skipped,
     completedTours: state.completedTours,
+    isLoading,
     isTourCompleted,
     startTour,
     nextStep,

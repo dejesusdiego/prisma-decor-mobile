@@ -29,7 +29,8 @@ import {
   Factory,
   Layers,
   Calendar,
-  Package
+  Package,
+  RefreshCw
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -41,6 +42,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useOnboardingContext } from '@/components/onboarding/OnboardingProvider';
 
 export type View = 
   | 'home'
@@ -175,6 +177,7 @@ const getInitialCollapsed = (): boolean => {
 export function OrcamentoSidebar({ currentView, onNavigate }: OrcamentoSidebarProps) {
   const navigate = useNavigate();
   const { isAdmin } = useUserRole();
+  const { resetOnboarding } = useOnboardingContext();
   const [collapsed, setCollapsed] = useState(getInitialCollapsed);
   const [isDark, setIsDark] = useState(false);
   const [visitasNaoVistas, setVisitasNaoVistas] = useState(0);
@@ -593,7 +596,30 @@ export function OrcamentoSidebar({ currentView, onNavigate }: OrcamentoSidebarPr
           )}
         </Tooltip>
 
-        {/* Theme toggle */}
+        {/* Reiniciar Tour */}
+        <Tooltip delayDuration={0}>
+          <TooltipTrigger asChild>
+            <button
+              onClick={() => {
+                resetOnboarding();
+                toast.success('Tour reiniciado! Bem-vindo de volta.');
+              }}
+              className={cn(
+                "w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all",
+                "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+              )}
+            >
+              <RefreshCw className="h-4 w-4 shrink-0" />
+              {!collapsed && <span className="text-sm font-medium">Reiniciar Tour</span>}
+            </button>
+          </TooltipTrigger>
+          {collapsed && (
+            <TooltipContent side="right" className="font-medium bg-popover border z-50">
+              Reiniciar Tour
+            </TooltipContent>
+          )}
+        </Tooltip>
+
         <Tooltip delayDuration={0}>
           <TooltipTrigger asChild>
             <button
