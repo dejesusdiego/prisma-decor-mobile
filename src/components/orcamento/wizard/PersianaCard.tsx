@@ -447,9 +447,9 @@ export function PersianaCard({
                   {persiana.precisaInstalacao && persiana.valorInstalacao && (
                     <div>Instalação: R$ {persiana.valorInstalacao.toFixed(2)}</div>
                   )}
-                  <div className="font-semibold text-foreground">
-                    Total: R$ {(persiana.precoUnitario + (persiana.precisaInstalacao && persiana.valorInstalacao ? persiana.valorInstalacao : 0)).toFixed(2)}
-                  </div>
+                <div className="font-semibold text-foreground">
+                  Total: R$ {((persiana.precoUnitario * persiana.quantidade) + (persiana.precisaInstalacao && persiana.valorInstalacao ? persiana.valorInstalacao : 0)).toFixed(2)}
+                </div>
                 </>
               )}
             </div>
