@@ -16,6 +16,8 @@ interface UseCardStateReturn {
   cardRef: React.RefObject<HTMLDivElement>;
   flashSuccess: () => void;
   markSaved: () => void;
+  autoSaved: boolean;
+  setAutoSaved: (value: boolean) => void;
 }
 
 /**
@@ -29,6 +31,7 @@ export function useCardState(options: UseCardStateOptions = {}): UseCardStateRet
   const [justSaved, setJustSaved] = useState(false);
   const [expanded, setExpanded] = useState(initialExpanded);
   const [hasChanges, setHasChanges] = useState(false);
+  const [autoSaved, setAutoSaved] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
   /**
@@ -64,5 +67,7 @@ export function useCardState(options: UseCardStateOptions = {}): UseCardStateRet
     cardRef,
     flashSuccess,
     markSaved,
+    autoSaved,
+    setAutoSaved,
   };
 }

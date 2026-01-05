@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,6 +28,7 @@ import { MaterialSelector } from './MaterialSelector';
 import { CardStatusBadge, getCardStatus, getCardStatusClass } from '@/components/ui/CardStatusBadge';
 import { CharacterCounter } from '@/components/ui/CharacterCounter';
 import { useCardState } from '@/hooks/useCardState';
+import { useAutoSave } from '@/hooks/useAutoSave';
 import { cn } from '@/lib/utils';
 
 interface PapelCardProps {
@@ -63,7 +64,8 @@ export function PapelCard({
     expanded, setExpanded,
     hasChanges, setHasChanges,
     cardRef,
-    markSaved
+    markSaved,
+    autoSaved, setAutoSaved
   } = useCardState({ initialExpanded: !papel.id });
 
   const cardStatus = getCardStatus(papel.id, hasChanges);
@@ -143,7 +145,13 @@ export function PapelCard({
     }
   };
 
-  const salvarPapel = async () => {
+  // Validação para auto-save
+  const isValid = !!papel.nomeIdentificacao && 
+                  !!papel.quantidade && 
+                  papel.quantidade > 0 &&
+                  !!papel.materialPrincipalId;
+
+  const salvarPapelInterno = useCallback(async (showToast = true) => {
     setSaving(true);
     try {
       if (!papel.nomeIdentificacao || !papel.quantidade || !papel.materialPrincipalId) {
@@ -206,22 +214,43 @@ export function PapelCard({
         altura: alturaParede,
       });
 
-      toast({
-        title: 'Sucesso',
-        description: 'Papel de parede salvo com sucesso',
-      });
-
-      markSaved();
+      if (showToast) {
+        toast({
+          title: 'Sucesso',
+          description: 'Papel de parede salvo com sucesso',
+        });
+        markSaved();
+      } else {
+        setHasChanges(false);
+        setAutoSaved(true);
+        setTimeout(() => setAutoSaved(false), 2000);
+      }
     } catch (error) {
       console.error('Erro ao salvar papel:', error);
-      toast({
-        title: 'Erro',
-        description: 'Não foi possível salvar o papel de parede',
-        variant: 'destructive',
-      });
+      if (showToast) {
+        toast({
+          title: 'Erro',
+          description: 'Não foi possível salvar o papel de parede',
+          variant: 'destructive',
+        });
+      }
     } finally {
       setSaving(false);
     }
+  }, [papel, orcamentoId, larguraParede, alturaParede, custoInstalacao, custoTotal, onUpdate, setSaving, setHasChanges, setAutoSaved, markSaved]);
+
+  // Auto-save hook
+  const { isAutoSaving, cancelAutoSave } = useAutoSave({
+    enabled: expanded && !!papel.id,
+    delay: 3000,
+    onSave: () => salvarPapelInterno(false),
+    hasChanges,
+    isValid,
+  });
+
+  const salvarPapel = async () => {
+    cancelAutoSave();
+    await salvarPapelInterno(true);
   };
 
   const quantidadeMenorQueSugerido = rolosSugeridos > 0 && papel.quantidade < rolosSugeridos;
@@ -234,6 +263,18 @@ export function PapelCard({
             <CardTitle className="text-lg flex items-center gap-2 flex-wrap">
               <CardStatusBadge status={cardStatus} />
               {papel.nomeIdentificacao}
+              {(isAutoSaving || saving) && (
+                <Badge variant="secondary" className="animate-pulse">
+                  <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                  Salvando...
+                </Badge>
+              )}
+              {autoSaved && !isAutoSaving && !saving && (
+                <Badge variant="outline" className="text-green-600 border-green-600">
+                  <Check className="h-3 w-3 mr-1" />
+                  Salvo
+                </Badge>
+              )}
               {!expanded && papel.id && (
                 <span className="text-sm text-muted-foreground font-normal flex items-center gap-2 flex-wrap">
                   {larguraParede > 0 && alturaParede > 0 && (

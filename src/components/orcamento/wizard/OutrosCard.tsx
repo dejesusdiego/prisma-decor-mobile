@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +12,7 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Copy, Trash2, ChevronDown, ChevronUp, Loader2, Check } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -21,6 +23,7 @@ import { CardStatusBadge, getCardStatus, getCardStatusClass } from '@/components
 import { CharacterCounter } from '@/components/ui/CharacterCounter';
 import { cn } from '@/lib/utils';
 import { useCardState } from '@/hooks/useCardState';
+import { useAutoSave } from '@/hooks/useAutoSave';
 
 interface OutrosCardProps {
   outro: Cortina;
@@ -43,7 +46,8 @@ export function OutrosCard({
     expanded, setExpanded,
     hasChanges, setHasChanges,
     cardRef,
-    markSaved
+    markSaved,
+    autoSaved, setAutoSaved
   } = useCardState({ initialExpanded: !outro.id });
   
   const cardStatus = getCardStatus(outro.id, hasChanges);
@@ -55,10 +59,16 @@ export function OutrosCard({
     onUpdate(novosDados);
   };
 
-  const salvarOutro = async () => {
+  // Validação para auto-save
+  const isValid = !!outro.nomeIdentificacao && 
+                  !!outro.quantidade && 
+                  !!outro.precoUnitario && 
+                  outro.precoUnitario > 0;
+
+  const salvarOutroInterno = useCallback(async (showToast = true) => {
     setSaving(true);
     try {
-      if (!outro.nomeIdentificacao || !outro.quantidade || !outro.precoUnitario) {
+      if (!isValid) {
         throw new Error('Preencha todos os campos obrigatórios');
       }
 
@@ -114,22 +124,43 @@ export function OutrosCard({
 
       onUpdate({ ...outro, id: result.data.id, custoInstalacao, custoTotal });
 
-      toast({
-        title: 'Sucesso',
-        description: 'Item salvo com sucesso',
-      });
-
-      markSaved();
+      if (showToast) {
+        toast({
+          title: 'Sucesso',
+          description: 'Item salvo com sucesso',
+        });
+        markSaved();
+      } else {
+        setHasChanges(false);
+        setAutoSaved(true);
+        setTimeout(() => setAutoSaved(false), 2000);
+      }
     } catch (error) {
       console.error('Erro ao salvar item:', error);
-      toast({
-        title: 'Erro',
-        description: 'Não foi possível salvar o item',
-        variant: 'destructive',
-      });
+      if (showToast) {
+        toast({
+          title: 'Erro',
+          description: 'Não foi possível salvar o item',
+          variant: 'destructive',
+        });
+      }
     } finally {
       setSaving(false);
     }
+  }, [isValid, outro, orcamentoId, onUpdate, setSaving, setHasChanges, setAutoSaved, markSaved]);
+
+  // Auto-save hook
+  const { isAutoSaving, cancelAutoSave } = useAutoSave({
+    enabled: expanded && !!outro.id,
+    delay: 3000,
+    onSave: () => salvarOutroInterno(false),
+    hasChanges,
+    isValid,
+  });
+
+  const salvarOutro = async () => {
+    cancelAutoSave();
+    await salvarOutroInterno(true);
   };
 
   return (
@@ -140,6 +171,18 @@ export function OutrosCard({
           <CardTitle className="text-lg flex items-center gap-2">
             {outro.nomeIdentificacao}
             <CardStatusBadge status={cardStatus} />
+            {(isAutoSaving || saving) && (
+              <Badge variant="secondary" className="animate-pulse">
+                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                Salvando...
+              </Badge>
+            )}
+            {autoSaved && !isAutoSaving && !saving && (
+              <Badge variant="outline" className="text-green-600 border-green-600">
+                <Check className="h-3 w-3 mr-1" />
+                Salvo
+              </Badge>
+            )}
             {!expanded && outro.id && (
               <span className="text-sm text-muted-foreground font-normal">
                 • Qtd: {outro.quantidade}

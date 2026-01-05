@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { ChevronDown, ChevronUp, Trash2, Copy, Loader2, Check } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -23,6 +24,7 @@ import { CardStatusBadge, getCardStatus, getCardStatusClass } from '@/components
 import { CharacterCounter } from '@/components/ui/CharacterCounter';
 import { cn } from '@/lib/utils';
 import { useCardState } from '@/hooks/useCardState';
+import { useAutoSave } from '@/hooks/useAutoSave';
 
 interface PersianaCardProps {
   persiana: Cortina;
@@ -49,7 +51,8 @@ export function PersianaCard({
     expanded, setExpanded,
     hasChanges, setHasChanges,
     cardRef,
-    markSaved
+    markSaved,
+    autoSaved, setAutoSaved
   } = useCardState({ initialExpanded: !persiana.id });
   
   const cardStatus = getCardStatus(persiana.id, hasChanges);
@@ -62,13 +65,22 @@ export function PersianaCard({
     onUpdate({ ...persiana, ...updates });
   };
 
-  const salvarPersiana = async () => {
-    if (!persiana.nomeIdentificacao || !persiana.tipoCortina || !persiana.ambiente || persiana.precoUnitario === undefined || persiana.precoUnitario === null) {
-      toast({
-        title: 'Campos obrigatórios',
-        description: 'Preencha todos os campos obrigatórios (nome, tipo, ambiente e orçamento fábrica)',
-        variant: 'destructive',
-      });
+  // Validação para auto-save
+  const isValid = !!persiana.nomeIdentificacao && 
+                  !!persiana.tipoCortina && 
+                  !!persiana.ambiente && 
+                  persiana.precoUnitario !== undefined && 
+                  persiana.precoUnitario !== null;
+
+  const salvarPersianaInterno = useCallback(async (showToast = true) => {
+    if (!isValid) {
+      if (showToast) {
+        toast({
+          title: 'Campos obrigatórios',
+          description: 'Preencha todos os campos obrigatórios (nome, tipo, ambiente e orçamento fábrica)',
+          variant: 'destructive',
+        });
+      }
       return;
     }
 
@@ -138,21 +150,43 @@ export function PersianaCard({
       
       onUpdate(persianaAtualizada);
       
-      toast({
-        title: 'Sucesso',
-        description: 'Persiana salva com sucesso!',
-      });
-      markSaved();
+      if (showToast) {
+        toast({
+          title: 'Sucesso',
+          description: 'Persiana salva com sucesso!',
+        });
+        markSaved();
+      } else {
+        setHasChanges(false);
+        setAutoSaved(true);
+        setTimeout(() => setAutoSaved(false), 2000);
+      }
     } catch (error) {
       console.error('Erro ao salvar persiana:', error);
-      toast({
-        title: 'Erro',
-        description: 'Erro ao salvar persiana',
-        variant: 'destructive',
-      });
+      if (showToast) {
+        toast({
+          title: 'Erro',
+          description: 'Erro ao salvar persiana',
+          variant: 'destructive',
+        });
+      }
     } finally {
       setSaving(false);
     }
+  }, [isValid, persiana, orcamentoId, onUpdate, setSaving, setHasChanges, setAutoSaved, markSaved]);
+
+  // Auto-save hook
+  const { isAutoSaving, cancelAutoSave } = useAutoSave({
+    enabled: expanded && !!persiana.id,
+    delay: 3000,
+    onSave: () => salvarPersianaInterno(false),
+    hasChanges,
+    isValid,
+  });
+
+  const salvarPersiana = async () => {
+    cancelAutoSave();
+    await salvarPersianaInterno(true);
   };
 
   const area = persiana.largura * persiana.altura;
@@ -165,6 +199,18 @@ export function PersianaCard({
           <h3 className="text-lg font-semibold flex items-center gap-2">
             {persiana.nomeIdentificacao}
             <CardStatusBadge status={cardStatus} />
+            {(isAutoSaving || saving) && (
+              <Badge variant="secondary" className="animate-pulse">
+                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                Salvando...
+              </Badge>
+            )}
+            {autoSaved && !isAutoSaving && !saving && (
+              <Badge variant="outline" className="text-green-600 border-green-600">
+                <Check className="h-3 w-3 mr-1" />
+                Salvo
+              </Badge>
+            )}
             {!expanded && persiana.id && (
               <span className="text-sm text-muted-foreground font-normal">
                 • {persiana.tipoCortina} • {area.toFixed(2)}m² ({persiana.largura}x{persiana.altura}m)

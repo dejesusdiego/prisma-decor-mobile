@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Copy, Trash2, ChevronDown, ChevronUp, Loader2, Check } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -23,6 +24,7 @@ import { CardStatusBadge, getCardStatus, getCardStatusClass } from '@/components
 import { CharacterCounter } from '@/components/ui/CharacterCounter';
 import { cn } from '@/lib/utils';
 import { useCardState } from '@/hooks/useCardState';
+import { useAutoSave } from '@/hooks/useAutoSave';
 
 interface MotorizadoCardProps {
   motorizado: Cortina;
@@ -51,7 +53,8 @@ export function MotorizadoCard({
     expanded, setExpanded,
     hasChanges, setHasChanges,
     cardRef,
-    markSaved
+    markSaved,
+    autoSaved, setAutoSaved
   } = useCardState({ initialExpanded: !motorizado.id });
   
   const cardStatus = getCardStatus(motorizado.id, hasChanges);
@@ -84,7 +87,14 @@ export function MotorizadoCard({
     }
   };
 
-  const salvarMotorizado = async () => {
+  // Validação para auto-save
+  const isValid = !!motorizado.nomeIdentificacao && 
+                  !!motorizado.quantidade && 
+                  motorizado.quantidade > 0 &&
+                  !!motorizado.precoUnitario && 
+                  motorizado.precoUnitario > 0;
+
+  const salvarMotorizadoInterno = useCallback(async (showToast = true) => {
     setSaving(true);
     try {
       if (!motorizado.nomeIdentificacao || !motorizado.quantidade) {
@@ -147,22 +157,43 @@ export function MotorizadoCard({
 
       onUpdate({ ...motorizado, id: result.data.id, custoInstalacao, custoTotal });
 
-      toast({
-        title: 'Sucesso',
-        description: 'Sistema motorizado salvo com sucesso',
-      });
-
-      markSaved();
+      if (showToast) {
+        toast({
+          title: 'Sucesso',
+          description: 'Sistema motorizado salvo com sucesso',
+        });
+        markSaved();
+      } else {
+        setHasChanges(false);
+        setAutoSaved(true);
+        setTimeout(() => setAutoSaved(false), 2000);
+      }
     } catch (error) {
       console.error('Erro ao salvar motorizado:', error);
-      toast({
-        title: 'Erro',
-        description: 'Não foi possível salvar o sistema motorizado',
-        variant: 'destructive',
-      });
+      if (showToast) {
+        toast({
+          title: 'Erro',
+          description: 'Não foi possível salvar o sistema motorizado',
+          variant: 'destructive',
+        });
+      }
     } finally {
       setSaving(false);
     }
+  }, [motorizado, orcamentoId, onUpdate, setSaving, setHasChanges, setAutoSaved, markSaved]);
+
+  // Auto-save hook
+  const { isAutoSaving, cancelAutoSave } = useAutoSave({
+    enabled: expanded && !!motorizado.id,
+    delay: 3000,
+    onSave: () => salvarMotorizadoInterno(false),
+    hasChanges,
+    isValid,
+  });
+
+  const salvarMotorizado = async () => {
+    cancelAutoSave();
+    await salvarMotorizadoInterno(true);
   };
 
   return (
@@ -173,6 +204,18 @@ export function MotorizadoCard({
           <CardTitle className="text-lg flex items-center gap-2">
             {motorizado.nomeIdentificacao}
             <CardStatusBadge status={cardStatus} />
+            {(isAutoSaving || saving) && (
+              <Badge variant="secondary" className="animate-pulse">
+                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                Salvando...
+              </Badge>
+            )}
+            {autoSaved && !isAutoSaving && !saving && (
+              <Badge variant="outline" className="text-green-600 border-green-600">
+                <Check className="h-3 w-3 mr-1" />
+                Salvo
+              </Badge>
+            )}
             {!expanded && motorizado.id && (
               <span className="text-sm text-muted-foreground font-normal">
                 • Qtd: {motorizado.quantidade}

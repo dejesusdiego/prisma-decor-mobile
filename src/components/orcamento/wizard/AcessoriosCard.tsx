@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Copy, Trash2, ChevronDown, ChevronUp, Loader2, Check } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -23,6 +24,7 @@ import { CardStatusBadge, getCardStatus, getCardStatusClass } from '@/components
 import { CharacterCounter } from '@/components/ui/CharacterCounter';
 import { cn } from '@/lib/utils';
 import { useCardState } from '@/hooks/useCardState';
+import { useAutoSave } from '@/hooks/useAutoSave';
 
 interface AcessoriosCardProps {
   acessorio: Cortina;
@@ -51,7 +53,8 @@ export function AcessoriosCard({
     expanded, setExpanded,
     hasChanges, setHasChanges,
     cardRef,
-    markSaved
+    markSaved,
+    autoSaved, setAutoSaved
   } = useCardState({ initialExpanded: !acessorio.id });
   
   const cardStatus = getCardStatus(acessorio.id, hasChanges);
@@ -84,7 +87,14 @@ export function AcessoriosCard({
     }
   };
 
-  const salvarAcessorio = async () => {
+  // Validação para auto-save
+  const isValid = !!acessorio.nomeIdentificacao && 
+                  !!acessorio.quantidade && 
+                  !!acessorio.materialPrincipalId &&
+                  !!acessorio.precoUnitario && 
+                  acessorio.precoUnitario > 0;
+
+  const salvarAcessorioInterno = useCallback(async (showToast = true) => {
     setSaving(true);
     try {
       if (!acessorio.nomeIdentificacao || !acessorio.quantidade || !acessorio.materialPrincipalId) {
@@ -143,22 +153,43 @@ export function AcessoriosCard({
 
       onUpdate({ ...acessorio, id: result.data.id, custoInstalacao, custoTotal });
 
-      toast({
-        title: 'Sucesso',
-        description: 'Acessório salvo com sucesso',
-      });
-
-      markSaved();
+      if (showToast) {
+        toast({
+          title: 'Sucesso',
+          description: 'Acessório salvo com sucesso',
+        });
+        markSaved();
+      } else {
+        setHasChanges(false);
+        setAutoSaved(true);
+        setTimeout(() => setAutoSaved(false), 2000);
+      }
     } catch (error) {
       console.error('Erro ao salvar acessório:', error);
-      toast({
-        title: 'Erro',
-        description: 'Não foi possível salvar o acessório',
-        variant: 'destructive',
-      });
+      if (showToast) {
+        toast({
+          title: 'Erro',
+          description: 'Não foi possível salvar o acessório',
+          variant: 'destructive',
+        });
+      }
     } finally {
       setSaving(false);
     }
+  }, [acessorio, orcamentoId, onUpdate, setSaving, setHasChanges, setAutoSaved, markSaved]);
+
+  // Auto-save hook
+  const { isAutoSaving, cancelAutoSave } = useAutoSave({
+    enabled: expanded && !!acessorio.id,
+    delay: 3000,
+    onSave: () => salvarAcessorioInterno(false),
+    hasChanges,
+    isValid,
+  });
+
+  const salvarAcessorio = async () => {
+    cancelAutoSave();
+    await salvarAcessorioInterno(true);
   };
 
   return (
@@ -169,6 +200,18 @@ export function AcessoriosCard({
           <CardTitle className="text-lg flex items-center gap-2">
             {acessorio.nomeIdentificacao}
             <CardStatusBadge status={cardStatus} />
+            {(isAutoSaving || saving) && (
+              <Badge variant="secondary" className="animate-pulse">
+                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                Salvando...
+              </Badge>
+            )}
+            {autoSaved && !isAutoSaving && !saving && (
+              <Badge variant="outline" className="text-green-600 border-green-600">
+                <Check className="h-3 w-3 mr-1" />
+                Salvo
+              </Badge>
+            )}
             {!expanded && acessorio.id && (
               <span className="text-sm text-muted-foreground font-normal">
                 • Qtd: {acessorio.quantidade}
