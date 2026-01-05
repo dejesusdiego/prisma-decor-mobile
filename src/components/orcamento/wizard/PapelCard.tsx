@@ -19,20 +19,22 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Copy, Trash2, ChevronDown, ChevronUp, RefreshCw, AlertTriangle, Info, Check, Save } from 'lucide-react';
+import { Copy, Trash2, ChevronDown, ChevronUp, RefreshCw, AlertTriangle, Info, Check, Save, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import type { Cortina, Material } from '@/types/orcamento';
 import { OPCOES_AMBIENTE } from '@/types/orcamento';
 import { MaterialSelector } from './MaterialSelector';
-import { fetchMateriaisPaginados } from '@/lib/fetchMateriaisPaginados';
 import { CardStatusBadge, getCardStatus, getCardStatusClass } from '@/components/ui/CardStatusBadge';
 import { CharacterCounter } from '@/components/ui/CharacterCounter';
 import { useCardState } from '@/hooks/useCardState';
+import { cn } from '@/lib/utils';
 
 interface PapelCardProps {
   papel: Cortina;
   orcamentoId: string;
+  materiais: Material[];
+  loadingMateriais: boolean;
   onUpdate: (papel: Cortina) => void;
   onRemove: () => void;
   onDuplicate: () => void;
@@ -41,13 +43,13 @@ interface PapelCardProps {
 export function PapelCard({
   papel,
   orcamentoId,
+  materiais,
+  loadingMateriais,
   onUpdate,
   onRemove,
   onDuplicate,
 }: PapelCardProps) {
-  const [materiais, setMateriais] = useState<Material[]>([]);
   const [material, setMaterial] = useState<Material | null>(null);
-  const [loading, setLoading] = useState(false);
 
   // Campos adicionais para cálculo
   const [larguraParede, setLarguraParede] = useState<number>(papel.largura || 0);
@@ -65,52 +67,16 @@ export function PapelCard({
   } = useCardState({ initialExpanded: !papel.id });
 
   const cardStatus = getCardStatus(papel.id, hasChanges);
-
-  const carregarMateriais = async () => {
-    setLoading(true);
-    try {
-      const materiaisList = await fetchMateriaisPaginados('papel', true);
-      setMateriais(materiaisList);
-    } catch (error) {
-      console.error('Erro ao carregar materiais de papel:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const MAX_OBS_LENGTH = 500;
 
   useEffect(() => {
-    carregarMateriais();
-  }, []);
-
-  useEffect(() => {
-    const carregarMaterial = async () => {
-      if (papel.materialPrincipalId) {
-        const { data } = await supabase
-          .from('materiais')
-          .select('*')
-          .eq('id', papel.materialPrincipalId)
-          .single();
-        if (data) {
-          setMaterial({
-            id: data.id,
-            codigo_item: data.codigo_item || '',
-            nome: data.nome,
-            categoria: data.categoria,
-            unidade: data.unidade,
-            largura_metro: data.largura_metro || undefined,
-            preco_custo: data.preco_custo,
-            preco_tabela: data.preco_tabela,
-            ativo: data.ativo,
-            fornecedor: data.fornecedor || undefined,
-          });
-          if (data.perda_percent) {
-            setPerdaPercent(data.perda_percent);
-          }
-        }
+    if (papel.materialPrincipalId && materiais.length > 0) {
+      const mat = materiais.find(m => m.id === papel.materialPrincipalId);
+      if (mat) {
+        setMaterial(mat);
       }
-    };
-    carregarMaterial();
-  }, [papel.materialPrincipalId]);
+    }
+  }, [papel.materialPrincipalId, materiais]);
 
   useEffect(() => {
     if (papel.largura) setLarguraParede(papel.largura);
@@ -262,7 +228,7 @@ export function PapelCard({
 
   return (
     <TooltipProvider>
-      <Card ref={cardRef} className={`transition-all duration-200 ${getCardStatusClass(cardStatus)}`}>
+      <Card ref={cardRef} className={cn('transition-all duration-200', getCardStatusClass(cardStatus))}>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <div className="flex-1 cursor-pointer" onClick={() => setExpanded(!expanded)}>
             <CardTitle className="text-lg flex items-center gap-2 flex-wrap">
@@ -345,20 +311,7 @@ export function PapelCard({
           <CardContent className="space-y-6 card-content-animated">
             {/* Seção 1: Material */}
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h4 className="text-sm font-medium text-muted-foreground">1. Material</h4>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={carregarMateriais}
-                  disabled={loading}
-                  className="h-8 btn-hover-scale"
-                >
-                  <RefreshCw className={`h-3 w-3 mr-1 ${loading ? 'animate-spin' : ''}`} />
-                  Recarregar
-                </Button>
-              </div>
+              <h4 className="text-sm font-medium text-muted-foreground">1. Material</h4>
               <MaterialSelector
                 categoria="papel"
                 materiais={materiais}
@@ -366,7 +319,7 @@ export function PapelCard({
                 onSelect={handleMaterialSelect}
                 placeholder="Selecionar Papel de Parede"
                 optional={false}
-                loading={loading}
+                loading={loadingMateriais}
               />
               {material && (
                 <div className="p-3 bg-muted/50 rounded-lg border text-sm space-y-1">
@@ -484,8 +437,8 @@ export function PapelCard({
                     max="50"
                     value={perdaPercent}
                     onChange={(e) => {
-                      setHasChanges(true);
                       setPerdaPercent(parseFloat(e.target.value) || 0);
+                      setHasChanges(true);
                     }}
                     className="input-focus-accent"
                   />
@@ -493,12 +446,12 @@ export function PapelCard({
               </div>
             </div>
 
-            {/* Seção 4: Quantidade e Preço */}
+            {/* Seção 4: Quantidade */}
             <div className="space-y-4">
-              <h4 className="text-sm font-medium text-muted-foreground">4. Quantidade e Preço</h4>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <h4 className="text-sm font-medium text-muted-foreground">4. Quantidade</h4>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor={`cobertura-${papel.id}`}>Cobertura por Rolo (m²)</Label>
+                  <Label htmlFor={`cobertura-${papel.id}`}>Cobertura/Rolo (m²)</Label>
                   <Input
                     id={`cobertura-${papel.id}`}
                     type="number"
@@ -506,55 +459,59 @@ export function PapelCard({
                     min="0.1"
                     value={coberturaPorRolo}
                     onChange={(e) => {
-                      setHasChanges(true);
                       setCoberturaPorRolo(parseFloat(e.target.value) || 5);
+                      setHasChanges(true);
                     }}
                     className="input-focus-accent"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor={`quantidade-${papel.id}`} className="field-required">Quantidade (rolos)</Label>
+                  <Label>Sugestão</Label>
                   <div className="flex gap-2">
                     <Input
-                      id={`quantidade-${papel.id}`}
-                      type="number"
-                      min="1"
-                      step="1"
-                      value={papel.quantidade}
-                      onChange={(e) => handleChange('quantidade', parseInt(e.target.value) || 1)}
-                      required
-                      className={`input-focus-accent ${quantidadeMenorQueSugerido ? 'border-amber-500' : ''}`}
+                      value={rolosSugeridos > 0 ? `${rolosSugeridos} rolos` : '-'}
+                      disabled
+                      className="bg-muted"
                     />
                     {rolosSugeridos > 0 && (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={aplicarQuantidadeSugerida}
-                            className="whitespace-nowrap btn-hover-scale"
-                          >
-                            Sugerido: {rolosSugeridos}
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Clique para aplicar a quantidade calculada com base na área e perda</p>
-                        </TooltipContent>
-                      </Tooltip>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={aplicarQuantidadeSugerida}
+                        className="shrink-0"
+                      >
+                        <Check className="h-4 w-4" />
+                      </Button>
                     )}
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor={`quantidade-${papel.id}`} className="field-required">Quantidade</Label>
+                  <Input
+                    id={`quantidade-${papel.id}`}
+                    type="number"
+                    min="1"
+                    value={papel.quantidade}
+                    onChange={(e) => handleChange('quantidade', parseInt(e.target.value) || 1)}
+                    required
+                    className={cn(
+                      'input-focus-accent',
+                      quantidadeMenorQueSugerido && 'border-yellow-500'
+                    )}
+                  />
                   {quantidadeMenorQueSugerido && (
-                    <p className="text-xs text-amber-600 flex items-center gap-1">
+                    <div className="flex items-center gap-1 text-xs text-yellow-600">
                       <AlertTriangle className="h-3 w-3" />
-                      Quantidade menor que o sugerido ({rolosSugeridos} rolos)
-                    </p>
+                      <span>Quantidade menor que sugerido</span>
+                    </div>
                   )}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor={`preco-${papel.id}`} className="field-required">Preço por Rolo (R$)</Label>
+                  <Label htmlFor={`preco-${papel.id}`} className="field-required">Preço/Rolo (R$)</Label>
                   <Input
                     id={`preco-${papel.id}`}
                     type="number"
@@ -573,31 +530,28 @@ export function PapelCard({
             {/* Seção 5: Instalação */}
             <div className="space-y-4">
               <h4 className="text-sm font-medium text-muted-foreground">5. Instalação</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div className="flex items-center space-x-2">
                   <Checkbox
                     id={`instalacao-${papel.id}`}
                     checked={papel.precisaInstalacao}
-                    onCheckedChange={(checked) => handleChange('precisaInstalacao', checked)}
+                    onCheckedChange={(checked) => 
+                      handleChange('precisaInstalacao', checked as boolean)
+                    }
                   />
-                  <Label htmlFor={`instalacao-${papel.id}`} className="cursor-pointer">
-                    Precisa de Instalação
-                  </Label>
+                  <Label htmlFor={`instalacao-${papel.id}`}>Precisa de Instalação</Label>
                 </div>
 
                 {papel.precisaInstalacao && (
                   <div className="space-y-2">
-                    <Label htmlFor={`valor-instalacao-${papel.id}`} className="field-required">Valor da Instalação (R$)</Label>
+                    <Label htmlFor={`valor-instalacao-${papel.id}`}>Valor da Instalação (R$)</Label>
                     <Input
                       id={`valor-instalacao-${papel.id}`}
                       type="number"
                       step="0.01"
                       min="0"
                       value={papel.valorInstalacao || ''}
-                      onChange={(e) =>
-                        handleChange('valorInstalacao', parseFloat(e.target.value) || undefined)
-                      }
-                      required
+                      onChange={(e) => handleChange('valorInstalacao', parseFloat(e.target.value) || 0)}
                       placeholder="0.00"
                       className="input-focus-accent"
                     />
@@ -608,89 +562,54 @@ export function PapelCard({
 
             {/* Seção 6: Observações */}
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h4 className="text-sm font-medium text-muted-foreground">6. Observações Internas</h4>
-                <CharacterCounter current={papel.observacoesInternas?.length || 0} max={500} />
-              </div>
+              <h4 className="text-sm font-medium text-muted-foreground">6. Observações</h4>
               <Textarea
-                id={`obs-${papel.id}`}
                 value={papel.observacoesInternas || ''}
-                onChange={(e) => handleChange('observacoesInternas', e.target.value)}
-                placeholder="Anotações internas sobre este item (não aparecem no PDF)..."
+                onChange={(e) => handleChange('observacoesInternas', e.target.value.slice(0, MAX_OBS_LENGTH))}
+                placeholder="Anotações internas sobre este item..."
                 className="min-h-[80px] input-focus-accent"
-                maxLength={500}
+                maxLength={MAX_OBS_LENGTH}
               />
+              <CharacterCounter current={(papel.observacoesInternas || '').length} max={MAX_OBS_LENGTH} />
             </div>
 
-            {/* Resumo de Custos */}
-            {(papel.precoUnitario && papel.quantidade > 0) && (
-              <div className="p-4 bg-muted rounded-lg border space-y-3">
-                <h4 className="text-sm font-medium">Resumo de Custos</h4>
-                
-                <div className="space-y-2 text-sm">
-                  {areaTotal > 0 && (
-                    <div className="flex justify-between text-muted-foreground">
-                      <span>Área da parede:</span>
-                      <span>{areaTotal.toFixed(2)} m²</span>
-                    </div>
-                  )}
-                  
-                  <div className="flex justify-between text-muted-foreground">
-                    <span>Material ({papel.quantidade} {papel.quantidade === 1 ? 'rolo' : 'rolos'} × R$ {(papel.precoUnitario || 0).toFixed(2)}):</span>
-                    <span>R$ {custoMaterial.toFixed(2)}</span>
-                  </div>
-
-                  {areaTotal > 0 && perdaPercent > 0 && (
-                    <div className="flex justify-between text-muted-foreground text-xs">
-                      <span>Perda considerada:</span>
-                      <span>{perdaPercent}%</span>
-                    </div>
-                  )}
-
-                  {papel.precisaInstalacao && custoInstalacao > 0 && (
-                    <div className="flex justify-between text-muted-foreground">
-                      <span>Instalação:</span>
-                      <span>R$ {custoInstalacao.toFixed(2)}</span>
-                    </div>
-                  )}
-
-                  <div className="flex justify-between font-semibold pt-2 border-t">
-                    <span>Total:</span>
-                    <span className="text-primary">R$ {custoTotal.toFixed(2)}</span>
-                  </div>
-                </div>
-
-                {material?.fornecedor && (
-                  <div className="text-xs text-muted-foreground pt-2 border-t">
-                    Fornecedor: {material.fornecedor}
-                  </div>
+            {/* Resumo e Ações */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-t pt-4">
+              <div className="p-4 bg-muted rounded-lg space-y-1 w-full md:w-auto">
+                <p className="text-sm">Material: R$ {custoMaterial.toFixed(2)}</p>
+                {papel.precisaInstalacao && papel.valorInstalacao && (
+                  <p className="text-sm">Instalação: R$ {custoInstalacao.toFixed(2)}</p>
                 )}
+                <p className="text-sm font-semibold border-t pt-1">Total: R$ {custoTotal.toFixed(2)}</p>
               </div>
-            )}
 
-            <Button
-              type="button"
-              onClick={salvarPapel}
-              disabled={saving}
-              className="w-full btn-hover-scale"
-            >
-              {saving ? (
-                <>
-                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                  Salvando...
-                </>
-              ) : justSaved ? (
-                <>
-                  <Check className="h-4 w-4 mr-2" />
-                  Salvo!
-                </>
-              ) : (
-                <>
-                  <Save className="h-4 w-4 mr-2" />
-                  Salvar Papel de Parede
-                </>
-              )}
-            </Button>
+              <Button
+                type="button"
+                onClick={salvarPapel}
+                disabled={saving}
+                className={cn(
+                  'w-full md:w-auto transition-all duration-200',
+                  justSaved && 'bg-green-600 hover:bg-green-700'
+                )}
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Salvando...
+                  </>
+                ) : justSaved ? (
+                  <>
+                    <Check className="h-4 w-4 mr-2" />
+                    Salvo!
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4 mr-2" />
+                    Salvar Papel
+                  </>
+                )}
+              </Button>
+            </div>
           </CardContent>
         )}
       </Card>

@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueries } from '@tanstack/react-query';
 import { fetchMateriaisPaginados } from '@/lib/fetchMateriaisPaginados';
 import type { Material } from '@/types/orcamento';
 
@@ -32,8 +32,8 @@ export function useMateriaisCategoria(
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['materiais', categoria, apenasAtivos],
     queryFn: () => fetchMateriaisPaginados(categoria, apenasAtivos),
-    staleTime: 5 * 60 * 1000, // 5 minutos
-    gcTime: 10 * 60 * 1000, // 10 minutos (antigo cacheTime)
+    staleTime: 10 * 60 * 1000, // 10 minutos
+    gcTime: 30 * 60 * 1000, // 30 minutos
   });
 
   return {
@@ -64,20 +64,20 @@ interface UseMateriaisMultiplasResult {
 
 /**
  * Hook para carregar materiais de múltiplas categorias de uma vez
- * Ideal para EtapaProdutos onde precisamos de todas as categorias
+ * Usa useQueries para evitar violação das regras de hooks
  */
 export function useMateriaisMultiplas(
   categorias: CategoriasMateriais[] = ['tecido', 'forro', 'trilho', 'acessorio', 'persiana', 'papel', 'motorizado'],
   apenasAtivos: boolean = true
 ): UseMateriaisMultiplasResult {
-  const queries = categorias.map(categoria => 
-    useQuery({
+  const queries = useQueries({
+    queries: categorias.map(categoria => ({
       queryKey: ['materiais', categoria, apenasAtivos],
       queryFn: () => fetchMateriaisPaginados(categoria, apenasAtivos),
-      staleTime: 5 * 60 * 1000,
-      gcTime: 10 * 60 * 1000,
-    })
-  );
+      staleTime: 10 * 60 * 1000,
+      gcTime: 30 * 60 * 1000,
+    }))
+  });
 
   const loading = queries.some(q => q.isLoading);
   const error = queries.find(q => q.error)?.error as Error | null;

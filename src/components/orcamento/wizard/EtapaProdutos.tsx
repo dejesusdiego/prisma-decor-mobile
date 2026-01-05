@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Plus, GripVertical, Wrench, Wallpaper, Zap, Package } from 'lucide-react';
+import { Plus, GripVertical, Wrench, Wallpaper, Zap, Package, Loader2, AlertTriangle, RefreshCw } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -18,6 +18,7 @@ import { MotorizadoCard } from './MotorizadoCard';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import type { Cortina } from '@/types/orcamento';
+import { useMateriaisMultiplas } from '@/hooks/useMateriais';
 import {
   DndContext,
   closestCenter,
@@ -48,6 +49,8 @@ interface SortableProductItemProps {
   produto: Cortina;
   index: number;
   orcamentoId: string;
+  materiais: ReturnType<typeof useMateriaisMultiplas>['materiais'];
+  loadingMateriais: boolean;
   onUpdate: (index: number, produto: Cortina) => void;
   onRemove: (index: number) => void;
   onDuplicate: (index: number) => void;
@@ -58,6 +61,8 @@ function SortableProductItem({
   produto,
   index,
   orcamentoId,
+  materiais,
+  loadingMateriais,
   onUpdate,
   onRemove,
   onDuplicate,
@@ -87,6 +92,12 @@ function SortableProductItem({
           <CortinaCard
             cortina={produto}
             orcamentoId={orcamentoId}
+            materiais={{
+              tecidos: materiais.tecido,
+              forros: materiais.forro,
+              trilhos: materiais.trilho,
+            }}
+            loadingMateriais={loadingMateriais}
             onUpdate={(p) => onUpdate(index, p)}
             onRemove={() => onRemove(index)}
             onDuplicate={() => onDuplicate(index)}
@@ -95,6 +106,8 @@ function SortableProductItem({
           <PersianaCard
             persiana={produto}
             orcamentoId={orcamentoId}
+            materiais={materiais.persiana}
+            loadingMateriais={loadingMateriais}
             onUpdate={(p) => onUpdate(index, p)}
             onRemove={() => onRemove(index)}
             onDuplicate={() => onDuplicate(index)}
@@ -103,6 +116,8 @@ function SortableProductItem({
           <AcessoriosCard
             acessorio={produto}
             orcamentoId={orcamentoId}
+            materiais={materiais.acessorio}
+            loadingMateriais={loadingMateriais}
             onUpdate={(p) => onUpdate(index, p)}
             onRemove={() => onRemove(index)}
             onDuplicate={() => onDuplicate(index)}
@@ -111,6 +126,8 @@ function SortableProductItem({
           <PapelCard
             papel={produto}
             orcamentoId={orcamentoId}
+            materiais={materiais.papel}
+            loadingMateriais={loadingMateriais}
             onUpdate={(p) => onUpdate(index, p)}
             onRemove={() => onRemove(index)}
             onDuplicate={() => onDuplicate(index)}
@@ -119,6 +136,8 @@ function SortableProductItem({
           <MotorizadoCard
             motorizado={produto}
             orcamentoId={orcamentoId}
+            materiais={materiais.motorizado}
+            loadingMateriais={loadingMateriais}
             onUpdate={(p) => onUpdate(index, p)}
             onRemove={() => onRemove(index)}
             onDuplicate={() => onDuplicate(index)}
@@ -146,6 +165,9 @@ export function EtapaProdutos({
   const [produtos, setProdutos] = useState<Cortina[]>(produtosIniciais);
   const [loading, setLoading] = useState(false);
   const [dialogOutrosAberto, setDialogOutrosAberto] = useState(false);
+
+  // Centralizar carregamento de materiais - UMA vez para todos os cards
+  const { materiais, loading: loadingMateriais, error: errorMateriais, refetchAll } = useMateriaisMultiplas();
 
   useEffect(() => {
     if (orcamentoId && produtosIniciais.length === 0) {
@@ -239,7 +261,7 @@ export function EtapaProdutos({
       tipoCortina: 'outro',
       precoUnitario: undefined,
       precisaInstalacao: false,
-      descricao: categoria, // Armazena a categoria na descrição
+      descricao: categoria,
     };
     setProdutos([...produtos, novoOutro]);
     setDialogOutrosAberto(false);
@@ -273,12 +295,10 @@ export function EtapaProdutos({
 
   const duplicarProduto = (index: number) => {
     const produtoOriginal = produtos[index];
-    // Clonar profundamente todos os campos do produto
     const produto: Cortina = {
       ...produtoOriginal,
-      id: undefined, // Remover ID para criar novo
+      id: undefined,
       nomeIdentificacao: `${produtoOriginal.nomeIdentificacao} (Cópia)`,
-      // Garantir cópia de todos os campos
       tecidoId: produtoOriginal.tecidoId,
       forroId: produtoOriginal.forroId,
       trilhoId: produtoOriginal.trilhoId,
@@ -342,27 +362,21 @@ export function EtapaProdutos({
       return;
     }
 
-    // Validar campos obrigatórios
     const produtosInvalidos = produtos.filter((p) => {
-      // Validações comuns
       if (!p.nomeIdentificacao || p.quantidade <= 0) {
         return true;
       }
       
-      // Validações específicas por tipo
       if (p.tipoProduto === 'cortina') {
-        // Para cortinas: pelo menos tecido OU forro deve estar preenchido
         return p.largura <= 0 || p.altura <= 0 || (!p.tecidoId && !p.forroId);
       }
       if (p.tipoProduto === 'persiana') {
         return !p.tipoCortina || !p.ambiente || p.precoUnitario === undefined || p.precoUnitario === null;
       }
       if (p.tipoProduto === 'outro') {
-        // Para categorias específicas, exige material selecionado
         if (p.descricao === 'Acessórios' || p.descricao === 'Papel' || p.descricao === 'Motorizado') {
           return !p.materialPrincipalId || !p.precoUnitario || p.precoUnitario <= 0;
         }
-        // Para "Outros" genéricos, só exige preço
         return !p.precoUnitario || p.precoUnitario <= 0;
       }
       return false;
@@ -377,7 +391,6 @@ export function EtapaProdutos({
       return;
     }
 
-    // Verificar se todos os produtos foram salvos
     const produtosNaoSalvos = produtos.filter((p) => !p.id);
     if (produtosNaoSalvos.length > 0) {
       toast({
@@ -390,6 +403,42 @@ export function EtapaProdutos({
 
     onAvancar(produtos);
   };
+
+  // Estado de loading dos materiais
+  if (loadingMateriais) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold">Etapa 2 - Produtos</h2>
+        </div>
+        <Card className="p-8 text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+          <p className="text-muted-foreground">Carregando catálogo de materiais...</p>
+          <p className="text-sm text-muted-foreground mt-2">Isso pode levar alguns segundos</p>
+        </Card>
+      </div>
+    );
+  }
+
+  // Estado de erro
+  if (errorMateriais) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold">Etapa 2 - Produtos</h2>
+        </div>
+        <Card className="p-8 text-center border-destructive">
+          <AlertTriangle className="h-8 w-8 mx-auto mb-4 text-destructive" />
+          <p className="text-destructive font-medium">Erro ao carregar materiais</p>
+          <p className="text-sm text-muted-foreground mb-4">{errorMateriais.message}</p>
+          <Button onClick={refetchAll} variant="outline">
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Tentar novamente
+          </Button>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -446,6 +495,8 @@ export function EtapaProdutos({
                   produto={produto}
                   index={index}
                   orcamentoId={orcamentoId}
+                  materiais={materiais}
+                  loadingMateriais={loadingMateriais}
                   onUpdate={atualizarProduto}
                   onRemove={removerProduto}
                   onDuplicate={duplicarProduto}
