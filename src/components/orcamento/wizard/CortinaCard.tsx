@@ -38,6 +38,7 @@ interface CortinaCardProps {
     trilhos: Material[];
   };
   loadingMateriais: boolean;
+  servicosConfeccao: ServicoConfeccao[];
   onUpdate: (cortina: Cortina) => void;
   onRemove: () => void;
   onDuplicate: () => void;
@@ -48,6 +49,7 @@ export function CortinaCard({
   orcamentoId,
   materiais,
   loadingMateriais,
+  servicosConfeccao,
   onUpdate,
   onRemove,
   onDuplicate,
@@ -55,7 +57,6 @@ export function CortinaCard({
   // Usar materiais diretamente das props
   const { tecidos, forros, trilhos } = materiais;
   
-  const [servicosConfeccao, setServicosConfeccao] = useState<ServicoConfeccao[]>([]);
   const [servicosAdicionaisOpen, setServicosAdicionaisOpen] = useState(false);
   
   const {
@@ -70,25 +71,6 @@ export function CortinaCard({
   const { configuracoes } = useConfiguracoes();
   const cardStatus = getCardStatus(cortina.id, hasChanges);
   const MAX_OBS_LENGTH = 500;
-
-  useEffect(() => {
-    carregarServicosConfeccao();
-  }, []);
-
-  const carregarServicosConfeccao = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('servicos_confeccao')
-        .select('*')
-        .eq('ativo', true)
-        .order('nome_modelo');
-
-      if (error) throw error;
-      setServicosConfeccao(data || []);
-    } catch (error) {
-      console.error('Erro ao carregar serviços:', error);
-    }
-  };
 
   const handleChange = (field: keyof Cortina, value: any) => {
     const novosDados = { ...cortina, [field]: value };
@@ -156,17 +138,19 @@ export function CortinaCard({
         servicosParaCalculo = servicosData || [];
       }
 
-      // Se não houver serviços configurados, buscar o primeiro ativo como fallback
+      // Se não houver serviços configurados, usar o primeiro da lista (já carregada via props)
       if (servicosParaCalculo.length === 0) {
-        const { data: fallbackServico, error: fallbackError } = await supabase
-          .from('servicos_confeccao')
-          .select('*')
-          .eq('ativo', true)
-          .limit(1)
-          .single();
-
-        if (fallbackError) throw fallbackError;
-        servicosParaCalculo = [fallbackServico];
+        if (servicosConfeccao.length > 0) {
+          servicosParaCalculo = [servicosConfeccao[0]];
+        } else {
+          toast({
+            title: 'Atenção',
+            description: 'Nenhum serviço de confecção ativo encontrado. Configure um serviço antes de salvar.',
+            variant: 'destructive',
+          });
+          setSaving(false);
+          return;
+        }
       }
 
       // Buscar serviços de instalação do banco de dados
