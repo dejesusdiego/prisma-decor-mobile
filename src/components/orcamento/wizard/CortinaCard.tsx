@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,6 +28,7 @@ import { CardStatusBadge, getCardStatus, getCardStatusClass } from '@/components
 import { CharacterCounter } from '@/components/ui/CharacterCounter';
 import { cn } from '@/lib/utils';
 import { useCardState } from '@/hooks/useCardState';
+import { useAutoSave } from '@/hooks/useAutoSave';
 
 interface CortinaCardProps {
   cortina: Cortina;
@@ -65,48 +66,32 @@ export function CortinaCard({
     expanded, setExpanded,
     hasChanges, setHasChanges,
     cardRef,
-    markSaved
+    markSaved,
+    autoSaved, setAutoSaved
   } = useCardState({ initialExpanded: !cortina.id });
   
   const { configuracoes } = useConfiguracoes();
   const cardStatus = getCardStatus(cortina.id, hasChanges);
   const MAX_OBS_LENGTH = 500;
 
-  const handleChange = (field: keyof Cortina, value: any) => {
-    const novosDados = { ...cortina, [field]: value };
-    setHasChanges(true);
-    onUpdate(novosDados);
-  };
+  // Validação para auto-save
+  const isValid = !!(cortina.tecidoId || cortina.forroId) && 
+                  !!cortina.tipoCortina && 
+                  !!cortina.ambiente;
 
-  const toggleServicoAdicional = (servicoId: string) => {
-    const atuais = cortina.servicosAdicionaisIds || [];
-    if (atuais.includes(servicoId)) {
-      handleChange('servicosAdicionaisIds', atuais.filter(id => id !== servicoId));
-    } else {
-      handleChange('servicosAdicionaisIds', [...atuais, servicoId]);
-    }
-  };
-
-  const removerServicoAdicional = (servicoId: string) => {
-    const atuais = cortina.servicosAdicionaisIds || [];
-    handleChange('servicosAdicionaisIds', atuais.filter(id => id !== servicoId));
-  };
-
-  const getNomeServico = (servicoId: string) => {
-    const servico = servicosConfeccao.find(s => s.id === servicoId);
-    return servico ? servico.nome_modelo : 'Desconhecido';
-  };
-
-  const salvarCortina = async () => {
+  // Função de save sem toast para auto-save
+  const salvarCortinaInterno = useCallback(async (showToast = true) => {
     setSaving(true);
     try {
       // Validação: pelo menos tecido OU forro deve estar preenchido
       if (!cortina.tecidoId && !cortina.forroId) {
-        toast({
-          title: 'Atenção',
-          description: 'É necessário informar pelo menos o tecido principal ou o forro',
-          variant: 'destructive',
-        });
+        if (showToast) {
+          toast({
+            title: 'Atenção',
+            description: 'É necessário informar pelo menos o tecido principal ou o forro',
+            variant: 'destructive',
+          });
+        }
         setSaving(false);
         return;
       }
@@ -143,11 +128,13 @@ export function CortinaCard({
         if (servicosConfeccao.length > 0) {
           servicosParaCalculo = [servicosConfeccao[0]];
         } else {
-          toast({
-            title: 'Atenção',
-            description: 'Nenhum serviço de confecção ativo encontrado. Configure um serviço antes de salvar.',
-            variant: 'destructive',
-          });
+          if (showToast) {
+            toast({
+              title: 'Atenção',
+              description: 'Nenhum serviço de confecção ativo encontrado. Configure um serviço antes de salvar.',
+              variant: 'destructive',
+            });
+          }
           setSaving(false);
           return;
         }
@@ -247,22 +234,68 @@ export function CortinaCard({
 
       onUpdate({ ...cortina, id: result.data.id, tipoProduto: 'cortina', ...custos });
 
-      toast({
-        title: 'Sucesso',
-        description: 'Cortina salva com sucesso',
-      });
-      
-      markSaved();
+      if (showToast) {
+        toast({
+          title: 'Sucesso',
+          description: 'Cortina salva com sucesso',
+        });
+        markSaved();
+      } else {
+        setHasChanges(false);
+        setAutoSaved(true);
+        setTimeout(() => setAutoSaved(false), 2000);
+      }
     } catch (error: any) {
       console.error('Erro ao salvar cortina:', error);
-      toast({
-        title: 'Erro',
-        description: error.message || 'Não foi possível salvar a cortina',
-        variant: 'destructive',
-      });
+      if (showToast) {
+        toast({
+          title: 'Erro',
+          description: error.message || 'Não foi possível salvar a cortina',
+          variant: 'destructive',
+        });
+      }
     } finally {
       setSaving(false);
     }
+  }, [cortina, orcamentoId, tecidos, forros, trilhos, servicosConfeccao, configuracoes, onUpdate, setSaving, setHasChanges, setAutoSaved, markSaved]);
+
+  // Auto-save hook
+  const { isAutoSaving, cancelAutoSave } = useAutoSave({
+    enabled: expanded && !!cortina.id,
+    delay: 3000,
+    onSave: () => salvarCortinaInterno(false),
+    hasChanges,
+    isValid,
+  });
+
+  const salvarCortina = async () => {
+    cancelAutoSave();
+    await salvarCortinaInterno(true);
+  };
+
+  const handleChange = (field: keyof Cortina, value: any) => {
+    const novosDados = { ...cortina, [field]: value };
+    setHasChanges(true);
+    onUpdate(novosDados);
+  };
+
+  const toggleServicoAdicional = (servicoId: string) => {
+    const atuais = cortina.servicosAdicionaisIds || [];
+    if (atuais.includes(servicoId)) {
+      handleChange('servicosAdicionaisIds', atuais.filter(id => id !== servicoId));
+    } else {
+      handleChange('servicosAdicionaisIds', [...atuais, servicoId]);
+    }
+  };
+
+  const removerServicoAdicional = (servicoId: string) => {
+    const atuais = cortina.servicosAdicionaisIds || [];
+    handleChange('servicosAdicionaisIds', atuais.filter(id => id !== servicoId));
+  };
+
+  const getNomeServico = (servicoId: string) => {
+    const servico = servicosConfeccao.find(s => s.id === servicoId);
+    return servico ? servico.nome_modelo : 'Desconhecido';
   };
 
   return (
@@ -273,6 +306,18 @@ export function CortinaCard({
           <CardTitle className="text-lg flex items-center gap-2">
             {cortina.nomeIdentificacao}
             <CardStatusBadge status={cardStatus} />
+            {(isAutoSaving || saving) && (
+              <Badge variant="secondary" className="animate-pulse">
+                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                Salvando...
+              </Badge>
+            )}
+            {autoSaved && !isAutoSaving && !saving && (
+              <Badge variant="outline" className="text-green-600 border-green-600">
+                <Check className="h-3 w-3 mr-1" />
+                Salvo
+              </Badge>
+            )}
             {!expanded && cortina.id && (
               <span className="text-sm text-muted-foreground font-normal">
                 • {cortina.tipoCortina} • {cortina.largura}x{cortina.altura}m • Qtd: {cortina.quantidade}
