@@ -1,6 +1,7 @@
 import React, { createContext, useContext, ReactNode } from 'react';
 import { useOnboarding, TourId } from '@/hooks/useOnboarding';
 import { OnboardingDialog } from './OnboardingDialog';
+import { useAuth } from '@/hooks/useAuth';
 
 interface OnboardingContextValue {
   activeTour: TourId | null;
@@ -34,12 +35,16 @@ interface OnboardingProviderProps {
 
 export function OnboardingProvider({ children }: OnboardingProviderProps) {
   const onboarding = useOnboarding();
+  const { user, loading } = useAuth();
+
+  // Só mostrar onboarding para usuários autenticados
+  const shouldShowOnboarding = Boolean(user && !loading && onboarding.showWelcome);
 
   return (
     <OnboardingContext.Provider value={onboarding}>
       {children}
       <OnboardingDialog
-        open={onboarding.showWelcome}
+        open={shouldShowOnboarding}
         onOpenChange={(open) => {
           if (!open) onboarding.dismissWelcome();
         }}
