@@ -9,6 +9,7 @@ interface OnboardingContextValue {
   showWelcome: boolean;
   isSkipped: boolean;
   completedTours: TourId[];
+  isLoading: boolean;
   isTourCompleted: (tourId: TourId) => boolean;
   startTour: (tourId: TourId) => void;
   nextStep: () => void;
@@ -34,11 +35,16 @@ interface OnboardingProviderProps {
 }
 
 export function OnboardingProvider({ children }: OnboardingProviderProps) {
-  const onboarding = useOnboarding();
-  const { user, loading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const onboarding = useOnboarding(user?.id);
 
-  // Só mostrar onboarding para usuários autenticados
-  const shouldShowOnboarding = Boolean(user && !loading && onboarding.showWelcome);
+  // Só mostrar onboarding para usuários autenticados e quando não está carregando
+  const shouldShowOnboarding = Boolean(
+    user && 
+    !authLoading && 
+    !onboarding.isLoading && 
+    onboarding.showWelcome
+  );
 
   return (
     <OnboardingContext.Provider value={onboarding}>

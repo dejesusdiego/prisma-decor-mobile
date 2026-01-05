@@ -1755,6 +1755,39 @@ export type Database = {
         }
         Relationships: []
       }
+      user_onboarding: {
+        Row: {
+          completed_tours: string[] | null
+          created_at: string | null
+          first_seen_at: string | null
+          id: string
+          last_seen_at: string | null
+          skipped: boolean | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          completed_tours?: string[] | null
+          created_at?: string | null
+          first_seen_at?: string | null
+          id?: string
+          last_seen_at?: string | null
+          skipped?: boolean | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          completed_tours?: string[] | null
+          created_at?: string | null
+          first_seen_at?: string | null
+          id?: string
+          last_seen_at?: string | null
+          skipped?: boolean | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
