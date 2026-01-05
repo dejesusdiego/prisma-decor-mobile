@@ -29,10 +29,8 @@ export function MaterialSelector({
   optional = true,
   loading = false,
 }: MaterialSelectorProps) {
-  // Se estiver carregando, mostra skeleton
-  if (loading) {
-    return <MaterialSelectorSkeleton />;
-  }
+  // IMPORTANTE: Todos os hooks DEVEM vir ANTES de qualquer return condicional
+  // Esta é uma regra fundamental do React que previne travamentos
   const [filtroTipo, setFiltroTipo] = useState<string>('');
   const [filtroLinha, setFiltroLinha] = useState<string>('');
   const [filtroCor, setFiltroCor] = useState<string>('');
@@ -47,6 +45,11 @@ export function MaterialSelector({
       if (selectedMaterial.cor) setFiltroCor(selectedMaterial.cor);
     }
   }, [selectedMaterial]);
+
+  // Se estiver carregando, mostra skeleton (APÓS os hooks)
+  if (loading) {
+    return <MaterialSelectorSkeleton />;
+  }
 
   // Extrair valores únicos para cada filtro
   const tiposUnicos = Array.from(new Set(materiais.filter(m => m.tipo).map(m => m.tipo!))).sort();
