@@ -368,16 +368,20 @@ export function PersianaCard({
             </div>
 
             <div>
-              <Label>Orçamento Fábrica (R$) *</Label>
+              <Label>Orçamento Fábrica por Unidade (R$) *</Label>
               <Input
                 type="number"
                 step="0.01"
                 value={persiana.precoUnitario || ''}
                 onChange={(e) => handleChange({ precoUnitario: parseFloat(e.target.value) || 0 })}
-                placeholder="Valor total orçado pela fábrica"
+                placeholder="Valor unitário da fábrica"
               />
               <p className="text-xs text-muted-foreground mt-1">
-                Valor total do orçamento recebido da fábrica
+                Valor por unidade. {persiana.quantidade > 1 && (
+                  <span className="font-medium">
+                    Para {persiana.quantidade} un. = R$ {((persiana.precoUnitario || 0) * persiana.quantidade).toFixed(2)}
+                  </span>
+                )}
               </p>
             </div>
           </div>

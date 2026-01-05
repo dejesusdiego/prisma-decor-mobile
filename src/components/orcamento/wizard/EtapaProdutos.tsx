@@ -17,8 +17,9 @@ import { PapelCard } from './PapelCard';
 import { MotorizadoCard } from './MotorizadoCard';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import type { Cortina } from '@/types/orcamento';
+import type { Cortina, ServicoConfeccao } from '@/types/orcamento';
 import { useMateriaisMultiplas } from '@/hooks/useMateriais';
+import { useQuery } from '@tanstack/react-query';
 import {
   DndContext,
   closestCenter,
@@ -51,6 +52,7 @@ interface SortableProductItemProps {
   orcamentoId: string;
   materiais: ReturnType<typeof useMateriaisMultiplas>['materiais'];
   loadingMateriais: boolean;
+  servicosConfeccao: ServicoConfeccao[];
   onUpdate: (index: number, produto: Cortina) => void;
   onRemove: (index: number) => void;
   onDuplicate: (index: number) => void;
@@ -63,6 +65,7 @@ function SortableProductItem({
   orcamentoId,
   materiais,
   loadingMateriais,
+  servicosConfeccao,
   onUpdate,
   onRemove,
   onDuplicate,
@@ -98,6 +101,7 @@ function SortableProductItem({
               trilhos: materiais.trilho,
             }}
             loadingMateriais={loadingMateriais}
+            servicosConfeccao={servicosConfeccao}
             onUpdate={(p) => onUpdate(index, p)}
             onRemove={() => onRemove(index)}
             onDuplicate={() => onDuplicate(index)}
@@ -168,6 +172,22 @@ export function EtapaProdutos({
 
   // Centralizar carregamento de materiais - UMA vez para todos os cards
   const { materiais, loading: loadingMateriais, error: errorMateriais, refetchAll } = useMateriaisMultiplas();
+
+  // Centralizar carregamento de serviços de confecção - UMA vez para todos os CortinaCards
+  const { data: servicosConfeccao = [] } = useQuery({
+    queryKey: ['servicos-confeccao-ativos'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('servicos_confeccao')
+        .select('*')
+        .eq('ativo', true)
+        .order('nome_modelo');
+      if (error) throw error;
+      return (data || []) as ServicoConfeccao[];
+    },
+    staleTime: 10 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+  });
 
   useEffect(() => {
     if (orcamentoId && produtosIniciais.length === 0) {
@@ -497,6 +517,7 @@ export function EtapaProdutos({
                   orcamentoId={orcamentoId}
                   materiais={materiais}
                   loadingMateriais={loadingMateriais}
+                  servicosConfeccao={servicosConfeccao}
                   onUpdate={atualizarProduto}
                   onRemove={removerProduto}
                   onDuplicate={duplicarProduto}
