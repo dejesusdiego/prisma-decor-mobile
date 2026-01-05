@@ -19,7 +19,6 @@ import { toast } from '@/hooks/use-toast';
 import type { Cortina, Material } from '@/types/orcamento';
 import { OPCOES_AMBIENTE } from '@/types/orcamento';
 import { MaterialSelector } from './MaterialSelector';
-import { fetchMateriaisPaginados } from '@/lib/fetchMateriaisPaginados';
 import { CardStatusBadge, getCardStatus, getCardStatusClass } from '@/components/ui/CardStatusBadge';
 import { CharacterCounter } from '@/components/ui/CharacterCounter';
 import { cn } from '@/lib/utils';
@@ -28,6 +27,8 @@ import { useCardState } from '@/hooks/useCardState';
 interface AcessoriosCardProps {
   acessorio: Cortina;
   orcamentoId: string;
+  materiais: Material[];
+  loadingMateriais: boolean;
   onUpdate: (acessorio: Cortina) => void;
   onRemove: () => void;
   onDuplicate: () => void;
@@ -36,13 +37,13 @@ interface AcessoriosCardProps {
 export function AcessoriosCard({
   acessorio,
   orcamentoId,
+  materiais,
+  loadingMateriais,
   onUpdate,
   onRemove,
   onDuplicate,
 }: AcessoriosCardProps) {
-  const [materiais, setMateriais] = useState<Material[]>([]);
   const [material, setMaterial] = useState<Material | null>(null);
-  const [loading, setLoading] = useState(true);
   
   const {
     saving, setSaving,
@@ -57,44 +58,11 @@ export function AcessoriosCard({
   const MAX_OBS_LENGTH = 500;
 
   useEffect(() => {
-    const carregarMateriais = async () => {
-      try {
-        const materiaisList = await fetchMateriaisPaginados('acessorio', true);
-        setMateriais(materiaisList);
-      } catch (error) {
-        console.error('Erro ao carregar materiais de acessórios:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    carregarMateriais();
-  }, []);
-
-  useEffect(() => {
-    const carregarMaterial = async () => {
-      if (acessorio.materialPrincipalId) {
-        const { data } = await supabase
-          .from('materiais')
-          .select('*')
-          .eq('id', acessorio.materialPrincipalId)
-          .single();
-        if (data) {
-          setMaterial({
-            id: data.id,
-            codigo_item: data.codigo_item || '',
-            nome: data.nome,
-            categoria: data.categoria,
-            unidade: data.unidade,
-            largura_metro: data.largura_metro || undefined,
-            preco_custo: data.preco_custo,
-            preco_tabela: data.preco_tabela,
-            ativo: data.ativo,
-          });
-        }
-      }
-    };
-    carregarMaterial();
-  }, [acessorio.materialPrincipalId]);
+    if (acessorio.materialPrincipalId && materiais.length > 0) {
+      const mat = materiais.find(m => m.id === acessorio.materialPrincipalId);
+      if (mat) setMaterial(mat);
+    }
+  }, [acessorio.materialPrincipalId, materiais]);
 
   const handleChange = (field: keyof Cortina, value: any) => {
     const novosDados = { ...acessorio, [field]: value };
@@ -265,21 +233,15 @@ export function AcessoriosCard({
         <CardContent className="space-y-4 card-content-animated">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2 md:col-span-2">
-              {loading ? (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground p-3 bg-muted rounded-lg">
-                  <Loader2 className="h-4 w-4 spinner" />
-                  Carregando materiais...
-                </div>
-              ) : (
-                <MaterialSelector
-                  categoria={'acessorio' as any}
-                  materiais={materiais}
-                  value={acessorio.materialPrincipalId}
-                  onSelect={handleMaterialSelect}
-                  placeholder="Selecionar Acessório"
-                  optional={false}
-                />
-              )}
+              <MaterialSelector
+                categoria={'acessorio' as any}
+                materiais={materiais}
+                value={acessorio.materialPrincipalId}
+                onSelect={handleMaterialSelect}
+                placeholder="Selecionar Acessório"
+                optional={false}
+                loading={loadingMateriais}
+              />
             </div>
 
             <div className="space-y-2">
@@ -422,7 +384,7 @@ export function AcessoriosCard({
           >
             {saving ? (
               <>
-                <Loader2 className="h-4 w-4 mr-2 spinner" />
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 Salvando...
               </>
             ) : justSaved ? (

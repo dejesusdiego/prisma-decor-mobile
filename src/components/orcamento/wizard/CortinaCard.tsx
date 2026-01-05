@@ -24,7 +24,6 @@ import { calcularCustosCortina } from '@/lib/calculosOrcamento';
 import { OPCOES_AMBIENTE } from '@/types/orcamento';
 import { MaterialSelector } from './MaterialSelector';
 import { useConfiguracoes } from '@/hooks/useConfiguracoes';
-import { fetchMateriaisPaginados } from '@/lib/fetchMateriaisPaginados';
 import { CardStatusBadge, getCardStatus, getCardStatusClass } from '@/components/ui/CardStatusBadge';
 import { CharacterCounter } from '@/components/ui/CharacterCounter';
 import { cn } from '@/lib/utils';
@@ -33,6 +32,12 @@ import { useCardState } from '@/hooks/useCardState';
 interface CortinaCardProps {
   cortina: Cortina;
   orcamentoId: string;
+  materiais: {
+    tecidos: Material[];
+    forros: Material[];
+    trilhos: Material[];
+  };
+  loadingMateriais: boolean;
   onUpdate: (cortina: Cortina) => void;
   onRemove: () => void;
   onDuplicate: () => void;
@@ -41,15 +46,16 @@ interface CortinaCardProps {
 export function CortinaCard({
   cortina,
   orcamentoId,
+  materiais,
+  loadingMateriais,
   onUpdate,
   onRemove,
   onDuplicate,
 }: CortinaCardProps) {
-  const [tecidos, setTecidos] = useState<Material[]>([]);
-  const [forros, setForros] = useState<Material[]>([]);
-  const [trilhos, setTrilhos] = useState<Material[]>([]);
+  // Usar materiais diretamente das props
+  const { tecidos, forros, trilhos } = materiais;
+  
   const [servicosConfeccao, setServicosConfeccao] = useState<ServicoConfeccao[]>([]);
-  const [loading, setLoading] = useState(true);
   const [servicosAdicionaisOpen, setServicosAdicionaisOpen] = useState(false);
   
   const {
@@ -66,33 +72,8 @@ export function CortinaCard({
   const MAX_OBS_LENGTH = 500;
 
   useEffect(() => {
-    carregarMateriais();
     carregarServicosConfeccao();
   }, []);
-
-  const carregarMateriais = async () => {
-    setLoading(true);
-    try {
-      const [tecidosList, forrosList, trilhosList] = await Promise.all([
-        fetchMateriaisPaginados('tecido', true),
-        fetchMateriaisPaginados('forro', true),
-        fetchMateriaisPaginados('trilho', true),
-      ]);
-
-      setTecidos(tecidosList);
-      setForros(forrosList);
-      setTrilhos(trilhosList);
-    } catch (error) {
-      console.error('Erro ao carregar materiais:', error);
-      toast({
-        title: 'Erro ao carregar materiais',
-        description: 'Não foi possível carregar os materiais do catálogo',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const carregarServicosConfeccao = async () => {
     try {
@@ -335,24 +316,6 @@ export function CortinaCard({
             </TooltipTrigger>
             <TooltipContent>{expanded ? 'Recolher' : 'Expandir'}</TooltipContent>
           </Tooltip>
-          {expanded && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={carregarMateriais}
-                  disabled={loading}
-                  className="btn-hover-scale"
-                >
-                  <RefreshCw className={cn('h-4 w-4 mr-1', loading && 'spinner')} />
-                  {loading ? 'Carregando...' : 'Recarregar'}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Recarregar lista de materiais</TooltipContent>
-            </Tooltip>
-          )}
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -468,10 +431,8 @@ export function CortinaCard({
               value={cortina.barraCm ?? ''}
               onChange={(e) => {
                 const rawValue = e.target.value;
-                // barra_cm é INTEGER no banco - usar parseInt e Math.round para garantir
-                const parsedValue = rawValue === '' ? 0 : Math.round(parseInt(rawValue, 10) || 0);
-                console.log(`🔢 Input barraCm: raw="${rawValue}", parsed=${parsedValue}`);
-                handleChange('barraCm', parsedValue);
+                const numValue = rawValue === '' ? undefined : Math.round(parseFloat(rawValue));
+                handleChange('barraCm', numValue);
               }}
               placeholder="0"
             />
@@ -487,10 +448,8 @@ export function CortinaCard({
               value={cortina.barraForroCm ?? ''}
               onChange={(e) => {
                 const rawValue = e.target.value;
-                // barra_forro_cm é NUMERIC no banco - usar parseFloat
-                const parsedValue = rawValue === '' ? 0 : parseFloat(rawValue) || 0;
-                console.log(`🔢 Input barraForroCm: raw="${rawValue}", parsed=${parsedValue}`);
-                handleChange('barraForroCm', parsedValue);
+                const numValue = rawValue === '' ? undefined : Math.round(parseFloat(rawValue));
+                handleChange('barraForroCm', numValue);
               }}
               placeholder="0"
             />
@@ -507,156 +466,142 @@ export function CortinaCard({
               required
             />
           </div>
+        </div>
 
-          <div className="space-y-2">
-            <Label htmlFor={`tecido-${cortina.id}`}>Tecido Principal</Label>
-            <MaterialSelector
-              categoria="tecido"
-              materiais={tecidos}
-              value={cortina.tecidoId}
-              onSelect={(value) => handleChange('tecidoId', value)}
-              placeholder="Selecione o tecido"
-              optional={true}
-            />
-          </div>
+        {/* Seleção de materiais */}
+        <div className="space-y-4">
+          <h4 className="font-medium">Materiais</h4>
+          
+          <MaterialSelector
+            categoria="tecido"
+            materiais={tecidos}
+            value={cortina.tecidoId}
+            onSelect={(id) => handleChange('tecidoId', id)}
+            placeholder="Selecionar Tecido Principal"
+            optional={true}
+            loading={loadingMateriais}
+          />
 
-          <div className="space-y-2">
-            <Label htmlFor={`forro-${cortina.id}`}>Forro (Opcional)</Label>
-            <MaterialSelector
-              categoria="forro"
-              materiais={forros}
-              value={cortina.forroId}
-              onSelect={(value) => handleChange('forroId', value)}
-              placeholder="Selecione o forro"
-              optional={true}
-            />
-          </div>
+          <MaterialSelector
+            categoria="forro"
+            materiais={forros}
+            value={cortina.forroId}
+            onSelect={(id) => handleChange('forroId', id)}
+            placeholder="Selecionar Forro (opcional)"
+            optional={true}
+            loading={loadingMateriais}
+          />
 
-          <div className="space-y-2">
-            <Label htmlFor={`trilho-${cortina.id}`}>Trilho</Label>
-            <MaterialSelector
-              categoria="trilho"
-              materiais={trilhos}
-              value={cortina.trilhoId}
-              onSelect={(value) => handleChange('trilhoId', value)}
-              placeholder="Selecione o trilho"
-              optional={true}
-            />
-          </div>
+          <MaterialSelector
+            categoria="trilho"
+            materiais={trilhos}
+            value={cortina.trilhoId}
+            onSelect={(id) => handleChange('trilhoId', id)}
+            placeholder="Selecionar Trilho (opcional)"
+            optional={true}
+            loading={loadingMateriais}
+          />
+        </div>
 
-          {/* Serviços de Confecção Adicionais */}
-          <div className="space-y-2 md:col-span-2">
-            <Collapsible open={servicosAdicionaisOpen} onOpenChange={setServicosAdicionaisOpen}>
-              <CollapsibleTrigger asChild>
-                <Button variant="outline" className="w-full justify-between">
-                  <span className="flex items-center gap-2">
-                    <Scissors className="h-4 w-4" />
-                    Serviços de Confecção Adicionais
-                    {(cortina.servicosAdicionaisIds?.length || 0) > 0 && (
-                      <Badge variant="secondary" className="ml-2">
-                        {cortina.servicosAdicionaisIds?.length} selecionado(s)
-                      </Badge>
-                    )}
-                  </span>
-                  {servicosAdicionaisOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                </Button>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="mt-2">
-                <div className="border rounded-lg p-4 space-y-3">
-                  <p className="text-sm text-muted-foreground">
-                    Selecione serviços específicos para esta cortina (além dos configurados no sistema)
-                  </p>
-                  
-                  {/* Serviços selecionados */}
-                  {(cortina.servicosAdicionaisIds?.length || 0) > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {cortina.servicosAdicionaisIds?.map((servicoId) => (
-                        <Badge key={servicoId} variant="secondary" className="flex items-center gap-1">
-                          {getNomeServico(servicoId)}
-                          <button
-                            onClick={() => removerServicoAdicional(servicoId)}
-                            className="ml-1 hover:bg-destructive/20 rounded-full p-0.5"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Lista de serviços disponíveis */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-48 overflow-y-auto">
-                    {servicosConfeccao.map((servico) => (
-                      <div key={servico.id} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`servico-${cortina.id}-${servico.id}`}
-                          checked={(cortina.servicosAdicionaisIds || []).includes(servico.id)}
-                          onCheckedChange={() => toggleServicoAdicional(servico.id)}
-                        />
-                        <label
-                          htmlFor={`servico-${cortina.id}-${servico.id}`}
-                          className="text-sm cursor-pointer flex-1"
-                        >
-                          {servico.nome_modelo}
-                          <span className="text-muted-foreground ml-1">
-                            (R$ {servico.preco_custo.toFixed(2)}/mt)
-                          </span>
-                        </label>
-                      </div>
-                    ))}
-                  </div>
+        {/* Serviços adicionais */}
+        <Collapsible open={servicosAdicionaisOpen} onOpenChange={setServicosAdicionaisOpen}>
+          <CollapsibleTrigger asChild>
+            <Button variant="ghost" className="w-full justify-between">
+              <span className="flex items-center gap-2">
+                <Scissors className="h-4 w-4" />
+                Serviços Adicionais de Confecção
+              </span>
+              {servicosAdicionaisOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="space-y-2 pt-2">
+            {cortina.servicosAdicionaisIds && cortina.servicosAdicionaisIds.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-2">
+                {cortina.servicosAdicionaisIds.map((servicoId) => (
+                  <Badge key={servicoId} variant="secondary" className="gap-1">
+                    {getNomeServico(servicoId)}
+                    <button
+                      type="button"
+                      onClick={() => removerServicoAdicional(servicoId)}
+                      className="ml-1 hover:text-destructive"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                ))}
+              </div>
+            )}
+            <div className="grid grid-cols-2 gap-2">
+              {servicosConfeccao.map((servico) => (
+                <div key={servico.id} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`servico-${servico.id}`}
+                    checked={cortina.servicosAdicionaisIds?.includes(servico.id)}
+                    onCheckedChange={() => toggleServicoAdicional(servico.id)}
+                  />
+                  <label
+                    htmlFor={`servico-${servico.id}`}
+                    className="text-sm cursor-pointer"
+                  >
+                    {servico.nome_modelo} (R$ {servico.preco_custo.toFixed(2)}/m)
+                  </label>
                 </div>
-              </CollapsibleContent>
-            </Collapsible>
-          </div>
-
-          <div className="space-y-2 md:col-span-2">
-            <Label htmlFor={`obs-${cortina.id}`}>Observações Internas (não aparecem no PDF)</Label>
-            <Textarea
-              id={`obs-${cortina.id}`}
-              value={cortina.observacoesInternas || ''}
-              onChange={(e) => handleChange('observacoesInternas', e.target.value.slice(0, MAX_OBS_LENGTH))}
-              placeholder="Anotações internas sobre este item..."
-              className="min-h-[80px]"
-              maxLength={MAX_OBS_LENGTH}
-            />
-            <CharacterCounter current={(cortina.observacoesInternas || '').length} max={MAX_OBS_LENGTH} />
-          </div>
-
-          <div className="space-y-2 flex items-center justify-between md:col-span-2">
-            <div className="flex items-center gap-2">
-              <Label htmlFor={`instalacao-${cortina.id}`}>Precisa de Instalação?</Label>
-              <Tooltip>
-                <TooltipTrigger>
-                  <span className="text-muted-foreground text-xs">(i)</span>
-                </TooltipTrigger>
-                <TooltipContent>Marque se este item precisa de serviço de instalação</TooltipContent>
-              </Tooltip>
+              ))}
             </div>
+          </CollapsibleContent>
+        </Collapsible>
+
+        {/* Instalação */}
+        <div className="space-y-4 border-t pt-4">
+          <div className="flex items-center justify-between">
+            <Label htmlFor={`instalacao-${cortina.id}`}>Precisa de instalação?</Label>
             <Switch
               id={`instalacao-${cortina.id}`}
               checked={cortina.precisaInstalacao}
               onCheckedChange={(checked) => handleChange('precisaInstalacao', checked)}
             />
           </div>
-
           {cortina.precisaInstalacao && (
-            <div className="space-y-2 md:col-span-2">
-              <Label htmlFor={`pontos-${cortina.id}`}>Pontos de Instalação *</Label>
+            <div className="space-y-2">
+              <Label htmlFor={`pontos-${cortina.id}`}>Pontos de Instalação</Label>
               <Input
                 id={`pontos-${cortina.id}`}
                 type="number"
                 min="1"
                 value={cortina.pontosInstalacao || 1}
-                onChange={(e) =>
-                  handleChange('pontosInstalacao', parseInt(e.target.value) || 1)
-                }
-                required
+                onChange={(e) => handleChange('pontosInstalacao', parseInt(e.target.value) || 1)}
               />
             </div>
           )}
         </div>
 
+        {/* Observações */}
+        <div className="space-y-2">
+          <Label htmlFor={`obs-${cortina.id}`}>Observações Internas (não aparecem no PDF)</Label>
+          <Textarea
+            id={`obs-${cortina.id}`}
+            value={cortina.observacoesInternas || ''}
+            onChange={(e) => handleChange('observacoesInternas', e.target.value.slice(0, MAX_OBS_LENGTH))}
+            placeholder="Anotações internas sobre esta cortina..."
+            className="min-h-[80px]"
+            maxLength={MAX_OBS_LENGTH}
+          />
+          <CharacterCounter current={(cortina.observacoesInternas || '').length} max={MAX_OBS_LENGTH} />
+        </div>
+
+        {/* Preview de custos */}
+        {cortina.custoTotal !== undefined && cortina.custoTotal > 0 && (
+          <div className="p-4 bg-muted rounded-lg space-y-1">
+            <p className="text-sm">Tecido: R$ {(cortina.custoTecido || 0).toFixed(2)}</p>
+            <p className="text-sm">Forro: R$ {(cortina.custoForro || 0).toFixed(2)}</p>
+            <p className="text-sm">Trilho: R$ {(cortina.custoTrilho || 0).toFixed(2)}</p>
+            <p className="text-sm">Costura: R$ {(cortina.custoCostura || 0).toFixed(2)}</p>
+            <p className="text-sm">Instalação: R$ {(cortina.custoInstalacao || 0).toFixed(2)}</p>
+            <p className="text-sm font-semibold border-t pt-1">Total: R$ {cortina.custoTotal.toFixed(2)}</p>
+          </div>
+        )}
+
+        {/* Botão salvar */}
         <Button
           type="button"
           onClick={salvarCortina}
@@ -668,7 +613,7 @@ export function CortinaCard({
         >
           {saving ? (
             <>
-              <Loader2 className="h-4 w-4 mr-2 spinner" />
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               Salvando...
             </>
           ) : justSaved ? (
@@ -680,7 +625,7 @@ export function CortinaCard({
             'Salvar Cortina'
           )}
         </Button>
-      </CardContent>
+        </CardContent>
       )}
     </Card>
     </TooltipProvider>

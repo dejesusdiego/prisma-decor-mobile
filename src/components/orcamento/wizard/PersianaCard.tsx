@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,7 +19,6 @@ import { toast } from '@/hooks/use-toast';
 import type { Cortina, Material } from '@/types/orcamento';
 import { OPCOES_AMBIENTE } from '@/types/orcamento';
 import { MaterialSelector } from './MaterialSelector';
-import { fetchMateriaisPaginados } from '@/lib/fetchMateriaisPaginados';
 import { CardStatusBadge, getCardStatus, getCardStatusClass } from '@/components/ui/CardStatusBadge';
 import { CharacterCounter } from '@/components/ui/CharacterCounter';
 import { cn } from '@/lib/utils';
@@ -28,6 +27,8 @@ import { useCardState } from '@/hooks/useCardState';
 interface PersianaCardProps {
   persiana: Cortina;
   orcamentoId: string;
+  materiais: Material[];
+  loadingMateriais: boolean;
   onUpdate: (persiana: Cortina) => void;
   onRemove: () => void;
   onDuplicate?: () => void;
@@ -36,13 +37,12 @@ interface PersianaCardProps {
 export function PersianaCard({
   persiana,
   orcamentoId,
+  materiais,
+  loadingMateriais,
   onUpdate,
   onRemove,
   onDuplicate,
 }: PersianaCardProps) {
-  const [materiais, setMateriais] = useState<Material[]>([]);
-  const [loadingMateriais, setLoadingMateriais] = useState(true);
-  
   const {
     saving, setSaving,
     justSaved,
@@ -54,22 +54,6 @@ export function PersianaCard({
   
   const cardStatus = getCardStatus(persiana.id, hasChanges);
   const MAX_OBS_LENGTH = 500;
-
-  // Carregar materiais da categoria persiana com paginação
-  useEffect(() => {
-    const carregarMateriais = async () => {
-      try {
-        const materiaisList = await fetchMateriaisPaginados('persiana', true);
-        setMateriais(materiaisList);
-      } catch (error) {
-        console.error('Erro ao carregar materiais de persiana:', error);
-      } finally {
-        setLoadingMateriais(false);
-      }
-    };
-
-    carregarMateriais();
-  }, []);
 
   const materialSelecionado = materiais.find(m => m.id === persiana.materialPrincipalId);
 
@@ -341,21 +325,15 @@ export function PersianaCard({
             <p className="text-xs text-muted-foreground mb-3">
               Selecione a persiana para controle interno. O cálculo é feito pelo orçamento da fábrica.
             </p>
-            {loadingMateriais ? (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground p-3 bg-muted rounded-lg">
-                <Loader2 className="h-4 w-4 spinner" />
-                Carregando materiais...
-              </div>
-            ) : (
-              <MaterialSelector
-                categoria="persiana"
-                materiais={materiais}
-                value={persiana.materialPrincipalId}
-                onSelect={(id) => handleChange({ materialPrincipalId: id })}
-                placeholder="Selecionar persiana"
-                optional={true}
-              />
-            )}
+            <MaterialSelector
+              categoria="persiana"
+              materiais={materiais}
+              value={persiana.materialPrincipalId}
+              onSelect={(id) => handleChange({ materialPrincipalId: id })}
+              placeholder="Selecionar persiana"
+              optional={true}
+              loading={loadingMateriais}
+            />
 
             <div className="mt-4">
               <Label>Tipo *</Label>
@@ -483,7 +461,7 @@ export function PersianaCard({
               >
                 {saving ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 spinner" />
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                     Salvando...
                   </>
                 ) : justSaved ? (
@@ -494,14 +472,6 @@ export function PersianaCard({
                 ) : (
                   'Salvar Persiana'
                 )}
-              </Button>
-              <Button 
-                onClick={onRemove} 
-                variant="destructive" 
-                size="sm"
-                className="btn-hover-scale"
-              >
-                Remover
               </Button>
             </div>
           </div>

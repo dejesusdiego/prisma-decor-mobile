@@ -19,7 +19,6 @@ import { toast } from '@/hooks/use-toast';
 import type { Cortina, Material } from '@/types/orcamento';
 import { OPCOES_AMBIENTE } from '@/types/orcamento';
 import { MaterialSelector } from './MaterialSelector';
-import { fetchMateriaisPaginados } from '@/lib/fetchMateriaisPaginados';
 import { CardStatusBadge, getCardStatus, getCardStatusClass } from '@/components/ui/CardStatusBadge';
 import { CharacterCounter } from '@/components/ui/CharacterCounter';
 import { cn } from '@/lib/utils';
@@ -28,6 +27,8 @@ import { useCardState } from '@/hooks/useCardState';
 interface MotorizadoCardProps {
   motorizado: Cortina;
   orcamentoId: string;
+  materiais: Material[];
+  loadingMateriais: boolean;
   onUpdate: (motorizado: Cortina) => void;
   onRemove: () => void;
   onDuplicate: () => void;
@@ -36,13 +37,13 @@ interface MotorizadoCardProps {
 export function MotorizadoCard({
   motorizado,
   orcamentoId,
+  materiais,
+  loadingMateriais,
   onUpdate,
   onRemove,
   onDuplicate,
 }: MotorizadoCardProps) {
-  const [materiais, setMateriais] = useState<Material[]>([]);
   const [material, setMaterial] = useState<Material | null>(null);
-  const [loading, setLoading] = useState(true);
   
   const {
     saving, setSaving,
@@ -57,44 +58,11 @@ export function MotorizadoCard({
   const MAX_OBS_LENGTH = 500;
 
   useEffect(() => {
-    const carregarMateriais = async () => {
-      try {
-        const materiaisList = await fetchMateriaisPaginados('motorizado', true);
-        setMateriais(materiaisList);
-      } catch (error) {
-        console.error('Erro ao carregar materiais motorizados:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    carregarMateriais();
-  }, []);
-
-  useEffect(() => {
-    const carregarMaterial = async () => {
-      if (motorizado.materialPrincipalId) {
-        const { data } = await supabase
-          .from('materiais')
-          .select('*')
-          .eq('id', motorizado.materialPrincipalId)
-          .single();
-        if (data) {
-          setMaterial({
-            id: data.id,
-            codigo_item: data.codigo_item || '',
-            nome: data.nome,
-            categoria: data.categoria,
-            unidade: data.unidade,
-            largura_metro: data.largura_metro || undefined,
-            preco_custo: data.preco_custo,
-            preco_tabela: data.preco_tabela,
-            ativo: data.ativo,
-          });
-        }
-      }
-    };
-    carregarMaterial();
-  }, [motorizado.materialPrincipalId]);
+    if (motorizado.materialPrincipalId && materiais.length > 0) {
+      const mat = materiais.find(m => m.id === motorizado.materialPrincipalId);
+      if (mat) setMaterial(mat);
+    }
+  }, [motorizado.materialPrincipalId, materiais]);
 
   const handleChange = (field: keyof Cortina, value: any) => {
     const novosDados = { ...motorizado, [field]: value };
@@ -269,21 +237,15 @@ export function MotorizadoCard({
         <CardContent className="space-y-4 card-content-animated">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2 md:col-span-2">
-              {loading ? (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground p-3 bg-muted rounded-lg">
-                  <Loader2 className="h-4 w-4 spinner" />
-                  Carregando materiais...
-                </div>
-              ) : (
-                <MaterialSelector
-                  categoria="motorizado"
-                  materiais={materiais}
-                  value={motorizado.materialPrincipalId}
-                  onSelect={handleMaterialSelect}
-                  placeholder="Selecionar Motor/Sistema"
-                  optional={true}
-                />
-              )}
+              <MaterialSelector
+                categoria="motorizado"
+                materiais={materiais}
+                value={motorizado.materialPrincipalId}
+                onSelect={handleMaterialSelect}
+                placeholder="Selecionar Motor/Sistema"
+                optional={true}
+                loading={loadingMateriais}
+              />
             </div>
 
             <div className="space-y-2">
@@ -426,7 +388,7 @@ export function MotorizadoCard({
           >
             {saving ? (
               <>
-                <Loader2 className="h-4 w-4 mr-2 spinner" />
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 Salvando...
               </>
             ) : justSaved ? (
