@@ -394,9 +394,12 @@ export function EtapaProdutos({
         return !p.tipoCortina || !p.ambiente || p.precoUnitario === undefined || p.precoUnitario === null;
       }
       if (p.tipoProduto === 'outro') {
-        if (p.descricao === 'Acessórios' || p.descricao === 'Papel' || p.descricao === 'Motorizado') {
-          return !p.materialPrincipalId || !p.precoUnitario || p.precoUnitario <= 0;
-        }
+      if (p.descricao === 'Acessórios' || p.descricao === 'Papel') {
+        return !p.materialPrincipalId || !p.precoUnitario || p.precoUnitario <= 0;
+      }
+      if (p.descricao === 'Motorizado') {
+        return !p.precoUnitario || p.precoUnitario <= 0; // Material opcional para motorizados
+      }
         return !p.precoUnitario || p.precoUnitario <= 0;
       }
       return false;
