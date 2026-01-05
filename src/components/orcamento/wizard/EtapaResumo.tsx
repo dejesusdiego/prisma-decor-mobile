@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -8,7 +8,6 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import type { Cortina, DadosOrcamento, Material, ServicoConfeccao, ServicoInstalacao } from '@/types/orcamento';
-import { fetchMateriaisPaginados } from '@/lib/fetchMateriaisPaginados';
 import { OPCOES_MARGEM } from '@/types/orcamento';
 import { calcularResumoOrcamento, calcularConsumoDetalhado, calcularResumoConsolidado } from '@/lib/calculosOrcamento';
 import { FileDown, Home, Save, ChevronDown, Ruler, Package, Scissors, Wrench } from 'lucide-react';
@@ -20,6 +19,7 @@ import { DebugCalculos } from './DebugCalculos';
 import { HistoricoDescontos, registrarHistoricoDesconto } from './HistoricoDescontos';
 import { useAuth } from '@/hooks/useAuth';
 import { formatCurrency, formatMeters } from '@/lib/formatters';
+import { useMateriaisMultiplas } from '@/hooks/useMateriais';
 
 interface EtapaResumoProps {
   orcamentoId: string;
@@ -41,7 +41,17 @@ export function EtapaResumo({
   const [loading, setLoading] = useState(false);
   const [dialogValidadeOpen, setDialogValidadeOpen] = useState(false);
   const [validadeDias, setValidadeDias] = useState<number>(7);
-  const [materiais, setMateriais] = useState<Material[]>([]);
+  // Usar hook centralizado de materiais com cache
+  const { materiais: materiaisPorCategoria } = useMateriaisMultiplas();
+  const materiais = useMemo(() => [
+    ...materiaisPorCategoria.tecido,
+    ...materiaisPorCategoria.forro,
+    ...materiaisPorCategoria.trilho,
+    ...materiaisPorCategoria.acessorio,
+    ...materiaisPorCategoria.persiana,
+    ...materiaisPorCategoria.papel,
+    ...materiaisPorCategoria.motorizado,
+  ], [materiaisPorCategoria]);
   const [expandedCards, setExpandedCards] = useState<Record<number, boolean>>({});
   const [descontoTipo, setDescontoTipo] = useState<'percentual' | 'valor_fixo' | null>(null);
   const [descontoValor, setDescontoValor] = useState<number>(0);
@@ -60,70 +70,61 @@ export function EtapaResumo({
   const resumo = calcularResumoOrcamento(cortinas, margemAtual);
   const resumoConsolidado = calcularResumoConsolidado(cortinas, materiais);
 
-  // Carregar validade, materiais e serviços do banco de dados
+  // Carregar validade e serviços do banco de dados (materiais já vêm do hook centralizado)
   useEffect(() => {
     const carregarDados = async () => {
-      // Carregar validade e dados de desconto
-      const { data, error } = await supabase
-        .from('orcamentos')
-        .select('validade_dias, desconto_tipo, desconto_valor')
-        .eq('id', orcamentoId)
-        .single();
-
-      if (!error && data) {
-        if (data.validade_dias) setValidadeDias(data.validade_dias);
-        if (data.desconto_tipo) {
-          setDescontoTipo(data.desconto_tipo as 'percentual' | 'valor_fixo');
-          setDescontoTipoOriginal(data.desconto_tipo as 'percentual' | 'valor_fixo');
-        }
-        if (data.desconto_valor) {
-          setDescontoValor(data.desconto_valor);
-          setDescontoValorOriginal(data.desconto_valor);
-        }
-      }
-
-      // Carregar materiais do banco de dados Supabase com paginação
       try {
-        const materiaisData = await fetchMateriaisPaginados(undefined, true);
-        console.log('[EtapaResumo] Materiais carregados:', materiaisData.length);
-        setMateriais(materiaisData);
-      } catch (materiaisError) {
-        console.error('Erro ao carregar materiais:', materiaisError);
-      }
+        // Carregar dados do orçamento, serviço de confecção e instalação em paralelo
+        const [orcamentoResult, confeccaoResult, instalacaoResult] = await Promise.all([
+          supabase
+            .from('orcamentos')
+            .select('validade_dias, desconto_tipo, desconto_valor')
+            .eq('id', orcamentoId)
+            .maybeSingle(),
+          supabase
+            .from('servicos_confeccao')
+            .select('*')
+            .eq('ativo', true)
+            .limit(1)
+            .maybeSingle(),
+          supabase
+            .from('servicos_instalacao')
+            .select('*')
+            .eq('ativo', true)
+            .limit(1)
+            .maybeSingle(),
+        ]);
 
-      // Carregar serviço de confecção
-      try {
-        const { data: confeccaoData } = await supabase
-          .from('servicos_confeccao')
-          .select('*')
-          .eq('ativo', true)
-          .limit(1)
-          .single();
-        if (confeccaoData) {
-          setServicoConfeccao(confeccaoData as unknown as ServicoConfeccao);
+        // Processar dados do orçamento
+        if (!orcamentoResult.error && orcamentoResult.data) {
+          const data = orcamentoResult.data;
+          if (data.validade_dias) setValidadeDias(data.validade_dias);
+          if (data.desconto_tipo) {
+            setDescontoTipo(data.desconto_tipo as 'percentual' | 'valor_fixo');
+            setDescontoTipoOriginal(data.desconto_tipo as 'percentual' | 'valor_fixo');
+          }
+          if (data.desconto_valor) {
+            setDescontoValor(data.desconto_valor);
+            setDescontoValorOriginal(data.desconto_valor);
+          }
         }
-      } catch (e) {
-        console.error('Erro ao carregar serviço de confecção:', e);
-      }
 
-      // Carregar serviço de instalação
-      try {
-        const { data: instalacaoData } = await supabase
-          .from('servicos_instalacao')
-          .select('*')
-          .eq('ativo', true)
-          .limit(1)
-          .single();
-        if (instalacaoData) {
-          setServicoInstalacao(instalacaoData as unknown as ServicoInstalacao);
+        // Processar serviço de confecção
+        if (!confeccaoResult.error && confeccaoResult.data) {
+          setServicoConfeccao(confeccaoResult.data as unknown as ServicoConfeccao);
         }
-      } catch (e) {
-        console.error('Erro ao carregar serviço de instalação:', e);
+
+        // Processar serviço de instalação
+        if (!instalacaoResult.error && instalacaoResult.data) {
+          setServicoInstalacao(instalacaoResult.data as unknown as ServicoInstalacao);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar dados do resumo:', error);
       }
     };
 
     carregarDados();
-  }, [orcamentoId, cortinas]);
+  }, [orcamentoId]);
 
   const obterMaterial = (codigoOuId: string | undefined): Material | null => {
     if (!codigoOuId) return null;
