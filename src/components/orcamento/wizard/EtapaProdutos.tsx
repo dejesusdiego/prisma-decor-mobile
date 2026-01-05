@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Plus, GripVertical, Wrench, Wallpaper, Zap, Package, Loader2, AlertTriangle, RefreshCw } from 'lucide-react';
+import { Plus, GripVertical, Wrench, Wallpaper, Zap, Package, Loader2, AlertTriangle, RefreshCw, Save } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -168,6 +168,7 @@ export function EtapaProdutos({
 }: EtapaProdutosProps) {
   const [produtos, setProdutos] = useState<Cortina[]>(produtosIniciais);
   const [loading, setLoading] = useState(false);
+  const [salvandoTodos, setSalvandoTodos] = useState(false);
   const [dialogOutrosAberto, setDialogOutrosAberto] = useState(false);
 
   // Centralizar carregamento de materiais - UMA vez para todos os cards
@@ -372,6 +373,96 @@ export function EtapaProdutos({
     }
   };
 
+  // Função para salvar produto individual (simplificada - o salvamento real é no card)
+  const salvarProdutoSimples = useCallback(async (produto: Cortina): Promise<Cortina | null> => {
+    if (produto.id) return produto; // Já salvo
+    
+    // Criar produto no banco
+    try {
+      const { data, error } = await supabase
+        .from('cortina_items')
+        .insert({
+          orcamento_id: orcamentoId,
+          nome_identificacao: produto.nomeIdentificacao,
+          largura: produto.largura || 0,
+          altura: produto.altura || 0,
+          quantidade: produto.quantidade || 1,
+          tipo_produto: produto.tipoProduto,
+          tipo_cortina: produto.tipoCortina,
+          ambiente: produto.ambiente,
+          tecido_id: produto.tecidoId || null,
+          forro_id: produto.forroId || null,
+          trilho_id: produto.trilhoId || null,
+          material_principal_id: produto.materialPrincipalId || null,
+          descricao: produto.descricao || null,
+          fabrica: produto.fabrica || null,
+          motorizada: produto.motorizada || false,
+          preco_unitario: produto.precoUnitario || 0,
+          precisa_instalacao: produto.precisaInstalacao || false,
+          pontos_instalacao: produto.pontosInstalacao || 0,
+          observacoes_internas: produto.observacoesInternas || null,
+          custo_instalacao: produto.custoInstalacao || 0,
+          custo_total: produto.custoTotal || 0,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return { ...produto, id: data.id };
+    } catch (error) {
+      console.error('Erro ao salvar produto:', error);
+      return null;
+    }
+  }, [orcamentoId]);
+
+  // Salvar todos os produtos não salvos antes de navegar
+  const salvarTodosProdutosNaoSalvos = useCallback(async (): Promise<boolean> => {
+    const produtosNaoSalvos = produtos.filter((p) => !p.id);
+    if (produtosNaoSalvos.length === 0) return true;
+
+    setSalvandoTodos(true);
+    try {
+      const resultados = await Promise.all(
+        produtosNaoSalvos.map(p => salvarProdutoSimples(p))
+      );
+
+      const todosSalvos = resultados.every(r => r !== null);
+      if (todosSalvos) {
+        // Atualizar lista de produtos com os IDs
+        const novosProdutos = produtos.map(p => {
+          if (p.id) return p;
+          const salvo = resultados.find(r => r && r.nomeIdentificacao === p.nomeIdentificacao);
+          return salvo || p;
+        });
+        setProdutos(novosProdutos);
+        toast({
+          title: 'Produtos salvos',
+          description: `${produtosNaoSalvos.length} produto(s) salvo(s) automaticamente`,
+        });
+      }
+      return todosSalvos;
+    } catch (error) {
+      console.error('Erro ao salvar produtos:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível salvar todos os produtos',
+        variant: 'destructive',
+      });
+      return false;
+    } finally {
+      setSalvandoTodos(false);
+    }
+  }, [produtos, salvarProdutoSimples]);
+
+  // Voltar com auto-save
+  const handleVoltar = useCallback(async () => {
+    const produtosNaoSalvos = produtos.filter((p) => !p.id);
+    if (produtosNaoSalvos.length > 0) {
+      await salvarTodosProdutosNaoSalvos();
+    }
+    onVoltar();
+  }, [produtos, salvarTodosProdutosNaoSalvos, onVoltar]);
+
   const handleAvancar = async () => {
     if (produtos.length === 0) {
       toast({
@@ -394,12 +485,12 @@ export function EtapaProdutos({
         return !p.tipoCortina || !p.ambiente || p.precoUnitario === undefined || p.precoUnitario === null;
       }
       if (p.tipoProduto === 'outro') {
-      if (p.descricao === 'Acessórios' || p.descricao === 'Papel') {
-        return !p.materialPrincipalId || !p.precoUnitario || p.precoUnitario <= 0;
-      }
-      if (p.descricao === 'Motorizado') {
-        return !p.precoUnitario || p.precoUnitario <= 0; // Material opcional para motorizados
-      }
+        if (p.descricao === 'Acessórios' || p.descricao === 'Papel') {
+          return !p.materialPrincipalId || !p.precoUnitario || p.precoUnitario <= 0;
+        }
+        if (p.descricao === 'Motorizado') {
+          return !p.precoUnitario || p.precoUnitario <= 0;
+        }
         return !p.precoUnitario || p.precoUnitario <= 0;
       }
       return false;
@@ -414,14 +505,18 @@ export function EtapaProdutos({
       return;
     }
 
+    // Auto-salvar produtos não salvos antes de avançar
     const produtosNaoSalvos = produtos.filter((p) => !p.id);
     if (produtosNaoSalvos.length > 0) {
-      toast({
-        title: 'Produtos não salvos',
-        description: 'Salve todos os produtos antes de avançar',
-        variant: 'destructive',
-      });
-      return;
+      const sucesso = await salvarTodosProdutosNaoSalvos();
+      if (!sucesso) {
+        toast({
+          title: 'Erro ao salvar',
+          description: 'Não foi possível salvar todos os produtos. Tente novamente.',
+          variant: 'destructive',
+        });
+        return;
+      }
     }
 
     onAvancar(produtos);
@@ -532,11 +627,25 @@ export function EtapaProdutos({
       )}
 
       <div className="flex gap-4">
-        <Button type="button" variant="outline" onClick={onVoltar}>
-          Voltar
+        <Button type="button" variant="outline" onClick={handleVoltar} disabled={salvandoTodos}>
+          {salvandoTodos ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Salvando...
+            </>
+          ) : (
+            'Voltar'
+          )}
         </Button>
-        <Button type="button" onClick={handleAvancar} disabled={loading} className="flex-1">
-          Avançar para Resumo
+        <Button type="button" onClick={handleAvancar} disabled={loading || salvandoTodos} className="flex-1">
+          {salvandoTodos ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Salvando produtos...
+            </>
+          ) : (
+            'Avançar para Resumo'
+          )}
         </Button>
       </div>
 
