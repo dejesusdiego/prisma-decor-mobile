@@ -25,6 +25,8 @@ import { ListaContasPendentes } from './ListaContasPendentes';
 import { ListaLancamentosRecentes } from './ListaLancamentosRecentes';
 import { AlertasVencimento } from './AlertasVencimento';
 import { WidgetPendenciasFinanceiras } from './WidgetPendenciasFinanceiras';
+import { WidgetResumoConciliacao } from './WidgetResumoConciliacao';
+import { AlertasConciliacao } from './AlertasConciliacao';
 import { SeletorPeriodoGlobal } from './SeletorPeriodoGlobal';
 import { BreadcrumbsFinanceiro } from './BreadcrumbsFinanceiro';
 import { usePeriodoFinanceiro, PeriodoFinanceiro } from '@/contexts/FinanceiroContext';
@@ -259,6 +261,9 @@ export function DashboardFinanceiro({ onNavigate }: DashboardFinanceiroProps) {
         </Button>
       </div>
 
+      {/* Alertas de Conciliação */}
+      <AlertasConciliacao onNavigate={handleNavigate} />
+
       {/* Gráficos */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Fluxo de Caixa - Ocupa 2 colunas */}
@@ -301,7 +306,10 @@ export function DashboardFinanceiro({ onNavigate }: DashboardFinanceiroProps) {
       </div>
 
       {/* Alertas e Listas */}
-      <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5 gap-6">
+        {/* Widget de Conciliação */}
+        <WidgetResumoConciliacao onNavigate={handleNavigate} />
+
         {/* Widget de Pendências */}
         <WidgetPendenciasFinanceiras onNavigate={handleNavigate} />
 
