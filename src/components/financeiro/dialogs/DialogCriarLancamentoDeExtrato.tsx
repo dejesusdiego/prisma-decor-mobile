@@ -2,10 +2,11 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useSugestaoCategoria } from '@/hooks/useSugestaoCategoria';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import { Plus, FileCheck, CalendarIcon } from 'lucide-react';
+import { Plus, FileCheck, CalendarIcon, Sparkles, CheckCircle2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -18,6 +19,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
 import {
   Select,
   SelectContent,
@@ -58,6 +60,7 @@ export function DialogCriarLancamentoDeExtrato({
 }: DialogCriarLancamentoDeExtratoProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const [sugestaoAplicada, setSugestaoAplicada] = useState(false);
 
   const [form, setForm] = useState({
     descricao: '',
@@ -70,6 +73,13 @@ export function DialogCriarLancamentoDeExtrato({
   });
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [datePickerOpen, setDatePickerOpen] = useState(false);
+
+  // Buscar sugestão de categoria baseada no histórico
+  const tipoMovimento = movimentacao?.tipo === 'credito' ? 'credito' : 'debito';
+  const { data: sugestaoCategoria } = useSugestaoCategoria(
+    movimentacao?.descricao || '', 
+    tipoMovimento as 'credito' | 'debito'
+  );
 
   // Preencher form quando movimentacao mudar
   useEffect(() => {
@@ -86,8 +96,17 @@ export function DialogCriarLancamentoDeExtrato({
       if (movimentacao.data_movimentacao) {
         setSelectedDate(parseISO(movimentacao.data_movimentacao));
       }
+      setSugestaoAplicada(false);
     }
   }, [movimentacao]);
+
+  // Aplicar sugestão automaticamente se confiança alta
+  useEffect(() => {
+    if (sugestaoCategoria && sugestaoCategoria.confianca >= 70 && !sugestaoAplicada && !form.categoria_id) {
+      setForm(f => ({ ...f, categoria_id: sugestaoCategoria.categoriaId }));
+      setSugestaoAplicada(true);
+    }
+  }, [sugestaoCategoria, sugestaoAplicada, form.categoria_id]);
 
   const handleDateSelect = (date: Date | undefined) => {
     setSelectedDate(date);
@@ -265,7 +284,15 @@ export function DialogCriarLancamentoDeExtrato({
                 </Select>
               </div>
               <div className="space-y-1">
-                <Label>Categoria</Label>
+                <Label className="flex items-center gap-1">
+                  Categoria
+                  {sugestaoCategoria && form.categoria_id === sugestaoCategoria.categoriaId && (
+                    <Badge variant="secondary" className="text-[10px] px-1 py-0 h-4 gap-0.5">
+                      <Sparkles className="h-2.5 w-2.5" />
+                      Sugerida
+                    </Badge>
+                  )}
+                </Label>
                 <Select 
                   value={form.categoria_id} 
                   onValueChange={v => setForm(f => ({ ...f, categoria_id: v }))}
@@ -277,13 +304,41 @@ export function DialogCriarLancamentoDeExtrato({
                     {categorias
                       .filter(c => c.tipo === form.tipo)
                       .map(c => (
-                        <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>
+                        <SelectItem key={c.id} value={c.id}>
+                          <span className="flex items-center gap-2">
+                            {c.nome}
+                            {sugestaoCategoria && c.id === sugestaoCategoria.categoriaId && (
+                              <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+                            )}
+                          </span>
+                        </SelectItem>
                       ))
                     }
                   </SelectContent>
                 </Select>
               </div>
             </div>
+
+            {/* Mostrar sugestão se não aplicada automaticamente */}
+            {sugestaoCategoria && !form.categoria_id && (
+              <div 
+                className="p-2 bg-primary/5 border border-primary/20 rounded-md flex items-center justify-between cursor-pointer hover:bg-primary/10 transition-colors"
+                onClick={() => setForm(f => ({ ...f, categoria_id: sugestaoCategoria.categoriaId }))}
+              >
+                <div className="flex items-center gap-2 text-sm">
+                  <Sparkles className="h-4 w-4 text-primary" />
+                  <span>
+                    Sugestão: <strong>{sugestaoCategoria.categoriaNome}</strong>
+                    <span className="text-muted-foreground ml-1">
+                      ({sugestaoCategoria.confianca}% • {sugestaoCategoria.baseadoEm})
+                    </span>
+                  </span>
+                </div>
+                <Button size="sm" variant="ghost" className="h-6 text-xs">
+                  Usar
+                </Button>
+              </div>
+            )}
 
             <div className="space-y-1">
               <Label>Forma de Pagamento</Label>
