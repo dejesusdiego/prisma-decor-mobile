@@ -73,10 +73,10 @@ const AcaoCard = ({ acao, onNavigate }: { acao: ProximaAcao; onNavigate: Dashboa
   const handleClick = () => {
     switch (acao.referencia.tipo) {
       case 'instalacao':
-        onNavigate('producaoAgenda');
+        onNavigate('prodAgenda');
         break;
       case 'pedido':
-        onNavigate('producaoKanban');
+        onNavigate('prodKanban');
         break;
       case 'contato':
         onNavigate('crmContatos', { contatoId: acao.referencia.id });
@@ -85,7 +85,7 @@ const AcaoCard = ({ acao, onNavigate }: { acao: ProximaAcao; onNavigate: Dashboa
         onNavigate('visualizar', { id: acao.referencia.id });
         break;
       case 'parcela':
-        onNavigate('finReceber');
+        onNavigate('finContasReceber');
         break;
     }
   };
@@ -337,7 +337,7 @@ export function DashboardExecutivo({ onNavigate }: DashboardExecutivoProps) {
             <Button 
               variant="outline" 
               className="w-full justify-start" 
-              onClick={() => onNavigate('producaoKanban')}
+              onClick={() => onNavigate('prodKanban')}
             >
               <Hammer className="h-4 w-4 mr-2" />
               Produção
@@ -345,7 +345,7 @@ export function DashboardExecutivo({ onNavigate }: DashboardExecutivoProps) {
             <Button 
               variant="outline" 
               className="w-full justify-start" 
-              onClick={() => onNavigate('crm')}
+              onClick={() => onNavigate('crmPainel')}
             >
               <Users className="h-4 w-4 mr-2" />
               CRM
@@ -353,7 +353,7 @@ export function DashboardExecutivo({ onNavigate }: DashboardExecutivoProps) {
             <Button 
               variant="outline" 
               className="w-full justify-start" 
-              onClick={() => onNavigate('calendario')}
+              onClick={() => onNavigate('calendarioGeral')}
             >
               <Calendar className="h-4 w-4 mr-2" />
               Calendário Geral
@@ -376,7 +376,7 @@ export function DashboardExecutivo({ onNavigate }: DashboardExecutivoProps) {
                     <p className="font-medium text-red-700 dark:text-red-400">Parcelas Vencidas</p>
                     <p className="text-sm text-red-600/80">{formatCurrency(metricas?.totalVencido || 0)}</p>
                   </div>
-                  <Button size="sm" variant="destructive" onClick={() => onNavigate('finReceber')}>
+                  <Button size="sm" variant="destructive" onClick={() => onNavigate('finContasReceber')}>
                     Ver
                   </Button>
                 </div>
@@ -393,7 +393,7 @@ export function DashboardExecutivo({ onNavigate }: DashboardExecutivoProps) {
                     <p className="font-medium text-emerald-700 dark:text-emerald-400">Pedidos Prontos</p>
                     <p className="text-sm text-emerald-600/80">{metricas?.pedidosProntos} aguardando entrega</p>
                   </div>
-                  <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={() => onNavigate('producaoKanban')}>
+                  <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={() => onNavigate('prodKanban')}>
                     Ver
                   </Button>
                 </div>
@@ -410,7 +410,7 @@ export function DashboardExecutivo({ onNavigate }: DashboardExecutivoProps) {
                     <p className="font-medium text-amber-700 dark:text-amber-400">Follow-ups Pendentes</p>
                     <p className="text-sm text-amber-600/80">{metricas?.followUpsPendentes} atividades</p>
                   </div>
-                  <Button size="sm" className="bg-amber-600 hover:bg-amber-700 text-white" onClick={() => onNavigate('crm')}>
+                  <Button size="sm" className="bg-amber-600 hover:bg-amber-700 text-white" onClick={() => onNavigate('crmPainel')}>
                     Ver
                   </Button>
                 </div>
@@ -433,7 +433,15 @@ export function DashboardExecutivo({ onNavigate }: DashboardExecutivoProps) {
 
         {/* Aba Auditoria de Consistência */}
         <TabsContent value="auditoria" className="mt-6">
-          <RelatorioAuditoriaConsistencia />
+          <RelatorioAuditoriaConsistencia 
+            onNavigate={(v, id) => {
+              if (v === 'visualizarOrcamento' && id) {
+                onNavigate('visualizar', { id });
+              } else {
+                onNavigate(v);
+              }
+            }} 
+          />
         </TabsContent>
       </Tabs>
     </div>
