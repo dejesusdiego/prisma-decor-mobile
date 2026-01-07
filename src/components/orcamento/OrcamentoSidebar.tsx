@@ -76,6 +76,7 @@ export type View =
   | 'crmDetalheContato'
   | 'crmPipeline'
   | 'crmRelatorios'
+  | 'crmJornada'
   | 'crmAtividades'
   | 'prodDashboard'
   | 'prodKanban'
@@ -132,6 +133,7 @@ const relatoriosBINavItems = [
   { id: 'finMargemReal' as View, label: 'Margem Real', icon: TrendingUp },
   { id: 'finRelatorios' as View, label: 'Análise Financeira', icon: DollarSign },
   { id: 'crmRelatorios' as View, label: 'Análise Comercial', icon: TrendingUp },
+  { id: 'crmJornada' as View, label: 'Jornada de Clientes', icon: UserCircle },
   { id: 'prodRelatorio' as View, label: 'Análise Produção', icon: Factory },
 ];
 

@@ -168,6 +168,18 @@ const carregarOrcamentos = async () => {
     const orcamento = orcamentos.find(o => o.id === orcamentoId);
     if (!orcamento) return;
 
+    // Validar se orçamento tem valor antes de permitir mudança de status (exceto para cancelado/recusado)
+    if (novoStatus !== 'rascunho' && novoStatus !== 'cancelado' && novoStatus !== 'recusado') {
+      if (!orcamento.total_geral || orcamento.total_geral <= 0) {
+        toast({
+          title: 'Não é possível alterar o status',
+          description: 'O orçamento precisa ter pelo menos um item com valor válido antes de mudar o status.',
+          variant: 'destructive',
+        });
+        return;
+      }
+    }
+
     // Se está mudando para um status de pagamento e ainda não está em status de pagamento
     const statusAtualEhPagamento = STATUS_PAGAMENTO.includes(orcamento.status as StatusOrcamento);
     const novoStatusEhPagamento = STATUS_PAGAMENTO.includes(novoStatus);

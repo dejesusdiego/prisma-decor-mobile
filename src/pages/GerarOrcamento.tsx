@@ -33,6 +33,7 @@ import { ListaContatosV2 as ListaContatos } from '@/components/crm/ListaContatos
 import { DetalheContato } from '@/components/crm/DetalheContato';
 import { PipelineOrcamentos } from '@/components/crm/PipelineOrcamentos';
 import { RelatoriosCRM } from '@/components/crm/RelatoriosCRM';
+import { RelatorioJornadaClientes } from '@/components/crm/RelatorioJornadaClientes';
 import { ListaAtividades } from '@/components/crm/ListaAtividades';
 import { DashboardProducao } from '@/components/producao/DashboardProducao';
 import { KanbanProducao } from '@/components/producao/KanbanProducao';
@@ -74,6 +75,7 @@ const ADMIN_ONLY_VIEWS: View[] = [
   'finConsolidado',
   'categoriasFormas',
   'crmRelatorios',
+  'crmJornada',
   'prodDashboard',
   'prodKanban',
   'prodLista',
@@ -386,6 +388,7 @@ export default function GerarOrcamento() {
               />
             )}
             {view === 'crmRelatorios' && <RelatoriosCRM />}
+            {view === 'crmJornada' && <RelatorioJornadaClientes />}
             {view === 'crmAtividades' && <ListaAtividades />}
 
             {/* Produção */}

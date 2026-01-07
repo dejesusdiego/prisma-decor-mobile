@@ -271,12 +271,25 @@ export default function DashboardKPIs() {
           return data >= inicioMes && data <= fimMes && c.tipo === 'cliente';
         }).length || 0;
 
+// Calcular clientes perdidos (clientes que não fizeram pedidos nos últimos 90 dias comparado ao mês anterior)
+        const mesAnterior = subMonths(mesRef, 1);
+        const clientesMesAnterior = new Set(
+          orcamentos?.filter(o => {
+            const data = new Date(o.created_at);
+            return data >= startOfMonth(mesAnterior) && data <= endOfMonth(mesAnterior) && o.status === 'pago';
+          }).map(o => o.cliente_telefone)
+        );
+        
+        const clientesPerdidosMes = [...clientesMesAnterior].filter(
+          tel => !orcsMes.some(o => o.cliente_telefone === tel && o.status === 'pago')
+        ).length;
+
         evolucaoMensal.push({
           mes: format(mesRef, 'MMM', { locale: ptBR }),
           clientes: clientesMes,
           receita: receitaMes,
           novos: novosMes,
-          perdidos: Math.floor(Math.random() * 3) // Simplificado
+          perdidos: clientesPerdidosMes
         });
       }
 
