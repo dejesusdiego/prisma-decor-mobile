@@ -100,7 +100,7 @@ interface OrcamentoPipeline {
 
 // Usar apenas status mais relevantes no pipeline
 const STATUS_PIPELINE_VISIVEL = STATUS_PIPELINE_CONFIG.filter(s => 
-  ['rascunho', 'finalizado', 'enviado', 'sem_resposta', 'pago_40', 'pago_60', 'pago', 'recusado'].includes(s.id)
+  ['rascunho', 'finalizado', 'enviado', 'sem_resposta', 'pago_40', 'pago_parcial', 'pago_60', 'pago', 'recusado', 'cancelado'].includes(s.id)
 );
 
 // Períodos predefinidos
