@@ -4,7 +4,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useFinanceiroInvalidation } from '@/hooks/useFinanceiroInvalidation';
-import { registrarAtividadePagamento } from '@/lib/crmIntegration';
 import { isPagamentoCompleto } from '@/lib/calculosFinanceiros';
 import { format } from 'date-fns';
 import {
@@ -116,73 +115,39 @@ export function DialogRegistrarRecebimento({ open, onOpenChange, parcela }: Dial
       
       if (errorUpdateConta) throw errorUpdateConta;
 
-      // Calcular percentual pago para uso em múltiplos lugares
+      // Calcular percentual pago para uso em toasts de marcos
       const valorTotalOrcamento = Number(conta.orcamento?.total_com_desconto ?? conta.orcamento?.total_geral ?? conta.valor_total) || 0;
       const percentualPago = valorTotalOrcamento > 0 ? (novoValorPago / valorTotalOrcamento) * 100 : 0;
 
-      // 5. SINCRONIZAR STATUS DO ORÇAMENTO baseado no percentual pago
-      if (conta.orcamento_id) {
+      // NOTA: A sincronização de status do orçamento é feita automaticamente pelo trigger SQL
+      // 'sincronizar_status_orcamento' quando contas_receber é atualizado.
+      // A criação de atividades CRM também é feita pelo trigger 'create_atividade_from_orcamento_status'.
 
-        // Buscar percentual anterior para verificar se cruzou um marco
+      // Apenas mostrar toasts de marco atingido (UI feedback)
+      if (conta.orcamento_id) {
         const percentualAnterior = valorTotalOrcamento > 0 
           ? ((novoValorPago - Number(parcela.valor)) / valorTotalOrcamento) * 100 
           : 0;
 
-        let novoStatusOrcamento: string | null = null;
-        let marcoAtingido: number | null = null;
-        
-        // Tolerância: considerar 100% se >= 99.5% (equivalente a ~0.5% de margem)
+        const clienteNome = conta.orcamento?.cliente_nome || conta.cliente_nome;
+        const codigoOrcamento = conta.orcamento?.codigo || '';
         const TOLERANCIA_PERCENTUAL = 99.5;
-        
+
         if ((percentualPago >= 100 || percentualPago >= TOLERANCIA_PERCENTUAL) && percentualAnterior < TOLERANCIA_PERCENTUAL) {
-          novoStatusOrcamento = 'pago';
-          marcoAtingido = 100;
+          toast.success(`🎉 Orçamento ${codigoOrcamento} TOTALMENTE PAGO!`, {
+            description: `${clienteNome} - ${formatCurrency(valorTotalOrcamento)}`,
+            duration: 8000,
+          });
         } else if (percentualPago >= 60 && percentualAnterior < 60) {
-          novoStatusOrcamento = 'pago_60';
-          marcoAtingido = 60;
-        } else if (percentualPago >= 50 && percentualAnterior < 50) {
-          novoStatusOrcamento = 'pago_parcial';
+          toast.info(`📊 Orçamento ${codigoOrcamento} atingiu 60% de pagamento`, {
+            description: `${clienteNome} - Faltam ${formatCurrency(valorTotalOrcamento - novoValorPago)}`,
+            duration: 6000,
+          });
         } else if (percentualPago >= 40 && percentualAnterior < 40) {
-          novoStatusOrcamento = 'pago_40';
-          marcoAtingido = 40;
-        }
-
-        if (novoStatusOrcamento) {
-          // Não sobrescrever se já está cancelado ou com status mais avançado
-          const { error: errorSyncStatus } = await supabase
-            .from('orcamentos')
-            .update({ status: novoStatusOrcamento })
-            .eq('id', conta.orcamento_id)
-            .not('status', 'in', '("cancelado","pago")');
-          
-          if (errorSyncStatus) {
-            console.error('Erro ao sincronizar status do orçamento:', errorSyncStatus);
-          } else {
-            console.log(`Status do orçamento ${conta.orcamento_id} atualizado para: ${novoStatusOrcamento} (${percentualPago.toFixed(1)}%)`);
-          }
-        }
-
-        // Notificação de marco atingido
-        if (marcoAtingido) {
-          const clienteNome = conta.orcamento?.cliente_nome || conta.cliente_nome;
-          const codigoOrcamento = conta.orcamento?.codigo || '';
-          
-          if (marcoAtingido === 100) {
-            toast.success(`🎉 Orçamento ${codigoOrcamento} TOTALMENTE PAGO!`, {
-              description: `${clienteNome} - ${formatCurrency(valorTotalOrcamento)}`,
-              duration: 8000,
-            });
-          } else if (marcoAtingido === 60) {
-            toast.info(`📊 Orçamento ${codigoOrcamento} atingiu 60% de pagamento`, {
-              description: `${clienteNome} - Faltam ${formatCurrency(valorTotalOrcamento - novoValorPago)}`,
-              duration: 6000,
-            });
-          } else if (marcoAtingido === 40) {
-            toast.info(`📊 Orçamento ${codigoOrcamento} atingiu 40% de pagamento`, {
-              description: `${clienteNome} - Recebido ${formatCurrency(novoValorPago)}`,
-              duration: 6000,
-            });
-          }
+          toast.info(`📊 Orçamento ${codigoOrcamento} atingiu 40% de pagamento`, {
+            description: `${clienteNome} - Recebido ${formatCurrency(novoValorPago)}`,
+            duration: 6000,
+          });
         }
       }
 
@@ -264,19 +229,8 @@ export function DialogRegistrarRecebimento({ open, onOpenChange, parcela }: Dial
             });
         }
 
-        // 7. CRIAR ATIVIDADE NO CRM
-        const totalParcelas = conta.parcelas?.length || 1;
-        await registrarAtividadePagamento({
-          contatoId: conta.orcamento?.contato_id || null,
-          orcamentoId: conta.orcamento_id,
-          orcamentoCodigo: conta.orcamento?.codigo || conta.descricao || '',
-          clienteNome: conta.orcamento?.cliente_nome || conta.cliente_nome,
-          valor: Number(parcela.valor),
-          numeroParcela: parcela.numero_parcela,
-          totalParcelas,
-          percentualPago: percentualPago,
-          userId: user.id,
-        });
+        // NOTA: A criação de atividade CRM é feita automaticamente pelo trigger SQL
+        // 'create_atividade_from_orcamento_status' quando o status do orçamento muda.
       }
 
       // 7. Upload de comprovante se houver arquivo
