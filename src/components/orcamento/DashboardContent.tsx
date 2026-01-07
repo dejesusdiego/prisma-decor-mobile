@@ -290,20 +290,15 @@ export function DashboardContent({
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Funil de Vendas</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {etapasFunil.length > 0 ? (
-                  <FunilVendas etapas={etapasFunil} />
-                ) : (
-                  <div className="h-[250px] flex items-center justify-center text-muted-foreground">
-                    Sem dados para o período
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            {etapasFunil.length > 0 ? (
+              <FunilVendas etapas={etapasFunil} />
+            ) : (
+              <Card>
+                <CardContent className="h-[250px] flex items-center justify-center text-muted-foreground">
+                  Sem dados para o período
+                </CardContent>
+              </Card>
+            )}
           </>
         )}
       </div>

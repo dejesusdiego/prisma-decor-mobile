@@ -86,13 +86,14 @@ export function getOrdemFunil(status: string): number {
     'rascunho': 1,
     'finalizado': 2,
     'enviado': 3,
-    'aprovado': 4,
-    'pago_40': 5,
-    'pago_parcial': 6,
-    'pago_60': 7,
-    'pago': 8,
-    'recusado': 9,
-    'cancelado': 10,
+    'sem_resposta': 4,
+    'aprovado': 5,
+    'pago_40': 6,
+    'pago_parcial': 7,
+    'pago_60': 8,
+    'pago': 9,
+    'recusado': 10,
+    'cancelado': 11,
   };
   return ordem[status] ?? 99;
 }

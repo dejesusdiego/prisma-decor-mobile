@@ -224,9 +224,11 @@ export function FunilPipeline({
           <CardContent className="pt-4 text-center">
             <p className="text-2xl font-bold">
               {(() => {
-                const primeiro = orcamentosPorStatus[statusConfig[0]?.id]?.length || 0;
-                const ultimo = orcamentosPorStatus[statusConfig[statusConfig.length - 1]?.id]?.length || 0;
-                return primeiro > 0 ? ((ultimo / primeiro) * 100).toFixed(0) : 0;
+                const STATUS_PAGOS = ['pago_40', 'pago_parcial', 'pago_60', 'pago'];
+                const STATUS_INICIAIS = ['finalizado', 'enviado', 'sem_resposta'];
+                const qtdPagos = STATUS_PAGOS.reduce((sum, s) => sum + (orcamentosPorStatus[s]?.length || 0), 0);
+                const qtdIniciais = STATUS_INICIAIS.reduce((sum, s) => sum + (orcamentosPorStatus[s]?.length || 0), 0);
+                return qtdIniciais > 0 ? ((qtdPagos / qtdIniciais) * 100).toFixed(0) : 0;
               })()}%
             </p>
             <p className="text-xs text-muted-foreground">Conversão Geral</p>
