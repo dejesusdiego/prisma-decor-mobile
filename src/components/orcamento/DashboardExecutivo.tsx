@@ -27,7 +27,8 @@ import {
   ChevronRight,
   LayoutDashboard,
   BarChart3,
-  LineChart
+  LineChart,
+  Shield
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/formatters';
@@ -35,6 +36,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { DashboardExecutivoMetricas } from './DashboardExecutivoMetricas';
 import { DashboardExecutivoTendencias } from './DashboardExecutivoTendencias';
+import { RelatorioAuditoriaConsistencia } from './RelatorioAuditoriaConsistencia';
 
 interface DashboardExecutivoProps {
   onNavigate: (view: string, params?: Record<string, string>) => void;
@@ -155,7 +157,7 @@ export function DashboardExecutivo({ onNavigate }: DashboardExecutivoProps) {
 
       {/* Tabs de navegação */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full max-w-md grid-cols-3">
+        <TabsList className="grid w-full max-w-lg grid-cols-4">
           <TabsTrigger value="visao-geral" className="gap-2">
             <LayoutDashboard className="h-4 w-4" />
             <span className="hidden sm:inline">Visão Geral</span>
@@ -167,6 +169,10 @@ export function DashboardExecutivo({ onNavigate }: DashboardExecutivoProps) {
           <TabsTrigger value="tendencias" className="gap-2">
             <LineChart className="h-4 w-4" />
             <span className="hidden sm:inline">Tendências</span>
+          </TabsTrigger>
+          <TabsTrigger value="auditoria" className="gap-2">
+            <Shield className="h-4 w-4" />
+            <span className="hidden sm:inline">Auditoria</span>
           </TabsTrigger>
         </TabsList>
 
@@ -423,6 +429,11 @@ export function DashboardExecutivo({ onNavigate }: DashboardExecutivoProps) {
         {/* Aba Tendências */}
         <TabsContent value="tendencias" className="mt-6">
           <DashboardExecutivoTendencias />
+        </TabsContent>
+
+        {/* Aba Auditoria de Consistência */}
+        <TabsContent value="auditoria" className="mt-6">
+          <RelatorioAuditoriaConsistencia />
         </TabsContent>
       </Tabs>
     </div>
