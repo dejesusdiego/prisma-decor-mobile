@@ -520,12 +520,12 @@ export function OrcamentoSidebar({ currentView, onNavigate }: OrcamentoSidebarPr
         )}
         {collapsed && (
           <Button
-            variant="ghost"
+            variant="outline"
             size="icon"
             onClick={() => setCollapsed(false)}
-            className="h-8 w-8"
+            className="h-10 w-10 bg-background hover:bg-accent"
           >
-            <ChevronLeft className="h-4 w-4 rotate-180" />
+            <ChevronLeft className="h-5 w-5 rotate-180" />
           </Button>
         )}
       </div>
