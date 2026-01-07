@@ -17,7 +17,7 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/formatters';
-import { useNavigate } from 'react-router-dom';
+
 
 const severidadeConfig = {
   critica: { label: 'Crítica', className: 'bg-destructive text-destructive-foreground' },
@@ -53,16 +53,32 @@ const tipoConfig = {
   }
 };
 
-function InconsistenciaCard({ item }: { item: InconsistenciaItem }) {
-  const navigate = useNavigate();
+interface InconsistenciaCardProps {
+  item: InconsistenciaItem;
+  onNavigate?: (view: string, id?: string) => void;
+}
+
+function InconsistenciaCard({ item, onNavigate }: InconsistenciaCardProps) {
   const config = tipoConfig[item.tipo];
   const severidade = severidadeConfig[item.severidade];
 
   const handleNavegar = () => {
-    if (item.tipo === 'orcamento_sem_pedido' || item.tipo === 'status_divergente') {
-      navigate(`/gerarorcamento?visualizar=${item.id}`);
-    } else if (item.tipo === 'pedido_sem_pagamento') {
-      navigate('/gerarorcamento?tab=producao');
+    if (!onNavigate) return;
+    
+    switch (item.tipo) {
+      case 'orcamento_sem_pedido':
+      case 'status_divergente':
+        onNavigate('visualizarOrcamento', item.id);
+        break;
+      case 'pedido_sem_pagamento':
+        onNavigate('prodKanban');
+        break;
+      case 'conta_orfa':
+        onNavigate('finContasReceber');
+        break;
+      case 'comissao_sem_recebimento':
+        onNavigate('finComissoes');
+        break;
     }
   };
 
@@ -104,7 +120,11 @@ function CategoriaSkeleton() {
   );
 }
 
-export function RelatorioAuditoriaConsistencia() {
+interface RelatorioAuditoriaConsistenciaProps {
+  onNavigate?: (view: string, id?: string) => void;
+}
+
+export function RelatorioAuditoriaConsistencia({ onNavigate }: RelatorioAuditoriaConsistenciaProps) {
   const { data, isLoading, refetch, isFetching } = useAuditoriaConsistencia();
 
   if (isLoading) {
@@ -215,7 +235,7 @@ export function RelatorioAuditoriaConsistencia() {
                     <AccordionContent>
                       <div className="space-y-2 pt-2">
                         {categoria.items.map((item) => (
-                          <InconsistenciaCard key={item.id} item={item} />
+                          <InconsistenciaCard key={item.id} item={item} onNavigate={onNavigate} />
                         ))}
                       </div>
                     </AccordionContent>

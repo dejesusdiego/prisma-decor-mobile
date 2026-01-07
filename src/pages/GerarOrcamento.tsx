@@ -300,7 +300,19 @@ export default function GerarOrcamento() {
               />
             )}
 
-            {view === 'calendarioGeral' && <CalendarioGeral />}
+            {view === 'calendarioGeral' && (
+              <CalendarioGeral 
+                onNavigate={(v, params) => {
+                  if (params?.contatoId) {
+                    handleVerContato(params.contatoId);
+                  } else if (params?.pedidoId) {
+                    handleVerPedido(params.pedidoId);
+                  } else {
+                    handleNavigate(v as View);
+                  }
+                }}
+              />
+            )}
 
             {/* Seção Financeiro - envolta com Provider para estado global do período */}
             {view.startsWith('fin') && (

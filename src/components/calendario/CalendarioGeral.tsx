@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -87,8 +87,11 @@ const formatCurrencyCompact = (value: number) => {
   }).format(value);
 };
 
-export function CalendarioGeral() {
-  const navigate = useNavigate();
+interface CalendarioGeralProps {
+  onNavigate?: (view: string, params?: Record<string, string>) => void;
+}
+
+export function CalendarioGeral({ onNavigate }: CalendarioGeralProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [filtrosAtivos, setFiltrosAtivos] = useState<Record<TipoEvento, boolean>>({
@@ -102,29 +105,31 @@ export function CalendarioGeral() {
 
   // Função para navegar para a tela correspondente ao evento
   const handleEventoClick = (evento: EventoCalendario) => {
+    if (!onNavigate) return;
+    
     switch (evento.tipo) {
       case 'atividade_crm':
         if (evento.contatoId) {
-          navigate(`/gerarorcamento?view=crm&contato=${evento.contatoId}`);
+          onNavigate('crmDetalheContato', { contatoId: evento.contatoId });
         }
         break;
       case 'instalacao':
         if (evento.pedidoId) {
-          navigate(`/gerarorcamento?view=producao&pedido=${evento.pedidoId}`);
+          onNavigate('prodFicha', { pedidoId: evento.pedidoId });
         }
         break;
       case 'visita':
-        navigate('/gerarorcamento?view=solicitacoesVisita');
+        onNavigate('solicitacoesVisita');
         break;
       case 'conta_pagar':
-        navigate('/gerarorcamento?view=financeiro&tab=pagar');
+        onNavigate('finContasPagar');
         break;
       case 'conta_receber':
-        navigate('/gerarorcamento?view=financeiro&tab=receber');
+        onNavigate('finContasReceber');
         break;
       case 'pedido_entrega':
         if (evento.pedidoId) {
-          navigate(`/gerarorcamento?view=producao&pedido=${evento.pedidoId}`);
+          onNavigate('prodFicha', { pedidoId: evento.pedidoId });
         }
         break;
     }

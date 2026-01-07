@@ -207,16 +207,16 @@ const SocialProof = () => {
                                 }`}
                               />
                             </button>
-                            <button className="hover:opacity-70 transition-opacity" aria-label="Ver comentários">
+                            <span className="cursor-default" aria-hidden="true">
                               <MessageCircle className="h-6 w-6 text-foreground" />
-                            </button>
-                            <button className="hover:opacity-70 transition-opacity" aria-label="Compartilhar">
+                            </span>
+                            <span className="cursor-default" aria-hidden="true">
                               <Send className="h-6 w-6 text-foreground" />
-                            </button>
+                            </span>
                           </div>
-                          <button className="hover:opacity-70 transition-opacity" aria-label="Salvar">
+                          <span className="cursor-default" aria-hidden="true">
                             <Bookmark className="h-6 w-6 text-foreground" />
-                          </button>
+                          </span>
                         </div>
 
                         {/* Likes */}
@@ -234,9 +234,9 @@ const SocialProof = () => {
 
                         {/* Comentários */}
                         <div className="mt-2">
-                          <button className="text-sm text-muted-foreground hover:text-foreground">
-                            Ver todos os {post.comments} comentários
-                          </button>
+                          <span className="text-sm text-muted-foreground">
+                            {post.comments} comentários
+                          </span>
                         </div>
                       </CardContent>
                     </Card>
