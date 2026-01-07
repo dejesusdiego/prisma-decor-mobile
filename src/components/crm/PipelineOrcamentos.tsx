@@ -74,8 +74,12 @@ import { PipelineCompacto } from './visualizacoes/PipelineCompacto';
 import { FunilPipeline } from './visualizacoes/FunilPipeline';
 import { ListaInteligente } from './visualizacoes/ListaInteligente';
 import { GridPipeline } from './visualizacoes/GridPipeline';
+import { DialogCondicoesPagamento } from '@/components/financeiro/dialogs/DialogCondicoesPagamento';
 
 type ViewType = 'kanban' | 'compacto' | 'funil' | 'lista' | 'grid' | 'grafico' | 'resumo';
+
+// Status que indicam pagamento - requerem Dialog de Condições
+const STATUS_PAGAMENTO = ['pago_40', 'pago_parcial', 'pago_60', 'pago'];
 
 interface OrcamentoPipeline {
   id: string;
@@ -213,6 +217,11 @@ export function PipelineOrcamentos({ onVerOrcamento, onVerContato }: PipelineOrc
     setCidadeFilter('todas');
   };
 
+  // Estado para dialog de condições de pagamento
+  const [dialogPagamentoOpen, setDialogPagamentoOpen] = useState(false);
+  const [orcamentoParaPagamento, setOrcamentoParaPagamento] = useState<OrcamentoPipeline | null>(null);
+  const [novoStatusPendente, setNovoStatusPendente] = useState<string>('');
+
   // Drag and drop - atualiza status do orçamento
   const handleDragStart = (e: React.DragEvent, orcamentoId: string) => {
     setDraggedId(orcamentoId);
@@ -226,17 +235,46 @@ export function PipelineOrcamentos({ onVerOrcamento, onVerContato }: PipelineOrc
 
   const handleDrop = async (e: React.DragEvent, novoStatus: string) => {
     e.preventDefault();
-    if (draggedId) {
-      const { error } = await supabase
-        .from('orcamentos')
-        .update({ status: novoStatus })
-        .eq('id', draggedId);
-      
-      if (!error) {
-        refetch();
-      }
+    if (!draggedId) {
+      setDraggedId(null);
+      return;
+    }
+
+    const orcamento = orcamentos?.find(o => o.id === draggedId);
+    if (!orcamento) {
+      setDraggedId(null);
+      return;
+    }
+
+    const statusAtualEhPagamento = STATUS_PAGAMENTO.includes(orcamento.status);
+    const novoStatusEhPagamento = STATUS_PAGAMENTO.includes(novoStatus);
+
+    // Se está mudando para status de pagamento e NÃO estava em um status de pagamento
+    // Abre o dialog para configurar condições de pagamento
+    if (novoStatusEhPagamento && !statusAtualEhPagamento) {
+      setOrcamentoParaPagamento(orcamento);
+      setNovoStatusPendente(novoStatus);
+      setDialogPagamentoOpen(true);
+      setDraggedId(null);
+      return;
+    }
+
+    // Atualização normal para outros status
+    const { error } = await supabase
+      .from('orcamentos')
+      .update({ status: novoStatus })
+      .eq('id', draggedId);
+    
+    if (!error) {
+      refetch();
     }
     setDraggedId(null);
+  };
+
+  const handleDialogPagamentoSuccess = () => {
+    setOrcamentoParaPagamento(null);
+    setNovoStatusPendente('');
+    refetch();
   };
 
   if (isLoading) {
@@ -733,6 +771,22 @@ export function PipelineOrcamentos({ onVerOrcamento, onVerContato }: PipelineOrc
           </div>
         )}
       </CardContent>
+
+      {/* Dialog para condições de pagamento ao mover para status de pagamento */}
+      <DialogCondicoesPagamento
+        open={dialogPagamentoOpen}
+        onOpenChange={setDialogPagamentoOpen}
+        orcamento={orcamentoParaPagamento ? {
+          id: orcamentoParaPagamento.id,
+          codigo: orcamentoParaPagamento.codigo,
+          cliente_nome: orcamentoParaPagamento.cliente_nome,
+          cliente_telefone: orcamentoParaPagamento.cliente_telefone,
+          total_geral: orcamentoParaPagamento.total_geral || 0,
+          total_com_desconto: orcamentoParaPagamento.total_com_desconto
+        } : null}
+        novoStatus={novoStatusPendente}
+        onSuccess={handleDialogPagamentoSuccess}
+      />
     </Card>
   );
 }

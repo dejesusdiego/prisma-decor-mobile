@@ -1103,6 +1103,47 @@ export type Database = {
           },
         ]
       }
+      log_alteracoes_status: {
+        Row: {
+          created_at: string | null
+          id: string
+          orcamento_id: string
+          origem: string
+          status_anterior: string | null
+          status_novo: string
+          user_email: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          orcamento_id: string
+          origem?: string
+          status_anterior?: string | null
+          status_novo: string
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          orcamento_id?: string
+          origem?: string
+          status_anterior?: string | null
+          status_novo?: string
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "log_alteracoes_status_orcamento_id_fkey"
+            columns: ["orcamento_id"]
+            isOneToOne: false
+            referencedRelation: "orcamentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       materiais: {
         Row: {
           aplicacao: string | null

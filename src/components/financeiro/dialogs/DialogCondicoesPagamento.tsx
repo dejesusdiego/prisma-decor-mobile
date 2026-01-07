@@ -157,26 +157,6 @@ export function DialogCondicoesPagamento({
     mutation.mutate(data);
   };
 
-  const handleSkip = async () => {
-    // Apenas atualiza o status sem criar conta a receber
-    if (!orcamento) return;
-    
-    try {
-      const { error } = await supabase
-        .from('orcamentos')
-        .update({ status: novoStatus })
-        .eq('id', orcamento.id);
-      
-      if (error) throw error;
-      
-      toast.success('Status atualizado');
-      onOpenChange(false);
-      onSuccess();
-    } catch (error) {
-      toast.error('Erro ao atualizar status');
-    }
-  };
-
   if (!orcamento) return null;
 
   return (
@@ -241,18 +221,13 @@ export function DialogCondicoesPagamento({
             </Select>
           </div>
 
-          <div className="flex justify-between gap-2 pt-4">
-            <Button type="button" variant="ghost" onClick={handleSkip}>
-              Pular
+          <div className="flex justify-end gap-2 pt-4">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Cancelar
             </Button>
-            <div className="flex gap-2">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={mutation.isPending}>
-                {mutation.isPending ? 'Salvando...' : 'Criar Conta'}
-              </Button>
-            </div>
+            <Button type="submit" disabled={mutation.isPending}>
+              {mutation.isPending ? 'Salvando...' : 'Criar Conta'}
+            </Button>
           </div>
         </form>
       </DialogContent>
