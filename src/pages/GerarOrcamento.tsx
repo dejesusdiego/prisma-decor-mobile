@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Button } from '@/components/ui/button';
@@ -42,6 +42,7 @@ import { AgendaInstalacoes } from '@/components/producao/AgendaInstalacoes';
 import { RelatorioProducao } from '@/components/producao/RelatorioProducao';
 import { NotificationCenter } from '@/components/NotificationCenter';
 import { CalendarioGeral } from '@/components/calendario/CalendarioGeral';
+import { OrgSettingsForm } from '@/components/settings/OrgSettingsForm';
 
 interface ClienteDataFromVisita {
   nome: string;
@@ -55,6 +56,7 @@ const ADMIN_ONLY_VIEWS: View[] = [
   'home',
   'gestaoMateriais', 
   'ajustesSistema', 
+  'configOrganizacao',
   'solicitacoesVisita',
   'calendarioGeral',
   'finDashboard',
@@ -184,6 +186,7 @@ export default function GerarOrcamento() {
       case 'listaOrcamentos': return 'Meus Orçamentos';
       case 'visualizarOrcamento': return 'Visualizar Orçamento';
       case 'gestaoMateriais': return 'Gestão de Materiais';
+      case 'configOrganizacao': return 'Configurações da Empresa';
       case 'ajustesSistema': return 'Ajustes do Sistema';
       case 'solicitacoesVisita': return 'Solicitações de Visita';
       case 'calendarioGeral': return 'Calendário Geral';
@@ -352,6 +355,12 @@ export default function GerarOrcamento() {
 
             {/* Administração */}
             {view === 'categoriasFormas' && <CategoriasFormas />}
+            
+            {view === 'configOrganizacao' && (
+              <div className="container max-w-4xl">
+                <OrgSettingsForm />
+              </div>
+            )}
 
             {/* CRM */}
             {view === 'crmPainel' && (

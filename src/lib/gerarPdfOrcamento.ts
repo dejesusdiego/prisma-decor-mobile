@@ -1,7 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { supabase } from '@/integrations/supabase/client';
-import logoPng from '@/assets/logo-prisma-pdf.png';
+import logoPngFallback from '@/assets/logo-prisma-pdf.png';
 
 interface OrcamentoData {
   codigo: string;
@@ -16,6 +16,21 @@ interface OrcamentoData {
   desconto_tipo?: string | null;
   desconto_valor?: number | null;
   total_com_desconto?: number | null;
+  organization_id?: string;
+}
+
+interface OrganizationData {
+  id: string;
+  name: string;
+  logo_url: string | null;
+  primary_color: string;
+  tagline?: string;
+  email?: string;
+  phone?: string;
+  whatsapp?: string;
+  website?: string;
+  cnpj?: string;
+  address?: string;
 }
 
 interface CortinaItemData {
@@ -52,7 +67,33 @@ function formatarTelefone(telefone: string): string {
   if (numeros.length === 11) {
     return `(${numeros.slice(0, 2)}) ${numeros.slice(2, 7)}-${numeros.slice(7)}`;
   }
-  return telefone; // Retorna original se não tiver 11 dígitos
+  return telefone;
+}
+
+// Função para carregar imagem como base64
+async function loadImageAsBase64(url: string): Promise<string | null> {
+  try {
+    const response = await fetch(url);
+    const blob = await response.blob();
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
+}
+
+// Função para converter hex para RGB
+function hexToRgb(hex: string): { r: number; g: number; b: number } {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result ? {
+    r: parseInt(result[1], 16),
+    g: parseInt(result[2], 16),
+    b: parseInt(result[3], 16)
+  } : { r: 17, g: 17, b: 17 }; // Fallback preto
 }
 
 export async function gerarPdfOrcamento(orcamentoId: string): Promise<void> {
@@ -66,6 +107,17 @@ export async function gerarPdfOrcamento(orcamentoId: string): Promise<void> {
 
     if (orcError) throw orcError;
 
+    // Buscar dados da organização
+    let org: OrganizationData | null = null;
+    if (orcamento.organization_id) {
+      const { data: orgData } = await supabase
+        .from('organizations')
+        .select('*')
+        .eq('id', orcamento.organization_id)
+        .single();
+      org = orgData as OrganizationData;
+    }
+
     // Buscar itens do orçamento
     const { data: cortinas, error: cortinasError } = await supabase
       .from('cortina_items')
@@ -74,7 +126,7 @@ export async function gerarPdfOrcamento(orcamentoId: string): Promise<void> {
 
     if (cortinasError) throw cortinasError;
 
-    // Buscar materiais para nome dos tecidos, forros e trilhos (com paginação)
+    // Buscar materiais para nome dos tecidos, forros e trilhos
     const { fetchMateriaisPaginados } = await import('@/lib/fetchMateriaisPaginados');
     const materiais = await fetchMateriaisPaginados(undefined, true);
 
@@ -82,44 +134,62 @@ export async function gerarPdfOrcamento(orcamentoId: string): Promise<void> {
     const doc = new jsPDF();
     let yPos = 0;
 
+    // Configurações da organização (com fallbacks para Prisma)
+    const orgName = org?.name || 'PRISMA';
+    const orgTagline = org?.tagline || 'Interiores';
+    const orgEmail = org?.email || 'somosprismainteiores@gmail.com';
+    const orgPhone = org?.phone || '(47) 99262-4706';
+    const orgWhatsapp = org?.whatsapp || '(47) 99262-4706';
+    const orgWebsite = org?.website || 'www.prismadecorlab.com';
+    const orgCnpj = org?.cnpj || '44.840.624/0001-92';
+    const orgColor = org?.primary_color || '#111111';
+    const colorRgb = hexToRgb(orgColor);
+
     // ============================================================
-    // 1. CABEÇALHO COM FUNDO PRETO E LOGO
+    // 1. CABEÇALHO COM FUNDO E LOGO DINÂMICOS
     // ============================================================
     
-    // Fundo preto no topo
-    doc.setFillColor(17, 17, 17); // Preto #111111
-    doc.rect(0, 0, 210, 35, 'F'); // Largura A4 = 210mm
+    // Fundo com cor da organização
+    doc.setFillColor(colorRgb.r, colorRgb.g, colorRgb.b);
+    doc.rect(0, 0, 210, 35, 'F');
     
-    // Logo PRISMA Interiores
+    // Logo
     yPos = 12;
     
     try {
-      // Adicionar logo PNG ao lado esquerdo
-      doc.addImage(logoPng, 'PNG', 15, yPos, 12, 12);
+      // Tentar usar logo da organização, senão usar fallback
+      if (org?.logo_url) {
+        const logoBase64 = await loadImageAsBase64(org.logo_url);
+        if (logoBase64) {
+          doc.addImage(logoBase64, 'PNG', 15, yPos, 12, 12);
+        }
+      } else {
+        doc.addImage(logoPngFallback, 'PNG', 15, yPos, 12, 12);
+      }
     } catch (error) {
       console.error('Erro ao adicionar logo:', error);
     }
     
-    // Texto PRISMA e Interiores ao lado da logo
+    // Nome da empresa
     doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(255, 255, 255); // Branco
-    doc.text('PRISMA', 30, yPos + 5);
+    doc.setTextColor(255, 255, 255);
+    doc.text(orgName.toUpperCase(), 30, yPos + 5);
     
+    // Tagline
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
-    doc.setTextColor(200, 200, 200); // Cinza claro
-    doc.text('Interiores', 30, yPos + 10);
+    doc.setTextColor(200, 200, 200);
+    doc.text(orgTagline, 30, yPos + 10);
     
-    // Informações de contato no lado direito do cabeçalho
+    // Informações de contato no lado direito
     doc.setFontSize(8);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(220, 220, 220); // Cinza claro
+    doc.setTextColor(220, 220, 220);
     const contactInfo = [
-      'www.prismadecorlab.com',
-      'somosprismainteiores@gmail.com',
-      'WhatsApp: (47) 99262-4706'
-    ];
+      orgWebsite,
+      orgEmail,
+      `WhatsApp: ${orgWhatsapp}`
+    ].filter(Boolean);
     let contactY = 12;
     contactInfo.forEach(info => {
       doc.text(info, 195, contactY, { align: 'right' });
@@ -450,7 +520,7 @@ export async function gerarPdfOrcamento(orcamentoId: string): Promise<void> {
     doc.text('• Valores sujeitos a alteração em caso de mudanças de projeto ou medidas.', cardX, yPos);
 
     // ============================================================
-    // 9. RODAPÉ INSTITUCIONAL
+    // 9. RODAPÉ INSTITUCIONAL (DINÂMICO)
     // ============================================================
     
     const pageCount = doc.getNumberOfPages();
@@ -462,16 +532,26 @@ export async function gerarPdfOrcamento(orcamentoId: string): Promise<void> {
       doc.setLineWidth(0.3);
       doc.line(15, 275, 195, 275);
       
-      // Textos do rodapé
+      // Textos do rodapé com dados da organização
       doc.setFontSize(8);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(100, 100, 100);
       
-      doc.text('Prisma Interiores - Transformando ambientes com qualidade e profissionalismo.', 105, 280, { align: 'center' });
-      doc.text('WhatsApp: (47) 99262-4706 | Email: somosprismainteiores@gmail.com | Website: www.prismadecorlab.com', 105, 285, { align: 'center' });
+      const footerLine1 = `${orgName}${orgTagline ? ' - ' + orgTagline : ''}`;
+      const footerLine2Parts = [
+        orgWhatsapp ? `WhatsApp: ${orgWhatsapp}` : null,
+        orgEmail ? `Email: ${orgEmail}` : null,
+        orgWebsite ? `Website: ${orgWebsite}` : null
+      ].filter(Boolean);
+      const footerLine2 = footerLine2Parts.join(' | ');
       
-      doc.setFont('helvetica', 'bold');
-      doc.text('CNPJ: 44.840.624/0001-92', 105, 290, { align: 'center' });
+      doc.text(footerLine1, 105, 280, { align: 'center' });
+      doc.text(footerLine2, 105, 285, { align: 'center' });
+      
+      if (orgCnpj) {
+        doc.setFont('helvetica', 'bold');
+        doc.text(`CNPJ: ${orgCnpj}`, 105, 290, { align: 'center' });
+      }
     }
 
     // Salvar PDF
