@@ -37,8 +37,17 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
 
 export function useOrganizationContext() {
   const context = useContext(OrganizationContext);
+  // Return default values during initial render or HMR to prevent crashes
   if (context === undefined) {
-    throw new Error('useOrganizationContext must be used within an OrganizationProvider');
+    return {
+      organization: null,
+      membership: null,
+      isLoading: true,
+      isOwner: false,
+      isAdmin: false,
+      isMember: false,
+      organizationId: null,
+    };
   }
   return context;
 }
