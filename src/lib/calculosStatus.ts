@@ -123,6 +123,7 @@ export function getStatusChartColor(status: string): string {
     'rascunho': 'hsl(var(--muted))',
     'finalizado': 'hsl(217, 91%, 60%)',
     'enviado': 'hsl(262, 83%, 58%)',
+    'sem_resposta': 'hsl(24, 95%, 53%)',
     'aprovado': 'hsl(142, 76%, 36%)',
     'pago_40': 'hsl(45, 93%, 47%)',
     'pago_parcial': 'hsl(38, 92%, 50%)',
