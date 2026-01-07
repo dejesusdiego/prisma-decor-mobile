@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
+import { useOrganization } from '@/hooks/useOrganization';
 
 export type ContatoTipo = 'lead' | 'cliente' | 'inativo';
 export type OportunidadeEtapa = 'prospeccao' | 'qualificacao' | 'proposta' | 'negociacao' | 'fechado_ganho' | 'fechado_perdido';
@@ -117,6 +118,7 @@ export function useContatoByTelefone(telefone: string | null) {
 export function useCreateContato() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { organizationId } = useOrganization();
 
   return useMutation({
     mutationFn: async (contato: Partial<Contato>) => {
@@ -135,7 +137,8 @@ export function useCreateContato() {
           origem: contato.origem,
           observacoes: contato.observacoes,
           tags: contato.tags,
-          created_by_user_id: user.id
+          created_by_user_id: user.id,
+          organization_id: organizationId
         }])
         .select()
         .single();
@@ -227,6 +230,7 @@ export function useOportunidades() {
 export function useCreateOportunidade() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { organizationId } = useOrganization();
 
   return useMutation({
     mutationFn: async (oportunidade: Partial<Oportunidade>) => {
@@ -245,7 +249,8 @@ export function useCreateOportunidade() {
           data_previsao_fechamento: oportunidade.data_previsao_fechamento,
           observacoes: oportunidade.observacoes,
           origem: oportunidade.origem,
-          created_by_user_id: user.id
+          created_by_user_id: user.id,
+          organization_id: organizationId
         }])
         .select()
         .single();
@@ -371,6 +376,7 @@ export function useAtividadesPendentesHoje() {
 export function useCreateAtividade() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { organizationId } = useOrganization();
 
   return useMutation({
     mutationFn: async (atividade: Partial<Atividade>) => {
@@ -388,7 +394,8 @@ export function useCreateAtividade() {
           data_atividade: atividade.data_atividade || new Date().toISOString(),
           data_lembrete: atividade.data_lembrete,
           concluida: atividade.concluida || false,
-          created_by_user_id: user.id
+          created_by_user_id: user.id,
+          organization_id: organizationId
         }])
         .select()
         .single();
