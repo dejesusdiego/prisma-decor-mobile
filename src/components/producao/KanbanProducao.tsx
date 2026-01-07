@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ScrollAreaTopBar } from '@/components/ui/scroll-area';
 import { 
   Select,
   SelectContent,
@@ -235,7 +236,8 @@ export function KanbanProducao() {
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <div className="flex gap-4 overflow-x-auto pb-4">
+        <ScrollAreaTopBar className="w-full">
+        <div className="flex gap-4 pb-4" style={{ minWidth: 'max-content' }}>
           {KANBAN_COLUMNS.map((column, colIndex) => {
             const items = getItemsByStatus(column.id);
             const ColIcon = column.icon;
@@ -285,6 +287,7 @@ export function KanbanProducao() {
             );
           })}
         </div>
+        </ScrollAreaTopBar>
 
         <DragOverlay>
           {activeItem && (

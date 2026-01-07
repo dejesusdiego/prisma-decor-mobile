@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { ScrollArea, ScrollAreaTopBar } from '@/components/ui/scroll-area';
 import { 
   ChevronDown, 
   ChevronRight,
@@ -81,7 +81,7 @@ export function PipelineCompacto({
   };
 
   return (
-    <ScrollArea className="w-full">
+    <ScrollAreaTopBar className="w-full">
       <div className="flex gap-3 pb-4" style={{ minWidth: 'max-content' }}>
         {statusConfig.map((status) => {
           const itens = orcamentosPorStatus[status.id] || [];
@@ -228,6 +228,6 @@ export function PipelineCompacto({
           );
         })}
       </div>
-    </ScrollArea>
+    </ScrollAreaTopBar>
   );
 }

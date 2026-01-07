@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { ScrollAreaTopBar } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -497,7 +497,7 @@ export function PipelineOrcamentos({ onVerOrcamento, onVerContato }: PipelineOrc
       <CardContent>
         {/* VISÃO KANBAN */}
         {viewType === 'kanban' && (
-          <ScrollArea className="w-full">
+          <ScrollAreaTopBar className="w-full">
             <div className="flex gap-4 pb-4" style={{ minWidth: 'max-content' }}>
               {STATUS_PIPELINE_VISIVEL.map((status) => {
                 const itens = orcamentosPorStatus[status.id] || [];
@@ -540,8 +540,7 @@ export function PipelineOrcamentos({ onVerOrcamento, onVerContato }: PipelineOrc
                 );
               })}
             </div>
-            <ScrollBar orientation="horizontal" />
-          </ScrollArea>
+          </ScrollAreaTopBar>
         )}
 
         {/* VISÃO COMPACTO */}
