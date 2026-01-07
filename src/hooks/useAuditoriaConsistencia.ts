@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 export interface InconsistenciaItem {
   id: string;
-  tipo: 'orcamento_sem_pedido' | 'pedido_sem_pagamento' | 'conta_orfa' | 'status_divergente' | 'comissao_sem_recebimento';
+  tipo: 'orcamento_sem_pedido' | 'orcamento_sem_conta' | 'pedido_sem_pagamento' | 'conta_orfa' | 'status_divergente' | 'comissao_sem_recebimento';
   severidade: 'critica' | 'alta' | 'media';
   descricao: string;
   dados: Record<string, any>;
@@ -11,6 +11,7 @@ export interface InconsistenciaItem {
 
 export interface AuditoriaResult {
   orcamentosSemPedido: InconsistenciaItem[];
+  orcamentosSemConta: InconsistenciaItem[];
   pedidosSemPagamento: InconsistenciaItem[];
   contasOrfas: InconsistenciaItem[];
   statusDivergente: InconsistenciaItem[];
@@ -27,6 +28,7 @@ export function useAuditoriaConsistencia() {
     queryFn: async (): Promise<AuditoriaResult> => {
       const inconsistencias: AuditoriaResult = {
         orcamentosSemPedido: [],
+        orcamentosSemConta: [],
         pedidosSemPagamento: [],
         contasOrfas: [],
         statusDivergente: [],
@@ -62,6 +64,33 @@ export function useAuditoriaConsistencia() {
                 cliente: orc.cliente_nome,
                 status: orc.status,
                 valor: orc.total_com_desconto || orc.total_geral
+              }
+            });
+          }
+        }
+      }
+
+      // 1.5 Orçamentos com status de pagamento mas SEM conta a receber
+      if (orcamentosSemPedido) {
+        for (const orc of orcamentosSemPedido) {
+          const { data: conta } = await supabase
+            .from('contas_receber')
+            .select('id')
+            .eq('orcamento_id', orc.id)
+            .maybeSingle();
+
+          if (!conta) {
+            inconsistencias.orcamentosSemConta.push({
+              id: orc.id,
+              tipo: 'orcamento_sem_conta',
+              severidade: 'critica',
+              descricao: `Orçamento ${orc.codigo} está com status "${orc.status}" mas NÃO TEM conta a receber`,
+              dados: {
+                codigo: orc.codigo,
+                cliente: orc.cliente_nome,
+                status: orc.status,
+                valor: orc.total_com_desconto || orc.total_geral,
+                criadoEm: orc.created_at
               }
             });
           }
@@ -216,6 +245,7 @@ export function useAuditoriaConsistencia() {
       // Calcular totais
       const todasInconsistencias = [
         ...inconsistencias.orcamentosSemPedido,
+        ...inconsistencias.orcamentosSemConta,
         ...inconsistencias.pedidosSemPagamento,
         ...inconsistencias.contasOrfas,
         ...inconsistencias.statusDivergente,

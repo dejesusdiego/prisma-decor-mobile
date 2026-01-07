@@ -31,6 +31,11 @@ const tipoConfig = {
     icon: Package,
     description: 'Orçamentos com pagamento confirmado que não geraram pedido'
   },
+  orcamento_sem_conta: { 
+    label: 'Orçamentos sem Conta a Receber', 
+    icon: AlertTriangle,
+    description: 'Orçamentos com status de pagamento mas sem conta financeira'
+  },
   pedido_sem_pagamento: { 
     label: 'Pedidos sem Pagamento', 
     icon: Receipt,
@@ -67,6 +72,7 @@ function InconsistenciaCard({ item, onNavigate }: InconsistenciaCardProps) {
     
     switch (item.tipo) {
       case 'orcamento_sem_pedido':
+      case 'orcamento_sem_conta':
       case 'status_divergente':
         onNavigate('visualizarOrcamento', item.id);
         break;
@@ -154,6 +160,7 @@ export function RelatorioAuditoriaConsistencia({ onNavigate }: RelatorioAuditori
 
   const categorias = [
     { key: 'pedidosSemPagamento', items: data.pedidosSemPagamento, ...tipoConfig.pedido_sem_pagamento },
+    { key: 'orcamentosSemConta', items: data.orcamentosSemConta, ...tipoConfig.orcamento_sem_conta },
     { key: 'orcamentosSemPedido', items: data.orcamentosSemPedido, ...tipoConfig.orcamento_sem_pedido },
     { key: 'statusDivergente', items: data.statusDivergente, ...tipoConfig.status_divergente },
     { key: 'contasOrfas', items: data.contasOrfas, ...tipoConfig.conta_orfa },
