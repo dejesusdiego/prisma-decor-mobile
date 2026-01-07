@@ -30,7 +30,8 @@ import {
   Layers,
   Calendar,
   Package,
-  RefreshCw
+  RefreshCw,
+  Building2
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -52,6 +53,7 @@ export type View =
   | 'visualizarOrcamento' 
   | 'gestaoMateriais' 
   | 'ajustesSistema' 
+  | 'configOrganizacao'
   | 'solicitacoesVisita'
   | 'calendarioGeral'
   | 'finDashboard'
@@ -136,6 +138,7 @@ const relatoriosBINavItems = [
 const administracaoNavItems = [
   { id: 'gestaoMateriais' as View, label: 'Gestão de Materiais', icon: Database },
   { id: 'categoriasFormas' as View, label: 'Categorias e Pagamentos', icon: Tags },
+  { id: 'configOrganizacao' as View, label: 'Minha Empresa', icon: Building2 },
   { id: 'ajustesSistema' as View, label: 'Ajustes do Sistema', icon: Settings },
 ];
 

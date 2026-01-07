@@ -1534,33 +1534,54 @@ export type Database = {
       organizations: {
         Row: {
           active: boolean | null
+          address: string | null
+          cnpj: string | null
           created_at: string | null
+          email: string | null
           id: string
           logo_url: string | null
           name: string
+          phone: string | null
           primary_color: string | null
           slug: string
+          tagline: string | null
           updated_at: string | null
+          website: string | null
+          whatsapp: string | null
         }
         Insert: {
           active?: boolean | null
+          address?: string | null
+          cnpj?: string | null
           created_at?: string | null
+          email?: string | null
           id?: string
           logo_url?: string | null
           name: string
+          phone?: string | null
           primary_color?: string | null
           slug: string
+          tagline?: string | null
           updated_at?: string | null
+          website?: string | null
+          whatsapp?: string | null
         }
         Update: {
           active?: boolean | null
+          address?: string | null
+          cnpj?: string | null
           created_at?: string | null
+          email?: string | null
           id?: string
           logo_url?: string | null
           name?: string
+          phone?: string | null
           primary_color?: string | null
           slug?: string
+          tagline?: string | null
           updated_at?: string | null
+          website?: string | null
+          whatsapp?: string | null
         }
         Relationships: []
       }

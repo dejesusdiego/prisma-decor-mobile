@@ -14,6 +14,7 @@ import Auth from "./pages/Auth";
 import GerarOrcamento from "./pages/GerarOrcamento";
 import GerenciarUsuarios from "./pages/GerenciarUsuarios";
 import Documentacao from "./pages/Documentacao";
+import ConfiguracoesOrganizacao from "./pages/ConfiguracoesOrganizacao";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -55,6 +56,14 @@ const App = () => (
                   <AdminRoute>
                     <GerenciarUsuarios />
                   </AdminRoute>
+                } 
+              />
+              <Route 
+                path="/configuracoes/organizacao" 
+                element={
+                  <ProtectedRoute>
+                    <ConfiguracoesOrganizacao />
+                  </ProtectedRoute>
                 } 
               />
               <Route path="/documentacao" element={<Documentacao />} />
