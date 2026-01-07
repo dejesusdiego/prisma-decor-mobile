@@ -484,51 +484,50 @@ export function OrcamentoSidebar({ currentView, onNavigate }: OrcamentoSidebarPr
         collapsed ? "justify-center" : "justify-between"
       )}>
         {!collapsed && (
-          <div className="flex items-center gap-3 min-w-0 flex-1">
-            {organization?.logo_url ? (
-              <img 
-                src={organization.logo_url} 
-                alt={organization.name}
-                className="h-8 w-8 rounded-md object-contain shrink-0"
-              />
-            ) : (
-              <div className="h-8 w-8 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
-                <Building2 className="h-4 w-4 text-primary" />
+          <>
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              {isOrgLoading ? (
+                <div className="h-8 w-8 rounded-md bg-muted animate-pulse shrink-0" />
+              ) : organization?.logo_url ? (
+                <img 
+                  src={organization.logo_url} 
+                  alt={organization.name}
+                  className="h-8 w-8 rounded-md object-contain shrink-0"
+                />
+              ) : (
+                <div className="h-8 w-8 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
+                  <Building2 className="h-4 w-4 text-primary" />
+                </div>
+              )}
+              <div className="flex flex-col min-w-0">
+                <span className="font-bold text-foreground truncate">
+                  {isOrgLoading ? 'Carregando...' : (organization?.name || 'Prisma')}
+                </span>
+                <span className="text-xs text-muted-foreground truncate">
+                  {organization?.tagline || 'Sistema de Orçamentos'}
+                </span>
               </div>
-            )}
-            <div className="flex flex-col min-w-0">
-              <span className="font-bold text-foreground truncate">
-                {organization?.name || 'Carregando...'}
-              </span>
-              <span className="text-xs text-muted-foreground truncate">
-                {organization?.tagline || 'Sistema de Orçamentos'}
-              </span>
             </div>
-          </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setCollapsed(true)}
+              className="h-8 w-8 shrink-0"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+          </>
         )}
-        {collapsed && organization?.logo_url && (
-          <img 
-            src={organization.logo_url} 
-            alt={organization?.name || ''}
-            className="h-8 w-8 rounded-md object-contain"
-          />
+        {collapsed && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setCollapsed(false)}
+            className="h-8 w-8"
+          >
+            <ChevronLeft className="h-4 w-4 rotate-180" />
+          </Button>
         )}
-        {collapsed && !organization?.logo_url && (
-          <div className="h-8 w-8 rounded-md bg-primary/10 flex items-center justify-center">
-            <Building2 className="h-4 w-4 text-primary" />
-          </div>
-        )}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setCollapsed(!collapsed)}
-          className={cn("h-8 w-8 shrink-0", collapsed ? "hidden" : "")}
-        >
-          <ChevronLeft className={cn(
-            "h-4 w-4 transition-transform duration-200",
-            collapsed && "rotate-180"
-          )} />
-        </Button>
       </div>
 
       {/* Home Button + Novo Orçamento - Fixos no topo */}
