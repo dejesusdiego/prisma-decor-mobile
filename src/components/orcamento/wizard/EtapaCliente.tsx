@@ -13,6 +13,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useOrganization } from '@/hooks/useOrganization';
 import { toast } from '@/hooks/use-toast';
 import type { DadosOrcamento } from '@/types/orcamento';
 import { useContatoByTelefone } from '@/hooks/useCRMData';
@@ -31,6 +32,7 @@ interface EtapaClienteProps {
 
 export function EtapaCliente({ dados, orcamentoId, onAvancar, onCancelar }: EtapaClienteProps) {
   const { user } = useAuth();
+  const { organizationId } = useOrganization();
   const [formData, setFormData] = useState<DadosOrcamento>(dados);
   const [loading, setLoading] = useState(false);
   const [telefoneDebounced, setTelefoneDebounced] = useState('');
@@ -137,6 +139,7 @@ export function EtapaCliente({ dados, orcamentoId, onAvancar, onCancelar }: Etap
         tipo: 'lead',
         origem: 'orcamento',
         created_by_user_id: user!.id,
+        organization_id: organizationId,
       })
       .select()
       .single();
@@ -213,6 +216,7 @@ export function EtapaCliente({ dados, orcamentoId, onAvancar, onCancelar }: Etap
             codigo: '',
             contato_id: contatoId,
             vendedor_id: formData.vendedorId || null,
+            organization_id: organizationId,
           })
           .select()
           .single();

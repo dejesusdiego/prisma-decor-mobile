@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
+import { OrganizationProvider } from "@/contexts/OrganizationContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AdminRoute } from "@/components/AdminRoute";
 import { OnboardingProvider } from "@/components/onboarding/OnboardingProvider";
@@ -34,8 +35,9 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <OnboardingProvider>
-            <Routes>
+          <OrganizationProvider>
+            <OnboardingProvider>
+              <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/nossos-produtos" element={<OurProducts />} />
               <Route path="/auth" element={<Auth />} />
@@ -58,8 +60,9 @@ const App = () => (
               <Route path="/documentacao" element={<Documentacao />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
-            </Routes>
-          </OnboardingProvider>
+              </Routes>
+            </OnboardingProvider>
+          </OrganizationProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

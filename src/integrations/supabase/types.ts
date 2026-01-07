@@ -26,6 +26,7 @@ export type Database = {
           id: string
           oportunidade_id: string | null
           orcamento_id: string | null
+          organization_id: string | null
           tipo: string
           titulo: string
           updated_at: string
@@ -41,6 +42,7 @@ export type Database = {
           id?: string
           oportunidade_id?: string | null
           orcamento_id?: string | null
+          organization_id?: string | null
           tipo: string
           titulo: string
           updated_at?: string
@@ -56,6 +58,7 @@ export type Database = {
           id?: string
           oportunidade_id?: string | null
           orcamento_id?: string | null
+          organization_id?: string | null
           tipo?: string
           titulo?: string
           updated_at?: string
@@ -80,6 +83,13 @@ export type Database = {
             columns: ["orcamento_id"]
             isOneToOne: false
             referencedRelation: "orcamentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "atividades_crm_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -125,6 +135,7 @@ export type Database = {
           id: string
           observacoes: string | null
           orcamento_id: string | null
+          organization_id: string | null
           percentual: number
           status: string
           updated_at: string
@@ -140,6 +151,7 @@ export type Database = {
           id?: string
           observacoes?: string | null
           orcamento_id?: string | null
+          organization_id?: string | null
           percentual?: number
           status?: string
           updated_at?: string
@@ -155,6 +167,7 @@ export type Database = {
           id?: string
           observacoes?: string | null
           orcamento_id?: string | null
+          organization_id?: string | null
           percentual?: number
           status?: string
           updated_at?: string
@@ -169,6 +182,13 @@ export type Database = {
             columns: ["orcamento_id"]
             isOneToOne: false
             referencedRelation: "orcamentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comissoes_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -310,6 +330,7 @@ export type Database = {
           numero_documento: string | null
           observacoes: string | null
           orcamento_id: string | null
+          organization_id: string | null
           recorrente: boolean
           status: string
           updated_at: string
@@ -330,6 +351,7 @@ export type Database = {
           numero_documento?: string | null
           observacoes?: string | null
           orcamento_id?: string | null
+          organization_id?: string | null
           recorrente?: boolean
           status?: string
           updated_at?: string
@@ -350,6 +372,7 @@ export type Database = {
           numero_documento?: string | null
           observacoes?: string | null
           orcamento_id?: string | null
+          organization_id?: string | null
           recorrente?: boolean
           status?: string
           updated_at?: string
@@ -384,6 +407,13 @@ export type Database = {
             referencedRelation: "orcamentos"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "contas_pagar_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
         ]
       }
       contas_receber: {
@@ -399,6 +429,7 @@ export type Database = {
           numero_parcelas: number
           observacoes: string | null
           orcamento_id: string | null
+          organization_id: string | null
           status: string
           updated_at: string
           valor_pago: number
@@ -416,6 +447,7 @@ export type Database = {
           numero_parcelas?: number
           observacoes?: string | null
           orcamento_id?: string | null
+          organization_id?: string | null
           status?: string
           updated_at?: string
           valor_pago?: number
@@ -433,6 +465,7 @@ export type Database = {
           numero_parcelas?: number
           observacoes?: string | null
           orcamento_id?: string | null
+          organization_id?: string | null
           status?: string
           updated_at?: string
           valor_pago?: number
@@ -453,6 +486,13 @@ export type Database = {
             referencedRelation: "orcamentos"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "contas_receber_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
         ]
       }
       contatos: {
@@ -465,6 +505,7 @@ export type Database = {
           id: string
           nome: string
           observacoes: string | null
+          organization_id: string | null
           origem: string | null
           tags: string[] | null
           telefone: string | null
@@ -483,6 +524,7 @@ export type Database = {
           id?: string
           nome: string
           observacoes?: string | null
+          organization_id?: string | null
           origem?: string | null
           tags?: string[] | null
           telefone?: string | null
@@ -501,6 +543,7 @@ export type Database = {
           id?: string
           nome?: string
           observacoes?: string | null
+          organization_id?: string | null
           origem?: string | null
           tags?: string[] | null
           telefone?: string | null
@@ -510,7 +553,15 @@ export type Database = {
           updated_at?: string
           valor_total_gasto?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "contatos_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cortina_items: {
         Row: {
@@ -937,6 +988,7 @@ export type Database = {
           ignorado: boolean | null
           motivo_ignorado: string | null
           observacoes: string | null
+          organization_id: string | null
           parcela_receber_id: string | null
           tipo: string
           updated_at: string
@@ -955,6 +1007,7 @@ export type Database = {
           ignorado?: boolean | null
           motivo_ignorado?: string | null
           observacoes?: string | null
+          organization_id?: string | null
           parcela_receber_id?: string | null
           tipo: string
           updated_at?: string
@@ -973,6 +1026,7 @@ export type Database = {
           ignorado?: boolean | null
           motivo_ignorado?: string | null
           observacoes?: string | null
+          organization_id?: string | null
           parcela_receber_id?: string | null
           tipo?: string
           updated_at?: string
@@ -998,6 +1052,13 @@ export type Database = {
             columns: ["forma_pagamento_id"]
             isOneToOne: false
             referencedRelation: "formas_pagamento"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lancamentos_financeiros_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
           {
@@ -1207,6 +1268,7 @@ export type Database = {
           lida: boolean
           link_acao: string | null
           mensagem: string
+          organization_id: string | null
           prioridade: string | null
           referencia_id: string | null
           referencia_tipo: string | null
@@ -1222,6 +1284,7 @@ export type Database = {
           lida?: boolean
           link_acao?: string | null
           mensagem: string
+          organization_id?: string | null
           prioridade?: string | null
           referencia_id?: string | null
           referencia_tipo?: string | null
@@ -1237,6 +1300,7 @@ export type Database = {
           lida?: boolean
           link_acao?: string | null
           mensagem?: string
+          organization_id?: string | null
           prioridade?: string | null
           referencia_id?: string | null
           referencia_tipo?: string | null
@@ -1244,7 +1308,15 @@ export type Database = {
           titulo?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "notificacoes_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       oportunidades: {
         Row: {
@@ -1257,6 +1329,7 @@ export type Database = {
           motivo_perda: string | null
           observacoes: string | null
           orcamento_id: string | null
+          organization_id: string | null
           origem: string | null
           temperatura: string | null
           titulo: string
@@ -1273,6 +1346,7 @@ export type Database = {
           motivo_perda?: string | null
           observacoes?: string | null
           orcamento_id?: string | null
+          organization_id?: string | null
           origem?: string | null
           temperatura?: string | null
           titulo: string
@@ -1289,6 +1363,7 @@ export type Database = {
           motivo_perda?: string | null
           observacoes?: string | null
           orcamento_id?: string | null
+          organization_id?: string | null
           origem?: string | null
           temperatura?: string | null
           titulo?: string
@@ -1308,6 +1383,13 @@ export type Database = {
             columns: ["orcamento_id"]
             isOneToOne: false
             referencedRelation: "orcamentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oportunidades_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -1330,6 +1412,7 @@ export type Database = {
           margem_percent: number
           margem_tipo: string
           observacoes: string | null
+          organization_id: string | null
           status: string
           status_updated_at: string | null
           subtotal_instalacao: number | null
@@ -1358,6 +1441,7 @@ export type Database = {
           margem_percent: number
           margem_tipo: string
           observacoes?: string | null
+          organization_id?: string | null
           status?: string
           status_updated_at?: string | null
           subtotal_instalacao?: number | null
@@ -1386,6 +1470,7 @@ export type Database = {
           margem_percent?: number
           margem_tipo?: string
           observacoes?: string | null
+          organization_id?: string | null
           status?: string
           status_updated_at?: string | null
           subtotal_instalacao?: number | null
@@ -1403,6 +1488,13 @@ export type Database = {
             columns: ["contato_id"]
             isOneToOne: false
             referencedRelation: "contatos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orcamentos_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -1589,6 +1681,7 @@ export type Database = {
           numero_pedido: string
           observacoes_producao: string | null
           orcamento_id: string
+          organization_id: string | null
           previsao_entrega: string | null
           prioridade: string
           status_producao: string
@@ -1603,6 +1696,7 @@ export type Database = {
           numero_pedido: string
           observacoes_producao?: string | null
           orcamento_id: string
+          organization_id?: string | null
           previsao_entrega?: string | null
           prioridade?: string
           status_producao?: string
@@ -1617,6 +1711,7 @@ export type Database = {
           numero_pedido?: string
           observacoes_producao?: string | null
           orcamento_id?: string
+          organization_id?: string | null
           previsao_entrega?: string | null
           prioridade?: string
           status_producao?: string
@@ -1628,6 +1723,13 @@ export type Database = {
             columns: ["orcamento_id"]
             isOneToOne: false
             referencedRelation: "orcamentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pedidos_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -1770,6 +1872,7 @@ export type Database = {
           mensagem: string | null
           nome: string
           observacoes_internas: string | null
+          organization_id: string | null
           status: string
           status_updated_at: string | null
           telefone: string
@@ -1790,6 +1893,7 @@ export type Database = {
           mensagem?: string | null
           nome: string
           observacoes_internas?: string | null
+          organization_id?: string | null
           status?: string
           status_updated_at?: string | null
           telefone: string
@@ -1810,6 +1914,7 @@ export type Database = {
           mensagem?: string | null
           nome?: string
           observacoes_internas?: string | null
+          organization_id?: string | null
           status?: string
           status_updated_at?: string | null
           telefone?: string
@@ -1818,7 +1923,15 @@ export type Database = {
           visualizada_em?: string | null
           visualizada_por?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "solicitacoes_visita_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_onboarding: {
         Row: {
