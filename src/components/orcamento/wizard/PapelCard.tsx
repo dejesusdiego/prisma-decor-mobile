@@ -57,6 +57,8 @@ export function PapelCard({
   const [alturaParede, setAlturaParede] = useState<number>(papel.altura || 0);
   const [coberturaPorRolo, setCoberturaPorRolo] = useState<number>(5);
   const [perdaPercent, setPerdaPercent] = useState<number>(10);
+  const [valorInstalacao, setValorInstalacao] = useState<number>(papel.valorInstalacao || 0);
+  const [metadadosCarregados, setMetadadosCarregados] = useState(false);
 
   const {
     saving, setSaving,
@@ -85,6 +87,31 @@ export function PapelCard({
     if (papel.altura) setAlturaParede(papel.altura);
   }, [papel.largura, papel.altura]);
 
+  // Carregar metadados do campo observacoes_internas
+  useEffect(() => {
+    if (papel.id && papel.observacoesInternas && !metadadosCarregados) {
+      try {
+        const parsed = JSON.parse(papel.observacoesInternas);
+        if (parsed && typeof parsed === 'object' && parsed.metadados) {
+          if (parsed.metadados.coberturaPorRolo) setCoberturaPorRolo(parsed.metadados.coberturaPorRolo);
+          if (parsed.metadados.perdaPercent) setPerdaPercent(parsed.metadados.perdaPercent);
+          if (parsed.metadados.valorInstalacao) setValorInstalacao(parsed.metadados.valorInstalacao);
+          setMetadadosCarregados(true);
+        }
+      } catch {
+        // É texto normal, não JSON - mantém valores default
+        setMetadadosCarregados(true);
+      }
+    }
+  }, [papel.id, papel.observacoesInternas, metadadosCarregados]);
+
+  // Sincronizar valorInstalacao local com papel
+  useEffect(() => {
+    if (papel.valorInstalacao !== undefined && papel.valorInstalacao !== valorInstalacao) {
+      setValorInstalacao(papel.valorInstalacao);
+    }
+  }, [papel.valorInstalacao]);
+
   const areaTotal = useMemo(() => {
     return larguraParede * alturaParede;
   }, [larguraParede, alturaParede]);
@@ -100,8 +127,8 @@ export function PapelCard({
   }, [papel.quantidade, papel.precoUnitario]);
 
   const custoInstalacao = useMemo(() => {
-    return papel.precisaInstalacao ? (papel.valorInstalacao || 0) : 0;
-  }, [papel.precisaInstalacao, papel.valorInstalacao]);
+    return papel.precisaInstalacao ? valorInstalacao : 0;
+  }, [papel.precisaInstalacao, valorInstalacao]);
 
   const custoTotal = useMemo(() => {
     return custoMaterial + custoInstalacao;
@@ -131,12 +158,19 @@ export function PapelCard({
       if (selectedMaterial) {
         setMaterial(selectedMaterial);
         handleChange('materialPrincipalId', materialId);
-        handleChange('precoUnitario', selectedMaterial.preco_custo);
+        handleChange('precoUnitario', selectedMaterial.preco_tabela);
       }
     } else {
       setMaterial(null);
       handleChange('materialPrincipalId', undefined);
+      handleChange('precoUnitario', undefined);
     }
+  };
+
+  const handleValorInstalacaoChange = (value: number) => {
+    setValorInstalacao(value);
+    setHasChanges(true);
+    handleChange('valorInstalacao', value);
   };
 
   const aplicarQuantidadeSugerida = () => {
@@ -154,13 +188,47 @@ export function PapelCard({
   const salvarPapelInterno = useCallback(async (showToast = true) => {
     setSaving(true);
     try {
-      if (!papel.nomeIdentificacao || !papel.quantidade || !papel.materialPrincipalId) {
-        throw new Error('Preencha todos os campos obrigatórios');
+      // Validações específicas com mensagens claras
+      if (!papel.nomeIdentificacao?.trim()) {
+        throw new Error('Preencha o nome de identificação');
       }
+      if (!papel.quantidade || papel.quantidade <= 0) {
+        throw new Error('A quantidade deve ser maior que zero');
+      }
+      if (!papel.materialPrincipalId) {
+        throw new Error('Selecione um papel de parede');
+      }
+      if (!papel.precoUnitario || papel.precoUnitario <= 0) {
+        throw new Error('O preço por rolo deve ser maior que zero');
+      }
+
+      // Serializar metadados junto com observações
+      const metadados = {
+        coberturaPorRolo,
+        perdaPercent,
+        valorInstalacao,
+        rolosSugeridos,
+      };
+
+      // Extrair texto das observações (caso já seja JSON, pegar o texto original)
+      let textoObservacoes = '';
+      if (papel.observacoesInternas) {
+        try {
+          const parsed = JSON.parse(papel.observacoesInternas);
+          textoObservacoes = parsed?.texto || '';
+        } catch {
+          textoObservacoes = papel.observacoesInternas;
+        }
+      }
+
+      const observacoesComMetadados = JSON.stringify({
+        texto: textoObservacoes,
+        metadados,
+      });
 
       const dadosPapel = {
         orcamento_id: orcamentoId,
-        nome_identificacao: papel.nomeIdentificacao,
+        nome_identificacao: papel.nomeIdentificacao.trim(),
         descricao: 'Papel',
         largura: larguraParede,
         altura: alturaParede,
@@ -170,7 +238,7 @@ export function PapelCard({
         ambiente: papel.ambiente || null,
         preco_unitario: papel.precoUnitario,
         is_outro: true,
-        observacoes_internas: papel.observacoesInternas || null,
+        observacoes_internas: observacoesComMetadados,
         tecido_id: null,
         forro_id: null,
         trilho_id: null,
@@ -229,15 +297,15 @@ export function PapelCard({
       console.error('Erro ao salvar papel:', error);
       if (showToast) {
         toast({
-          title: 'Erro',
-          description: 'Não foi possível salvar o papel de parede',
+          title: 'Erro ao salvar',
+          description: error instanceof Error ? error.message : 'Não foi possível salvar o papel de parede',
           variant: 'destructive',
         });
       }
     } finally {
       setSaving(false);
     }
-  }, [papel, orcamentoId, larguraParede, alturaParede, custoInstalacao, custoTotal, onUpdate, setSaving, setHasChanges, setAutoSaved, markSaved]);
+  }, [papel, orcamentoId, larguraParede, alturaParede, custoInstalacao, custoTotal, coberturaPorRolo, perdaPercent, valorInstalacao, rolosSugeridos, onUpdate, setSaving, setHasChanges, setAutoSaved, markSaved]);
 
   // Auto-save hook
   const { isAutoSaving, cancelAutoSave } = useAutoSave({
@@ -352,7 +420,9 @@ export function PapelCard({
           <CardContent className="space-y-6 card-content-animated">
             {/* Seção 1: Material */}
             <div className="space-y-4">
-              <h4 className="text-sm font-medium text-muted-foreground">1. Material</h4>
+              <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+                1. Material <span className="text-destructive">*</span>
+              </h4>
               <MaterialSelector
                 categoria="papel"
                 materiais={materiais}
@@ -362,6 +432,9 @@ export function PapelCard({
                 optional={false}
                 loading={loadingMateriais}
               />
+              {!papel.materialPrincipalId && (
+                <p className="text-sm text-destructive">Selecione um papel de parede para continuar</p>
+              )}
               {material && (
                 <div className="p-3 bg-muted/50 rounded-lg border text-sm space-y-1">
                   <div className="flex items-center justify-between">
@@ -591,8 +664,8 @@ export function PapelCard({
                       type="number"
                       step="0.01"
                       min="0"
-                      value={papel.valorInstalacao || ''}
-                      onChange={(e) => handleChange('valorInstalacao', parseFloat(e.target.value) || 0)}
+                      value={valorInstalacao || ''}
+                      onChange={(e) => handleValorInstalacaoChange(parseFloat(e.target.value) || 0)}
                       placeholder="0.00"
                       className="input-focus-accent"
                     />
