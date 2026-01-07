@@ -13,6 +13,11 @@ interface FunilVendasProps {
   etapas: EtapaFunil[];
 }
 
+// Status que indicam pagamento confirmado
+const STATUS_PAGOS = ['pago_40', 'pago_parcial', 'pago_60', 'pago'];
+// Status iniciais do funil (base para cálculo de conversão)
+const STATUS_INICIAIS = ['finalizado', 'enviado', 'sem_resposta'];
+
 export function FunilVendas({ etapas }: FunilVendasProps) {
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -24,6 +29,19 @@ export function FunilVendas({ etapas }: FunilVendasProps) {
   };
 
   const maxQuantidade = Math.max(...etapas.map(e => e.quantidade), 1);
+  
+  // Soma de orçamentos em status de pagamento
+  const qtdPagos = etapas
+    .filter(e => STATUS_PAGOS.includes(e.status))
+    .reduce((sum, e) => sum + e.quantidade, 0);
+  
+  // Soma de orçamentos iniciais (base do funil)
+  const qtdIniciais = etapas
+    .filter(e => STATUS_INICIAIS.includes(e.status))
+    .reduce((sum, e) => sum + e.quantidade, 0);
+  
+  // Taxa de conversão: pagos / iniciais
+  const taxaConversao = qtdIniciais > 0 ? (qtdPagos / qtdIniciais) * 100 : 0;
 
   return (
     <Card className="border-0 shadow-sm">
@@ -56,9 +74,9 @@ export function FunilVendas({ etapas }: FunilVendasProps) {
                       backgroundColor: etapa.cor
                     }}
                   >
-                    {widthPercent > 20 && (
+                  {widthPercent > 20 && (
                       <span className="text-xs font-medium text-white">
-                        {((etapa.quantidade / (etapas[0]?.quantidade || 1)) * 100).toFixed(0)}%
+                        {((etapa.quantidade / maxQuantidade) * 100).toFixed(0)}%
                       </span>
                     )}
                   </div>
@@ -69,12 +87,12 @@ export function FunilVendas({ etapas }: FunilVendasProps) {
         </div>
         
         {/* Taxa de conversão */}
-        {etapas.length >= 2 && etapas[0].quantidade > 0 && (
+        {etapas.length >= 2 && (qtdIniciais > 0 || qtdPagos > 0) && (
           <div className="mt-4 pt-4 border-t border-border">
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">Taxa de conversão geral:</span>
               <span className="font-semibold text-foreground">
-                {(((etapas.find(e => e.status === 'pago')?.quantidade || 0) / etapas[0].quantidade) * 100).toFixed(1)}%
+                {taxaConversao.toFixed(1)}%
               </span>
             </div>
           </div>
