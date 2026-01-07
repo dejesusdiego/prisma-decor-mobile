@@ -102,6 +102,7 @@ export type Database = {
           icone: string | null
           id: string
           nome: string
+          organization_id: string | null
           tipo: string
           updated_at: string
         }
@@ -112,6 +113,7 @@ export type Database = {
           icone?: string | null
           id?: string
           nome: string
+          organization_id?: string | null
           tipo: string
           updated_at?: string
         }
@@ -122,10 +124,19 @@ export type Database = {
           icone?: string | null
           id?: string
           nome?: string
+          organization_id?: string | null
           tipo?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "categorias_financeiras_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       comissoes: {
         Row: {
@@ -293,6 +304,7 @@ export type Database = {
           created_at: string | null
           descricao: string | null
           id: string
+          organization_id: string | null
           updated_at: string | null
           valor: Json
         }
@@ -301,6 +313,7 @@ export type Database = {
           created_at?: string | null
           descricao?: string | null
           id?: string
+          organization_id?: string | null
           updated_at?: string | null
           valor: Json
         }
@@ -309,10 +322,19 @@ export type Database = {
           created_at?: string | null
           descricao?: string | null
           id?: string
+          organization_id?: string | null
           updated_at?: string | null
           valor?: Json
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "configuracoes_sistema_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       contas_pagar: {
         Row: {
@@ -725,6 +747,7 @@ export type Database = {
           id: string
           max_parcelas: number | null
           nome: string
+          organization_id: string | null
           permite_parcelamento: boolean
           taxa_percentual: number | null
           tipo: string
@@ -736,6 +759,7 @@ export type Database = {
           id?: string
           max_parcelas?: number | null
           nome: string
+          organization_id?: string | null
           permite_parcelamento?: boolean
           taxa_percentual?: number | null
           tipo: string
@@ -747,12 +771,21 @@ export type Database = {
           id?: string
           max_parcelas?: number | null
           nome?: string
+          organization_id?: string | null
           permite_parcelamento?: boolean
           taxa_percentual?: number | null
           tipo?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "formas_pagamento_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       historico_descontos: {
         Row: {

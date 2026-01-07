@@ -44,6 +44,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useOnboardingContext } from '@/components/onboarding/OnboardingProvider';
+import { useOrganizationContext } from '@/contexts/OrganizationContext';
 
 export type View = 
   | 'home'
@@ -181,6 +182,7 @@ export function OrcamentoSidebar({ currentView, onNavigate }: OrcamentoSidebarPr
   const navigate = useNavigate();
   const { isAdmin } = useUserRole();
   const { resetOnboarding } = useOnboardingContext();
+  const { organization, isLoading: isOrgLoading } = useOrganizationContext();
   const [collapsed, setCollapsed] = useState(getInitialCollapsed);
   const [isDark, setIsDark] = useState(false);
   const [visitasNaoVistas, setVisitasNaoVistas] = useState(0);
@@ -476,22 +478,51 @@ export function OrcamentoSidebar({ currentView, onNavigate }: OrcamentoSidebarPr
         collapsed ? "w-16" : "w-64"
       )}
     >
-      {/* Header */}
+      {/* Header - Organization Branding */}
       <div className={cn(
         "h-16 border-b flex items-center px-4 shrink-0",
         collapsed ? "justify-center" : "justify-between"
       )}>
         {!collapsed && (
-          <div className="flex flex-col">
-            <span className="font-bold text-foreground">Prisma</span>
-            <span className="text-xs text-muted-foreground">Sistema de Orçamentos</span>
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            {organization?.logo_url ? (
+              <img 
+                src={organization.logo_url} 
+                alt={organization.name}
+                className="h-8 w-8 rounded-md object-contain shrink-0"
+              />
+            ) : (
+              <div className="h-8 w-8 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
+                <Building2 className="h-4 w-4 text-primary" />
+              </div>
+            )}
+            <div className="flex flex-col min-w-0">
+              <span className="font-bold text-foreground truncate">
+                {organization?.name || 'Carregando...'}
+              </span>
+              <span className="text-xs text-muted-foreground truncate">
+                {organization?.tagline || 'Sistema de Orçamentos'}
+              </span>
+            </div>
+          </div>
+        )}
+        {collapsed && organization?.logo_url && (
+          <img 
+            src={organization.logo_url} 
+            alt={organization?.name || ''}
+            className="h-8 w-8 rounded-md object-contain"
+          />
+        )}
+        {collapsed && !organization?.logo_url && (
+          <div className="h-8 w-8 rounded-md bg-primary/10 flex items-center justify-center">
+            <Building2 className="h-4 w-4 text-primary" />
           </div>
         )}
         <Button
           variant="ghost"
           size="icon"
           onClick={() => setCollapsed(!collapsed)}
-          className="h-8 w-8"
+          className={cn("h-8 w-8 shrink-0", collapsed ? "hidden" : "")}
         >
           <ChevronLeft className={cn(
             "h-4 w-4 transition-transform duration-200",

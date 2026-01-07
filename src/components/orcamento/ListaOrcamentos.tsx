@@ -98,16 +98,15 @@ export function ListaOrcamentos({ onVoltar, onEditar, onVisualizar, onVerFinance
     carregarOrcamentos();
   }, [user]);
 
-  const carregarOrcamentos = async () => {
+const carregarOrcamentos = async () => {
     if (!user) return;
 
     setLoading(true);
     try {
-      // Buscar orçamentos
+      // Buscar orçamentos - RLS filtra por organization_id automaticamente
       const { data: orcamentosData, error: orcError } = await supabase
         .from('orcamentos')
         .select('*')
-        .eq('created_by_user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (orcError) throw orcError;

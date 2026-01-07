@@ -7,10 +7,17 @@ export interface Organization {
   name: string;
   slug: string;
   logo_url: string | null;
-  primary_color: string;
-  active: boolean;
-  created_at: string;
-  updated_at: string;
+  primary_color: string | null;
+  tagline: string | null;
+  email: string | null;
+  phone: string | null;
+  whatsapp: string | null;
+  website: string | null;
+  cnpj: string | null;
+  address: string | null;
+  active: boolean | null;
+  created_at: string | null;
+  updated_at: string | null;
 }
 
 export interface OrganizationMember {
