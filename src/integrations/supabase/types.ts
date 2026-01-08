@@ -2095,6 +2095,7 @@ export type Database = {
       gerar_codigo_orcamento: { Args: never; Returns: string }
       gerar_numero_pedido: { Args: never; Returns: string }
       get_user_organization_id: { Args: never; Returns: string }
+      get_user_organization_id_direct: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
