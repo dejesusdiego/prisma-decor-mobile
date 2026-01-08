@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { startOfWeek, subWeeks, format, startOfMonth, endOfMonth, addMonths } from 'date-fns';
 import { STATUS_COM_PAGAMENTO } from '@/lib/statusOrcamento';
+import { useOrganization } from '@/hooks/useOrganization';
 
 interface MetricasAvancadas {
   ltv: number;
@@ -36,27 +37,34 @@ interface OrcamentoMargemBaixa {
 }
 
 export function useDashboardExecutivoMetricas() {
+  const { organizationId } = useOrganization();
+  
   return useQuery({
-    queryKey: ['dashboard-executivo-metricas'],
+    queryKey: ['dashboard-executivo-metricas', organizationId],
     queryFn: async () => {
+      if (!organizationId) return null;
+      
       const hoje = new Date();
       
       // Buscar orçamentos pagos para LTV e Ticket Médio
       const { data: orcamentosPagos } = await supabase
         .from('orcamentos')
         .select('id, codigo, cliente_nome, cliente_telefone, total_com_desconto, total_geral, custo_total, margem_percent')
+        .eq('organization_id', organizationId)
         .in('status', STATUS_COM_PAGAMENTO);
       
       // Buscar contas receber para margem realizada
       const { data: contasReceber } = await supabase
         .from('contas_receber')
         .select('orcamento_id, valor_total, valor_pago')
+        .eq('organization_id', organizationId)
         .not('orcamento_id', 'is', null);
       
       // Buscar contas pagar para custos reais
       const { data: contasPagar } = await supabase
         .from('contas_pagar')
         .select('orcamento_id, valor, status')
+        .eq('organization_id', organizationId)
         .not('orcamento_id', 'is', null);
       
       // Calcular LTV (por cliente único)
@@ -156,6 +164,7 @@ export function useDashboardExecutivoMetricas() {
         const { data: lancamentos } = await supabase
           .from('lancamentos_financeiros')
           .select('valor')
+          .eq('organization_id', organizationId)
           .eq('tipo', 'receita')
           .gte('data_lancamento', format(inicioSemana, 'yyyy-MM-dd'))
           .lte('data_lancamento', format(fimSemana, 'yyyy-MM-dd'));
@@ -164,7 +173,8 @@ export function useDashboardExecutivoMetricas() {
         const { data: conversoes } = await supabase
           .from('orcamentos')
           .select('id, total_com_desconto, total_geral')
-          .in('status', ['pago', 'pago_parcial', 'pago_40'])
+          .eq('organization_id', organizationId)
+          .in('status', STATUS_COM_PAGAMENTO)
           .gte('status_updated_at', format(inicioSemana, 'yyyy-MM-dd'))
           .lte('status_updated_at', format(fimSemana, 'yyyy-MM-dd'));
         
@@ -190,6 +200,7 @@ export function useDashboardExecutivoMetricas() {
       const { data: receitaMesAtual } = await supabase
         .from('lancamentos_financeiros')
         .select('valor')
+        .eq('organization_id', organizationId)
         .eq('tipo', 'receita')
         .gte('data_lancamento', format(inicioMesAtual, 'yyyy-MM-dd'))
         .lte('data_lancamento', format(hoje, 'yyyy-MM-dd'));
@@ -206,6 +217,7 @@ export function useDashboardExecutivoMetricas() {
         const { data: receitaMes } = await supabase
           .from('lancamentos_financeiros')
           .select('valor')
+          .eq('organization_id', organizationId)
           .eq('tipo', 'receita')
           .gte('data_lancamento', format(inicioMes, 'yyyy-MM-dd'))
           .lte('data_lancamento', format(fimMes, 'yyyy-MM-dd'));
@@ -218,6 +230,7 @@ export function useDashboardExecutivoMetricas() {
       const { data: pipelineAtivo } = await supabase
         .from('orcamentos')
         .select('total_com_desconto, total_geral')
+        .eq('organization_id', organizationId)
         .in('status', ['enviado', 'sem_resposta', 'em_negociacao']);
       
       const valorPipeline = (pipelineAtivo || []).reduce((sum, o) => 
@@ -226,11 +239,12 @@ export function useDashboardExecutivoMetricas() {
       // Taxa de conversão histórica
       const { data: todosOrcamentos } = await supabase
         .from('orcamentos')
-        .select('status');
+        .select('status')
+        .eq('organization_id', organizationId);
       
       const totalOrc = (todosOrcamentos || []).length || 1;
       const pagos = (todosOrcamentos || []).filter(o => 
-        ['pago', 'pago_parcial', 'pago_40', 'instalado', 'concluido'].includes(o.status)).length;
+        STATUS_COM_PAGAMENTO.includes(o.status as any)).length;
       const taxaConversao = pagos / totalOrc;
       
       const pipelineConvertido = valorPipeline * taxaConversao;
@@ -259,6 +273,7 @@ export function useDashboardExecutivoMetricas() {
         orcamentosComMargemBaixa
       };
     },
+    enabled: !!organizationId,
     refetchInterval: 300000, // 5 minutos
     staleTime: 60000 // 1 minuto
   });

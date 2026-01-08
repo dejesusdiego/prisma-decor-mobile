@@ -49,10 +49,7 @@ const ORIGENS_LABELS: Record<string, string> = {
   null: 'Não informada'
 };
 
-// Status de orçamentos que indicam "ganho" (venda fechada)
-const STATUS_GANHO = ['pago_40', 'pago_parcial', 'pago_60', 'pago', 'em_producao', 'instalado', 'finalizado'];
-// Status que indica "perda"
-const STATUS_PERDIDO = ['recusado'];
+import { STATUS_COM_PAGAMENTO, STATUS_NEGOCIO_PERDIDO } from '@/lib/statusOrcamento';
 
 export function RelatoriosCRM() {
   const { organizationId } = useOrganization();
@@ -105,7 +102,7 @@ export function RelatoriosCRM() {
 
   // Orçamentos ganhos agrupados por origem do contato
   const orcamentosGanhosPorOrigem = orcamentos
-    ?.filter(o => STATUS_GANHO.includes(o.status))
+    ?.filter(o => STATUS_COM_PAGAMENTO.includes(o.status as any))
     .reduce((acc, o) => {
       const origem = (o.contato as any)?.origem || 'null';
       acc[origem] = (acc[origem] || 0) + 1;
@@ -125,7 +122,7 @@ export function RelatoriosCRM() {
   }).sort((a, b) => b.taxa - a.taxa);
 
   // ========== MOTIVOS DE PERDA (orçamentos recusados) ==========
-  const orcamentosPerdidos = orcamentos?.filter(o => STATUS_PERDIDO.includes(o.status)) || [];
+  const orcamentosPerdidos = orcamentos?.filter(o => STATUS_NEGOCIO_PERDIDO.includes(o.status as any)) || [];
   
   // Extrair motivo das observações (formato: "Motivo: xxx" ou usar "Não informado")
   const motivosPerdaContagem = orcamentosPerdidos.reduce((acc, o) => {
@@ -171,7 +168,7 @@ export function RelatoriosCRM() {
     }
     acc[vendedor].total += 1;
     acc[vendedor].valor += o.total_geral || 0;
-    if (STATUS_GANHO.includes(o.status)) {
+    if (STATUS_COM_PAGAMENTO.includes(o.status as any)) {
       acc[vendedor].ganhas += 1;
       acc[vendedor].valorGanho += o.total_geral || 0;
     }
