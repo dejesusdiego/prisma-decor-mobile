@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { parseDateOnly, formatDateOnly, startOfToday } from '@/lib/dateOnly';
 import { useNavigate } from 'react-router-dom';
 import { calcularStatusDinamico, isPagamentoCompleto } from '@/lib/calculosFinanceiros';
+import { useOrganizationContext } from '@/contexts/OrganizationContext';
 import { 
   Plus, 
   Search, 
@@ -74,6 +75,7 @@ interface ContasReceberProps {
 
 export function ContasReceber({ onNavigate }: ContasReceberProps) {
   const queryClient = useQueryClient();
+  const { organizationId } = useOrganizationContext();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('todos');
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -83,7 +85,7 @@ export function ContasReceber({ onNavigate }: ContasReceberProps) {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
   const { data: contas = [], isLoading } = useQuery({
-    queryKey: ['contas-receber'],
+    queryKey: ['contas-receber', organizationId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('contas_receber')
@@ -92,11 +94,13 @@ export function ContasReceber({ onNavigate }: ContasReceberProps) {
           parcelas:parcelas_receber(*),
           orcamento:orcamentos(id, codigo, cliente_nome)
         `)
+        .eq('organization_id', organizationId)
         .order('data_vencimento', { ascending: true });
       
       if (error) throw error;
       return data;
-    }
+    },
+    enabled: !!organizationId,
   });
 
   // Calcular status dinâmico (atrasado) baseado na data de vencimento
@@ -137,7 +141,7 @@ export function ContasReceber({ onNavigate }: ContasReceberProps) {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from('contas_receber').delete().eq('id', id);
+      const { error } = await supabase.from('contas_receber').delete().eq('id', id).eq('organization_id', organizationId);
       if (error) throw error;
     },
     onSuccess: () => {

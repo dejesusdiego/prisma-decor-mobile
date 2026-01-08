@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useOrganizationContext } from '@/contexts/OrganizationContext';
 import { 
   STATUS_COM_PAGAMENTO, 
   STATUS_TOTALMENTE_PAGO,
@@ -344,38 +345,33 @@ export function calcularMetricasProducao(pedidos: any[], instalacoes: any[]): Me
 // ============ HOOK PRINCIPAL ============
 
 export function useMetricasCentralizadas() {
+  const { organizationId } = useOrganizationContext();
+  
   return useQuery({
-    queryKey: ['metricas-centralizadas'],
+    queryKey: ['metricas-centralizadas', organizationId],
     queryFn: async (): Promise<MetricasCentralizadas> => {
+      if (!organizationId) throw new Error('Organization ID required');
+      
       // Buscar todos os dados em paralelo
-      const [
-        { data: orcamentos },
-        { data: contatos },
-        { data: contasReceber },
-        { data: contasPagar },
-        { data: lancamentos },
-        { data: pedidos },
-        { data: instalacoes },
-        { data: atividades },
-      ] = await Promise.all([
-        supabase.from('orcamentos').select('*'),
-        supabase.from('contatos').select('*'),
-        supabase.from('contas_receber').select('*'),
-        supabase.from('contas_pagar').select('*, categorias_financeiras(nome)'),
-        supabase.from('lancamentos_financeiros').select('*').eq('ignorado', false),
-        supabase.from('pedidos').select('*'),
-        supabase.from('instalacoes').select('*'),
-        supabase.from('atividades_crm').select('*'),
+      const results = await Promise.all([
+        supabase.from('orcamentos').select('*').eq('organization_id', organizationId!),
+        supabase.from('contatos').select('*').eq('organization_id', organizationId!),
+        supabase.from('contas_receber').select('*').eq('organization_id', organizationId!),
+        supabase.from('contas_pagar').select('*, categorias_financeiras(nome)').eq('organization_id', organizationId!),
+        supabase.from('lancamentos_financeiros').select('*').eq('organization_id', organizationId!).eq('ignorado', false),
+        supabase.from('pedidos').select('*').eq('organization_id', organizationId!),
+        supabase.from('instalacoes').select('*').eq('organization_id', organizationId!),
+        supabase.from('atividades_crm').select('*').eq('organization_id', organizationId!),
       ]);
 
-      const orcamentosArr = orcamentos || [];
-      const contatosArr = contatos || [];
-      const contasReceberArr = contasReceber || [];
-      const contasPagarArr = contasPagar || [];
-      const lancamentosArr = lancamentos || [];
-      const pedidosArr = pedidos || [];
-      const instalacoesArr = instalacoes || [];
-      const atividadesArr = atividades || [];
+      const orcamentosArr = results[0].data || [];
+      const contatosArr = results[1].data || [];
+      const contasReceberArr = results[2].data || [];
+      const contasPagarArr = results[3].data || [];
+      const lancamentosArr = results[4].data || [];
+      const pedidosArr = results[5].data || [];
+      const instalacoesArr = results[6].data || [];
+      const atividadesArr = results[7].data || [];
 
       return {
         orcamentos: calcularMetricasOrcamentos(orcamentosArr),
@@ -394,6 +390,7 @@ export function useMetricasCentralizadas() {
         },
       };
     },
+    enabled: !!organizationId,
     staleTime: 1000 * 60 * 2, // 2 minutos
     refetchInterval: 1000 * 60 * 5, // 5 minutos
   });

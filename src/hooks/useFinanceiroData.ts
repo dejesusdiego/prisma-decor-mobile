@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { format, eachDayOfInterval, parseISO } from 'date-fns';
+import { useOrganizationContext } from '@/contexts/OrganizationContext';
 
 export interface ResumoFinanceiro {
   saldo: number;
@@ -49,12 +50,13 @@ export interface LancamentoRecente {
 }
 
 export function useFinanceiroData(dataInicio: Date, dataFim: Date) {
+  const { organizationId } = useOrganizationContext();
   const inicioStr = format(dataInicio, 'yyyy-MM-dd');
   const fimStr = format(dataFim, 'yyyy-MM-dd');
 
   // Buscar lançamentos do período
   const { data: lancamentos, isLoading: isLoadingLancamentos, refetch: refetchLancamentos } = useQuery({
-    queryKey: ['lancamentos-financeiros', inicioStr, fimStr],
+    queryKey: ['lancamentos-financeiros', inicioStr, fimStr, organizationId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('lancamentos_financeiros')
@@ -62,6 +64,7 @@ export function useFinanceiroData(dataInicio: Date, dataFim: Date) {
           *,
           categoria:categorias_financeiras(nome, cor)
         `)
+        .eq('organization_id', organizationId)
         .gte('data_lancamento', inicioStr)
         .lte('data_lancamento', fimStr)
         .order('data_lancamento', { ascending: false });
@@ -69,11 +72,12 @@ export function useFinanceiroData(dataInicio: Date, dataFim: Date) {
       if (error) throw error;
       return data || [];
     },
+    enabled: !!organizationId,
   });
 
   // Buscar contas a pagar pendentes
   const { data: contasPagar, isLoading: isLoadingContasPagar, refetch: refetchContasPagar } = useQuery({
-    queryKey: ['contas-pagar-pendentes'],
+    queryKey: ['contas-pagar-pendentes', organizationId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('contas_pagar')
@@ -81,6 +85,7 @@ export function useFinanceiroData(dataInicio: Date, dataFim: Date) {
           *,
           categoria:categorias_financeiras(nome, cor)
         `)
+        .eq('organization_id', organizationId)
         .in('status', ['pendente', 'atrasado'])
         .order('data_vencimento', { ascending: true })
         .limit(10);
@@ -88,15 +93,17 @@ export function useFinanceiroData(dataInicio: Date, dataFim: Date) {
       if (error) throw error;
       return data || [];
     },
+    enabled: !!organizationId,
   });
 
   // Buscar contas a receber pendentes
   const { data: contasReceber, isLoading: isLoadingContasReceber, refetch: refetchContasReceber } = useQuery({
-    queryKey: ['contas-receber-pendentes'],
+    queryKey: ['contas-receber-pendentes', organizationId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('contas_receber')
         .select('*')
+        .eq('organization_id', organizationId)
         .in('status', ['pendente', 'parcial', 'atrasado'])
         .order('data_vencimento', { ascending: true })
         .limit(10);
@@ -104,20 +111,23 @@ export function useFinanceiroData(dataInicio: Date, dataFim: Date) {
       if (error) throw error;
       return data || [];
     },
+    enabled: !!organizationId,
   });
 
   // Buscar categorias para despesas
   const { data: categorias } = useQuery({
-    queryKey: ['categorias-financeiras'],
+    queryKey: ['categorias-financeiras', organizationId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('categorias_financeiras')
         .select('*')
+        .eq('organization_id', organizationId)
         .eq('ativo', true);
 
       if (error) throw error;
       return data || [];
     },
+    enabled: !!organizationId,
   });
 
   const isLoading = isLoadingLancamentos || isLoadingContasPagar || isLoadingContasReceber;

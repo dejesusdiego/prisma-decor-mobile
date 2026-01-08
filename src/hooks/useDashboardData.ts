@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useOrganizationContext } from '@/contexts/OrganizationContext';
 import { STATUS_LIST, getStatusConfig } from '@/lib/statusOrcamento';
 import {
   getValorEfetivo,
@@ -159,6 +160,7 @@ function calcularTendencia(atual: number, anterior: number): Tendencia {
 }
 
 export function useDashboardData(periodo: PeriodoFiltro = '30d'): DashboardData {
+  const { organizationId } = useOrganizationContext();
   const [stats, setStats] = useState<Stats>({
     totalOrcamentos: 0,
     valorTotal: 0,
@@ -189,6 +191,8 @@ export function useDashboardData(periodo: PeriodoFiltro = '30d'): DashboardData 
   const [error, setError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
+    if (!organizationId) return;
+    
     setIsLoading(true);
     setError(null);
 
@@ -200,6 +204,7 @@ export function useDashboardData(periodo: PeriodoFiltro = '30d'): DashboardData 
       const { data: orcamentos, error: orcError } = await supabase
         .from('orcamentos')
         .select('*')
+        .eq('organization_id', organizationId)
         .gte('created_at', inicio.toISOString())
         .lte('created_at', fim.toISOString())
         .order('created_at', { ascending: false });
@@ -210,6 +215,7 @@ export function useDashboardData(periodo: PeriodoFiltro = '30d'): DashboardData 
       const { data: orcamentosAnteriores } = await supabase
         .from('orcamentos')
         .select('*')
+        .eq('organization_id', organizationId)
         .gte('created_at', inicioAnterior.toISOString())
         .lte('created_at', fimAnterior.toISOString());
 
@@ -229,6 +235,7 @@ export function useDashboardData(periodo: PeriodoFiltro = '30d'): DashboardData 
       const { data: configMeta } = await supabase
         .from('configuracoes_sistema')
         .select('valor')
+        .eq('organization_id', organizationId)
         .eq('chave', 'meta_vendas_mensal')
         .maybeSingle();
 

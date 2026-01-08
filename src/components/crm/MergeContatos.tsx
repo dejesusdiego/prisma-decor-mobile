@@ -28,6 +28,7 @@ import {
 import { useContatos, Contato } from '@/hooks/useCRMData';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useOrganizationContext } from '@/contexts/OrganizationContext';
 
 interface DuplicateGroup {
   key: string;
@@ -37,6 +38,7 @@ interface DuplicateGroup {
 
 export function MergeContatos() {
   const { data: contatos, isLoading, refetch } = useContatos();
+  const { organizationId } = useOrganizationContext();
   
   const [selectedGroup, setSelectedGroup] = useState<DuplicateGroup | null>(null);
   const [selectedPrimary, setSelectedPrimary] = useState<string | null>(null);
@@ -112,18 +114,21 @@ export function MergeContatos() {
       await supabase
         .from('oportunidades')
         .update({ contato_id: selectedPrimary })
+        .eq('organization_id', organizationId)
         .in('contato_id', secondaryIds);
 
       // Transferir atividades
       await supabase
         .from('atividades_crm')
         .update({ contato_id: selectedPrimary })
+        .eq('organization_id', organizationId)
         .in('contato_id', secondaryIds);
 
       // Transferir orçamentos
       await supabase
         .from('orcamentos')
         .update({ contato_id: selectedPrimary })
+        .eq('organization_id', organizationId)
         .in('contato_id', secondaryIds);
 
       // Somar valor_total_gasto
@@ -133,11 +138,12 @@ export function MergeContatos() {
       await supabase
         .from('contatos')
         .update({ valor_total_gasto: totalGasto })
-        .eq('id', selectedPrimary);
+        .eq('id', selectedPrimary)
+        .eq('organization_id', organizationId);
 
       // Deletar contatos secundários
       for (const id of secondaryIds) {
-        await supabase.from('contatos').delete().eq('id', id);
+        await supabase.from('contatos').delete().eq('id', id).eq('organization_id', organizationId);
       }
 
       toast.success(`${secondaryIds.length} contato(s) mesclado(s) com sucesso!`);
