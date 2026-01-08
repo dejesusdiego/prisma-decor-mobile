@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useOrganizationContext } from '@/contexts/OrganizationContext';
 import { formatDateOnly } from '@/lib/dateOnly';
 import { 
   FileQuestion, 
@@ -117,6 +118,7 @@ interface SugestaoAutomatica {
 
 export function RelatorioLancamentosOrfaos() {
   const { user } = useAuth();
+  const { organizationId } = useOrganizationContext();
   const queryClient = useQueryClient();
   const [busca, setBusca] = useState('');
   const [filtroTipo, setFiltroTipo] = useState<'todos' | 'entrada' | 'saida'>('entrada');
@@ -130,14 +132,17 @@ export function RelatorioLancamentosOrfaos() {
 
   // Buscar lançamentos órfãos (sem vínculo com parcelas ou contas)
   const { data: lancamentosOrfaos = [], isLoading } = useQuery({
-    queryKey: ['lancamentos-orfaos', filtroTipo],
+    queryKey: ['lancamentos-orfaos', filtroTipo, organizationId],
     queryFn: async () => {
-      let query = supabase
-        .from('lancamentos_financeiros')
+      if (!organizationId) return [];
+      
+      const lancTable = supabase.from('lancamentos_financeiros') as any;
+      let query = lancTable
         .select(`
           id, descricao, valor, data_lancamento, tipo,
           categoria:categorias_financeiras(nome)
         `)
+        .eq('organization_id', organizationId)
         .is('parcela_receber_id', null)
         .is('conta_pagar_id', null)
         .order('data_lancamento', { ascending: false });
@@ -154,18 +159,21 @@ export function RelatorioLancamentosOrfaos() {
 
   // Buscar orçamentos disponíveis (sempre carregar para auto-conciliação)
   const { data: orcamentos = [] } = useQuery({
-    queryKey: ['orcamentos-para-vincular-auto'],
+    queryKey: ['orcamentos-para-vincular-auto', organizationId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('orcamentos')
+      if (!organizationId) return [];
+      const orcTable = supabase.from('orcamentos') as any;
+      const { data, error } = await orcTable
         .select('id, codigo, cliente_nome, total_com_desconto, total_geral, status, created_at')
+        .eq('organization_id', organizationId)
         .in('status', ['enviado', 'sem_resposta', 'pago_parcial', '40_pago', '60_pago'])
         .order('created_at', { ascending: false })
         .limit(200);
 
       if (error) throw error;
       return (data || []) as OrcamentoParaVincular[];
-    }
+    },
+    enabled: !!organizationId,
   });
 
   // Filtrar lançamentos
@@ -272,8 +280,8 @@ export function RelatorioLancamentosOrfaos() {
         contaReceberId = contaExistente.id;
         proximoNumeroParcela = contaExistente.numero_parcelas + 1;
       } else {
-        const { data: novaConta, error: erroConta } = await supabase
-          .from('contas_receber')
+        const contasTable = supabase.from('contas_receber') as any;
+        const { data: novaConta, error: erroConta } = await contasTable
           .insert({
             orcamento_id: orcamentoSelecionado,
             cliente_nome: orcamento.cliente_nome,
@@ -284,7 +292,8 @@ export function RelatorioLancamentosOrfaos() {
             data_vencimento: lancamentosParaVincular[0].data_lancamento,
             status: 'pendente',
             observacoes: 'Conta criada via vinculação em massa',
-            created_by_user_id: user.id
+            created_by_user_id: user.id,
+            organization_id: organizationId
           })
           .select('id')
           .single();

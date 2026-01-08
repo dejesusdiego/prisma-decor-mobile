@@ -22,6 +22,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { ArrowLeft, Edit, Copy, FileDown, Search, Trash2, Eye, Receipt, CheckCircle2, Clock, AlertCircle, Banknote, Download } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useOrganizationContext } from '@/contexts/OrganizationContext';
 import { toast } from '@/hooks/use-toast';
 import { DialogValidade } from './DialogValidade';
 import { DialogDuplicarOrcamento } from './dialogs/DialogDuplicarOrcamento';
@@ -72,6 +73,7 @@ const STATUS_PAGAMENTO: StatusOrcamento[] = ['pago_40', 'pago_parcial', 'pago_60
 
 export function ListaOrcamentos({ onVoltar, onEditar, onVisualizar, onVerFinanceiro }: ListaOrcamentosProps) {
   const { user } = useAuth();
+  const { organizationId } = useOrganizationContext();
   const [orcamentos, setOrcamentos] = useState<Orcamento[]>([]);
   const [filtroNome, setFiltroNome] = useState('');
   const [filtroStatus, setFiltroStatus] = useState('todos');
@@ -96,24 +98,25 @@ export function ListaOrcamentos({ onVoltar, onEditar, onVisualizar, onVerFinance
 
   useEffect(() => {
     carregarOrcamentos();
-  }, [user]);
+  }, [user, organizationId]);
 
 const carregarOrcamentos = async () => {
-    if (!user) return;
+    if (!user || !organizationId) return;
 
     setLoading(true);
     try {
-      // Buscar orçamentos - RLS filtra por organization_id automaticamente
-      const { data: orcamentosData, error: orcError } = await supabase
-        .from('orcamentos')
+      // Buscar orçamentos com filtro de organization_id
+      const orcTable = supabase.from('orcamentos') as any;
+      const { data: orcamentosData, error: orcError } = await orcTable
         .select('*')
+        .eq('organization_id', organizationId)
         .order('created_at', { ascending: false });
 
       if (orcError) throw orcError;
 
       // Buscar contas a receber vinculadas
-      const { data: contasData, error: contasError } = await supabase
-        .from('contas_receber')
+      const contasTable = supabase.from('contas_receber') as any;
+      const { data: contasData, error: contasError } = await contasTable
         .select(`
           id,
           orcamento_id,
@@ -123,6 +126,7 @@ const carregarOrcamentos = async () => {
           numero_parcelas,
           parcelas_receber (status)
         `)
+        .eq('organization_id', organizationId)
         .in('orcamento_id', (orcamentosData || []).map(o => o.id));
 
       if (contasError) throw contasError;
@@ -194,10 +198,11 @@ const carregarOrcamentos = async () => {
 
     // Atualização normal de status
     try {
-      const { error } = await supabase
-        .from('orcamentos')
+      const orcTable = supabase.from('orcamentos') as any;
+      const { error } = await orcTable
         .update({ status: novoStatus })
-        .eq('id', orcamentoId);
+        .eq('id', orcamentoId)
+        .eq('organization_id', organizationId);
 
       if (error) throw error;
 
@@ -281,17 +286,19 @@ const carregarOrcamentos = async () => {
     }
 
     try {
-      const { error: cortinasError } = await supabase
-        .from('cortina_items')
+      // cortina_items não tem organization_id, mas está vinculada ao orçamento
+      const cortinaTable = supabase.from('cortina_items') as any;
+      const { error: cortinasError } = await cortinaTable
         .delete()
         .eq('orcamento_id', orcamentoId);
 
       if (cortinasError) throw cortinasError;
 
-      const { error: orcError } = await supabase
-        .from('orcamentos')
+      const orcTable = supabase.from('orcamentos') as any;
+      const { error: orcError } = await orcTable
         .delete()
-        .eq('id', orcamentoId);
+        .eq('id', orcamentoId)
+        .eq('organization_id', organizationId);
 
       if (orcError) throw orcError;
 
@@ -345,10 +352,11 @@ const carregarOrcamentos = async () => {
     try {
       setLoading(true);
 
-      const { error } = await supabase
-        .from('orcamentos')
+      const orcTable = supabase.from('orcamentos') as any;
+      const { error } = await orcTable
         .update({ validade_dias: novaValidade })
-        .eq('id', orcamentoSelecionadoId);
+        .eq('id', orcamentoSelecionadoId)
+        .eq('organization_id', organizationId);
 
       if (error) throw error;
 
