@@ -56,6 +56,7 @@ export function useDuplicarOrcamento() {
           codigo: '', // Trigger gera automaticamente
           contato_id: null, // Não herda vínculo CRM
           custos_gerados: false,
+          organization_id: original.organization_id, // Copiar organization_id
         })
         .select()
         .single();

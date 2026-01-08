@@ -249,6 +249,9 @@ export function EtapaResumo({
           custo_total: resumo.custoTotal,
           total_geral: resumo.totalGeral,
           validade_dias: novaValidade,
+          desconto_tipo: descontoTipo,
+          desconto_valor: descontoValor,
+          total_com_desconto: totalComDesconto,
         })
         .eq('id', orcamentoId);
 
