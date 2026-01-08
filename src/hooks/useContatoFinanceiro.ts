@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useOrganization } from '@/hooks/useOrganization';
 
 export interface ContaReceberContato {
   id: string;
@@ -44,15 +45,19 @@ export interface PedidoContato {
 }
 
 export function useContatoFinanceiro(contatoId: string | null, telefone: string | null) {
+  const { organizationId } = useOrganization();
+  
   return useQuery({
-    queryKey: ['contato-financeiro', contatoId, telefone],
+    queryKey: ['contato-financeiro', contatoId, telefone, organizationId],
     queryFn: async () => {
       if (!contatoId && !telefone) return { contasReceber: [], totalAReceber: 0, totalRecebido: 0 };
+      if (!organizationId) return { contasReceber: [], totalAReceber: 0, totalRecebido: 0 };
 
       // Buscar orçamentos do contato
       let query = supabase
         .from('orcamentos')
-        .select('id');
+        .select('id')
+        .eq('organization_id', organizationId);
       
       if (contatoId) {
         query = query.or(`contato_id.eq.${contatoId}${telefone ? `,cliente_telefone.eq.${telefone}` : ''}`);
@@ -75,6 +80,7 @@ export function useContatoFinanceiro(contatoId: string | null, telefone: string 
           orcamento:orcamentos(codigo, total_geral),
           parcelas:parcelas_receber(id, numero_parcela, valor, data_vencimento, data_pagamento, status)
         `)
+        .eq('organization_id', organizationId)
         .in('orcamento_id', orcamentoIds)
         .order('created_at', { ascending: false });
 
@@ -89,20 +95,24 @@ export function useContatoFinanceiro(contatoId: string | null, telefone: string 
         totalRecebido
       };
     },
-    enabled: !!(contatoId || telefone)
+    enabled: !!(contatoId || telefone) && !!organizationId
   });
 }
 
 export function useContatoPedidos(contatoId: string | null, telefone: string | null) {
+  const { organizationId } = useOrganization();
+  
   return useQuery({
-    queryKey: ['contato-pedidos', contatoId, telefone],
+    queryKey: ['contato-pedidos', contatoId, telefone, organizationId],
     queryFn: async () => {
       if (!contatoId && !telefone) return [];
+      if (!organizationId) return [];
 
       // Buscar orçamentos do contato
       let query = supabase
         .from('orcamentos')
-        .select('id');
+        .select('id')
+        .eq('organization_id', organizationId);
       
       if (contatoId) {
         query = query.or(`contato_id.eq.${contatoId}${telefone ? `,cliente_telefone.eq.${telefone}` : ''}`);
@@ -123,6 +133,7 @@ export function useContatoPedidos(contatoId: string | null, telefone: string | n
           orcamento:orcamentos(codigo, cliente_nome, total_geral),
           instalacoes(id, data_agendada, turno, status)
         `)
+        .eq('organization_id', organizationId)
         .in('orcamento_id', orcamentoIds)
         .order('created_at', { ascending: false });
 
@@ -130,6 +141,6 @@ export function useContatoPedidos(contatoId: string | null, telefone: string | n
 
       return (pedidos || []) as PedidoContato[];
     },
-    enabled: !!(contatoId || telefone)
+    enabled: !!(contatoId || telefone) && !!organizationId
   });
 }
