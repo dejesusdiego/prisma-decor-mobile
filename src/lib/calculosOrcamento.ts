@@ -410,10 +410,15 @@ export function calcularResumoOrcamento(
   const markup = 1 + margemPercent / 100;
   
   // Calcular subtotais de custos internos
-  const subtotalMateriais = cortinas.reduce(
-    (acc, c) => acc + (c.custoTecido || 0) + (c.custoForro || 0) + (c.custoTrilho || 0),
-    0
-  );
+  // Para cortinas: soma componentes de materiais
+  // Para persianas/acessórios/papéis/motorizados: o custo de material é precoUnitario * quantidade
+  const subtotalMateriais = cortinas.reduce((acc, c) => {
+    if (c.tipoProduto === 'cortina') {
+      return acc + (c.custoTecido || 0) + (c.custoForro || 0) + (c.custoTrilho || 0);
+    }
+    // Para outros produtos (persiana, acessório, papel, motorizado)
+    return acc + ((c.precoUnitario || 0) * (c.quantidade || 1));
+  }, 0);
 
   const subtotalMaoObraCostura = cortinas.reduce(
     (acc, c) => acc + (c.custoCostura || 0),
@@ -425,7 +430,12 @@ export function calcularResumoOrcamento(
     0
   );
 
-  const custoTotal = subtotalMateriais + subtotalMaoObraCostura + subtotalInstalacao;
+  // CORREÇÃO: Usar custoTotal já calculado em cada item
+  // Isso inclui corretamente persianas, acessórios, papéis e motorizados
+  const custoTotal = cortinas.reduce(
+    (acc, c) => acc + (c.custoTotal || 0),
+    0
+  );
   
   // Total geral é a soma dos preços de venda de cada item (que já têm margem aplicada)
   // Para calcular aqui, aplicamos a margem no custo total de cada item
