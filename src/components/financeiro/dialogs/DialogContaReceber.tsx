@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { addMonths, format } from 'date-fns';
+import { parseDateOnly } from '@/lib/dateOnly';
 import {
   Dialog,
   DialogContent,
@@ -102,7 +103,7 @@ export function DialogContaReceber({ open, onOpenChange, conta }: DialogContaRec
         // Criar parcelas
         const parcelas = [];
         for (let i = 0; i < numParcelas; i++) {
-          const dataVencimento = addMonths(new Date(data.data_vencimento), i);
+          const dataVencimento = addMonths(parseDateOnly(data.data_vencimento) || new Date(), i);
           parcelas.push({
             conta_receber_id: novaConta.id,
             numero_parcela: i + 1,

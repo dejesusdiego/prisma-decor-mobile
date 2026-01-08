@@ -2,8 +2,7 @@ import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { formatDateOnly } from '@/lib/dateOnly';
 import { 
   FileQuestion, 
   Search, 
@@ -733,7 +732,7 @@ export function TabOrfaos({ dataInicio }: TabOrfaosProps) {
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Calendar className="h-3 w-3 text-muted-foreground" />
-                          {format(new Date(lancamento.data_lancamento), 'dd/MM/yyyy', { locale: ptBR })}
+                          {formatDateOnly(lancamento.data_lancamento)}
                         </div>
                       </TableCell>
                       <TableCell className="max-w-[250px]">
@@ -885,7 +884,7 @@ export function TabOrfaos({ dataInicio }: TabOrfaosProps) {
                           <span className="text-sm font-medium">{orc.cliente_nome}</span>
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">
-                          {format(new Date(orc.created_at), 'dd/MM/yyyy', { locale: ptBR })}
+                          {formatDateOnly(orc.created_at)}
                         </p>
                       </div>
                       <span className="font-semibold">{formatCurrency(valor)}</span>
@@ -949,7 +948,7 @@ export function TabOrfaos({ dataInicio }: TabOrfaosProps) {
                           Valor: {sugestao.score.scoreValor}%
                         </Badge>
                         <span className="text-xs text-muted-foreground">
-                          {format(new Date(sugestao.lancamento.data_lancamento), 'dd/MM/yyyy', { locale: ptBR })}
+                          {formatDateOnly(sugestao.lancamento.data_lancamento)}
                         </span>
                       </div>
                       <p className="text-sm font-medium truncate mb-1">

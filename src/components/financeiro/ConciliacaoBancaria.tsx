@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { formatDateOnly } from '@/lib/dateOnly';
 import { 
   Upload, 
   FileText, 
@@ -773,7 +774,7 @@ export function ConciliacaoBancaria() {
                               <Badge variant="outline" className="text-amber-600"><AlertCircle className="h-3 w-3 mr-1" />Pend</Badge>
                             )}
                           </TableCell>
-                          <TableCell>{format(new Date(mov.data_movimentacao), "dd/MM/yy")}</TableCell>
+                          <TableCell>{formatDateOnly(mov.data_movimentacao, 'dd/MM/yy')}</TableCell>
                           <TableCell className="max-w-[180px] truncate">{mov.descricao}</TableCell>
                           <TableCell className={`text-right font-medium ${mov.tipo === 'credito' ? 'text-green-600' : 'text-red-600'}`}>
                             {mov.tipo === 'credito' ? '+' : '-'}{formatCurrency(Number(mov.valor))}

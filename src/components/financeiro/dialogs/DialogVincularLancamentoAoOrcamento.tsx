@@ -2,8 +2,7 @@ import { useState, useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { formatDateOnly } from '@/lib/dateOnly';
 import { FileText, Search, Link2, CheckCircle2, AlertCircle, Calendar } from 'lucide-react';
 import {
   Dialog,
@@ -311,7 +310,7 @@ export function DialogVincularLancamentoAoOrcamento({
                         <p className="text-sm font-medium truncate">{lancamento.descricao}</p>
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
                           <Calendar className="h-3 w-3" />
-                          <span>{format(new Date(lancamento.data_lancamento), 'dd/MM/yyyy', { locale: ptBR })}</span>
+                          <span>{formatDateOnly(lancamento.data_lancamento)}</span>
                         </div>
                       </div>
                       <div className="text-right">
