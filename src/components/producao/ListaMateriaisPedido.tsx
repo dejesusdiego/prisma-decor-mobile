@@ -9,6 +9,7 @@ import { Package, CheckCircle2, Clock, Boxes } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useOrganization } from '@/hooks/useOrganization';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -40,6 +41,7 @@ const CATEGORIA_COLORS: Record<string, string> = {
 
 export function ListaMateriaisPedido({ pedidoId, statusPedido }: ListaMateriaisPedidoProps) {
   const { user } = useAuth();
+  const { organizationId } = useOrganization();
   const queryClient = useQueryClient();
 
   const { data: materiais, isLoading } = useQuery({
@@ -72,7 +74,7 @@ export function ListaMateriaisPedido({ pedidoId, statusPedido }: ListaMateriaisP
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['materiais-pedido', pedidoId] });
-      queryClient.invalidateQueries({ queryKey: ['pedidos'] });
+      queryClient.invalidateQueries({ queryKey: ['pedidos', organizationId] });
       toast.success('Material atualizado');
     },
     onError: () => {
@@ -96,7 +98,7 @@ export function ListaMateriaisPedido({ pedidoId, statusPedido }: ListaMateriaisP
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['materiais-pedido', pedidoId] });
-      queryClient.invalidateQueries({ queryKey: ['pedidos'] });
+      queryClient.invalidateQueries({ queryKey: ['pedidos', organizationId] });
       toast.success('Todos materiais marcados como recebidos');
     },
     onError: () => {
