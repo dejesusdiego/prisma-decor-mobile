@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { STATUS_COM_PAGAMENTO } from '@/lib/statusOrcamento';
 import { 
   Target, 
   Settings2, 
@@ -135,7 +136,7 @@ export function MetasVendas({
         .eq('tipo', 'cliente');
 
       if (orcamentos) {
-        const pagos = orcamentos.filter(o => o.status === 'pago');
+        const pagos = orcamentos.filter(o => STATUS_COM_PAGAMENTO.includes(o.status as any));
         const receita = pagos.reduce((acc, o) => acc + (o.total_com_desconto || o.total_geral || 0), 0);
         const ticket = pagos.length > 0 ? receita / pagos.length : 0;
         const conversao = orcamentos.length > 0 ? (pagos.length / orcamentos.length) * 100 : 0;

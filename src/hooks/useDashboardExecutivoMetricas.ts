@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { startOfWeek, subWeeks, format, startOfMonth, endOfMonth, addMonths } from 'date-fns';
+import { STATUS_COM_PAGAMENTO } from '@/lib/statusOrcamento';
 
 interface MetricasAvancadas {
   ltv: number;
@@ -44,7 +45,7 @@ export function useDashboardExecutivoMetricas() {
       const { data: orcamentosPagos } = await supabase
         .from('orcamentos')
         .select('id, codigo, cliente_nome, cliente_telefone, total_com_desconto, total_geral, custo_total, margem_percent')
-        .in('status', ['pago', 'pago_parcial', 'pago_40', 'instalado', 'concluido']);
+        .in('status', STATUS_COM_PAGAMENTO);
       
       // Buscar contas receber para margem realizada
       const { data: contasReceber } = await supabase

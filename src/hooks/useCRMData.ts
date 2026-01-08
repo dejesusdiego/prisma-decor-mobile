@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { useOrganization } from '@/hooks/useOrganization';
+import { STATUS_COM_PAGAMENTO } from '@/lib/statusOrcamento';
 
 export type ContatoTipo = 'lead' | 'cliente' | 'inativo';
 export type OportunidadeEtapa = 'prospeccao' | 'qualificacao' | 'proposta' | 'negociacao' | 'fechado_ganho' | 'fechado_perdido';
@@ -510,7 +511,7 @@ export function useCRMMetrics() {
         rascunho: orcamentos.filter(o => o.status === 'rascunho').length,
         finalizado: orcamentos.filter(o => o.status === 'finalizado').length,
         enviado: orcamentos.filter(o => o.status === 'enviado').length,
-        pago: orcamentos.filter(o => o.status === 'pago').length,
+        pago: orcamentos.filter(o => STATUS_COM_PAGAMENTO.includes(o.status as any)).length,
         recusado: orcamentos.filter(o => o.status === 'recusado').length,
         total: orcamentos.length
       };
@@ -520,7 +521,7 @@ export function useCRMMetrics() {
       );
       
       const valorOrcamentosPagos = orcamentos
-        .filter(o => o.status === 'pago')
+        .filter(o => STATUS_COM_PAGAMENTO.includes(o.status as any))
         .reduce((sum, o) => sum + (o.total_com_desconto || o.total_geral || 0), 0);
 
       const taxaConversaoOrcamentos = orcamentos.length > 0
