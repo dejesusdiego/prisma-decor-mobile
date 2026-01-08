@@ -7,7 +7,7 @@ import {
   STATUS_NEGOCIO_PERDIDO,
   StatusOrcamento 
 } from '@/lib/statusOrcamento';
-import { startOfMonth, endOfMonth, subMonths, differenceInDays } from 'date-fns';
+import { startOfMonth, endOfMonth, subMonths, differenceInDays, parseISO } from 'date-fns';
 import { parseDateOnly, startOfToday } from '@/lib/dateOnly';
 
 // ============ INTERFACES ============
@@ -179,7 +179,7 @@ export function calcularMetricasFinanceiro(
 }
 
 export function calcularMetricasCRM(contatos: any[], atividades: any[]): MetricasCRM {
-  const hoje = new Date();
+  const hoje = startOfToday();
   const seteDiasAtras = subMonths(hoje, 0);
   seteDiasAtras.setDate(seteDiasAtras.getDate() - 7);
   
@@ -189,12 +189,14 @@ export function calcularMetricasCRM(contatos: any[], atividades: any[]): Metrica
   
   const semInteracao = contatos.filter(c => {
     if (!c.ultima_interacao_em) return true;
-    return new Date(c.ultima_interacao_em) < seteDiasAtras;
+    const interacao = parseDateOnly(c.ultima_interacao_em);
+    return interacao ? interacao < seteDiasAtras : true;
   }).length;
   
-  const followUpsPendentes = atividades.filter(a => 
-    !a.concluida && new Date(a.data_atividade) <= hoje
-  ).length;
+  const followUpsPendentes = atividades.filter(a => {
+    const dataAtiv = parseDateOnly(a.data_atividade);
+    return !a.concluida && dataAtiv && dataAtiv <= hoje;
+  }).length;
 
   return {
     totalContatos: contatos.length,
@@ -213,7 +215,7 @@ export function calcularKPIs(
   contasPagar: any[],
   mesesAnalise: number = 6
 ): MetricasKPIs {
-  const hoje = new Date();
+  const hoje = startOfToday();
   const dataInicio = subMonths(hoje, mesesAnalise);
   
   // Orçamentos pagos (usar STATUS_COM_PAGAMENTO)
@@ -223,10 +225,11 @@ export function calcularKPIs(
   const clientesPagos = new Set(orcamentosPagos.map(o => o.cliente_telefone));
   const clientesAtivos = clientesPagos.size;
   
-  // Clientes novos no período
-  const clientesNovos = contatos.filter(c => 
-    new Date(c.created_at) >= dataInicio && c.tipo === 'cliente'
-  ).length;
+  // Clientes novos no período (created_at é timestamp, não DATE-only, mas usar parseISO para consistência)
+  const clientesNovos = contatos.filter(c => {
+    const createdAt = parseISO(c.created_at);
+    return createdAt >= dataInicio && c.tipo === 'cliente';
+  }).length;
   
   // LTV - Valor médio por cliente
   const valorPorCliente: Record<string, number> = {};
@@ -305,7 +308,7 @@ export function calcularKPIs(
 }
 
 export function calcularMetricasProducao(pedidos: any[], instalacoes: any[]): MetricasProducao {
-  const hoje = new Date();
+  const hoje = startOfToday();
   const inicioSemana = new Date(hoje);
   inicioSemana.setDate(hoje.getDate() - hoje.getDay());
   const fimSemana = new Date(inicioSemana);
@@ -320,13 +323,14 @@ export function calcularMetricasProducao(pedidos: any[], instalacoes: any[]): Me
   const pedidosAguardando = pedidos.filter(p => statusAguardando.includes(p.status_producao)).length;
   
   const instalacoesSemana = instalacoes.filter(i => {
-    const data = new Date(i.data_agendada);
-    return data >= inicioSemana && data <= fimSemana;
+    const data = parseDateOnly(i.data_agendada);
+    return data && data >= inicioSemana && data <= fimSemana;
   }).length;
   
-  const instalacoesAtrasadas = instalacoes.filter(i => 
-    i.status === 'pendente' && new Date(i.data_agendada) < hoje
-  ).length;
+  const instalacoesAtrasadas = instalacoes.filter(i => {
+    const dataAgendada = parseDateOnly(i.data_agendada);
+    return i.status === 'pendente' && dataAgendada && dataAgendada < hoje;
+  }).length;
 
   return {
     pedidosEmProducao,

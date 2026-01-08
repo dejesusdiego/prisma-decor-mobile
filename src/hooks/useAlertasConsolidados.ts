@@ -32,13 +32,14 @@ export function useAlertasConsolidados() {
         .limit(10);
 
       followUps?.forEach(f => {
+        const dataAtividade = parseDateOnly(f.data_atividade) || new Date();
         alertas.push({
           id: `followup-${f.id}`,
           tipo: 'follow_up',
           titulo: f.titulo,
           descricao: `Atividade ${f.tipo} pendente`,
-          prioridade: isBefore(new Date(f.data_atividade), hoje) ? 'alta' : 'normal',
-          dataReferencia: new Date(f.data_atividade),
+          prioridade: isBefore(dataAtividade, hoje) ? 'alta' : 'normal',
+          dataReferencia: dataAtividade,
           referenciaId: f.id,
           referenciaTipo: 'atividade'
         });
