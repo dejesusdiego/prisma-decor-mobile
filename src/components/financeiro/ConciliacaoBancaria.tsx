@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useOrganization } from '@/hooks/useOrganization';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { formatDateOnly } from '@/lib/dateOnly';
@@ -73,6 +74,7 @@ type StatusFilter = 'todos' | 'conciliados' | 'pendentes' | 'ignorados';
 
 export function ConciliacaoBancaria() {
   const { user } = useAuth();
+  const { organizationId } = useOrganization();
   const queryClient = useQueryClient();
   const { verificarMatchesAlta } = usePadroesConciliacao();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -129,23 +131,26 @@ export function ConciliacaoBancaria() {
 
   // Buscar extratos importados
   const { data: extratos = [] } = useQuery({
-    queryKey: ['extratos-bancarios'],
-    queryFn: async () => {
+    queryKey: ['extratos-bancarios', organizationId],
+    queryFn: async (): Promise<any[]> => {
+      if (!organizationId) return [];
       const { data, error } = await supabase
         .from('extratos_bancarios')
         .select('*')
+        .eq('organization_id', organizationId)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return data;
-    }
+      return data || [];
+    },
+    enabled: !!organizationId
   });
 
   // Buscar movimentações do extrato selecionado
   const { data: movimentacoes = [], isLoading: loadingMovimentacoes } = useQuery({
-    queryKey: ['movimentacoes-extrato', extratoSelecionado],
-    queryFn: async () => {
-      if (!extratoSelecionado) return [];
+    queryKey: ['movimentacoes-extrato', extratoSelecionado, organizationId],
+    queryFn: async (): Promise<any[]> => {
+      if (!extratoSelecionado || !organizationId) return [];
       
       const { data, error } = await supabase
         .from('movimentacoes_extrato')
@@ -154,12 +159,13 @@ export function ConciliacaoBancaria() {
           lancamento:lancamentos_financeiros(id, descricao, valor, data_lancamento)
         `)
         .eq('extrato_id', extratoSelecionado)
+        .eq('organization_id', organizationId)
         .order('data_movimentacao', { ascending: false });
       
       if (error) throw error;
-      return data;
+      return data || [];
     },
-    enabled: !!extratoSelecionado
+    enabled: !!extratoSelecionado && !!organizationId
   });
 
   // Estatísticas
@@ -197,7 +203,7 @@ export function ConciliacaoBancaria() {
   // Upload após confirmação da prévia
   const uploadMutation = useMutation({
     mutationFn: async () => {
-      if (!dadosPrevia || !arquivoPrevia || !user) throw new Error('Dados inválidos');
+      if (!dadosPrevia || !arquivoPrevia || !user || !organizationId) throw new Error('Dados inválidos');
 
       let extratoId: string | null = null;
 
@@ -212,6 +218,7 @@ export function ConciliacaoBancaria() {
             data_fim: dadosPrevia.data_fim,
             status: 'concluido',
             created_by_user_id: user.id,
+            organization_id: organizationId,
           })
           .select()
           .single();
@@ -228,6 +235,7 @@ export function ConciliacaoBancaria() {
             valor: m.valor,
             tipo: m.tipo,
             numero_documento: m.numero_documento,
+            organization_id: organizationId,
           }));
 
         if (movimentacoesInsert.length === 0) {
@@ -284,8 +292,9 @@ export function ConciliacaoBancaria() {
 
   // Buscar parcelas a receber pendentes para conciliação inteligente
   const { data: parcelasPendentes = [] } = useQuery({
-    queryKey: ['parcelas-para-conciliacao', extratoSelecionado],
+    queryKey: ['parcelas-para-conciliacao', extratoSelecionado, organizationId],
     queryFn: async () => {
+      if (!organizationId) return [];
       const extrato = extratos.find(e => e.id === extratoSelecionado);
       if (!extrato) return [];
 
@@ -294,7 +303,7 @@ export function ConciliacaoBancaria() {
         .select(`
           id, numero_parcela, valor, data_vencimento, status,
           conta_receber:contas_receber(
-            id, cliente_nome, cliente_telefone, orcamento_id,
+            id, cliente_nome, cliente_telefone, orcamento_id, organization_id,
             orcamento:orcamentos(id, codigo, cliente_nome)
           )
         `)
@@ -304,10 +313,15 @@ export function ConciliacaoBancaria() {
 
       if (error) throw error;
       
+      // Filtrar por organization_id via conta_receber
+      const filtered = (data || []).filter((p: any) => 
+        p.conta_receber?.organization_id === organizationId
+      );
+
+      
       // Atualizar análise quando parcelas carregarem
-      const parcelas = data || [];
-      if (parcelas.length > 0 && movimentacoes.length > 0) {
-        const parcelasParaAnalise: ParcelaParaAnalise[] = parcelas.map(p => ({
+      if (filtered.length > 0 && movimentacoes.length > 0) {
+        const parcelasParaAnalise: ParcelaParaAnalise[] = filtered.map((p: any) => ({
           id: p.id,
           valor: Number(p.valor),
           data_vencimento: p.data_vencimento,
@@ -330,15 +344,16 @@ export function ConciliacaoBancaria() {
         setAnaliseReconciliacao(analise);
       }
       
-      return parcelas;
+      return filtered;
     },
-    enabled: !!extratoSelecionado
+    enabled: !!extratoSelecionado && !!organizationId
   });
 
   // Buscar contas a pagar pendentes para conciliação de débitos
   const { data: contasPagarPendentes = [] } = useQuery({
-    queryKey: ['contas-pagar-para-conciliacao', extratoSelecionado],
+    queryKey: ['contas-pagar-para-conciliacao', extratoSelecionado, organizationId],
     queryFn: async () => {
+      if (!organizationId) return [];
       const extrato = extratos.find(e => e.id === extratoSelecionado);
       if (!extrato) return [];
 
@@ -349,6 +364,7 @@ export function ConciliacaoBancaria() {
           orcamento:orcamentos(id, codigo, cliente_nome),
           categoria:categorias_financeiras(id, nome)
         `)
+        .eq('organization_id', organizationId)
         .in('status', ['pendente', 'atrasado'])
         .gte('data_vencimento', extrato.data_inicio || '2020-01-01')
         .lte('data_vencimento', extrato.data_fim || '2099-12-31');
@@ -356,7 +372,7 @@ export function ConciliacaoBancaria() {
       if (error) throw error;
       return data || [];
     },
-    enabled: !!extratoSelecionado
+    enabled: !!extratoSelecionado && !!organizationId
   });
 
   // Auto-conciliar (agora com parcelas também)

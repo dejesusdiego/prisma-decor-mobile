@@ -177,13 +177,17 @@ export function useCreateContato() {
 
 export function useUpdateContato() {
   const queryClient = useQueryClient();
+  const { organizationId } = useOrganization();
 
   return useMutation({
     mutationFn: async ({ id, ...contato }: Partial<Contato> & { id: string }) => {
+      if (!organizationId) throw new Error('Organization ID required');
+      
       const { data, error } = await supabase
         .from('contatos')
         .update(contato)
         .eq('id', id)
+        .eq('organization_id', organizationId)
         .select()
         .single();
       
@@ -204,13 +208,17 @@ export function useUpdateContato() {
 
 export function useDeleteContato() {
   const queryClient = useQueryClient();
+  const { organizationId } = useOrganization();
 
   return useMutation({
     mutationFn: async (id: string) => {
+      if (!organizationId) throw new Error('Organization ID required');
+      
       const { error } = await supabase
         .from('contatos')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .eq('organization_id', organizationId);
       
       if (error) throw error;
     },
@@ -296,13 +304,17 @@ export function useCreateOportunidade() {
 
 export function useUpdateOportunidade() {
   const queryClient = useQueryClient();
+  const { organizationId } = useOrganization();
 
   return useMutation({
     mutationFn: async ({ id, ...oportunidade }: Partial<Oportunidade> & { id: string }) => {
+      if (!organizationId) throw new Error('Organization ID required');
+      
       const { data, error } = await supabase
         .from('oportunidades')
         .update(oportunidade)
         .eq('id', id)
+        .eq('organization_id', organizationId)
         .select()
         .single();
       
@@ -323,13 +335,17 @@ export function useUpdateOportunidade() {
 
 export function useDeleteOportunidade() {
   const queryClient = useQueryClient();
+  const { organizationId } = useOrganization();
 
   return useMutation({
     mutationFn: async (id: string) => {
+      if (!organizationId) throw new Error('Organization ID required');
+      
       const { error } = await supabase
         .from('oportunidades')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .eq('organization_id', organizationId);
       
       if (error) throw error;
     },
@@ -453,13 +469,17 @@ export function useCreateAtividade() {
 
 export function useUpdateAtividade() {
   const queryClient = useQueryClient();
+  const { organizationId } = useOrganization();
 
   return useMutation({
     mutationFn: async ({ id, ...atividade }: Partial<Atividade> & { id: string }) => {
+      if (!organizationId) throw new Error('Organization ID required');
+      
       const { data, error } = await supabase
         .from('atividades_crm')
         .update(atividade)
         .eq('id', id)
+        .eq('organization_id', organizationId)
         .select()
         .single();
       
