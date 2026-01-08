@@ -393,7 +393,7 @@ export default function GerarOrcamento() {
 
             {/* Produção */}
             {view === 'prodDashboard' && (
-              <DashboardProducao onNavigate={handleNavigate} />
+              <DashboardProducao onNavigate={handleNavigate} onVerPedido={handleVerPedido} />
             )}
             {view === 'prodKanban' && <KanbanProducao />}
             {view === 'prodLista' && (

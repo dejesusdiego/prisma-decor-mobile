@@ -34,9 +34,10 @@ import { useProducaoData, STATUS_PRODUCAO_LABELS, PRIORIDADE_LABELS } from '@/ho
 import { usePedidosFinanceiros, STATUS_LIBERACAO_LABELS } from '@/hooks/usePedidoFinanceiro';
 import { AlertaFinanceiroProducao } from './AlertaFinanceiroProducao';
 import { BadgeStatusFinanceiro } from './BadgeStatusFinanceiro';
-import { format, differenceInDays } from 'date-fns';
+import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { formatDateOnly, diasRestantesDateOnly, parseDateOnly } from '@/lib/dateOnly';
 
 interface ListaPedidosProps {
   onVerPedido: (pedidoId: string) => void;
@@ -170,8 +171,8 @@ export function ListaPedidos({ onVerPedido }: ListaPedidosProps) {
                   numero: p.numero_pedido,
                   orcamento: p.orcamento?.codigo || '',
                   cliente: p.orcamento?.cliente_nome || '',
-                  data_entrada: format(new Date(p.data_entrada), 'dd/MM/yyyy', { locale: ptBR }),
-                  previsao: p.previsao_entrega ? format(new Date(p.previsao_entrega), 'dd/MM/yyyy', { locale: ptBR }) : '',
+                  data_entrada: formatDateOnly(p.data_entrada),
+                  previsao: formatDateOnly(p.previsao_entrega),
                   status: STATUS_PRODUCAO_LABELS[p.status_producao]?.label || p.status_producao,
                   prioridade: PRIORIDADE_LABELS[p.prioridade]?.label || p.prioridade,
                   valor: formatCurrency(p.orcamento?.total_com_desconto || p.orcamento?.total_geral),
@@ -212,9 +213,7 @@ export function ListaPedidos({ onVerPedido }: ListaPedidosProps) {
                     const statusInfo = STATUS_PRODUCAO_LABELS[pedido.status_producao];
                     const prioridadeInfo = PRIORIDADE_LABELS[pedido.prioridade];
                     const statusFinanceiro = statusFinanceiroMap?.[pedido.id];
-                    const diasRestantes = pedido.previsao_entrega 
-                      ? differenceInDays(new Date(pedido.previsao_entrega), new Date())
-                      : null;
+                    const diasRestantes = diasRestantesDateOnly(pedido.previsao_entrega);
                     const isAtrasado = diasRestantes !== null && diasRestantes < 0;
                     const isBloqueado = statusFinanceiro?.statusLiberacao === 'bloqueado';
                     
@@ -260,7 +259,7 @@ export function ListaPedidos({ onVerPedido }: ListaPedidosProps) {
                             <div className="flex items-center gap-1">
                               <Calendar className={cn("h-4 w-4", isAtrasado ? "text-destructive" : "text-muted-foreground")} />
                               <span className={cn(isAtrasado && "text-destructive font-medium")}>
-                                {format(new Date(pedido.previsao_entrega), 'dd/MM/yyyy', { locale: ptBR })}
+                                {formatDateOnly(pedido.previsao_entrega)}
                               </span>
                             </div>
                           ) : (

@@ -18,14 +18,14 @@ import { useProducaoData, STATUS_PRODUCAO_LABELS, PRIORIDADE_LABELS } from '@/ho
 import { TipBanner } from '@/components/ui/TipBanner';
 import { HelpTooltip } from '@/components/ui/HelpTooltip';
 import { PainelCapacidadeEtapas } from './PainelCapacidadeEtapas';
-import { format, differenceInDays } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { parseDateOnly, diasRestantesDateOnly, isPastDateOnly } from '@/lib/dateOnly';
 
 interface DashboardProducaoProps {
   onNavigate: (view: string) => void;
+  onVerPedido?: (pedidoId: string) => void;
 }
 
-export function DashboardProducao({ onNavigate }: DashboardProducaoProps) {
+export function DashboardProducao({ onNavigate, onVerPedido }: DashboardProducaoProps) {
   const { pedidos, metricas, isLoading } = useProducaoData();
 
   const pedidosPrioritarios = pedidos
@@ -38,7 +38,7 @@ export function DashboardProducao({ onNavigate }: DashboardProducaoProps) {
 
   const pedidosAtrasados = pedidos.filter(p => {
     if (!p.previsao_entrega || ['entregue', 'cancelado'].includes(p.status_producao)) return false;
-    return differenceInDays(new Date(), new Date(p.previsao_entrega)) > 0;
+    return isPastDateOnly(p.previsao_entrega);
   });
 
   if (isLoading) {
@@ -222,15 +222,13 @@ export function DashboardProducao({ onNavigate }: DashboardProducaoProps) {
               {pedidosPrioritarios.map(pedido => {
                 const statusInfo = STATUS_PRODUCAO_LABELS[pedido.status_producao];
                 const prioridadeInfo = PRIORIDADE_LABELS[pedido.prioridade];
-                const diasRestantes = pedido.previsao_entrega 
-                  ? differenceInDays(new Date(pedido.previsao_entrega), new Date())
-                  : null;
+                const diasRestantes = diasRestantesDateOnly(pedido.previsao_entrega);
                 
                 return (
                   <div 
                     key={pedido.id}
                     className="flex items-center justify-between p-3 rounded-lg border hover:bg-accent/50 cursor-pointer transition-colors"
-                    onClick={() => onNavigate('prodFicha')}
+                    onClick={() => onVerPedido ? onVerPedido(pedido.id) : onNavigate('prodLista')}
                   >
                     <div className="flex items-center gap-3">
                       <div className={`w-2 h-10 rounded-full ${prioridadeInfo.color}`} />
