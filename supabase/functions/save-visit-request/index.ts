@@ -16,6 +16,7 @@ interface VisitRequestData {
   mensagem?: string;
   data_agendada: string;
   horario_agendado: string;
+  organization_slug?: string;
 }
 
 // Rate limiting simples
@@ -106,6 +107,16 @@ serve(async (req) => {
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    // Buscar organization_id pelo slug (default: prisma)
+    const slug = data.organization_slug || 'prisma';
+    const { data: orgData } = await supabase
+      .from('organizations')
+      .select('id')
+      .eq('slug', slug)
+      .single();
+
+    const organizationId = orgData?.id || '11111111-1111-1111-1111-111111111111'; // Fallback para Prisma
+
     // Inserir no banco
     const { data: insertedData, error } = await supabase
       .from('solicitacoes_visita')
@@ -120,7 +131,8 @@ serve(async (req) => {
         data_agendada: data.data_agendada,
         horario_agendado: data.horario_agendado,
         status: 'pendente',
-        visualizada: false
+        visualizada: false,
+        organization_id: organizationId
       })
       .select('id')
       .single();
