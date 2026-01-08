@@ -352,26 +352,36 @@ export function useMetricasCentralizadas() {
     queryFn: async (): Promise<MetricasCentralizadas> => {
       if (!organizationId) throw new Error('Organization ID required');
       
-      // Buscar todos os dados em paralelo
-      const results = await Promise.all([
-        supabase.from('orcamentos').select('*').eq('organization_id', organizationId!),
-        supabase.from('contatos').select('*').eq('organization_id', organizationId!),
-        supabase.from('contas_receber').select('*').eq('organization_id', organizationId!),
-        supabase.from('contas_pagar').select('*, categorias_financeiras(nome)').eq('organization_id', organizationId!),
-        supabase.from('lancamentos_financeiros').select('*').eq('organization_id', organizationId!).eq('ignorado', false),
-        supabase.from('pedidos').select('*').eq('organization_id', organizationId!),
-        supabase.from('instalacoes').select('*').eq('organization_id', organizationId!),
-        supabase.from('atividades_crm').select('*').eq('organization_id', organizationId!),
+      // Buscar todos os dados em paralelo - usando funções separadas para evitar erro TS2589
+      const fetchData = async <T>(table: string, filters?: Record<string, unknown>): Promise<T[]> => {
+        let query = supabase.from(table as any).select('*');
+        if (filters) {
+          Object.entries(filters).forEach(([key, value]) => {
+            query = query.eq(key, value) as typeof query;
+          });
+        }
+        const { data } = await query;
+        return (data || []) as T[];
+      };
+
+      const [
+        orcamentosArr,
+        contatosArr,
+        contasReceberArr,
+        lancamentosArr,
+        pedidosArr,
+        atividadesArr
+      ] = await Promise.all([
+        fetchData('orcamentos', { organization_id: organizationId }),
+        fetchData('contatos', { organization_id: organizationId }),
+        fetchData('contas_receber', { organization_id: organizationId }),
+        fetchData('lancamentos_financeiros', { organization_id: organizationId, ignorado: false }),
+        fetchData('pedidos', { organization_id: organizationId }),
+        fetchData('atividades_crm', { organization_id: organizationId }),
       ]);
 
-      const orcamentosArr = results[0].data || [];
-      const contatosArr = results[1].data || [];
-      const contasReceberArr = results[2].data || [];
-      const contasPagarArr = results[3].data || [];
-      const lancamentosArr = results[4].data || [];
-      const pedidosArr = results[5].data || [];
-      const instalacoesArr = results[6].data || [];
-      const atividadesArr = results[7].data || [];
+      const contasPagarArr = await fetchData('contas_pagar', { organization_id: organizationId });
+      const instalacoesArr = await fetchData('instalacoes', { organization_id: organizationId });
 
       return {
         orcamentos: calcularMetricasOrcamentos(orcamentosArr),
