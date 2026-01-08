@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { formatDateOnly } from '@/lib/dateOnly';
 import { 
   Plus, 
   Search, 
@@ -136,7 +136,7 @@ export function Lancamentos({ onNavigate }: LancamentosProps = {}) {
     // Gerar CSV simples
     const headers = ['Data', 'Descrição', 'Tipo', 'Categoria', 'Valor'];
     const rows = filteredLancamentos.map(l => [
-      format(new Date(l.data_lancamento), 'dd/MM/yyyy'),
+      formatDateOnly(l.data_lancamento),
       l.descricao,
       l.tipo === 'entrada' ? 'Entrada' : l.tipo === 'emprestimo' ? 'Empréstimo' : 'Saída',
       l.categoria?.nome || '',
@@ -335,7 +335,7 @@ export function Lancamentos({ onNavigate }: LancamentosProps = {}) {
                 filteredLancamentos.map((lancamento) => (
                   <TableRow key={lancamento.id}>
                     <TableCell>
-                      {format(new Date(lancamento.data_lancamento), 'dd/MM/yyyy', { locale: ptBR })}
+                      {formatDateOnly(lancamento.data_lancamento)}
                     </TableCell>
                     <TableCell className="font-medium">{lancamento.descricao}</TableCell>
                     <TableCell>

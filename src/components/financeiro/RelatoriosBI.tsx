@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { format, subMonths, startOfMonth, endOfMonth, addMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { formatDateOnly } from '@/lib/dateOnly';
 import { 
   BarChart3,
   TrendingUp,
@@ -775,7 +776,7 @@ export function RelatoriosBI({ onNavigate }: RelatoriosBIProps) {
                             <span className="text-muted-foreground">-</span>
                           )}
                         </TableCell>
-                        <TableCell>{format(new Date(conta.data_vencimento), 'dd/MM/yyyy')}</TableCell>
+                        <TableCell>{formatDateOnly(conta.data_vencimento)}</TableCell>
                         <TableCell>{formatCurrency(Number(conta.valor))}</TableCell>
                         <TableCell>
                           <Badge 

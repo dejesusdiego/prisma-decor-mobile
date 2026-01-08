@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { parseDateOnly, formatDateOnly } from '@/lib/dateOnly';
 import { Search, Check, X, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -73,7 +73,7 @@ export function DialogConciliarManual({ open, onOpenChange, movimentacao }: Dial
       if (!movimentacao) return [];
       
       // Buscar lançamentos em uma janela de 30 dias
-      const dataBase = new Date(movimentacao.data_movimentacao);
+      const dataBase = parseDateOnly(movimentacao.data_movimentacao) || new Date();
       const dataInicio = new Date(dataBase);
       dataInicio.setDate(dataInicio.getDate() - 15);
       const dataFim = new Date(dataBase);
@@ -192,7 +192,7 @@ export function DialogConciliarManual({ open, onOpenChange, movimentacao }: Dial
             <div className="grid grid-cols-3 gap-4 text-sm">
               <div>
                 <span className="text-muted-foreground">Data:</span>
-                <p className="font-medium">{format(new Date(movimentacao.data_movimentacao), "dd/MM/yyyy")}</p>
+                <p className="font-medium">{formatDateOnly(movimentacao.data_movimentacao)}</p>
               </div>
               <div>
                 <span className="text-muted-foreground">Descrição:</span>
@@ -286,7 +286,7 @@ export function DialogConciliarManual({ open, onOpenChange, movimentacao }: Dial
                               {isSelected && <Check className="h-3 w-3 text-primary-foreground" />}
                             </div>
                           </TableCell>
-                          <TableCell>{format(new Date(lanc.data_lancamento), "dd/MM/yyyy")}</TableCell>
+                          <TableCell>{formatDateOnly(lanc.data_lancamento)}</TableCell>
                           <TableCell>
                             <div className="flex items-center gap-2">
                               {lanc.descricao}
@@ -359,7 +359,7 @@ export function DialogConciliarManual({ open, onOpenChange, movimentacao }: Dial
                               {isSelected && <Check className="h-3 w-3 text-primary-foreground" />}
                             </div>
                           </TableCell>
-                          <TableCell>{format(new Date(lanc.data_lancamento), "dd/MM/yyyy")}</TableCell>
+                          <TableCell>{formatDateOnly(lanc.data_lancamento)}</TableCell>
                           <TableCell>
                             <div className="flex items-center gap-2">
                               {lanc.descricao}
