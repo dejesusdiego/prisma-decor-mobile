@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useOrganizationContext } from '@/contexts/OrganizationContext';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { formatDateOnly } from '@/lib/dateOnly';
@@ -72,22 +73,25 @@ export function DialogConciliarComPagamento({
   contaPagar
 }: DialogConciliarComPagamentoProps) {
   const { user } = useAuth();
+  const { organizationId } = useOrganizationContext();
   const queryClient = useQueryClient();
   const { invalidateAfterPagamento, invalidateConciliacao } = useFinanceiroInvalidation();
   const [formaPagamentoId, setFormaPagamentoId] = useState<string>('');
 
   // Buscar formas de pagamento
   const { data: formasPagamento = [] } = useQuery({
-    queryKey: ['formas-pagamento-ativas'],
+    queryKey: ['formas-pagamento-ativas', organizationId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('formas_pagamento')
         .select('*')
         .eq('ativo', true)
+        .eq('organization_id', organizationId)
         .order('nome');
       if (error) throw error;
       return data;
-    }
+    },
+    enabled: !!organizationId
   });
 
   // Reset ao abrir
@@ -134,7 +138,8 @@ export function DialogConciliarComPagamento({
           conta_pagar_id: contaPagar.id,
           forma_pagamento_id: formaPagamentoId || null,
           categoria_id: contaPagar.categoria?.id || null,
-          created_by_user_id: user.id
+          created_by_user_id: user.id,
+          organization_id: organizationId
         })
         .select('id')
         .single();
