@@ -40,14 +40,14 @@ export function useOrganization() {
         .from('organization_members')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
       
       if (error) {
         console.error('Error fetching organization membership:', error);
         return null;
       }
       
-      return data as OrganizationMember;
+      return data as OrganizationMember | null;
     },
     enabled: !!user?.id,
     staleTime: 1000 * 60 * 5, // 5 minutes
@@ -62,14 +62,14 @@ export function useOrganization() {
         .from('organizations')
         .select('*')
         .eq('id', membership.organization_id)
-        .single();
+        .maybeSingle();
       
       if (error) {
         console.error('Error fetching organization:', error);
         return null;
       }
       
-      return data as Organization;
+      return data as Organization | null;
     },
     enabled: !!membership?.organization_id,
     staleTime: 1000 * 60 * 5,
