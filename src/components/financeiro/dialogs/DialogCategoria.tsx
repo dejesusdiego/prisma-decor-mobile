@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useOrganizationContext } from '@/contexts/OrganizationContext';
 import {
   Dialog,
   DialogContent,
@@ -40,6 +41,7 @@ const CORES = [
 
 export function DialogCategoria({ open, onOpenChange, categoria }: DialogCategoriaProps) {
   const queryClient = useQueryClient();
+  const { organizationId } = useOrganizationContext();
   
   const { register, handleSubmit, reset, setValue, watch } = useForm({
     defaultValues: {
@@ -67,17 +69,21 @@ export function DialogCategoria({ open, onOpenChange, categoria }: DialogCategor
 
   const mutation = useMutation({
     mutationFn: async (data: any) => {
+      if (!organizationId) throw new Error('Organização não identificada');
+
       const payload = {
         nome: data.nome,
         tipo: data.tipo,
-        cor: data.cor
+        cor: data.cor,
+        organization_id: organizationId
       };
 
       if (categoria) {
         const { error } = await supabase
           .from('categorias_financeiras')
           .update(payload)
-          .eq('id', categoria.id);
+          .eq('id', categoria.id)
+          .eq('organization_id', organizationId);
         if (error) throw error;
       } else {
         const { error } = await supabase

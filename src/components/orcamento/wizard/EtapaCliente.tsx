@@ -43,9 +43,12 @@ export function EtapaCliente({ dados, orcamentoId, onAvancar, onCancelar }: Etap
 
   // Buscar lista de vendedores (usuários do sistema)
   const { data: vendedores = [] } = useQuery({
-    queryKey: ['vendedores-lista'],
+    queryKey: ['vendedores-lista', organizationId],
     queryFn: async () => {
+      if (!organizationId) return [];
+      
       // Buscar configurações de comissão para listar vendedores cadastrados
+      // Nota: configuracoes_comissao é global, não tem organization_id
       const { data: configComissao } = await supabase
         .from('configuracoes_comissao')
         .select('vendedor_user_id, vendedor_nome')
@@ -55,10 +58,11 @@ export function EtapaCliente({ dados, orcamentoId, onAvancar, onCancelar }: Etap
         return configComissao;
       }
       
-      // Fallback: buscar vendedores únicos das comissões existentes
+      // Fallback: buscar vendedores únicos das comissões existentes com filtro de organization
       const { data: comissoes } = await supabase
         .from('comissoes')
         .select('vendedor_nome, vendedor_user_id')
+        .eq('organization_id', organizationId) // Filtrar por organização
         .order('vendedor_nome');
       
       const vendedoresUnicos = new Map<string, { vendedor_user_id: string | null; vendedor_nome: string }>();
@@ -72,7 +76,8 @@ export function EtapaCliente({ dados, orcamentoId, onAvancar, onCancelar }: Etap
       });
       
       return Array.from(vendedoresUnicos.values());
-    }
+    },
+    enabled: !!organizationId
   });
 
   // Debounce do telefone para não fazer muitas requisições

@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useOrganizationContext } from '@/contexts/OrganizationContext';
 
 export interface AlertaOrcamento {
   tipo: 'custos_pendentes' | 'parcelas_sem_extrato' | 'divergencia_valor' | 'atraso_recebimento';
@@ -21,9 +22,13 @@ export interface ResumoAlertasOrcamentos {
 }
 
 export function useAlertasOrcamentos() {
+  const { organizationId } = useOrganizationContext();
+  
   return useQuery({
-    queryKey: ['alertas-orcamentos-conciliacao'],
+    queryKey: ['alertas-orcamentos-conciliacao', organizationId],
     queryFn: async (): Promise<ResumoAlertasOrcamentos> => {
+      if (!organizationId) throw new Error('Organization ID required');
+      
       const alertas: AlertaOrcamento[] = [];
       let valorTotalPendente = 0;
       let parcelasSemExtrato = 0;
@@ -37,6 +42,7 @@ export function useAlertasOrcamentos() {
           orcamento:orcamentos(id, codigo, cliente_nome, status),
           parcelas_receber(id, numero_parcela, valor, status, data_vencimento)
         `)
+        .eq('organization_id', organizationId)
         .not('orcamento_id', 'is', null)
         .in('status', ['pendente', 'parcial', 'atrasado']);
 
@@ -44,6 +50,7 @@ export function useAlertasOrcamentos() {
       const { data: lancamentosRecebimento } = await supabase
         .from('lancamentos_financeiros')
         .select('id, parcela_receber_id')
+        .eq('organization_id', organizationId)
         .not('parcela_receber_id', 'is', null);
 
       const parcelasComLancamento = new Set(
@@ -112,6 +119,7 @@ export function useAlertasOrcamentos() {
           id, descricao, valor, status, orcamento_id,
           orcamento:orcamentos(id, codigo, cliente_nome)
         `)
+        .eq('organization_id', organizationId)
         .not('orcamento_id', 'is', null)
         .in('status', ['pendente', 'atrasado']);
 
@@ -167,6 +175,7 @@ export function useAlertasOrcamentos() {
         custosNaoPagos
       };
     },
+    enabled: !!organizationId,
     refetchInterval: 60000 // Atualizar a cada minuto
   });
 }

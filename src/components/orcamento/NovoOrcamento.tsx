@@ -7,6 +7,7 @@ import { EtapaResumo } from './wizard/EtapaResumo';
 import type { DadosOrcamento, Cortina } from '@/types/orcamento';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { useOrganizationContext } from '@/contexts/OrganizationContext';
 
 interface ClienteDataInicial {
   nome: string;
@@ -22,6 +23,7 @@ interface NovoOrcamentoProps {
 }
 
 export function NovoOrcamento({ onVoltar, orcamentoId, clienteDataInicial }: NovoOrcamentoProps) {
+  const { organizationId } = useOrganizationContext();
   const [etapa, setEtapa] = useState(1);
   const [dados, setDados] = useState<DadosOrcamento>({
     clienteNome: clienteDataInicial?.nome || '',
@@ -39,16 +41,35 @@ export function NovoOrcamento({ onVoltar, orcamentoId, clienteDataInicial }: Nov
     const carregarOrcamento = async () => {
       if (!orcamentoId) return;
       
+      // Aguardar organization_id estar disponível
+      if (!organizationId) return;
+      
       setLoading(true);
       try {
-        // Carregar dados do orçamento
-        const { data: orcamento, error: orcamentoError } = await supabase
+        // Carregar dados do orçamento COM validação de organization_id (multi-tenancy)
+        let query = supabase
           .from('orcamentos')
           .select('*')
-          .eq('id', orcamentoId)
-          .single();
+          .eq('id', orcamentoId);
+        
+        // Filtrar por organização para garantir que usuário só edita orçamentos de sua org
+        query = query.eq('organization_id', organizationId);
+        
+        const { data: orcamento, error: orcamentoError } = await query.single();
 
-        if (orcamentoError) throw orcamentoError;
+        if (orcamentoError) {
+          // Se não encontrou, pode ser que o orçamento não pertença a esta organização
+          if (orcamentoError.code === 'PGRST116') {
+            toast({
+              title: 'Acesso negado',
+              description: 'Você não tem permissão para editar este orçamento',
+              variant: 'destructive',
+            });
+            onVoltar();
+            return;
+          }
+          throw orcamentoError;
+        }
 
         setDados({
           clienteNome: orcamento.cliente_nome,
@@ -121,7 +142,7 @@ export function NovoOrcamento({ onVoltar, orcamentoId, clienteDataInicial }: Nov
     };
 
     carregarOrcamento();
-  }, [orcamentoId, onVoltar]);
+  }, [orcamentoId, onVoltar, organizationId]);
 
   const handleAvancarEtapa1 = (dadosCliente: DadosOrcamento, novoOrcamentoId: string) => {
     setDados(dadosCliente);

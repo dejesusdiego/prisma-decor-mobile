@@ -4,6 +4,11 @@ import type { Material } from '@/types/orcamento';
 /**
  * Busca todos os materiais do banco de dados usando paginação
  * para contornar o limite de 1000 registros do Supabase
+ * 
+ * NOTA: Materiais são GLOBAIS (sem organization_id)
+ * O catálogo de materiais é compartilhado entre todas as organizações.
+ * Esta é uma decisão de design intencional para manter um catálogo
+ * unificado de tecidos, forros, trilhos, persianas, etc.
  */
 export async function fetchMateriaisPaginados(
   categoria?: string,

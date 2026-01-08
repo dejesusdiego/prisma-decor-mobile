@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { addDays, format, isAfter, isBefore, startOfDay } from 'date-fns';
+import { useOrganizationContext } from '@/contexts/OrganizationContext';
+import { addDays, format, isBefore, startOfDay } from 'date-fns';
 import { parseDateOnly } from '@/lib/dateOnly';
 
 interface Alerta {
@@ -15,9 +16,13 @@ interface Alerta {
 }
 
 export function useAlertasConsolidados() {
+  const { organizationId } = useOrganizationContext();
+  
   return useQuery({
-    queryKey: ['alertas-consolidados'],
+    queryKey: ['alertas-consolidados', organizationId],
     queryFn: async () => {
+      if (!organizationId) throw new Error('Organization ID required');
+      
       const hoje = startOfDay(new Date());
       const tresDiasDepois = addDays(hoje, 3);
       const alertas: Alerta[] = [];
@@ -26,6 +31,7 @@ export function useAlertasConsolidados() {
       const { data: followUps } = await supabase
         .from('atividades_crm')
         .select('id, titulo, data_atividade, contato_id, tipo')
+        .eq('organization_id', organizationId)
         .eq('concluida', false)
         .lte('data_atividade', new Date().toISOString())
         .order('data_atividade', { ascending: true })
@@ -49,6 +55,7 @@ export function useAlertasConsolidados() {
       const { data: contasVencer } = await supabase
         .from('contas_pagar')
         .select('id, descricao, valor, data_vencimento, fornecedor')
+        .eq('organization_id', organizationId)
         .eq('status', 'pendente')
         .gte('data_vencimento', format(hoje, 'yyyy-MM-dd'))
         .lte('data_vencimento', format(tresDiasDepois, 'yyyy-MM-dd'))
@@ -78,6 +85,7 @@ export function useAlertasConsolidados() {
           status_producao,
           orcamento:orcamentos(cliente_nome)
         `)
+        .eq('organization_id', organizationId)
         .in('status_producao', ['pronto_instalacao', 'pronto_entrega'])
         .order('updated_at', { ascending: false })
         .limit(10);
@@ -100,6 +108,7 @@ export function useAlertasConsolidados() {
       const { data: orcamentosSemResposta } = await supabase
         .from('orcamentos')
         .select('id, codigo, cliente_nome, total_geral, status_updated_at')
+        .eq('organization_id', organizationId)
         .eq('status', 'sem_resposta')
         .lte('status_updated_at', seteDiasAtras.toISOString())
         .order('status_updated_at', { ascending: true })
@@ -127,6 +136,7 @@ export function useAlertasConsolidados() {
         return a.dataReferencia.getTime() - b.dataReferencia.getTime();
       });
     },
+    enabled: !!organizationId,
     refetchInterval: 60000 // Atualizar a cada minuto
   });
 }

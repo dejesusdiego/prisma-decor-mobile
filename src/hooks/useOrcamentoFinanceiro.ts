@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useOrganizationContext } from '@/contexts/OrganizationContext';
 import { 
   calcularRentabilidade, 
   gerarContaReceberOrcamento,
@@ -50,6 +51,7 @@ interface ContaReceberComParcelas {
 
 export function useOrcamentoFinanceiro(orcamentoId: string | null) {
   const { user } = useAuth();
+  const { organizationId } = useOrganizationContext();
   const queryClient = useQueryClient();
 
   // Query principal: dados do orçamento
@@ -114,7 +116,7 @@ export function useOrcamentoFinanceiro(orcamentoId: string | null) {
       formaPagamentoId?: string;
       observacoes?: string;
     }) => {
-      if (!orcamento || !user?.id) throw new Error('Dados insuficientes');
+      if (!orcamento || !user?.id || !organizationId) throw new Error('Dados insuficientes');
 
       return gerarContaReceberOrcamento(
         orcamento,
@@ -122,7 +124,8 @@ export function useOrcamentoFinanceiro(orcamentoId: string | null) {
         dataPrimeiraParcela,
         user.id,
         formaPagamentoId,
-        observacoes
+        observacoes,
+        organizationId // Passar organization_id para multi-tenancy
       );
     },
     onSuccess: (result) => {
@@ -149,9 +152,9 @@ export function useOrcamentoFinanceiro(orcamentoId: string | null) {
       custos: { descricao: string; valor: number; categoriaId?: string; fornecedor?: string }[]; 
       dataVencimento: Date;
     }) => {
-      if (!orcamentoId || !user?.id) throw new Error('Dados insuficientes');
+      if (!orcamentoId || !user?.id || !organizationId) throw new Error('Dados insuficientes');
 
-      return gerarContasPagarOrcamento(orcamentoId, custos, dataVencimento, user.id);
+      return gerarContasPagarOrcamento(orcamentoId, custos, dataVencimento, user.id, organizationId);
     },
     onSuccess: (result) => {
       if (result.success) {

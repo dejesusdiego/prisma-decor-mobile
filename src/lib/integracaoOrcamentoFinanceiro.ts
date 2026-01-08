@@ -144,6 +144,11 @@ export async function gerarContaReceberOrcamento(
   organizationId?: string
 ): Promise<{ success: boolean; contaId?: string; error?: string }> {
   try {
+    // Validação de entrada
+    if (!numeroParcelas || numeroParcelas < 1) {
+      return { success: false, error: 'Número de parcelas deve ser pelo menos 1' };
+    }
+    
     const valorTotal = getValorEfetivo({
       total_geral: orcamento.total_geral || 0,
       total_com_desconto: orcamento.total_com_desconto

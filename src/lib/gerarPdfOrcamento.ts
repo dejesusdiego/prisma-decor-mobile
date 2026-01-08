@@ -334,7 +334,8 @@ export async function gerarPdfOrcamento(orcamentoId: string): Promise<void> {
         descricao += ` - ${cortina.ambiente}`;
       }
 
-      const precoUnitario = (cortina.preco_venda || 0) / cortina.quantidade;
+      const quantidade = cortina.quantidade || 1; // Protege contra divisão por zero
+      const precoUnitario = (cortina.preco_venda || 0) / quantidade;
       const total = cortina.preco_venda || 0;
 
       return [

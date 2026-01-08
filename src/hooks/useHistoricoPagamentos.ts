@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { differenceInDays, parseISO } from 'date-fns';
+import { useOrganizationContext } from '@/contexts/OrganizationContext';
 
 interface HistoricoPagamentoCliente {
   clienteNome: string;
@@ -28,10 +29,14 @@ interface MetricasGerais {
  * Calcula score de confiabilidade por cliente e métricas gerais de inadimplência
  */
 export function useHistoricoPagamentos() {
+  const { organizationId } = useOrganizationContext();
+  
   const { data: historico, isLoading, error } = useQuery({
-    queryKey: ['historico-pagamentos-analise'],
+    queryKey: ['historico-pagamentos-analise', organizationId],
     queryFn: async () => {
-      // Buscar todas as contas a receber com suas parcelas
+      if (!organizationId) return { clientes: [], metricas: null };
+
+      // Buscar todas as contas a receber com suas parcelas - filtrado por organização
       const { data: contasReceber, error: errorContas } = await supabase
         .from('contas_receber')
         .select(`
@@ -51,6 +56,7 @@ export function useHistoricoPagamentos() {
             status
           )
         `)
+        .eq('organization_id', organizationId)
         .order('created_at', { ascending: false });
 
       if (errorContas) throw errorContas;
@@ -233,6 +239,7 @@ export function useHistoricoPagamentos() {
       };
     },
     staleTime: 5 * 60 * 1000, // 5 minutos
+    enabled: !!organizationId
   });
 
   return {

@@ -26,6 +26,7 @@ import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/formatters';
+import { useOrganizationContext } from '@/contexts/OrganizationContext';
 
 interface CustoItem {
   id: string;
@@ -103,18 +104,23 @@ export function DialogGerarCustos({
     setCustos(items);
   }, [orcamento.id, orcamento.codigo, orcamento.subtotal_materiais, orcamento.subtotal_mao_obra_costura, orcamento.subtotal_instalacao]);
 
+  const { organizationId } = useOrganizationContext();
+
   const { data: categorias } = useQuery({
-    queryKey: ['categorias-despesa'],
+    queryKey: ['categorias-despesa', organizationId],
     queryFn: async () => {
+      if (!organizationId) return [];
       const { data, error } = await supabase
         .from('categorias_financeiras')
         .select('*')
+        .eq('organization_id', organizationId) // Filtrar por organização
         .eq('tipo', 'despesa')
         .eq('ativo', true)
         .order('nome');
       if (error) throw error;
       return data;
-    }
+    },
+    enabled: !!organizationId
   });
 
   const toggleCusto = (id: string) => {

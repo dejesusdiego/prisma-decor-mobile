@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useOrganization } from '@/hooks/useOrganization';
 
 export interface CoeficientesPorTipo {
   wave: number;
@@ -63,18 +64,28 @@ const DEFAULT_CONFIGS: Configuracoes = {
   diasSemRespostaVisitas: 3
 };
 
-// Cache global para evitar múltiplas requisições
-let cachedConfigs: Configuracoes | null = null;
-let cacheTimestamp: number = 0;
+// Cache global por organização para evitar múltiplas requisições
+const cachedConfigsMap = new Map<string, Configuracoes>();
+const cacheTimestampMap = new Map<string, number>();
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
 
 export function useConfiguracoes() {
+  const { organizationId } = useOrganization();
   const [configuracoes, setConfiguracoes] = useState<Configuracoes>(DEFAULT_CONFIGS);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const carregarConfiguracoes = useCallback(async (forceRefresh = false) => {
+    if (!organizationId) {
+      setConfiguracoes(DEFAULT_CONFIGS);
+      setLoading(false);
+      return DEFAULT_CONFIGS;
+    }
+
     // Usar cache se válido e não forçar refresh
+    const cachedConfigs = cachedConfigsMap.get(organizationId);
+    const cacheTimestamp = cacheTimestampMap.get(organizationId) || 0;
+    
     if (!forceRefresh && cachedConfigs && Date.now() - cacheTimestamp < CACHE_DURATION) {
       setConfiguracoes(cachedConfigs);
       setLoading(false);
@@ -85,7 +96,8 @@ export function useConfiguracoes() {
       setLoading(true);
       const { data, error: fetchError } = await supabase
         .from('configuracoes_sistema')
-        .select('chave, valor');
+        .select('chave, valor')
+        .eq('organization_id', organizationId);
 
       if (fetchError) throw fetchError;
 
@@ -122,9 +134,9 @@ export function useConfiguracoes() {
         }
       }
 
-      // Atualizar cache
-      cachedConfigs = configs;
-      cacheTimestamp = Date.now();
+      // Atualizar cache por organização
+      cachedConfigsMap.set(organizationId, configs);
+      cacheTimestampMap.set(organizationId, Date.now());
       
       setConfiguracoes(configs);
       setError(null);
@@ -136,20 +148,23 @@ export function useConfiguracoes() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [organizationId]);
 
   const salvarConfiguracao = useCallback(async (chave: string, valor: unknown) => {
+    if (!organizationId) throw new Error('Organization ID required');
+    
     try {
       const { error: updateError } = await supabase
         .from('configuracoes_sistema')
         .update({ valor: valor as never })
-        .eq('chave', chave);
+        .eq('chave', chave)
+        .eq('organization_id', organizationId);
 
       if (updateError) throw updateError;
 
-      // Invalidar cache
-      cachedConfigs = null;
-      cacheTimestamp = 0;
+      // Invalidar cache para esta organização
+      cachedConfigsMap.delete(organizationId);
+      cacheTimestampMap.delete(organizationId);
 
       // Recarregar configurações
       await carregarConfiguracoes(true);
@@ -158,16 +173,20 @@ export function useConfiguracoes() {
       console.error('Erro ao salvar configuração:', err);
       throw err;
     }
-  }, [carregarConfiguracoes]);
+  }, [carregarConfiguracoes, organizationId]);
 
   const invalidarCache = useCallback(() => {
-    cachedConfigs = null;
-    cacheTimestamp = 0;
-  }, []);
+    if (organizationId) {
+      cachedConfigsMap.delete(organizationId);
+      cacheTimestampMap.delete(organizationId);
+    }
+  }, [organizationId]);
 
   useEffect(() => {
-    carregarConfiguracoes();
-  }, [carregarConfiguracoes]);
+    if (organizationId) {
+      carregarConfiguracoes();
+    }
+  }, [organizationId, carregarConfiguracoes]);
 
   return {
     configuracoes,

@@ -17,6 +17,7 @@ interface ContaPagar {
   recorrente: boolean;
   frequencia_recorrencia: string | null;
   created_by_user_id: string;
+  organization_id: string | null;
 }
 
 function addInterval(date: Date, frequencia: string): Date {
@@ -73,10 +74,10 @@ Deno.serve(async (req) => {
     const proximoMes = new Date(hoje);
     proximoMes.setMonth(proximoMes.getMonth() + 1);
     
-    // Buscar todas as contas recorrentes pagas ou com vencimento passado
+    // Buscar todas as contas recorrentes pagas ou com vencimento passado (incluindo organization_id)
     const { data: contasRecorrentes, error: fetchError } = await supabase
       .from('contas_pagar')
-      .select('*')
+      .select('id, descricao, valor, data_vencimento, categoria_id, forma_pagamento_id, fornecedor, observacoes, recorrente, frequencia_recorrencia, created_by_user_id, organization_id')
       .eq('recorrente', true)
       .not('frequencia_recorrencia', 'is', null)
       .in('status', ['pago', 'pendente', 'atrasado']);
@@ -111,14 +112,20 @@ Deno.serve(async (req) => {
           continue;
         }
         
-        // Verificar se já existe conta com mesma descrição e data de vencimento
-        const { data: existente, error: checkError } = await supabase
+        // Verificar se já existe conta com mesma descrição e data de vencimento (por organização)
+        let checkQuery = supabase
           .from('contas_pagar')
           .select('id')
           .eq('descricao', conta.descricao)
           .eq('data_vencimento', proximaDataStr)
-          .eq('created_by_user_id', conta.created_by_user_id)
-          .maybeSingle();
+          .eq('created_by_user_id', conta.created_by_user_id);
+        
+        // Filtrar por organização se existir
+        if (conta.organization_id) {
+          checkQuery = checkQuery.eq('organization_id', conta.organization_id);
+        }
+        
+        const { data: existente, error: checkError } = await checkQuery.maybeSingle();
         
         if (checkError) {
           console.error(`Erro ao verificar duplicata para conta ${conta.id}:`, checkError);
@@ -132,7 +139,7 @@ Deno.serve(async (req) => {
           continue;
         }
         
-        // Criar nova conta com rastreamento da origem
+        // Criar nova conta com rastreamento da origem (preservando organization_id)
         const { error: insertError } = await supabase
           .from('contas_pagar')
           .insert({
@@ -147,7 +154,8 @@ Deno.serve(async (req) => {
             frequencia_recorrencia: conta.frequencia_recorrencia,
             created_by_user_id: conta.created_by_user_id,
             status: 'pendente',
-            conta_origem_id: conta.id
+            conta_origem_id: conta.id,
+            organization_id: conta.organization_id
           });
         
         if (insertError) {

@@ -106,8 +106,8 @@ const carregarOrcamentos = async () => {
     setLoading(true);
     try {
       // Buscar orçamentos com filtro de organization_id
-      const orcTable = supabase.from('orcamentos') as any;
-      const { data: orcamentosData, error: orcError } = await orcTable
+      const { data: orcamentosData, error: orcError } = await supabase
+        .from('orcamentos')
         .select('*')
         .eq('organization_id', organizationId)
         .order('created_at', { ascending: false });
@@ -115,21 +115,37 @@ const carregarOrcamentos = async () => {
       if (orcError) throw orcError;
 
       // Buscar contas a receber vinculadas
-      const contasTable = supabase.from('contas_receber') as any;
-      const { data: contasData, error: contasError } = await contasTable
-        .select(`
-          id,
-          orcamento_id,
-          status,
-          valor_total,
-          valor_pago,
-          numero_parcelas,
-          parcelas_receber (status)
-        `)
-        .eq('organization_id', organizationId)
-        .in('orcamento_id', (orcamentosData || []).map(o => o.id));
+      const orcamentoIds = (orcamentosData || []).map(o => o.id);
+      
+      // Só buscar contas se houver orçamentos
+      let contasData: Array<{
+        id: string;
+        orcamento_id: string | null;
+        status: string;
+        valor_total: number;
+        valor_pago: number;
+        numero_parcelas: number;
+        parcelas_receber: Array<{ status: string }>;
+      }> | null = null;
+      
+      if (orcamentoIds.length > 0) {
+        const { data, error: contasError } = await supabase
+          .from('contas_receber')
+          .select(`
+            id,
+            orcamento_id,
+            status,
+            valor_total,
+            valor_pago,
+            numero_parcelas,
+            parcelas_receber (status)
+          `)
+          .eq('organization_id', organizationId)
+          .in('orcamento_id', orcamentoIds);
 
-      if (contasError) throw contasError;
+        if (contasError) throw contasError;
+        contasData = data;
+      }
 
       // Mapear contas por orcamento_id
       const contasPorOrcamento = new Map<string, ContaReceberInfo>();
@@ -198,8 +214,8 @@ const carregarOrcamentos = async () => {
 
     // Atualização normal de status
     try {
-      const orcTable = supabase.from('orcamentos') as any;
-      const { error } = await orcTable
+      const { error } = await supabase
+        .from('orcamentos')
         .update({ status: novoStatus })
         .eq('id', orcamentoId)
         .eq('organization_id', organizationId);
@@ -287,15 +303,15 @@ const carregarOrcamentos = async () => {
 
     try {
       // cortina_items não tem organization_id, mas está vinculada ao orçamento
-      const cortinaTable = supabase.from('cortina_items') as any;
-      const { error: cortinasError } = await cortinaTable
+      const { error: cortinasError } = await supabase
+        .from('cortina_items')
         .delete()
         .eq('orcamento_id', orcamentoId);
 
       if (cortinasError) throw cortinasError;
 
-      const orcTable = supabase.from('orcamentos') as any;
-      const { error: orcError } = await orcTable
+      const { error: orcError } = await supabase
+        .from('orcamentos')
         .delete()
         .eq('id', orcamentoId)
         .eq('organization_id', organizationId);
@@ -352,8 +368,8 @@ const carregarOrcamentos = async () => {
     try {
       setLoading(true);
 
-      const orcTable = supabase.from('orcamentos') as any;
-      const { error } = await orcTable
+      const { error } = await supabase
+        .from('orcamentos')
         .update({ validade_dias: novaValidade })
         .eq('id', orcamentoSelecionadoId)
         .eq('organization_id', organizationId);

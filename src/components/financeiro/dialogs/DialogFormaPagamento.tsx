@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useOrganizationContext } from '@/contexts/OrganizationContext';
 import {
   Dialog,
   DialogContent,
@@ -29,6 +30,7 @@ interface DialogFormaPagamentoProps {
 
 export function DialogFormaPagamento({ open, onOpenChange, forma }: DialogFormaPagamentoProps) {
   const queryClient = useQueryClient();
+  const { organizationId } = useOrganizationContext();
   
   const { register, handleSubmit, reset, setValue, watch } = useForm({
     defaultValues: {
@@ -64,19 +66,23 @@ export function DialogFormaPagamento({ open, onOpenChange, forma }: DialogFormaP
 
   const mutation = useMutation({
     mutationFn: async (data: any) => {
+      if (!organizationId) throw new Error('Organização não identificada');
+
       const payload = {
         nome: data.nome,
         tipo: data.tipo,
         permite_parcelamento: data.permite_parcelamento,
         max_parcelas: data.permite_parcelamento ? parseInt(data.max_parcelas) : 1,
-        taxa_percentual: parseFloat(data.taxa_percentual) || 0
+        taxa_percentual: parseFloat(data.taxa_percentual) || 0,
+        organization_id: organizationId
       };
 
       if (forma) {
         const { error } = await supabase
           .from('formas_pagamento')
           .update(payload)
-          .eq('id', forma.id);
+          .eq('id', forma.id)
+          .eq('organization_id', organizationId);
         if (error) throw error;
       } else {
         const { error } = await supabase

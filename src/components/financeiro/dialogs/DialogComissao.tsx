@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useOrganizationContext } from '@/contexts/OrganizationContext';
 import {
   Dialog,
   DialogContent,
@@ -47,6 +48,7 @@ const formatCurrency = (value: number) => {
 export function DialogComissao({ open, onOpenChange, comissao }: DialogComissaoProps) {
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { organizationId } = useOrganizationContext();
 
   const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm<FormData>({
     defaultValues: {
@@ -63,19 +65,21 @@ export function DialogComissao({ open, onOpenChange, comissao }: DialogComissaoP
   const valorBase = watch('valor_base');
   const orcamentoId = watch('orcamento_id');
 
-  // Buscar orçamentos aprovados/pagos para vincular
+  // Buscar orçamentos aprovados/pagos para vincular - filtrado por organização
   const { data: orcamentos = [] } = useQuery({
-    queryKey: ['orcamentos-para-comissao'],
+    queryKey: ['orcamentos-para-comissao', organizationId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('orcamentos')
         .select('id, codigo, cliente_nome, total_geral, status')
+        .eq('organization_id', organizationId)
         .in('status', ['aprovado', 'pago', 'pago_40', 'pago_parcial', 'pago_60', 'em_producao', 'instalado'])
         .order('created_at', { ascending: false });
 
       if (error) throw error;
       return data;
-    }
+    },
+    enabled: !!organizationId
   });
 
   // Preencher dados quando editar ou selecionar orçamento
@@ -120,6 +124,7 @@ export function DialogComissao({ open, onOpenChange, comissao }: DialogComissaoP
   const mutation = useMutation({
     mutationFn: async (data: FormData) => {
       if (!user) throw new Error('Usuário não autenticado');
+      if (!organizationId) throw new Error('Organização não identificada');
 
       const payload = {
         vendedor_nome: data.vendedor_nome,
@@ -128,14 +133,16 @@ export function DialogComissao({ open, onOpenChange, comissao }: DialogComissaoP
         valor_base: data.valor_base,
         valor_comissao: data.valor_comissao,
         observacoes: data.observacoes || null,
-        created_by_user_id: user.id
+        created_by_user_id: user.id,
+        organization_id: organizationId
       };
 
       if (comissao) {
         const { error } = await supabase
           .from('comissoes')
           .update(payload)
-          .eq('id', comissao.id);
+          .eq('id', comissao.id)
+          .eq('organization_id', organizationId);
         if (error) throw error;
       } else {
         const { error } = await supabase

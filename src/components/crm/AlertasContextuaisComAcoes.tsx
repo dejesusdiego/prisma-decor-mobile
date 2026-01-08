@@ -16,6 +16,7 @@ import { DialogAgendarInstalacao } from '@/components/producao/DialogAgendarInst
 import { DialogAtividade } from '@/components/crm/DialogAtividade';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useOrganizationContext } from '@/contexts/OrganizationContext';
 import { addDays } from 'date-fns';
 
 interface AlertasContextuaisComAcoesProps {
@@ -57,6 +58,7 @@ const ALERTA_CONFIG: Record<AlertaContextual['tipo'], {
 };
 
 export function AlertasContextuaisComAcoes({ alertas, contatoId, className }: AlertasContextuaisComAcoesProps) {
+  const { organizationId } = useOrganizationContext();
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
   
   // Estados para os modais
@@ -84,10 +86,12 @@ export function AlertasContextuaisComAcoes({ alertas, contatoId, className }: Al
     enabled: !!parcelaSelecionada?.id
   });
 
-  // Buscar pedidos prontos para instalação
+  // Buscar pedidos prontos para instalação da organização
   const { data: pedidosProntos = [] } = useQuery({
-    queryKey: ['pedidos-prontos-instalacao'],
+    queryKey: ['pedidos-prontos-instalacao', organizationId],
     queryFn: async () => {
+      if (!organizationId) return [];
+      
       const { data, error } = await supabase
         .from('pedidos')
         .select(`
@@ -104,6 +108,7 @@ export function AlertasContextuaisComAcoes({ alertas, contatoId, className }: Al
           created_by_user_id,
           orcamento:orcamentos(codigo, cliente_nome, cliente_telefone, endereco, cidade, total_com_desconto, total_geral)
         `)
+        .eq('organization_id', organizationId)
         .in('status_producao', ['pronto_instalacao', 'pronto_entrega']);
       if (error) throw error;
       // Mapear para o tipo esperado pelo DialogAgendarInstalacao
@@ -129,7 +134,8 @@ export function AlertasContextuaisComAcoes({ alertas, contatoId, className }: Al
           total_geral: (p.orcamento as any).total_geral ?? null
         } : undefined
       }));
-    }
+    },
+    enabled: !!organizationId
   });
 
   if (!alertas || alertas.length === 0) return null;

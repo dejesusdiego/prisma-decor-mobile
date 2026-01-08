@@ -19,6 +19,7 @@ import { DialogPagamentoRapidoOrcamento } from './dialogs/DialogPagamentoRapidoO
 import { useOrcamentoFinanceiro } from '@/hooks/useOrcamentoFinanceiro';
 import { TipBanner } from '@/components/ui/TipBanner';
 import { HelpTooltip } from '@/components/ui/HelpTooltip';
+import { useOrganizationContext } from '@/contexts/OrganizationContext';
 
 interface VisualizarOrcamentoProps {
   orcamentoId: string;
@@ -46,6 +47,7 @@ interface OrcamentoCompleto {
 }
 
 export function VisualizarOrcamento({ orcamentoId, onVoltar }: VisualizarOrcamentoProps) {
+  const { organizationId } = useOrganizationContext();
   const [orcamento, setOrcamento] = useState<OrcamentoCompleto | null>(null);
   const [cortinas, setCortinas] = useState<Cortina[]>([]);
   const [materiais, setMateriais] = useState<Material[]>([]);
@@ -73,15 +75,36 @@ export function VisualizarOrcamento({ orcamentoId, onVoltar }: VisualizarOrcamen
 
   useEffect(() => {
     const carregarDados = async () => {
+      // Aguardar organization_id estar disponível
+      if (!organizationId) {
+        return;
+      }
+
       try {
-        // Carregar orçamento
-        const { data: orcamentoData, error: orcamentoError } = await supabase
+        // Carregar orçamento COM validação de organization_id (multi-tenancy)
+        let query = supabase
           .from('orcamentos')
           .select('*')
-          .eq('id', orcamentoId)
-          .single();
+          .eq('id', orcamentoId);
+        
+        // Adicionar filtro de organização para garantir acesso apenas aos orçamentos da org do usuário
+        query = query.eq('organization_id', organizationId);
+        
+        const { data: orcamentoData, error: orcamentoError } = await query.single();
 
-        if (orcamentoError) throw orcamentoError;
+        if (orcamentoError) {
+          // Se não encontrou, pode ser que o orçamento não pertença a esta organização
+          if (orcamentoError.code === 'PGRST116') {
+            toast({
+              title: 'Acesso negado',
+              description: 'Você não tem permissão para visualizar este orçamento',
+              variant: 'destructive',
+            });
+            onVoltar();
+            return;
+          }
+          throw orcamentoError;
+        }
         setOrcamento(orcamentoData);
 
         // Carregar cortinas
@@ -168,7 +191,7 @@ export function VisualizarOrcamento({ orcamentoId, onVoltar }: VisualizarOrcamen
     };
 
     carregarDados();
-  }, [orcamentoId, onVoltar]);
+  }, [orcamentoId, onVoltar, organizationId]);
 
   const obterNomeMaterial = (id: string | undefined) => {
     if (!id) return '-';

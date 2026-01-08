@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useOrganizationContext } from '@/contexts/OrganizationContext';
 import { useSugestaoCategoria } from '@/hooks/useSugestaoCategoria';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -59,6 +60,7 @@ export function DialogCriarLancamentoDeExtrato({
   movimentacao
 }: DialogCriarLancamentoDeExtratoProps) {
   const { user } = useAuth();
+  const { organizationId } = useOrganizationContext();
   const queryClient = useQueryClient();
   const [sugestaoAplicada, setSugestaoAplicada] = useState(false);
 
@@ -116,44 +118,46 @@ export function DialogCriarLancamentoDeExtrato({
     setDatePickerOpen(false);
   };
 
-  // Buscar categorias
+  // Buscar categorias - filtrado por organização
   const { data: categorias = [] } = useQuery({
-    queryKey: ['categorias-financeiras'],
+    queryKey: ['categorias-financeiras', organizationId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('categorias_financeiras')
         .select('*')
+        .eq('organization_id', organizationId)
         .eq('ativo', true)
         .order('nome');
       
       if (error) throw error;
       return data;
     },
-    enabled: open
+    enabled: open && !!organizationId
   });
 
-  // Buscar formas de pagamento
+  // Buscar formas de pagamento - filtrado por organização
   const { data: formasPagamento = [] } = useQuery({
-    queryKey: ['formas-pagamento'],
+    queryKey: ['formas-pagamento', organizationId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('formas_pagamento')
         .select('*')
+        .eq('organization_id', organizationId)
         .eq('ativo', true)
         .order('nome');
       
       if (error) throw error;
       return data;
     },
-    enabled: open
+    enabled: open && !!organizationId
   });
 
   // Criar lançamento
   const criarMutation = useMutation({
     mutationFn: async () => {
-      if (!movimentacao || !user) throw new Error('Dados inválidos');
+      if (!movimentacao || !user || !organizationId) throw new Error('Dados inválidos');
 
-      // Criar lançamento
+      // Criar lançamento - com organization_id
       const { data: lancamento, error: lancError } = await supabase
         .from('lancamentos_financeiros')
         .insert({
@@ -164,7 +168,8 @@ export function DialogCriarLancamentoDeExtrato({
           categoria_id: form.categoria_id || null,
           forma_pagamento_id: form.forma_pagamento_id || null,
           observacoes: form.observacoes || null,
-          created_by_user_id: user.id
+          created_by_user_id: user.id,
+          organization_id: organizationId
         })
         .select('id')
         .single();

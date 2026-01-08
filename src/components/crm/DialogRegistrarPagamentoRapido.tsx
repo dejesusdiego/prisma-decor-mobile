@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/popover';
 import { CalendarIcon, DollarSign, CreditCard } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { useOrganizationContext } from '@/contexts/OrganizationContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
@@ -58,6 +59,7 @@ export function DialogRegistrarPagamentoRapido({
   totalParcelas = 1
 }: DialogRegistrarPagamentoRapidoProps) {
   const { user } = useAuth();
+  const { organizationId } = useOrganizationContext();
   const queryClient = useQueryClient();
   
   const [valorPago, setValorPago] = useState(valorParcela.toString());
@@ -65,19 +67,23 @@ export function DialogRegistrarPagamentoRapido({
   const [formaPagamentoId, setFormaPagamentoId] = useState<string>('');
   const [observacoes, setObservacoes] = useState('');
 
-  // Buscar formas de pagamento
+  // Buscar formas de pagamento da organização
   const { data: formasPagamento } = useQuery({
-    queryKey: ['formas-pagamento-ativas'],
+    queryKey: ['formas-pagamento-ativas', organizationId],
     queryFn: async () => {
+      if (!organizationId) return [];
+      
       const { data, error } = await supabase
         .from('formas_pagamento')
         .select('id, nome')
+        .eq('organization_id', organizationId)
         .eq('ativo', true)
         .order('nome');
       
       if (error) throw error;
       return data;
-    }
+    },
+    enabled: !!organizationId
   });
 
   const registrarPagamentoMutation = useMutation({
@@ -138,7 +144,8 @@ export function DialogRegistrarPagamentoRapido({
           data_lancamento: format(dataPagamento, 'yyyy-MM-dd'),
           forma_pagamento_id: formaPagamentoId || null,
           parcela_receber_id: parcelaId,
-          created_by_user_id: user?.id
+          created_by_user_id: user?.id,
+          organization_id: organizationId
         });
       
       if (erroLancamento) throw erroLancamento;

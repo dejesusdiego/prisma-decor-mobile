@@ -13,6 +13,7 @@ export async function registrarAtividadePagamento({
   totalParcelas,
   percentualPago,
   userId,
+  organizationId,
 }: {
   contatoId: string | null;
   orcamentoId: string;
@@ -23,6 +24,7 @@ export async function registrarAtividadePagamento({
   totalParcelas: number;
   percentualPago: number;
   userId: string;
+  organizationId?: string;
 }) {
   if (!contatoId) {
     // Se não tem contato vinculado, tentar encontrar pelo orçamento
@@ -73,6 +75,7 @@ export async function registrarAtividadePagamento({
       concluida: true,
       data_atividade: new Date().toISOString(),
       created_by_user_id: userId,
+      organization_id: organizationId || null,
     })
     .select()
     .single();
@@ -116,6 +119,7 @@ export async function registrarAtividadeCRM({
   orcamentoId,
   concluida = false,
   dataLembrete,
+  organizationId,
 }: {
   contatoId: string;
   tipo: string;
@@ -125,6 +129,7 @@ export async function registrarAtividadeCRM({
   orcamentoId?: string;
   concluida?: boolean;
   dataLembrete?: Date;
+  organizationId?: string;
 }) {
   const { data, error } = await supabase
     .from('atividades_crm')
@@ -138,6 +143,7 @@ export async function registrarAtividadeCRM({
       data_atividade: new Date().toISOString(),
       data_lembrete: dataLembrete?.toISOString(),
       created_by_user_id: userId,
+      organization_id: organizationId || null,
     })
     .select()
     .single();

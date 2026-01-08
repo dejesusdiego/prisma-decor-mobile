@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useOrganizationContext } from '@/contexts/OrganizationContext';
 import { useFinanceiroInvalidation } from '@/hooks/useFinanceiroInvalidation';
 import {
   Dialog,
@@ -44,6 +45,7 @@ const FREQUENCIAS = [
 
 export function DialogContaPagar({ open, onOpenChange, conta }: DialogContaPagarProps) {
   const { user } = useAuth();
+  const { organizationId } = useOrganizationContext();
   const { invalidateAfterPagamento } = useFinanceiroInvalidation();
   const [recorrente, setRecorrente] = useState(false);
   const [frequencia, setFrequencia] = useState('mensal');
@@ -60,17 +62,19 @@ export function DialogContaPagar({ open, onOpenChange, conta }: DialogContaPagar
   });
 
   const { data: categorias = [] } = useQuery({
-    queryKey: ['categorias-despesa'],
+    queryKey: ['categorias-despesa', organizationId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('categorias_financeiras')
         .select('*')
+        .eq('organization_id', organizationId)
         .eq('tipo', 'despesa')
         .eq('ativo', true)
         .order('nome');
       if (error) throw error;
       return data;
-    }
+    },
+    enabled: !!organizationId
   });
 
   useEffect(() => {
@@ -101,6 +105,8 @@ export function DialogContaPagar({ open, onOpenChange, conta }: DialogContaPagar
 
   const mutation = useMutation({
     mutationFn: async (data: any) => {
+      if (!organizationId) throw new Error('Organização não identificada');
+
       const payload = {
         descricao: data.descricao,
         fornecedor: data.fornecedor || null,
@@ -110,14 +116,16 @@ export function DialogContaPagar({ open, onOpenChange, conta }: DialogContaPagar
         observacoes: data.observacoes || null,
         recorrente,
         frequencia_recorrencia: recorrente ? frequencia : null,
-        created_by_user_id: user?.id
+        created_by_user_id: user?.id,
+        organization_id: organizationId
       };
 
       if (conta) {
         const { error } = await supabase
           .from('contas_pagar')
           .update(payload)
-          .eq('id', conta.id);
+          .eq('id', conta.id)
+          .eq('organization_id', organizationId);
         if (error) throw error;
       } else {
         const { error } = await supabase

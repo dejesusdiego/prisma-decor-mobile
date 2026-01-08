@@ -30,6 +30,7 @@ import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/formatters';
+import { useOrganizationContext } from '@/contexts/OrganizationContext';
 
 const formSchema = z.object({
   numeroParcelas: z.number().min(1).max(24),
@@ -66,21 +67,25 @@ export function DialogGerarContaReceber({
   onConfirm,
   isLoading
 }: DialogGerarContaReceberProps) {
+  const { organizationId } = useOrganizationContext();
   const [calendarOpen, setCalendarOpen] = useState(false);
 
   const valorTotal = orcamento.total_com_desconto ?? orcamento.total_geral ?? 0;
 
   const { data: formasPagamento } = useQuery({
-    queryKey: ['formas-pagamento-ativas'],
+    queryKey: ['formas-pagamento-ativas', organizationId],
     queryFn: async () => {
+      if (!organizationId) return [];
       const { data, error } = await supabase
         .from('formas_pagamento')
         .select('*')
+        .eq('organization_id', organizationId) // Filtrar por organização
         .eq('ativo', true)
         .order('nome');
       if (error) throw error;
       return data;
-    }
+    },
+    enabled: !!organizationId
   });
 
   const form = useForm<FormData>({

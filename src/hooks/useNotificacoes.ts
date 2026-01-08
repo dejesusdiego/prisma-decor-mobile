@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useOrganizationContext } from '@/contexts/OrganizationContext';
 
 export interface Notificacao {
   id: string;
@@ -20,24 +21,26 @@ export interface Notificacao {
 
 export function useNotificacoes() {
   const { user } = useAuth();
+  const { organizationId } = useOrganizationContext();
   const queryClient = useQueryClient();
 
   const { data: notificacoes = [], isLoading, refetch } = useQuery({
-    queryKey: ['notificacoes', user?.id],
+    queryKey: ['notificacoes', user?.id, organizationId],
     queryFn: async () => {
-      if (!user?.id) return [];
+      if (!user?.id || !organizationId) return [];
       
       const { data, error } = await supabase
         .from('notificacoes')
         .select('*')
         .eq('user_id', user.id)
+        .eq('organization_id', organizationId)
         .order('created_at', { ascending: false })
         .limit(50);
       
       if (error) throw error;
       return (data || []) as Notificacao[];
     },
-    enabled: !!user?.id,
+    enabled: !!user?.id && !!organizationId,
     refetchInterval: 60000, // Refetch a cada 1 minuto
   });
 
@@ -46,10 +49,13 @@ export function useNotificacoes() {
 
   const marcarComoLida = useMutation({
     mutationFn: async (notificacaoId: string) => {
+      if (!organizationId) return;
+      
       const { error } = await supabase
         .from('notificacoes')
         .update({ lida: true })
-        .eq('id', notificacaoId);
+        .eq('id', notificacaoId)
+        .eq('organization_id', organizationId);
       
       if (error) throw error;
     },
@@ -60,12 +66,13 @@ export function useNotificacoes() {
 
   const marcarTodasComoLidas = useMutation({
     mutationFn: async () => {
-      if (!user?.id) return;
+      if (!user?.id || !organizationId) return;
       
       const { error } = await supabase
         .from('notificacoes')
         .update({ lida: true })
         .eq('user_id', user.id)
+        .eq('organization_id', organizationId)
         .eq('lida', false);
       
       if (error) throw error;
@@ -77,10 +84,13 @@ export function useNotificacoes() {
 
   const deletarNotificacao = useMutation({
     mutationFn: async (notificacaoId: string) => {
+      if (!organizationId) return;
+      
       const { error } = await supabase
         .from('notificacoes')
         .delete()
-        .eq('id', notificacaoId);
+        .eq('id', notificacaoId)
+        .eq('organization_id', organizationId);
       
       if (error) throw error;
     },

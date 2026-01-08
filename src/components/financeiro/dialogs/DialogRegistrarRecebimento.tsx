@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useOrganizationContext } from '@/contexts/OrganizationContext';
 import { useFinanceiroInvalidation } from '@/hooks/useFinanceiroInvalidation';
 import { isPagamentoCompleto } from '@/lib/calculosFinanceiros';
 import { format } from 'date-fns';
@@ -35,6 +36,7 @@ interface DialogRegistrarRecebimentoProps {
 export function DialogRegistrarRecebimento({ open, onOpenChange, parcela }: DialogRegistrarRecebimentoProps) {
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { organizationId } = useOrganizationContext();
   const { invalidateAfterRecebimento, invalidateComissoes } = useFinanceiroInvalidation();
   const [uploading, setUploading] = useState(false);
   const [arquivo, setArquivo] = useState<File | null>(null);
@@ -47,16 +49,18 @@ export function DialogRegistrarRecebimento({ open, onOpenChange, parcela }: Dial
   });
 
   const { data: formasPagamento = [] } = useQuery({
-    queryKey: ['formas-pagamento-ativas'],
+    queryKey: ['formas-pagamento-ativas', organizationId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('formas_pagamento')
         .select('*')
+        .eq('organization_id', organizationId)
         .eq('ativo', true)
         .order('nome');
       if (error) throw error;
       return data;
-    }
+    },
+    enabled: !!organizationId
   });
 
   useEffect(() => {
@@ -151,7 +155,7 @@ export function DialogRegistrarRecebimento({ open, onOpenChange, parcela }: Dial
         }
       }
 
-      // 5. Criar lançamento financeiro
+      // 5. Criar lançamento financeiro - com organization_id
       const { data: lancamento, error: errorLancamento } = await supabase
         .from('lancamentos_financeiros')
         .insert({
@@ -161,7 +165,8 @@ export function DialogRegistrarRecebimento({ open, onOpenChange, parcela }: Dial
           data_lancamento: data.data_pagamento,
           parcela_receber_id: parcela.id,
           forma_pagamento_id: data.forma_pagamento_id || null,
-          created_by_user_id: user?.id
+          created_by_user_id: user?.id,
+          organization_id: organizationId
         })
         .select()
         .single();
@@ -176,10 +181,11 @@ export function DialogRegistrarRecebimento({ open, onOpenChange, parcela }: Dial
         let percentualComissao = 5;
 
         if (vendedorId) {
-          // Buscar configuração de comissão do vendedor
+          // Buscar configuração de comissão do vendedor - filtrado por organização
           const { data: configComissao } = await supabase
             .from('configuracoes_comissao')
             .select('vendedor_nome, percentual_padrao')
+            .eq('organization_id', organizationId)
             .eq('vendedor_user_id', vendedorId)
             .eq('ativo', true)
             .maybeSingle();
@@ -212,7 +218,7 @@ export function DialogRegistrarRecebimento({ open, onOpenChange, parcela }: Dial
           .eq('observacoes', `Parcela ${parcela.numero_parcela}`)
           .maybeSingle();
 
-        // Criar comissão apenas se não existir
+        // Criar comissão apenas se não existir - com organization_id
         if (!comissaoExistente) {
           await supabase
             .from('comissoes')
@@ -225,7 +231,8 @@ export function DialogRegistrarRecebimento({ open, onOpenChange, parcela }: Dial
               valor_comissao: valorComissao,
               status: 'pendente',
               observacoes: `Parcela ${parcela.numero_parcela}`,
-              created_by_user_id: user.id
+              created_by_user_id: user.id,
+              organization_id: organizationId
             });
         }
 

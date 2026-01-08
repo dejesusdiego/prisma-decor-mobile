@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { useOrganizationContext } from '@/contexts/OrganizationContext';
 
 interface DuplicarOrcamentoParams {
   orcamentoId: string;
@@ -10,17 +11,29 @@ interface DuplicarOrcamentoParams {
 
 export function useDuplicarOrcamento() {
   const queryClient = useQueryClient();
+  const { organizationId } = useOrganizationContext();
 
   return useMutation({
     mutationFn: async ({ orcamentoId, userId, novoClienteNome }: DuplicarOrcamentoParams) => {
-      // 1. Buscar orçamento original
+      // Validar que organizationId está disponível
+      if (!organizationId) {
+        throw new Error('Organização não identificada');
+      }
+
+      // 1. Buscar orçamento original COM validação de organization_id (multi-tenancy)
       const { data: original, error: orcError } = await supabase
         .from('orcamentos')
         .select('*')
         .eq('id', orcamentoId)
+        .eq('organization_id', organizationId) // Garantir que pertence à mesma org
         .single();
 
-      if (orcError) throw orcError;
+      if (orcError) {
+        if (orcError.code === 'PGRST116') {
+          throw new Error('Você não tem permissão para duplicar este orçamento');
+        }
+        throw orcError;
+      }
 
       // 2. Buscar itens do orçamento
       const { data: itens, error: itensError } = await supabase

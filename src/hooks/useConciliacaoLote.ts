@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { useFinanceiroInvalidation } from './useFinanceiroInvalidation';
+import { useOrganizationContext } from '@/contexts/OrganizationContext';
 
 export interface MatchParaConciliar {
   movimentacaoId: string;
@@ -29,12 +30,14 @@ export interface ResultadoConciliacaoLote {
 
 export function useConciliacaoLote() {
   const { user } = useAuth();
+  const { organizationId } = useOrganizationContext();
   const queryClient = useQueryClient();
   const { invalidateAfterRecebimento } = useFinanceiroInvalidation();
 
   const conciliarLoteMutation = useMutation({
     mutationFn: async (matches: MatchParaConciliar[]): Promise<ResultadoConciliacaoLote> => {
       if (!user) throw new Error('Usuário não autenticado');
+      if (!organizationId) throw new Error('Organização não identificada');
       
       const resultado: ResultadoConciliacaoLote = {
         processados: matches.length,
@@ -45,7 +48,7 @@ export function useConciliacaoLote() {
 
       for (const match of matches) {
         try {
-          // 1. Criar lançamento financeiro
+          // 1. Criar lançamento financeiro - com organization_id
           const { data: lancamento, error: lancamentoError } = await supabase
             .from('lancamentos_financeiros')
             .insert({
@@ -54,7 +57,8 @@ export function useConciliacaoLote() {
               data_lancamento: match.movimentacaoData,
               tipo: 'entrada',
               parcela_receber_id: match.parcelaId,
-              created_by_user_id: user.id
+              created_by_user_id: user.id,
+              organization_id: organizationId
             })
             .select('id')
             .single();

@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useOrganizationContext } from '@/contexts/OrganizationContext';
 
 export interface SugestaoOrcamento {
   orcamentoId: string;
@@ -74,21 +75,25 @@ function calcularSimilaridadeValor(valor1: number, valor2: number): number {
 }
 
 export function useSugestoesConciliacao(movimentacao: MovimentacaoParaSugestao | null) {
+  const { organizationId } = useOrganizationContext();
+
   // Buscar sugestões de parcelas a receber (para créditos)
   const { data: sugestoesRecebimento = [], isLoading: loadingRecebimento } = useQuery({
-    queryKey: ['sugestoes-recebimento', movimentacao?.id],
+    queryKey: ['sugestoes-recebimento', movimentacao?.id, organizationId],
     queryFn: async (): Promise<SugestaoContaReceber[]> => {
-      if (!movimentacao || movimentacao.tipo !== 'credito') return [];
+      if (!movimentacao || movimentacao.tipo !== 'credito' || !organizationId) return [];
 
+      // Filtrar via join com contas_receber que tem organization_id
       const { data: parcelas } = await supabase
         .from('parcelas_receber')
         .select(`
           id, numero_parcela, valor, data_vencimento, status,
-          conta_receber:contas_receber(
-            id, cliente_nome, cliente_telefone,
+          conta_receber:contas_receber!inner(
+            id, cliente_nome, cliente_telefone, organization_id,
             orcamento:orcamentos(id, codigo, cliente_nome)
           )
         `)
+        .eq('conta_receber.organization_id', organizationId)
         .in('status', ['pendente', 'parcial', 'atrasado'])
         .order('data_vencimento', { ascending: true })
         .limit(50);
@@ -137,14 +142,14 @@ export function useSugestoesConciliacao(movimentacao: MovimentacaoParaSugestao |
         .sort((a, b) => b.similaridade - a.similaridade)
         .slice(0, 5);
     },
-    enabled: !!movimentacao && movimentacao.tipo === 'credito'
+    enabled: !!movimentacao && movimentacao.tipo === 'credito' && !!organizationId
   });
 
   // Buscar sugestões de contas a pagar (para débitos)
   const { data: sugestoesPagamento = [], isLoading: loadingPagamento } = useQuery({
-    queryKey: ['sugestoes-pagamento', movimentacao?.id],
+    queryKey: ['sugestoes-pagamento', movimentacao?.id, organizationId],
     queryFn: async (): Promise<SugestaoContaPagar[]> => {
-      if (!movimentacao || movimentacao.tipo !== 'debito') return [];
+      if (!movimentacao || movimentacao.tipo !== 'debito' || !organizationId) return [];
 
       const { data: contas } = await supabase
         .from('contas_pagar')
@@ -152,6 +157,7 @@ export function useSugestoesConciliacao(movimentacao: MovimentacaoParaSugestao |
           id, descricao, valor, data_vencimento, status, fornecedor,
           orcamento:orcamentos(id, codigo)
         `)
+        .eq('organization_id', organizationId)
         .in('status', ['pendente', 'atrasado'])
         .order('data_vencimento', { ascending: true })
         .limit(50);
@@ -201,18 +207,19 @@ export function useSugestoesConciliacao(movimentacao: MovimentacaoParaSugestao |
         .sort((a, b) => b.similaridade - a.similaridade)
         .slice(0, 5);
     },
-    enabled: !!movimentacao && movimentacao.tipo === 'debito'
+    enabled: !!movimentacao && movimentacao.tipo === 'debito' && !!organizationId
   });
 
   // Buscar sugestões de orçamentos (baseado no nome do cliente na descrição)
   const { data: sugestoesOrcamento = [], isLoading: loadingOrcamento } = useQuery({
-    queryKey: ['sugestoes-orcamento', movimentacao?.id],
+    queryKey: ['sugestoes-orcamento', movimentacao?.id, organizationId],
     queryFn: async (): Promise<SugestaoOrcamento[]> => {
-      if (!movimentacao) return [];
+      if (!movimentacao || !organizationId) return [];
 
       const { data: orcamentos } = await supabase
         .from('orcamentos')
         .select('id, codigo, cliente_nome, total_geral, total_com_desconto, status')
+        .eq('organization_id', organizationId)
         .in('status', ['enviado', 'pago_40', 'pago_parcial', 'pago_60', 'pago'])
         .order('created_at', { ascending: false })
         .limit(100);
@@ -252,7 +259,7 @@ export function useSugestoesConciliacao(movimentacao: MovimentacaoParaSugestao |
         .sort((a, b) => b.similaridade - a.similaridade)
         .slice(0, 3);
     },
-    enabled: !!movimentacao
+    enabled: !!movimentacao && !!organizationId
   });
 
   return {

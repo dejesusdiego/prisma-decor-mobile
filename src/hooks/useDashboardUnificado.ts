@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useOrganizationContext } from '@/contexts/OrganizationContext';
 import { startOfWeek, endOfWeek, addDays, format } from 'date-fns';
 import { STATUS_COM_PAGAMENTO } from '@/lib/statusOrcamento';
 import { parseDateOnly, formatDateOnly, startOfToday } from '@/lib/dateOnly';
@@ -38,9 +39,13 @@ export interface ProximaAcao {
 }
 
 export function useDashboardUnificado() {
+  const { organizationId } = useOrganizationContext();
+  
   return useQuery({
-    queryKey: ['dashboard-unificado'],
+    queryKey: ['dashboard-unificado', organizationId],
     queryFn: async () => {
+      if (!organizationId) throw new Error('Organization ID required');
+      
       const hoje = startOfToday();
       const inicioSemana = startOfWeek(hoje, { weekStartsOn: 1 });
       const fimSemana = endOfWeek(hoje, { weekStartsOn: 1 });
@@ -49,24 +54,28 @@ export function useDashboardUnificado() {
       // Buscar contas a receber
       const { data: contasReceber } = await supabase
         .from('contas_receber')
-        .select('valor_total, valor_pago, status, data_vencimento');
+        .select('valor_total, valor_pago, status, data_vencimento')
+        .eq('organization_id', organizationId);
       
-      // Buscar parcelas pendentes
+      // Buscar parcelas pendentes (via contas_receber da organização)
       const { data: parcelasPendentes } = await supabase
         .from('parcelas_receber')
-        .select('id, valor, data_vencimento, status, conta_receber_id')
+        .select('id, valor, data_vencimento, status, conta_receber_id, conta:contas_receber!inner(organization_id)')
         .in('status', ['pendente', 'atrasado'])
+        .eq('conta.organization_id', organizationId)
         .order('data_vencimento', { ascending: true });
       
       // Buscar pedidos
       const { data: pedidos } = await supabase
         .from('pedidos')
-        .select('id, numero_pedido, status_producao, orcamento_id, orcamento:orcamentos(cliente_nome)');
+        .select('id, numero_pedido, status_producao, orcamento_id, orcamento:orcamentos(cliente_nome)')
+        .eq('organization_id', organizationId);
       
       // Buscar instalações da semana
       const { data: instalacoes } = await supabase
         .from('instalacoes')
         .select('id, data_agendada, turno, status, pedido_id, pedido:pedidos(numero_pedido, orcamento:orcamentos(cliente_nome))')
+        .eq('organization_id', organizationId)
         .gte('data_agendada', format(inicioSemana, 'yyyy-MM-dd'))
         .lte('data_agendada', format(fimSemana, 'yyyy-MM-dd'))
         .in('status', ['agendada', 'confirmada']);
@@ -75,6 +84,7 @@ export function useDashboardUnificado() {
       const { data: atividadesPendentes } = await supabase
         .from('atividades_crm')
         .select('id, titulo, tipo, data_atividade, contato_id, contato:contatos(nome)')
+        .eq('organization_id', organizationId)
         .eq('concluida', false)
         .lte('data_atividade', format(addDays(hoje, 3), 'yyyy-MM-dd'))
         .order('data_atividade', { ascending: true });
@@ -84,12 +94,14 @@ export function useDashboardUnificado() {
       const { data: contatosSemInteracao } = await supabase
         .from('contatos')
         .select('id')
+        .eq('organization_id', organizationId)
         .or(`ultima_interacao_em.is.null,ultima_interacao_em.lt.${dataLimite}`);
       
       // Buscar orçamentos sem resposta
       const { data: orcamentosSemResposta } = await supabase
         .from('orcamentos')
         .select('id, codigo, cliente_nome, total_com_desconto, total_geral, status_updated_at, contato_id')
+        .eq('organization_id', organizationId)
         .in('status', ['enviado', 'sem_resposta'])
         .order('status_updated_at', { ascending: true });
       
@@ -97,13 +109,15 @@ export function useDashboardUnificado() {
       const { data: lancamentosMes } = await supabase
         .from('lancamentos_financeiros')
         .select('valor, tipo')
+        .eq('organization_id', organizationId)
         .gte('data_lancamento', format(inicioMes, 'yyyy-MM-dd'))
         .eq('tipo', 'receita');
       
       // Buscar taxa de conversão
       const { data: orcamentosTodos } = await supabase
         .from('orcamentos')
-        .select('status');
+        .select('status')
+        .eq('organization_id', organizationId);
       
       // Calcular métricas
       const totalAReceber = (contasReceber || [])
@@ -224,6 +238,7 @@ export function useDashboardUnificado() {
         proximasAcoes: proximasAcoes.slice(0, 10)
       };
     },
+    enabled: !!organizationId,
     refetchInterval: 60000 // Atualizar a cada minuto
   });
 }
