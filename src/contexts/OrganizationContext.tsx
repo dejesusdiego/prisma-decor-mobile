@@ -17,15 +17,27 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
   const orgData = useOrganization();
   
   // Apply dynamic branding based on organization
+  // GUARDRAIL: Only apply custom colors that are NOT the default black theme
+  // This prevents white-label colors from breaking the base Prisma theme
   useEffect(() => {
-    if (orgData.organization?.primary_color) {
-      // Convert hex to HSL for CSS variable
-      const hex = orgData.organization.primary_color;
-      const hsl = hexToHSL(hex);
+    const color = orgData.organization?.primary_color;
+    
+    // List of "default/black" colors that should NOT override the theme
+    const defaultColors = ['#111111', '#000000', '#1a1a1a', '#0a0a0a', null, undefined, ''];
+    const isDefaultColor = !color || defaultColors.includes(color.toLowerCase());
+    
+    if (!isDefaultColor) {
+      // Only apply non-default colors (e.g., for white-label clients)
+      const hsl = hexToHSL(color);
       if (hsl) {
         document.documentElement.style.setProperty('--primary', hsl);
       }
     }
+    
+    // Cleanup: remove override when unmounting or when color becomes default
+    return () => {
+      document.documentElement.style.removeProperty('--primary');
+    };
   }, [orgData.organization?.primary_color]);
 
   return (
