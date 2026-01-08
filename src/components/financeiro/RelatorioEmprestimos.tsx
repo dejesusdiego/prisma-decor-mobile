@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useOrganizationContext } from '@/contexts/OrganizationContext';
 import { format, differenceInDays, addDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { parseDateOnly, formatDateOnly, startOfToday } from '@/lib/dateOnly';
@@ -67,18 +68,22 @@ interface EmprestimoCompleto {
 export function RelatorioEmprestimos() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [emprestimoSelecionado, setEmprestimoSelecionado] = useState<EmprestimoCompleto | null>(null);
+  const { organizationId } = useOrganizationContext();
 
   // Buscar lançamentos de empréstimo com suas contas a receber
   const { data: emprestimos = [], isLoading } = useQuery({
-    queryKey: ['emprestimos-pendentes'],
+    queryKey: ['emprestimos-pendentes', organizationId],
     queryFn: async () => {
-      // 1. Buscar lançamentos do tipo empréstimo
+      if (!organizationId) return [];
+      
+      // 1. Buscar lançamentos do tipo empréstimo (filtrado por organização)
       const { data: lancamentos, error: errLanc } = await supabase
         .from('lancamentos_financeiros')
         .select(`
           *,
           categoria:categorias_financeiras(nome)
         `)
+        .eq('organization_id', organizationId)
         .eq('tipo', 'emprestimo')
         .order('data_lancamento', { ascending: false });
 
@@ -102,6 +107,7 @@ export function RelatorioEmprestimos() {
 
       return emprestimosComContas as EmprestimoCompleto[];
     },
+    enabled: !!organizationId
   });
 
   // Calcular métricas por beneficiário (extraindo do texto da descrição)
