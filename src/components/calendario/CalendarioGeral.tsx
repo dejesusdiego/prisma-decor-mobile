@@ -11,6 +11,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useOrganization } from '@/hooks/useOrganization';
 import { 
   CalendarDays, 
   ChevronLeft, 
@@ -92,6 +93,7 @@ interface CalendarioGeralProps {
 }
 
 export function CalendarioGeral({ onNavigate }: CalendarioGeralProps) {
+  const { organizationId } = useOrganization();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [filtrosAtivos, setFiltrosAtivos] = useState<Record<TipoEvento, boolean>>({
@@ -142,98 +144,116 @@ export function CalendarioGeral({ onNavigate }: CalendarioGeralProps) {
 
   // Buscar atividades CRM
   const { data: atividades, isLoading: loadingAtividades } = useQuery({
-    queryKey: ['calendario-atividades', format(monthStart, 'yyyy-MM'), format(monthEnd, 'yyyy-MM')],
+    queryKey: ['calendario-atividades', format(monthStart, 'yyyy-MM'), format(monthEnd, 'yyyy-MM'), organizationId],
     queryFn: async () => {
+      if (!organizationId) return [];
       const { data, error } = await supabase
         .from('atividades_crm')
         .select('*, contatos(nome)')
+        .eq('organization_id', organizationId)
         .gte('data_atividade', calendarStart.toISOString())
         .lte('data_atividade', calendarEnd.toISOString())
         .eq('concluida', false);
       
       if (error) throw error;
       return data || [];
-    }
+    },
+    enabled: !!organizationId
   });
 
   // Buscar instalações
   const { data: instalacoes, isLoading: loadingInstalacoes } = useQuery({
-    queryKey: ['calendario-instalacoes', format(monthStart, 'yyyy-MM')],
+    queryKey: ['calendario-instalacoes', format(monthStart, 'yyyy-MM'), organizationId],
     queryFn: async () => {
+      if (!organizationId) return [];
       const { data, error } = await supabase
         .from('instalacoes')
-        .select('*, pedidos(numero_pedido, orcamentos(cliente_nome, endereco, cidade))')
+        .select('*, pedidos(numero_pedido, organization_id, orcamentos(cliente_nome, endereco, cidade))')
         .gte('data_agendada', format(calendarStart, 'yyyy-MM-dd'))
         .lte('data_agendada', format(calendarEnd, 'yyyy-MM-dd'))
         .neq('status', 'concluida');
       
       if (error) throw error;
-      return data || [];
-    }
+      // Filtrar por organization_id via pedidos
+      return (data || []).filter((i: any) => i.pedidos?.organization_id === organizationId);
+    },
+    enabled: !!organizationId
   });
 
   // Buscar visitas
   const { data: visitas, isLoading: loadingVisitas } = useQuery({
-    queryKey: ['calendario-visitas', format(monthStart, 'yyyy-MM')],
+    queryKey: ['calendario-visitas', format(monthStart, 'yyyy-MM'), organizationId],
     queryFn: async () => {
+      if (!organizationId) return [];
       const { data, error } = await supabase
         .from('solicitacoes_visita')
         .select('*')
+        .eq('organization_id', organizationId)
         .gte('data_agendada', format(calendarStart, 'yyyy-MM-dd'))
         .lte('data_agendada', format(calendarEnd, 'yyyy-MM-dd'))
         .in('status', ['pendente', 'confirmada']);
       
       if (error) throw error;
       return data || [];
-    }
+    },
+    enabled: !!organizationId
   });
 
   // Buscar contas a pagar
   const { data: contasPagar, isLoading: loadingContasPagar } = useQuery({
-    queryKey: ['calendario-contas-pagar', format(monthStart, 'yyyy-MM')],
+    queryKey: ['calendario-contas-pagar', format(monthStart, 'yyyy-MM'), organizationId],
     queryFn: async () => {
+      if (!organizationId) return [];
       const { data, error } = await supabase
         .from('contas_pagar')
         .select('*')
+        .eq('organization_id', organizationId)
         .gte('data_vencimento', format(calendarStart, 'yyyy-MM-dd'))
         .lte('data_vencimento', format(calendarEnd, 'yyyy-MM-dd'))
         .in('status', ['pendente', 'atrasado']);
       
       if (error) throw error;
       return data || [];
-    }
+    },
+    enabled: !!organizationId
   });
 
   // Buscar contas a receber
   const { data: contasReceber, isLoading: loadingContasReceber } = useQuery({
-    queryKey: ['calendario-contas-receber', format(monthStart, 'yyyy-MM')],
+    queryKey: ['calendario-contas-receber', format(monthStart, 'yyyy-MM'), organizationId],
     queryFn: async () => {
+      if (!organizationId) return [];
       const { data, error } = await supabase
         .from('contas_receber')
         .select('*')
+        .eq('organization_id', organizationId)
         .gte('data_vencimento', format(calendarStart, 'yyyy-MM-dd'))
         .lte('data_vencimento', format(calendarEnd, 'yyyy-MM-dd'))
         .in('status', ['pendente', 'parcial', 'atrasado']);
       
       if (error) throw error;
       return data || [];
-    }
+    },
+    enabled: !!organizationId
   });
 
   // Buscar pedidos com previsão de entrega
   const { data: pedidos, isLoading: loadingPedidos } = useQuery({
-    queryKey: ['calendario-pedidos', format(monthStart, 'yyyy-MM')],
+    queryKey: ['calendario-pedidos', format(monthStart, 'yyyy-MM'), organizationId],
     queryFn: async () => {
+      if (!organizationId) return [];
       const { data, error } = await supabase
         .from('pedidos')
         .select('*, orcamentos(cliente_nome, codigo)')
+        .eq('organization_id', organizationId)
         .gte('previsao_entrega', format(calendarStart, 'yyyy-MM-dd'))
         .lte('previsao_entrega', format(calendarEnd, 'yyyy-MM-dd'))
         .not('status_producao', 'in', '("entregue","cancelado")');
       
       if (error) throw error;
       return data || [];
-    }
+    },
+    enabled: !!organizationId
   });
 
   const isLoading = loadingAtividades || loadingInstalacoes || loadingVisitas || 

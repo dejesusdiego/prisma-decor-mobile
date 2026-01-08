@@ -190,11 +190,13 @@ export function SolicitacoesVisita({ onNavigate, onCreateOrcamento }: Solicitaco
   };
 
   const fetchSolicitacoes = async () => {
+    if (!organizationId) return;
     setLoading(true);
     try {
       const { data, error } = await supabase
         .from("solicitacoes_visita")
         .select("*")
+        .eq("organization_id", organizationId)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -212,7 +214,8 @@ export function SolicitacoesVisita({ onNavigate, onCreateOrcamento }: Solicitaco
             visualizada_em: new Date().toISOString(),
             visualizada_por: user.id
           })
-          .in("id", naoVisualizadas);
+          .in("id", naoVisualizadas)
+          .eq("organization_id", organizationId);
       }
     } catch (error) {
       console.error("Erro ao carregar solicitações:", error);
@@ -223,8 +226,10 @@ export function SolicitacoesVisita({ onNavigate, onCreateOrcamento }: Solicitaco
   };
 
   useEffect(() => {
-    fetchSolicitacoes();
-  }, []);
+    if (organizationId) {
+      fetchSolicitacoes();
+    }
+  }, [organizationId]);
 
   const formatWhatsAppLink = (telefone: string) => {
     const cleaned = telefone.replace(/\D/g, "");
@@ -270,11 +275,13 @@ _Prisma Interiores - Transformando ambientes_ ✨`;
   };
 
   const handleStatusChange = async (id: string, newStatus: string) => {
+    if (!organizationId) return;
     try {
       const { error } = await supabase
         .from("solicitacoes_visita")
         .update({ status: newStatus })
-        .eq("id", id);
+        .eq("id", id)
+        .eq("organization_id", organizationId);
 
       if (error) throw error;
       
@@ -306,13 +313,14 @@ _Prisma Interiores - Transformando ambientes_ ✨`;
   };
 
   const handleSaveObservacoes = async () => {
-    if (!selectedSolicitacao) return;
+    if (!selectedSolicitacao || !organizationId) return;
     
     try {
       const { error } = await supabase
         .from("solicitacoes_visita")
         .update({ observacoes_internas: observacoes })
-        .eq("id", selectedSolicitacao.id);
+        .eq("id", selectedSolicitacao.id)
+        .eq("organization_id", organizationId);
 
       if (error) throw error;
       
@@ -349,13 +357,14 @@ _Prisma Interiores - Transformando ambientes_ ✨`;
   };
 
   const handleConfirmDelete = async () => {
-    if (!solicitacaoToDelete) return;
+    if (!solicitacaoToDelete || !organizationId) return;
     
     try {
       const { error } = await supabase
         .from("solicitacoes_visita")
         .delete()
-        .eq("id", solicitacaoToDelete.id);
+        .eq("id", solicitacaoToDelete.id)
+        .eq("organization_id", organizationId);
 
       if (error) throw error;
       
@@ -439,6 +448,7 @@ _Prisma Interiores - Transformando ambientes_ ✨`;
           .from("solicitacoes_visita")
           .update(visitData)
           .eq("id", editingVisitId)
+          .eq("organization_id", organizationId)
           .select()
           .single();
 
