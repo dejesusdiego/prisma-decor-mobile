@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useOrganizationContext } from '@/contexts/OrganizationContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -46,14 +47,20 @@ interface MargemOrcamento {
 
 export function RelatorioMargemReal({ onBack }: RelatorioMargemRealProps) {
   const [busca, setBusca] = useState('');
+  const { organizationId } = useOrganizationContext();
 
   const { data, isLoading } = useQuery({
-    queryKey: ['relatorio-margem-real'],
+    queryKey: ['relatorio-margem-real', organizationId],
     queryFn: async () => {
+      if (!organizationId) {
+        return { itens: [], resumo: { mediaProjetada: 0, mediaRealizada: 0, diferenca: 0 } };
+      }
+      
       // Buscar orçamentos com status de pagamento
       const { data: orcamentos } = await supabase
         .from('orcamentos')
         .select('id, codigo, cliente_nome, created_at, total_com_desconto, total_geral, custo_total, margem_percent')
+        .eq('organization_id', organizationId)
         .in('status', ['pago', 'pago_parcial', 'pago_40', 'instalado', 'concluido'])
         .order('created_at', { ascending: false });
 
@@ -65,12 +72,14 @@ export function RelatorioMargemReal({ onBack }: RelatorioMargemRealProps) {
       const { data: contasReceber } = await supabase
         .from('contas_receber')
         .select('orcamento_id, valor_pago')
+        .eq('organization_id', organizationId)
         .in('orcamento_id', orcamentos.map(o => o.id));
 
       // Buscar custos pagos por orçamento
       const { data: contasPagar } = await supabase
         .from('contas_pagar')
         .select('orcamento_id, valor')
+        .eq('organization_id', organizationId)
         .in('orcamento_id', orcamentos.map(o => o.id))
         .eq('status', 'pago');
 

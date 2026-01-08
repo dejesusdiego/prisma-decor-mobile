@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { STATUS_COM_PAGAMENTO, STATUS_NEGOCIO_PERDIDO } from '@/lib/statusOrcamento';
+import { useOrganizationContext } from '@/contexts/OrganizationContext';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -114,8 +115,10 @@ export default function DashboardKPIs() {
   const [periodo, setPeriodo] = useState<PeriodoFiltro>('6m');
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<KPIData | null>(null);
+  const { organizationId } = useOrganizationContext();
 
   const loadData = async () => {
+    if (!organizationId) return;
     setLoading(true);
     try {
       const hoje = new Date();
@@ -143,17 +146,20 @@ export default function DashboardKPIs() {
       // Buscar contatos (clientes)
       const { data: contatos } = await supabase
         .from('contatos')
-        .select('*');
+        .select('*')
+        .eq('organization_id', organizationId);
 
       // Buscar orçamentos
       const { data: orcamentos } = await supabase
         .from('orcamentos')
-        .select('*');
+        .select('*')
+        .eq('organization_id', organizationId);
 
       // Buscar contas a pagar (para CAC - custos de aquisição)
       const { data: contasPagar } = await supabase
         .from('contas_pagar')
         .select('*, categorias_financeiras(nome)')
+        .eq('organization_id', organizationId)
         .gte('created_at', dataInicio.toISOString());
 
       const orcamentosNoPeriodo = orcamentos?.filter(o => 
@@ -348,8 +354,10 @@ export default function DashboardKPIs() {
   };
 
   useEffect(() => {
-    loadData();
-  }, [periodo]);
+    if (organizationId) {
+      loadData();
+    }
+  }, [periodo, organizationId]);
 
   if (loading) {
     return (

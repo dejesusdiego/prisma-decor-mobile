@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useOrganizationContext } from '@/contexts/OrganizationContext';
 import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { 
@@ -86,6 +87,7 @@ export function RelatorioOrcadoRealizado({ onVisualizarOrcamento }: NavigateProp
   const [periodo, setPeriodo] = useState<Periodo>('6m');
   const [searchTerm, setSearchTerm] = useState('');
   const [filtroStatus, setFiltroStatus] = useState<string>('todos');
+  const { organizationId } = useOrganizationContext();
 
   const meses = periodo === '3m' ? 3 : periodo === '6m' ? 6 : periodo === '12m' ? 12 : 120;
   const dataInicio = startOfMonth(subMonths(new Date(), meses - 1));
@@ -93,11 +95,14 @@ export function RelatorioOrcadoRealizado({ onVisualizarOrcamento }: NavigateProp
 
   // Buscar orçamentos
   const { data: orcamentos = [], isLoading } = useQuery({
-    queryKey: ['orcamentos-orcado-realizado', periodo],
+    queryKey: ['orcamentos-orcado-realizado', periodo, organizationId],
     queryFn: async () => {
+      if (!organizationId) return [];
+      
       let query = supabase
         .from('orcamentos')
         .select('*')
+        .eq('organization_id', organizationId)
         .order('created_at', { ascending: false });
       
       if (periodo !== 'all') {
@@ -109,41 +114,44 @@ export function RelatorioOrcadoRealizado({ onVisualizarOrcamento }: NavigateProp
       const { data, error } = await query;
       if (error) throw error;
       return data;
-    }
+    },
+    enabled: !!organizationId
   });
 
   // Buscar contas a receber
   const { data: contasReceber = [] } = useQuery({
-    queryKey: ['contas-receber-orcado', orcamentos.map(o => o.id)],
+    queryKey: ['contas-receber-orcado', orcamentos.map(o => o.id), organizationId],
     queryFn: async () => {
-      if (orcamentos.length === 0) return [];
+      if (orcamentos.length === 0 || !organizationId) return [];
       
       const { data, error } = await supabase
         .from('contas_receber')
         .select('*')
+        .eq('organization_id', organizationId)
         .in('orcamento_id', orcamentos.map(o => o.id));
       
       if (error) throw error;
       return data;
     },
-    enabled: orcamentos.length > 0
+    enabled: orcamentos.length > 0 && !!organizationId
   });
 
   // Buscar contas a pagar
   const { data: contasPagar = [] } = useQuery({
-    queryKey: ['contas-pagar-orcado', orcamentos.map(o => o.id)],
+    queryKey: ['contas-pagar-orcado', orcamentos.map(o => o.id), organizationId],
     queryFn: async () => {
-      if (orcamentos.length === 0) return [];
+      if (orcamentos.length === 0 || !organizationId) return [];
       
       const { data, error } = await supabase
         .from('contas_pagar')
         .select('*')
+        .eq('organization_id', organizationId)
         .in('orcamento_id', orcamentos.map(o => o.id));
       
       if (error) throw error;
       return data;
     },
-    enabled: orcamentos.length > 0
+    enabled: orcamentos.length > 0 && !!organizationId
   });
 
   // Calcular comparação

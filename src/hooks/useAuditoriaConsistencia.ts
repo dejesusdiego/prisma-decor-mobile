@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useOrganizationContext } from '@/contexts/OrganizationContext';
 
 export interface InconsistenciaItem {
   id: string;
@@ -24,9 +25,26 @@ export interface AuditoriaResult {
 }
 
 export function useAuditoriaConsistencia() {
+  const { organizationId } = useOrganizationContext();
+  
   return useQuery({
-    queryKey: ['auditoria-consistencia'],
+    queryKey: ['auditoria-consistencia', organizationId],
     queryFn: async (): Promise<AuditoriaResult> => {
+      if (!organizationId) {
+        return {
+          orcamentosSemPedido: [],
+          orcamentosSemConta: [],
+          pedidosSemPagamento: [],
+          contasOrfas: [],
+          statusDivergente: [],
+          comissoesSemRecebimento: [],
+          totaisDivergentes: [],
+          total: 0,
+          criticas: 0,
+          altas: 0,
+          medias: 0
+        };
+      }
       const inconsistencias: AuditoriaResult = {
         orcamentosSemPedido: [],
         orcamentosSemConta: [],
@@ -45,6 +63,7 @@ export function useAuditoriaConsistencia() {
       const { data: orcamentosSemPedido } = await supabase
         .from('orcamentos')
         .select('id, codigo, cliente_nome, status, total_com_desconto, total_geral, created_at')
+        .eq('organization_id', organizationId)
         .in('status', ['pago_40', 'pago_parcial', 'pago_60', 'pago']);
 
       if (orcamentosSemPedido) {
@@ -106,6 +125,7 @@ export function useAuditoriaConsistencia() {
           id, numero_pedido, status_producao, created_at,
           orcamento:orcamentos(id, codigo, cliente_nome, status)
         `)
+        .eq('organization_id', organizationId)
         .not('status_producao', 'in', '("entregue","cancelado")');
 
       if (pedidosAtivos) {
@@ -135,6 +155,7 @@ export function useAuditoriaConsistencia() {
           id, cliente_nome, valor_total, valor_pago, status, orcamento_id,
           orcamento:orcamentos(id, status)
         `)
+        .eq('organization_id', organizationId)
         .not('status', 'eq', 'pago');
 
       if (contasReceber) {
@@ -162,6 +183,7 @@ export function useAuditoriaConsistencia() {
         .select(`
           id, codigo, cliente_nome, status, total_com_desconto, total_geral
         `)
+        .eq('organization_id', organizationId)
         .in('status', ['pago_40', 'pago_parcial', 'pago_60', 'pago']);
 
       if (orcamentosComConta) {
@@ -216,6 +238,7 @@ export function useAuditoriaConsistencia() {
         .select(`
           id, orcamento_id, vendedor_nome, valor_comissao, status, observacoes
         `)
+        .eq('organization_id', organizationId)
         .eq('status', 'pendente');
 
       if (comissoes) {
@@ -249,7 +272,8 @@ export function useAuditoriaConsistencia() {
       // mas mantemos a verificação para auditoria de dados antigos)
       const { data: orcamentosComItens } = await supabase
         .from('orcamentos')
-        .select('id, codigo, cliente_nome, total_geral, status');
+        .select('id, codigo, cliente_nome, total_geral, status')
+        .eq('organization_id', organizationId);
 
       if (orcamentosComItens) {
         for (const orc of orcamentosComItens) {
@@ -302,6 +326,7 @@ export function useAuditoriaConsistencia() {
       return inconsistencias;
     },
     staleTime: 5 * 60 * 1000, // 5 minutos
-    refetchOnWindowFocus: false
+    refetchOnWindowFocus: false,
+    enabled: !!organizationId
   });
 }

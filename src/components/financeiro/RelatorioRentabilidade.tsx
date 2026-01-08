@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useOrganizationContext } from '@/contexts/OrganizationContext';
 import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { 
@@ -81,6 +82,7 @@ export function RelatorioRentabilidade({ onVisualizarOrcamento, onNavigate }: Na
   const [searchTerm, setSearchTerm] = useState('');
   const [vendedorFilter, setVendedorFilter] = useState<string>('todos');
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const { organizationId } = useOrganizationContext();
 
   const meses = periodo === '3m' ? 3 : periodo === '6m' ? 6 : periodo === '12m' ? 12 : 120;
   const dataInicio = startOfMonth(subMonths(new Date(), meses - 1));
@@ -88,11 +90,14 @@ export function RelatorioRentabilidade({ onVisualizarOrcamento, onNavigate }: Na
 
   // Buscar orçamentos com custos
   const { data: orcamentos = [], isLoading } = useQuery({
-    queryKey: ['orcamentos-rentabilidade', periodo],
+    queryKey: ['orcamentos-rentabilidade', periodo, organizationId],
     queryFn: async () => {
+      if (!organizationId) return [];
+      
       let query = supabase
         .from('orcamentos')
         .select('*')
+        .eq('organization_id', organizationId)
         .order('created_at', { ascending: false });
       
       if (periodo !== 'all') {
@@ -104,41 +109,44 @@ export function RelatorioRentabilidade({ onVisualizarOrcamento, onNavigate }: Na
       const { data, error } = await query;
       if (error) throw error;
       return data;
-    }
+    },
+    enabled: !!organizationId
   });
 
   // Buscar contas a receber vinculadas
   const { data: contasReceber = [] } = useQuery({
-    queryKey: ['contas-receber-rentabilidade', orcamentos.map(o => o.id)],
+    queryKey: ['contas-receber-rentabilidade', orcamentos.map(o => o.id), organizationId],
     queryFn: async () => {
-      if (orcamentos.length === 0) return [];
+      if (orcamentos.length === 0 || !organizationId) return [];
       
       const { data, error } = await supabase
         .from('contas_receber')
         .select('*')
+        .eq('organization_id', organizationId)
         .in('orcamento_id', orcamentos.map(o => o.id));
       
       if (error) throw error;
       return data;
     },
-    enabled: orcamentos.length > 0
+    enabled: orcamentos.length > 0 && !!organizationId
   });
 
   // Buscar comissões
   const { data: comissoes = [] } = useQuery({
-    queryKey: ['comissoes-rentabilidade', orcamentos.map(o => o.id)],
+    queryKey: ['comissoes-rentabilidade', orcamentos.map(o => o.id), organizationId],
     queryFn: async () => {
-      if (orcamentos.length === 0) return [];
+      if (orcamentos.length === 0 || !organizationId) return [];
       
       const { data, error } = await supabase
         .from('comissoes')
         .select('*')
+        .eq('organization_id', organizationId)
         .in('orcamento_id', orcamentos.map(o => o.id));
       
       if (error) throw error;
       return data;
     },
-    enabled: orcamentos.length > 0
+    enabled: orcamentos.length > 0 && !!organizationId
   });
 
   // Calcular rentabilidade por orçamento
