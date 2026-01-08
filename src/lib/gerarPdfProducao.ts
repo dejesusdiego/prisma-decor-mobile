@@ -96,9 +96,13 @@ export async function gerarPdfProducao(pedidoId: string): Promise<void> {
         )
       `)
       .eq('id', pedidoId)
-      .single();
+      .maybeSingle();
 
     if (error) throw error;
+    
+    if (!pedido) {
+      throw new Error('Pedido não encontrado');
+    }
 
     // Buscar materiais para nomes
     const materialIds = new Set<string>();
