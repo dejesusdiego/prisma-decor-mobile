@@ -86,8 +86,8 @@ export function KanbanProducao() {
           const newStatus = payload.new?.status_item;
           
           if (oldStatus && newStatus && oldStatus !== newStatus) {
-            const oldLabel = STATUS_ITEM_LABELS[oldStatus] || oldStatus;
-            const newLabel = STATUS_ITEM_LABELS[newStatus] || newStatus;
+            const oldLabel = STATUS_ITEM_LABELS[oldStatus]?.label || oldStatus;
+            const newLabel = STATUS_ITEM_LABELS[newStatus]?.label || newStatus;
             
             toast.success(`Item movido: ${oldLabel} → ${newLabel}`, {
               description: 'O quadro foi atualizado automaticamente',

@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useOrganization } from '@/hooks/useOrganization';
 
 export interface Pedido {
   id: string;
@@ -135,10 +136,11 @@ export const STATUS_INSTALACAO_LABELS: Record<string, { label: string; color: st
 
 export function useProducaoData() {
   const queryClient = useQueryClient();
+  const { organizationId } = useOrganization();
 
-  // Buscar todos os pedidos com dados do orçamento
+  // Buscar todos os pedidos com dados do orçamento (filtrado por organização)
   const { data: pedidos = [], isLoading: isLoadingPedidos, error: errorPedidos, refetch: refetchPedidos } = useQuery({
-    queryKey: ['pedidos'],
+    queryKey: ['pedidos', organizationId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('pedidos')
@@ -168,23 +170,26 @@ export function useProducaoData() {
           ),
           instalacoes (*)
         `)
+        .eq('organization_id', organizationId)
         .order('data_entrada', { ascending: false });
 
       if (error) throw error;
       return data as Pedido[];
     },
+    enabled: !!organizationId,
   });
 
-  // Buscar instalações
+  // Buscar instalações (filtradas via join com pedidos da organização)
   const { data: instalacoes = [], isLoading: isLoadingInstalacoes, refetch: refetchInstalacoes } = useQuery({
-    queryKey: ['instalacoes'],
+    queryKey: ['instalacoes', organizationId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('instalacoes')
         .select(`
           *,
-          pedido:pedidos (
+          pedido:pedidos!inner (
             numero_pedido,
+            organization_id,
             orcamento:orcamentos (
               codigo,
               cliente_nome,
@@ -192,11 +197,13 @@ export function useProducaoData() {
             )
           )
         `)
+        .eq('pedido.organization_id', organizationId)
         .order('data_agendada', { ascending: true });
 
       if (error) throw error;
       return data as Instalacao[];
     },
+    enabled: !!organizationId,
   });
 
   // Buscar histórico de um pedido específico
@@ -222,7 +229,7 @@ export function useProducaoData() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['pedidos'] });
+      queryClient.invalidateQueries({ queryKey: ['pedidos', organizationId] });
       toast.success('Status do item atualizado');
     },
     onError: (error) => {
@@ -241,7 +248,7 @@ export function useProducaoData() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['pedidos'] });
+      queryClient.invalidateQueries({ queryKey: ['pedidos', organizationId] });
       toast.success('Responsável atualizado');
     },
     onError: (error) => {
@@ -260,7 +267,7 @@ export function useProducaoData() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['pedidos'] });
+      queryClient.invalidateQueries({ queryKey: ['pedidos', organizationId] });
       toast.success('Status do pedido atualizado');
     },
     onError: (error) => {
@@ -279,7 +286,7 @@ export function useProducaoData() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['pedidos'] });
+      queryClient.invalidateQueries({ queryKey: ['pedidos', organizationId] });
       toast.success('Prioridade atualizada');
     },
     onError: (error) => {
@@ -297,8 +304,8 @@ export function useProducaoData() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['instalacoes'] });
-      queryClient.invalidateQueries({ queryKey: ['pedidos'] });
+      queryClient.invalidateQueries({ queryKey: ['instalacoes', organizationId] });
+      queryClient.invalidateQueries({ queryKey: ['pedidos', organizationId] });
       toast.success('Instalação agendada com sucesso');
     },
     onError: (error) => {
@@ -317,8 +324,8 @@ export function useProducaoData() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['instalacoes'] });
-      queryClient.invalidateQueries({ queryKey: ['pedidos'] });
+      queryClient.invalidateQueries({ queryKey: ['instalacoes', organizationId] });
+      queryClient.invalidateQueries({ queryKey: ['pedidos', organizationId] });
       toast.success('Instalação atualizada');
     },
     onError: (error) => {
