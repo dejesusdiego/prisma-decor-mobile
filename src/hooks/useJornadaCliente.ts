@@ -225,7 +225,7 @@ export function useJornadaCliente(contatoId: string): JornadaCliente {
       items.push({
         id: `ativ-${atividade.id}`,
         tipo: 'atividade',
-        data: new Date(atividade.data_atividade),
+        data: parseDateOnly(atividade.data_atividade) || new Date(),
         titulo: atividade.titulo,
         subtitulo: atividade.descricao || undefined,
         iconType: atividade.tipo,
@@ -270,7 +270,7 @@ export function useJornadaCliente(contatoId: string): JornadaCliente {
       items.push({
         id: `prod-${pedido.id}`,
         tipo: 'producao',
-        data: new Date(pedido.data_entrada),
+        data: parseDateOnly(pedido.data_entrada) || new Date(),
         titulo: `Pedido ${pedido.numero_pedido}`,
         subtitulo: `Entrada em produção`,
         iconType: 'producao',
@@ -282,7 +282,7 @@ export function useJornadaCliente(contatoId: string): JornadaCliente {
         items.push({
           id: `inst-${inst.id}`,
           tipo: 'instalacao',
-          data: new Date(inst.data_agendada),
+          data: parseDateOnly(inst.data_agendada) || new Date(),
           titulo: `Instalação ${inst.status === 'realizada' ? 'realizada' : 'agendada'}`,
           subtitulo: `${pedido.numero_pedido} - ${inst.turno}`,
           iconType: 'instalacao',
@@ -311,7 +311,7 @@ export function useJornadaCliente(contatoId: string): JornadaCliente {
       items.push({
         id: `hist-${historico.id}`,
         tipo: 'producao_historico',
-        data: new Date(historico.data_evento),
+        data: parseDateOnly(historico.data_evento) || new Date(),
         titulo: `Pedido ${historico.pedido?.numero_pedido || 'N/A'}`,
         subtitulo: historico.descricao,
         iconType,

@@ -177,12 +177,13 @@ export function useDashboardUnificado() {
       
       // Follow-ups pendentes
       (atividadesPendentes || []).slice(0, 3).forEach((ativ: any) => {
+        const dataAtividade = parseDateOnly(ativ.data_atividade) || new Date();
         proximasAcoes.push({
           tipo: 'follow_up',
           titulo: ativ.titulo,
           descricao: ativ.contato?.nome || 'Contato',
           data: ativ.data_atividade,
-          prioridade: new Date(ativ.data_atividade) < hoje ? 'alta' : 'media',
+          prioridade: dataAtividade < hoje ? 'alta' : 'media',
           referencia: { tipo: 'contato', id: ativ.contato_id }
         });
       });
