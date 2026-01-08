@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -25,6 +25,13 @@ export function DialogValidade({
   validadeAtual,
 }: DialogValidadeProps) {
   const [validadeDias, setValidadeDias] = useState(validadeAtual || 7);
+
+  // Sincronizar estado quando dialog abrir ou validade mudar
+  useEffect(() => {
+    if (open) {
+      setValidadeDias(validadeAtual || 7);
+    }
+  }, [open, validadeAtual]);
 
   const handleConfirmar = () => {
     onConfirmar(validadeDias);

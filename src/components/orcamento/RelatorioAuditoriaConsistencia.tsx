@@ -14,7 +14,8 @@ import {
   Receipt, 
   ArrowRightLeft,
   Coins,
-  ExternalLink
+  ExternalLink,
+  Calculator
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/formatters';
 
@@ -55,6 +56,11 @@ const tipoConfig = {
     label: 'Comissões sem Recebimento', 
     icon: Coins,
     description: 'Comissões criadas sem pagamento correspondente'
+  },
+  total_divergente: { 
+    label: 'Totais Divergentes', 
+    icon: Calculator,
+    description: 'Orçamentos com total_geral diferente da soma dos itens'
   }
 };
 
@@ -74,6 +80,7 @@ function InconsistenciaCard({ item, onNavigate }: InconsistenciaCardProps) {
       case 'orcamento_sem_pedido':
       case 'orcamento_sem_conta':
       case 'status_divergente':
+      case 'total_divergente':
         onNavigate('visualizarOrcamento', item.id);
         break;
       case 'pedido_sem_pagamento':
@@ -163,6 +170,7 @@ export function RelatorioAuditoriaConsistencia({ onNavigate }: RelatorioAuditori
     { key: 'orcamentosSemConta', items: data.orcamentosSemConta, ...tipoConfig.orcamento_sem_conta },
     { key: 'orcamentosSemPedido', items: data.orcamentosSemPedido, ...tipoConfig.orcamento_sem_pedido },
     { key: 'statusDivergente', items: data.statusDivergente, ...tipoConfig.status_divergente },
+    { key: 'totaisDivergentes', items: data.totaisDivergentes, ...tipoConfig.total_divergente },
     { key: 'contasOrfas', items: data.contasOrfas, ...tipoConfig.conta_orfa },
     { key: 'comissoesSemRecebimento', items: data.comissoesSemRecebimento, ...tipoConfig.comissao_sem_recebimento }
   ].filter(cat => cat.items.length > 0);

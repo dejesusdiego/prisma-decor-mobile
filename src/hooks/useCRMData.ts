@@ -99,20 +99,28 @@ export function useContato(id: string | null) {
 }
 
 export function useContatoByTelefone(telefone: string | null) {
+  const { organizationId } = useOrganization();
+  
+  // Normaliza telefone para apenas dígitos (para busca consistente)
+  const telefoneNormalizado = telefone?.replace(/\D/g, '') || null;
+  
   return useQuery({
-    queryKey: ['contato-telefone', telefone],
+    queryKey: ['contato-telefone', telefoneNormalizado, organizationId],
     queryFn: async () => {
-      if (!telefone || telefone.length < 10) return null;
+      if (!telefoneNormalizado || telefoneNormalizado.length < 10 || !organizationId) return null;
+      
+      // Busca por telefone normalizado ou original, filtrando por organization
       const { data, error } = await supabase
         .from('contatos')
         .select('*')
-        .eq('telefone', telefone)
+        .eq('organization_id', organizationId)
+        .or(`telefone.eq.${telefone},telefone.eq.${telefoneNormalizado}`)
         .maybeSingle();
       
       if (error) throw error;
       return data as Contato | null;
     },
-    enabled: !!telefone && telefone.length >= 10
+    enabled: !!telefoneNormalizado && telefoneNormalizado.length >= 10 && !!organizationId
   });
 }
 

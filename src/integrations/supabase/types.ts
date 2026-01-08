@@ -2102,6 +2102,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      recalcular_totais_orcamento: {
+        Args: { p_orcamento_id: string }
+        Returns: undefined
+      }
       truncate_materials_and_services: { Args: never; Returns: undefined }
       verificar_atrasos_producao: { Args: never; Returns: undefined }
       verificar_itens_parados: { Args: never; Returns: undefined }
