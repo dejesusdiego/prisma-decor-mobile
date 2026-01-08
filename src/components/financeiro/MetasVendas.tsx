@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { STATUS_COM_PAGAMENTO } from '@/lib/statusOrcamento';
+import { useOrganizationContext } from '@/contexts/OrganizationContext';
 import { 
   Target, 
   Settings2, 
@@ -64,6 +65,7 @@ export function MetasVendas({
   clientesNovos,
   periodo 
 }: MetasVendasProps) {
+  const { organizationId } = useOrganizationContext();
   const [metas, setMetas] = useState<MetaConfig>(DEFAULT_METAS);
   const [tempMetas, setTempMetas] = useState<MetaConfig>(DEFAULT_METAS);
   const [loading, setLoading] = useState(true);
@@ -89,14 +91,20 @@ export function MetasVendas({
   // Carregar metas do banco
   useEffect(() => {
     const loadMetas = async () => {
+      if (!organizationId) {
+        setLoading(false);
+        return;
+      }
+      
       try {
         const { data, error } = await supabase
           .from('configuracoes_sistema')
           .select('valor')
           .eq('chave', 'metas_vendas')
-          .single();
+          .eq('organization_id', organizationId)
+          .maybeSingle();
 
-        if (error && error.code !== 'PGRST116') throw error;
+        if (error) throw error;
 
         if (data?.valor) {
           const metasDb = data.valor as unknown as MetaConfig;
@@ -112,10 +120,12 @@ export function MetasVendas({
 
     loadMetas();
     loadDadosPeriodoAnterior();
-  }, []);
+  }, [organizationId]);
 
   // Carregar dados do período anterior para comparação
   const loadDadosPeriodoAnterior = async () => {
+    if (!organizationId) return;
+    
     try {
       const hoje = new Date();
       const mesesAtras = getFatorPeriodo() * 2;
@@ -125,12 +135,14 @@ export function MetasVendas({
       const { data: orcamentos } = await supabase
         .from('orcamentos')
         .select('*')
+        .eq('organization_id', organizationId)
         .gte('created_at', dataInicioAnterior.toISOString())
         .lt('created_at', dataFimAnterior.toISOString());
 
       const { data: contatos } = await supabase
         .from('contatos')
         .select('*')
+        .eq('organization_id', organizationId)
         .gte('created_at', dataInicioAnterior.toISOString())
         .lt('created_at', dataFimAnterior.toISOString())
         .eq('tipo', 'cliente');
@@ -154,6 +166,11 @@ export function MetasVendas({
   };
 
   const salvarMetas = async () => {
+    if (!organizationId) {
+      toast.error('Organização não identificada');
+      return;
+    }
+    
     setSaving(true);
     try {
       // Verificar se já existe
@@ -161,13 +178,15 @@ export function MetasVendas({
         .from('configuracoes_sistema')
         .select('id')
         .eq('chave', 'metas_vendas')
-        .single();
+        .eq('organization_id', organizationId)
+        .maybeSingle();
 
       if (existing) {
         const { error } = await supabase
           .from('configuracoes_sistema')
           .update({ valor: tempMetas as unknown as never })
-          .eq('chave', 'metas_vendas');
+          .eq('chave', 'metas_vendas')
+          .eq('organization_id', organizationId);
 
         if (error) throw error;
       } else {
@@ -176,7 +195,8 @@ export function MetasVendas({
           .insert({
             chave: 'metas_vendas',
             valor: tempMetas as unknown as never,
-            descricao: 'Metas de vendas configuráveis'
+            descricao: 'Metas de vendas configuráveis',
+            organization_id: organizationId
           });
 
         if (error) throw error;

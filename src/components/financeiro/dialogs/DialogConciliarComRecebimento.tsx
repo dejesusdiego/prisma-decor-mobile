@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useOrganizationContext } from '@/contexts/OrganizationContext';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { formatDateOnly } from '@/lib/dateOnly';
@@ -77,6 +78,7 @@ export function DialogConciliarComRecebimento({
   isPagamentoParcial = false
 }: DialogConciliarComRecebimentoProps) {
   const { user } = useAuth();
+  const { organizationId } = useOrganizationContext();
   const queryClient = useQueryClient();
   const [formaPagamentoId, setFormaPagamentoId] = useState('');
   const [valorRecebido, setValorRecebido] = useState<string>('');
@@ -92,17 +94,18 @@ export function DialogConciliarComRecebimento({
 
   // Buscar formas de pagamento
   const { data: formasPagamento = [] } = useQuery({
-    queryKey: ['formas-pagamento'],
+    queryKey: ['formas-pagamento', organizationId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('formas_pagamento')
         .select('*')
         .eq('ativo', true)
+        .eq('organization_id', organizationId)
         .order('nome');
       if (error) throw error;
       return data;
     },
-    enabled: open
+    enabled: open && !!organizationId
   });
 
   // Registrar recebimento e conciliar
@@ -143,7 +146,8 @@ export function DialogConciliarComRecebimento({
           tipo: 'entrada',
           parcela_receber_id: parcela.id,
           forma_pagamento_id: formaPagamentoId || null,
-          created_by_user_id: user.id
+          created_by_user_id: user.id,
+          organization_id: organizationId
         })
         .select('id')
         .single();

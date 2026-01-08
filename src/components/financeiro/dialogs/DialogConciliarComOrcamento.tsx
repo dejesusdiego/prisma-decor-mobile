@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useOrganizationContext } from '@/contexts/OrganizationContext';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { parseDateOnly, formatDateOnly } from '@/lib/dateOnly';
@@ -70,6 +71,7 @@ export function DialogConciliarComOrcamento({
   orcamento
 }: DialogConciliarComOrcamentoProps) {
   const { user } = useAuth();
+  const { organizationId } = useOrganizationContext();
   const queryClient = useQueryClient();
   const [numeroParcelas, setNumeroParcelas] = useState('1');
   const [dataPrimeiraParcela, setDataPrimeiraParcela] = useState<Date>(new Date());
@@ -78,16 +80,18 @@ export function DialogConciliarComOrcamento({
 
   // Buscar formas de pagamento
   const { data: formasPagamento = [] } = useQuery({
-    queryKey: ['formas-pagamento-ativas'],
+    queryKey: ['formas-pagamento-ativas', organizationId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('formas_pagamento')
         .select('*')
         .eq('ativo', true)
+        .eq('organization_id', organizationId)
         .order('nome');
       if (error) throw error;
       return data;
-    }
+    },
+    enabled: !!organizationId
   });
 
   // Verificar se já existe conta a receber para este orçamento
@@ -167,7 +171,8 @@ export function DialogConciliarComOrcamento({
             data_vencimento: dataPrimeiraParcela.toISOString().split('T')[0],
             status: 'pendente',
             observacoes: observacoes || 'Conta criada via conciliação bancária',
-            created_by_user_id: user.id
+            created_by_user_id: user.id,
+            organization_id: organizationId
           })
           .select('id')
           .single();
@@ -210,7 +215,8 @@ export function DialogConciliarComOrcamento({
           parcela_receber_id: parcelaId,
           forma_pagamento_id: formaPagamentoId || null,
           observacoes: `Conciliado via extrato bancário`,
-          created_by_user_id: user.id
+          created_by_user_id: user.id,
+          organization_id: organizationId
         })
         .select('id')
         .single();
