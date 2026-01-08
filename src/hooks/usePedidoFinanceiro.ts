@@ -43,7 +43,7 @@ export function usePedidoFinanceiro(pedidoId: string | null) {
         .select('orcamento_id, organization_id, orcamento:orcamentos(id, total_geral, total_com_desconto)')
         .eq('id', pedidoId)
         .eq('organization_id', organizationId)
-        .single();
+        .maybeSingle();
 
       if (errPedido || !pedido) return null;
 
