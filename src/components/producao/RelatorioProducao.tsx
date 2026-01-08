@@ -113,7 +113,7 @@ export function RelatorioProducao() {
 
     // Calculate lead time (from order creation to ready)
     const leadTimes: number[] = [];
-    pedidos.forEach(p => {
+    pedidosFiltrados.forEach(p => {
       if (p.data_pronto) {
         const dias = differenceInDays(parseISO(p.data_pronto), parseISO(p.data_entrada));
         if (dias >= 0) leadTimes.push(dias);
