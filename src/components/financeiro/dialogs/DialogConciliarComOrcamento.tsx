@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { formatDateOnly } from '@/lib/dateOnly';
+import { parseDateOnly, formatDateOnly } from '@/lib/dateOnly';
 import { FileText, ArrowRight, CheckCircle2, AlertCircle, Plus } from 'lucide-react';
 import {
   Dialog,
@@ -126,7 +126,7 @@ export function DialogConciliarComOrcamento({
         const parcelasPendentes = (contaExistente.parcelas_receber || [])
           .filter((p: any) => p.status === 'pendente')
           .sort((a: any, b: any) => 
-            new Date(a.data_vencimento).getTime() - new Date(b.data_vencimento).getTime()
+            (parseDateOnly(a.data_vencimento)?.getTime() || 0) - (parseDateOnly(b.data_vencimento)?.getTime() || 0)
           );
         
         if (parcelasPendentes.length > 0) {

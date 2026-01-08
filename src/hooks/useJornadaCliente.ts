@@ -3,6 +3,7 @@ import { useContato, useAtividades, useOrcamentosDoContato } from '@/hooks/useCR
 import { useContatoFinanceiro, useContatoPedidos } from '@/hooks/useContatoFinanceiro';
 import { useHistoricoProducaoByContato } from '@/hooks/useHistoricoProducao';
 import { differenceInDays, isBefore, addDays } from 'date-fns';
+import { parseDateOnly } from '@/lib/dateOnly';
 
 export type EstagioJornada = 'lead' | 'orcamento' | 'pagamento' | 'producao' | 'instalacao' | 'pos_venda';
 
@@ -147,7 +148,7 @@ export function useJornadaCliente(contatoId: string): JornadaCliente {
     financeiro?.contasReceber.forEach(conta => {
       conta.parcelas?.forEach(parcela => {
         if (parcela.status === 'pendente') {
-          const vencimento = new Date(parcela.data_vencimento);
+          const vencimento = parseDateOnly(parcela.data_vencimento) || new Date();
           const diasParaVencer = differenceInDays(vencimento, hoje);
           
           if (diasParaVencer < 0) {
@@ -253,7 +254,7 @@ export function useJornadaCliente(contatoId: string): JornadaCliente {
           items.push({
             id: `pag-${parcela.id}`,
             tipo: 'pagamento',
-            data: new Date(parcela.data_pagamento),
+            data: parseDateOnly(parcela.data_pagamento) || new Date(),
             titulo: `Pagamento recebido`,
             subtitulo: `Parcela ${parcela.numero_parcela} - ${conta.orcamento?.codigo || 'Avulso'}`,
             iconType: 'pagamento',
