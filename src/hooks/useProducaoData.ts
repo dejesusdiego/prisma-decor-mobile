@@ -361,9 +361,6 @@ export function useProducaoData() {
     instalacoesPendentes: instalacoes.filter(i => ['agendada', 'confirmada'].includes(i.status)).length,
   };
 
-  // Update refs after queries are defined
-  refetchInstalacoesRef.current = refetchInstalacoes;
-
   return {
     pedidos,
     instalacoes,
