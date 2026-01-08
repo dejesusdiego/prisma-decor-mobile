@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { differenceInDays, format } from 'date-fns';
+import { useOrganization } from '@/hooks/useOrganization';
 
 export interface ContatoComMetricas {
   id: string;
@@ -53,13 +54,18 @@ export interface ContatoComMetricas {
 }
 
 export function useContatosComMetricas() {
+  const { organizationId } = useOrganization();
+  
   return useQuery({
-    queryKey: ['contatos-com-metricas'],
+    queryKey: ['contatos-com-metricas', organizationId],
     queryFn: async () => {
-      // Buscar todos os contatos
+      if (!organizationId) return [];
+      
+      // Buscar todos os contatos da organização
       const { data: contatos, error: errorContatos } = await supabase
         .from('contatos')
         .select('*')
+        .eq('organization_id', organizationId)
         .order('ultima_interacao_em', { ascending: false, nullsFirst: false });
 
       if (errorContatos) throw errorContatos;
@@ -69,6 +75,7 @@ export function useContatosComMetricas() {
       const { data: orcamentos, error: errorOrc } = await supabase
         .from('orcamentos')
         .select('id, codigo, status, total_com_desconto, total_geral, contato_id, created_at, updated_at')
+        .eq('organization_id', organizationId)
         .not('contato_id', 'is', null);
 
       if (errorOrc) throw errorOrc;
@@ -77,6 +84,7 @@ export function useContatosComMetricas() {
       const { data: atividades, error: errorAtiv } = await supabase
         .from('atividades_crm')
         .select('id, titulo, tipo, contato_id, data_atividade, concluida')
+        .eq('organization_id', organizationId)
         .eq('concluida', false)
         .not('contato_id', 'is', null)
         .order('data_atividade', { ascending: true });
@@ -227,7 +235,8 @@ export function useContatosComMetricas() {
         };
       });
       return contatosComMetricas;
-    }
+    },
+    enabled: !!organizationId
   });
 }
 

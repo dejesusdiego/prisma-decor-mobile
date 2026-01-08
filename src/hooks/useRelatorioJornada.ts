@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useMemo } from 'react';
 import { differenceInDays } from 'date-fns';
+import { useOrganization } from '@/hooks/useOrganization';
 
 export interface EstagioFunil {
   id: string;
@@ -43,37 +44,49 @@ const ESTAGIOS_ORDEM = [
 ];
 
 export function useRelatorioJornada() {
+  const { organizationId } = useOrganization();
+  
   // Buscar todos os contatos
   const { data: contatos, isLoading: loadingContatos } = useQuery({
-    queryKey: ['relatorio-jornada-contatos'],
+    queryKey: ['relatorio-jornada-contatos', organizationId],
     queryFn: async () => {
+      if (!organizationId) return [];
+      
       const { data, error } = await supabase
         .from('contatos')
         .select('id, nome, telefone, cidade, tipo, created_at, ultima_interacao_em, valor_total_gasto')
+        .eq('organization_id', organizationId)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
       return data;
-    }
+    },
+    enabled: !!organizationId
   });
 
   // Buscar orçamentos
   const { data: orcamentos, isLoading: loadingOrcamentos } = useQuery({
-    queryKey: ['relatorio-jornada-orcamentos'],
+    queryKey: ['relatorio-jornada-orcamentos', organizationId],
     queryFn: async () => {
+      if (!organizationId) return [];
+      
       const { data, error } = await supabase
         .from('orcamentos')
-        .select('id, contato_id, cliente_telefone, status, total_com_desconto, total_geral, created_at, status_updated_at');
+        .select('id, contato_id, cliente_telefone, status, total_com_desconto, total_geral, created_at, status_updated_at')
+        .eq('organization_id', organizationId);
       
       if (error) throw error;
       return data;
-    }
+    },
+    enabled: !!organizationId
   });
 
   // Buscar pedidos
   const { data: pedidos, isLoading: loadingPedidos } = useQuery({
-    queryKey: ['relatorio-jornada-pedidos'],
+    queryKey: ['relatorio-jornada-pedidos', organizationId],
     queryFn: async () => {
+      if (!organizationId) return [];
+      
       const { data, error } = await supabase
         .from('pedidos')
         .select(`
@@ -81,18 +94,22 @@ export function useRelatorioJornada() {
           orcamento_id, 
           status_producao, 
           created_at,
-          orcamento:orcamentos(contato_id, cliente_telefone)
+          orcamento:orcamentos(contato_id, cliente_telefone, organization_id)
         `);
       
       if (error) throw error;
-      return data;
-    }
+      // Filtrar pedidos da organização
+      return data.filter(p => (p.orcamento as any)?.organization_id === organizationId);
+    },
+    enabled: !!organizationId
   });
 
   // Buscar instalações
   const { data: instalacoes, isLoading: loadingInstalacoes } = useQuery({
-    queryKey: ['relatorio-jornada-instalacoes'],
+    queryKey: ['relatorio-jornada-instalacoes', organizationId],
     queryFn: async () => {
+      if (!organizationId) return [];
+      
       const { data, error } = await supabase
         .from('instalacoes')
         .select(`
@@ -101,12 +118,18 @@ export function useRelatorioJornada() {
           status, 
           data_agendada, 
           data_realizada,
-          pedido:pedidos(orcamento:orcamentos(contato_id, cliente_telefone))
+          pedido:pedidos(orcamento:orcamentos(contato_id, cliente_telefone, organization_id))
         `);
       
       if (error) throw error;
-      return data;
-    }
+      // Filtrar instalações da organização
+      return data.filter(i => {
+        const pedido = i.pedido as any;
+        const orcamento = pedido?.orcamento as any;
+        return orcamento?.organization_id === organizationId;
+      });
+    },
+    enabled: !!organizationId
   });
 
   const relatorio = useMemo<RelatorioJornadaData | null>(() => {
@@ -254,7 +277,7 @@ export function useRelatorioJornada() {
     const valorTotalPipeline = funil.reduce((sum, e) => sum + e.valor, 0);
     const contatosInstalacao = contatosPorEstagio['instalacao'].length;
     const conversaoGeral = totalContatos > 0 ? (contatosInstalacao / totalContatos) * 100 : 0;
-    const tempoMedioTotal = funil.reduce((sum, e) => sum + e.tempoMedio, 0) / funil.length;
+    const tempoMedioTotal = funil.length > 0 ? funil.reduce((sum, e) => sum + e.tempoMedio, 0) / funil.length : 0;
 
     return {
       funil,

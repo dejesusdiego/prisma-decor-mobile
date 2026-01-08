@@ -27,7 +27,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useContatos, useCreateAtividade, Atividade } from '@/hooks/useCRMData';
+import { useContatos, useCreateAtividade, useUpdateAtividade, Atividade } from '@/hooks/useCRMData';
 import { Loader2, Phone, Mail, Calendar, Users, MessageSquare, FileText } from 'lucide-react';
 
 const atividadeSchema = z.object({
@@ -55,11 +55,15 @@ interface DialogAtividadeProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   contatoIdInicial?: string | null;
+  atividade?: Atividade | null; // Para edição
 }
 
-export function DialogAtividade({ open, onOpenChange, contatoIdInicial }: DialogAtividadeProps) {
+export function DialogAtividade({ open, onOpenChange, contatoIdInicial, atividade }: DialogAtividadeProps) {
   const { data: contatos } = useContatos();
   const createAtividade = useCreateAtividade();
+  const updateAtividade = useUpdateAtividade();
+  
+  const isEditing = !!atividade;
 
   const form = useForm<AtividadeFormData>({
     resolver: zodResolver(atividadeSchema),
@@ -76,17 +80,31 @@ export function DialogAtividade({ open, onOpenChange, contatoIdInicial }: Dialog
 
   useEffect(() => {
     if (open) {
-      form.reset({
-        tipo: 'ligacao',
-        titulo: '',
-        descricao: '',
-        contato_id: contatoIdInicial || '',
-        data_atividade: new Date().toISOString().slice(0, 16),
-        data_lembrete: '',
-        concluida: false
-      });
+      if (atividade) {
+        // Modo edição: preencher com dados da atividade
+        form.reset({
+          tipo: (atividade.tipo as any) || 'outro',
+          titulo: atividade.titulo || '',
+          descricao: atividade.descricao || '',
+          contato_id: atividade.contato_id || '',
+          data_atividade: atividade.data_atividade?.slice(0, 16) || new Date().toISOString().slice(0, 16),
+          data_lembrete: atividade.data_lembrete?.slice(0, 16) || '',
+          concluida: atividade.concluida || false
+        });
+      } else {
+        // Modo criação: valores padrão
+        form.reset({
+          tipo: 'ligacao',
+          titulo: '',
+          descricao: '',
+          contato_id: contatoIdInicial || '',
+          data_atividade: new Date().toISOString().slice(0, 16),
+          data_lembrete: '',
+          concluida: false
+        });
+      }
     }
-  }, [open, contatoIdInicial, form]);
+  }, [open, contatoIdInicial, atividade, form]);
 
   const onSubmit = async (data: AtividadeFormData) => {
     const payload = {
@@ -100,18 +118,24 @@ export function DialogAtividade({ open, onOpenChange, contatoIdInicial }: Dialog
     };
 
     try {
-      await createAtividade.mutateAsync(payload);
+      if (isEditing && atividade) {
+        await updateAtividade.mutateAsync({ id: atividade.id, ...payload });
+      } else {
+        await createAtividade.mutateAsync(payload);
+      }
       onOpenChange(false);
     } catch (error) {
       // Error handled by mutation
     }
   };
 
+  const isPending = createAtividade.isPending || updateAtividade.isPending;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>Nova Atividade</DialogTitle>
+          <DialogTitle>{isEditing ? 'Editar Atividade' : 'Nova Atividade'}</DialogTitle>
         </DialogHeader>
 
         <Form {...form}>
@@ -254,9 +278,9 @@ export function DialogAtividade({ open, onOpenChange, contatoIdInicial }: Dialog
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 Cancelar
               </Button>
-              <Button type="submit" disabled={createAtividade.isPending}>
-                {createAtividade.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Registrar
+              <Button type="submit" disabled={isPending}>
+                {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isEditing ? 'Salvar' : 'Registrar'}
               </Button>
             </div>
           </form>
