@@ -67,7 +67,9 @@ export function JornadaCliente({ estagios, className }: JornadaClienteProps) {
           <div 
             className="absolute left-0 top-1/2 -translate-y-1/2 h-1 bg-primary rounded-full z-0 transition-all duration-500"
             style={{ 
-              width: `${(estagios.filter(e => e.concluido).length / (estagios.length - 1)) * 100}%` 
+              width: `${estagios.length > 1 
+                ? (estagios.filter(e => e.concluido).length / (estagios.length - 1)) * 100 
+                : 0}%` 
             }}
           />
 

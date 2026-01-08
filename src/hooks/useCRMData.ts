@@ -66,35 +66,44 @@ export interface Atividade {
 // ============ CONTATOS ============
 
 export function useContatos() {
+  const { organizationId } = useOrganization();
+  
   return useQuery({
-    queryKey: ['contatos'],
+    queryKey: ['contatos', organizationId],
     queryFn: async () => {
+      if (!organizationId) return [];
+      
       const { data, error } = await supabase
         .from('contatos')
         .select('*')
+        .eq('organization_id', organizationId)
         .order('nome');
       
       if (error) throw error;
       return data as Contato[];
-    }
+    },
+    enabled: !!organizationId
   });
 }
 
 export function useContato(id: string | null) {
+  const { organizationId } = useOrganization();
+  
   return useQuery({
-    queryKey: ['contato', id],
+    queryKey: ['contato', id, organizationId],
     queryFn: async () => {
-      if (!id) return null;
+      if (!id || !organizationId) return null;
       const { data, error } = await supabase
         .from('contatos')
         .select('*')
         .eq('id', id)
+        .eq('organization_id', organizationId)
         .maybeSingle();
       
       if (error) throw error;
       return data as Contato | null;
     },
-    enabled: !!id
+    enabled: !!id && !!organizationId
   });
 }
 
@@ -219,20 +228,26 @@ export function useDeleteContato() {
 // ============ OPORTUNIDADES ============
 
 export function useOportunidades() {
+  const { organizationId } = useOrganization();
+  
   return useQuery({
-    queryKey: ['oportunidades'],
+    queryKey: ['oportunidades', organizationId],
     queryFn: async () => {
+      if (!organizationId) return [];
+      
       const { data, error } = await supabase
         .from('oportunidades')
         .select(`
           *,
           contato:contatos(*)
         `)
+        .eq('organization_id', organizationId)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
       return data as (Oportunidade & { contato: Contato | null })[];
-    }
+    },
+    enabled: !!organizationId
   });
 }
 
@@ -333,15 +348,20 @@ export function useDeleteOportunidade() {
 // ============ ATIVIDADES ============
 
 export function useAtividades(filters?: { contatoId?: string; pendentes?: boolean }) {
+  const { organizationId } = useOrganization();
+  
   return useQuery({
-    queryKey: ['atividades', filters],
+    queryKey: ['atividades', filters, organizationId],
     queryFn: async () => {
+      if (!organizationId) return [];
+      
       let query = supabase
         .from('atividades_crm')
         .select(`
           *,
           contato:contatos(*)
         `)
+        .eq('organization_id', organizationId)
         .order('data_atividade', { ascending: false });
 
       if (filters?.contatoId) {
@@ -356,14 +376,19 @@ export function useAtividades(filters?: { contatoId?: string; pendentes?: boolea
       
       if (error) throw error;
       return data as (Atividade & { contato: Contato | null })[];
-    }
+    },
+    enabled: !!organizationId
   });
 }
 
 export function useAtividadesPendentesHoje() {
+  const { organizationId } = useOrganization();
+  
   return useQuery({
-    queryKey: ['atividades-pendentes-hoje'],
+    queryKey: ['atividades-pendentes-hoje', organizationId],
     queryFn: async () => {
+      if (!organizationId) return [];
+      
       const hoje = new Date().toISOString().split('T')[0];
       
       const { data, error } = await supabase
@@ -372,13 +397,15 @@ export function useAtividadesPendentesHoje() {
           *,
           contato:contatos(nome, telefone)
         `)
+        .eq('organization_id', organizationId)
         .eq('concluida', false)
         .lte('data_lembrete', hoje + 'T23:59:59')
         .order('data_lembrete');
       
       if (error) throw error;
       return data;
-    }
+    },
+    enabled: !!organizationId
   });
 }
 
@@ -454,13 +481,18 @@ export function useUpdateAtividade() {
 // ============ MÉTRICAS CRM ============
 
 export function useCRMMetrics() {
+  const { organizationId } = useOrganization();
+  
   return useQuery({
-    queryKey: ['crm-metrics'],
+    queryKey: ['crm-metrics', organizationId],
     queryFn: async () => {
+      if (!organizationId) return null;
+      
       // Contatos por tipo
       const { data: contatos, error: contatosError } = await supabase
         .from('contatos')
-        .select('tipo');
+        .select('tipo')
+        .eq('organization_id', organizationId);
       
       if (contatosError) throw contatosError;
 
@@ -474,7 +506,8 @@ export function useCRMMetrics() {
       // Oportunidades
       const { data: oportunidades, error: opError } = await supabase
         .from('oportunidades')
-        .select('etapa, valor_estimado');
+        .select('etapa, valor_estimado')
+        .eq('organization_id', organizationId);
       
       if (opError) throw opError;
 
@@ -505,13 +538,15 @@ export function useCRMMetrics() {
       const { count: followUpsPendentes } = await supabase
         .from('atividades_crm')
         .select('*', { count: 'exact', head: true })
+        .eq('organization_id', organizationId)
         .eq('concluida', false)
         .lte('data_lembrete', hoje + 'T23:59:59');
 
       // Métricas de orçamentos
       const { data: orcamentos, error: orcError } = await supabase
         .from('orcamentos')
-        .select('status, total_com_desconto, total_geral');
+        .select('status, total_com_desconto, total_geral')
+        .eq('organization_id', organizationId);
       
       if (orcError) throw orcError;
 
@@ -555,29 +590,34 @@ export function useCRMMetrics() {
         funilVendas,
         followUpsPendentes: followUpsPendentes || 0
       };
-    }
+    },
+    enabled: !!organizationId
   });
 }
 
 // ============ ORÇAMENTOS DO CONTATO ============
 
 export function useOrcamentosDoContato(contatoId: string | null) {
+  const { organizationId } = useOrganization();
+  
   return useQuery({
-    queryKey: ['orcamentos-contato', contatoId],
+    queryKey: ['orcamentos-contato', contatoId, organizationId],
     queryFn: async () => {
-      if (!contatoId) return [];
+      if (!contatoId || !organizationId) return [];
       
       // Primeiro, buscar o telefone do contato
       const { data: contato } = await supabase
         .from('contatos')
         .select('telefone')
         .eq('id', contatoId)
+        .eq('organization_id', organizationId)
         .maybeSingle();
       
       // Buscar orçamentos por contato_id OU por telefone (fallback para dados antigos)
       let query = supabase
         .from('orcamentos')
         .select('*')
+        .eq('organization_id', organizationId)
         .order('created_at', { ascending: false });
       
       if (contato?.telefone) {
@@ -591,6 +631,6 @@ export function useOrcamentosDoContato(contatoId: string | null) {
       if (error) throw error;
       return data;
     },
-    enabled: !!contatoId
+    enabled: !!contatoId && !!organizationId
   });
 }
