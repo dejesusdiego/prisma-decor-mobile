@@ -139,6 +139,15 @@ export function useProducaoData() {
   const queryClient = useQueryClient();
   const { organizationId } = useOrganization();
 
+  // Declare all refs/callbacks at the top to maintain consistent hook order
+  const refetchPedidosRef = { current: () => {} };
+  const refetchInstalacoesRef = { current: () => {} };
+  // Refetch memoizado - declarado antes dos useQuery para manter ordem consistente de hooks
+  const refetch = useCallback(() => {
+    refetchPedidosRef.current();
+    refetchInstalacoesRef.current();
+  }, []);
+
   // Buscar todos os pedidos com dados do orçamento (filtrado por organização)
   const { data: pedidos = [], isLoading: isLoadingPedidos, error: errorPedidos, refetch: refetchPedidos } = useQuery({
     queryKey: ['pedidos', organizationId],
@@ -180,6 +189,9 @@ export function useProducaoData() {
     enabled: !!organizationId,
   });
 
+  // Update refs after queries are defined
+  refetchPedidosRef.current = refetchPedidos;
+
   // Buscar instalações (filtradas via join com pedidos da organização)
   const { data: instalacoes = [], isLoading: isLoadingInstalacoes, refetch: refetchInstalacoes } = useQuery({
     queryKey: ['instalacoes', organizationId],
@@ -206,6 +218,9 @@ export function useProducaoData() {
     },
     enabled: !!organizationId,
   });
+
+  // Update refs after queries are defined
+  refetchInstalacoesRef.current = refetchInstalacoes;
 
   // Buscar histórico de um pedido específico
   const fetchHistorico = async (pedidoId: string): Promise<HistoricoProducao[]> => {
@@ -346,11 +361,8 @@ export function useProducaoData() {
     instalacoesPendentes: instalacoes.filter(i => ['agendada', 'confirmada'].includes(i.status)).length,
   };
 
-  // Refetch memoizado para evitar re-subscribe desnecessário no realtime
-  const refetch = useCallback(() => {
-    refetchPedidos();
-    refetchInstalacoes();
-  }, [refetchPedidos, refetchInstalacoes]);
+  // Update refs after queries are defined
+  refetchInstalacoesRef.current = refetchInstalacoes;
 
   return {
     pedidos,
