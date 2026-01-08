@@ -61,8 +61,9 @@ export function OutrosCard({
 
   // Validação para auto-save
   const isValid = !!outro.nomeIdentificacao && 
-                  !!outro.quantidade && 
-                  !!outro.precoUnitario && 
+                  outro.quantidade > 0 && 
+                  outro.precoUnitario !== undefined &&
+                  outro.precoUnitario !== null &&
                   outro.precoUnitario > 0;
 
   const salvarOutroInterno = useCallback(async (showToast = true) => {
