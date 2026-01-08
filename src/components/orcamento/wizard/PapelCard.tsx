@@ -183,7 +183,10 @@ export function PapelCard({
   const isValid = !!papel.nomeIdentificacao && 
                   !!papel.quantidade && 
                   papel.quantidade > 0 &&
-                  !!papel.materialPrincipalId;
+                  !!papel.materialPrincipalId &&
+                  papel.precoUnitario !== undefined &&
+                  papel.precoUnitario !== null &&
+                  papel.precoUnitario > 0;
 
   const salvarPapelInterno = useCallback(async (showToast = true) => {
     setSaving(true);

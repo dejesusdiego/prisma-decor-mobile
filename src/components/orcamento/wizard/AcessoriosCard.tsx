@@ -89,9 +89,10 @@ export function AcessoriosCard({
 
   // Validação para auto-save
   const isValid = !!acessorio.nomeIdentificacao && 
-                  !!acessorio.quantidade && 
+                  acessorio.quantidade > 0 &&
                   !!acessorio.materialPrincipalId &&
-                  !!acessorio.precoUnitario && 
+                  acessorio.precoUnitario !== undefined &&
+                  acessorio.precoUnitario !== null && 
                   acessorio.precoUnitario > 0;
 
   const salvarAcessorioInterno = useCallback(async (showToast = true) => {

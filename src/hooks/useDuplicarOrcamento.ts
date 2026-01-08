@@ -103,7 +103,14 @@ export function useDuplicarOrcamento() {
           .from('cortina_items')
           .insert(novosItens);
 
-        if (itensInsertError) throw itensInsertError;
+        if (itensInsertError) {
+          console.error('Erro ao copiar itens:', itensInsertError);
+          // Não falhar completamente, avisar o usuário
+          toast({
+            title: 'Aviso',
+            description: 'Orçamento duplicado, mas alguns itens não foram copiados.',
+          });
+        }
       }
 
       return novo;
