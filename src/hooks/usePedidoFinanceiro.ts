@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useOrganization } from '@/hooks/useOrganization';
 
 export interface StatusFinanceiroPedido {
   orcamentoId: string | null;
@@ -29,16 +30,19 @@ function calcularStatusLiberacao(percentual: number): StatusFinanceiroPedido['st
 }
 
 export function usePedidoFinanceiro(pedidoId: string | null) {
+  const { organizationId } = useOrganization();
+  
   return useQuery({
-    queryKey: ['pedido-financeiro', pedidoId],
+    queryKey: ['pedido-financeiro', pedidoId, organizationId],
     queryFn: async (): Promise<StatusFinanceiroPedido | null> => {
-      if (!pedidoId) return null;
+      if (!pedidoId || !organizationId) return null;
 
-      // Buscar pedido com orçamento
+      // Buscar pedido com orçamento (filtrado por organização)
       const { data: pedido, error: errPedido } = await supabase
         .from('pedidos')
-        .select('orcamento_id, orcamento:orcamentos(id, total_geral, total_com_desconto)')
+        .select('orcamento_id, organization_id, orcamento:orcamentos(id, total_geral, total_com_desconto)')
         .eq('id', pedidoId)
+        .eq('organization_id', organizationId)
         .single();
 
       if (errPedido || !pedido) return null;
@@ -47,11 +51,12 @@ export function usePedidoFinanceiro(pedidoId: string | null) {
       const orcamento = pedido.orcamento as { id: string; total_geral: number | null; total_com_desconto: number | null } | null;
       const valorTotal = Number(orcamento?.total_com_desconto ?? orcamento?.total_geral ?? 0);
 
-      // Buscar contas a receber vinculadas ao orçamento
+      // Buscar contas a receber vinculadas ao orçamento (filtradas por organização)
       const { data: contas, error: errContas } = await supabase
         .from('contas_receber')
         .select('id, status, valor_total, valor_pago')
-        .eq('orcamento_id', orcamentoId);
+        .eq('orcamento_id', orcamentoId)
+        .eq('organization_id', organizationId);
 
       if (errContas) {
         console.error('Erro ao buscar contas do pedido:', errContas);
@@ -75,7 +80,7 @@ export function usePedidoFinanceiro(pedidoId: string | null) {
         contasReceber: contas || [],
       };
     },
-    enabled: !!pedidoId,
+    enabled: !!pedidoId && !!organizationId,
   });
 }
 
@@ -83,28 +88,34 @@ export function usePedidoFinanceiro(pedidoId: string | null) {
  * Hook para buscar status financeiro de múltiplos pedidos de uma vez
  */
 export function usePedidosFinanceiros(pedidoIds: string[]) {
+  const { organizationId } = useOrganization();
+  
   return useQuery({
-    queryKey: ['pedidos-financeiros', pedidoIds],
+    queryKey: ['pedidos-financeiros', pedidoIds, organizationId],
     queryFn: async (): Promise<Record<string, StatusFinanceiroPedido>> => {
-      if (!pedidoIds.length) return {};
+      if (!pedidoIds.length || !organizationId) return {};
 
-      // Buscar pedidos com orçamentos
+      // Buscar pedidos com orçamentos (filtrados por organização)
       const { data: pedidos, error: errPedidos } = await supabase
         .from('pedidos')
         .select('id, orcamento_id, orcamento:orcamentos(id, total_geral, total_com_desconto)')
-        .in('id', pedidoIds);
+        .in('id', pedidoIds)
+        .eq('organization_id', organizationId);
 
       if (errPedidos || !pedidos) return {};
 
-      // Buscar todas as contas a receber dos orçamentos
+      // Buscar todas as contas a receber dos orçamentos (filtradas por organização)
       const orcamentoIds = pedidos
         .map(p => p.orcamento_id)
         .filter((id): id is string => !!id);
 
+      if (!orcamentoIds.length) return {};
+
       const { data: contas, error: errContas } = await supabase
         .from('contas_receber')
         .select('id, orcamento_id, status, valor_total, valor_pago')
-        .in('orcamento_id', orcamentoIds);
+        .in('orcamento_id', orcamentoIds)
+        .eq('organization_id', organizationId);
 
       if (errContas) {
         console.error('Erro ao buscar contas:', errContas);
@@ -148,7 +159,7 @@ export function usePedidosFinanceiros(pedidoIds: string[]) {
 
       return result;
     },
-    enabled: pedidoIds.length > 0,
+    enabled: pedidoIds.length > 0 && !!organizationId,
     staleTime: 30000, // 30 segundos
   });
 }
