@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
+import { STATUS_COM_PAGAMENTO, STATUS_NEGOCIO_PERDIDO } from '@/lib/statusOrcamento';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -165,7 +166,7 @@ export default function DashboardKPIs() {
 
       // Clientes ativos (com orçamento pago)
       const clientesPagos = new Set(
-        orcamentos?.filter(o => o.status === 'pago').map(o => o.cliente_telefone)
+        orcamentos?.filter(o => STATUS_COM_PAGAMENTO.includes(o.status as any)).map(o => o.cliente_telefone)
       );
       const clientesAtivos = clientesPagos.size;
 
@@ -182,21 +183,21 @@ export default function DashboardKPIs() {
         if (!ultimoOrcamento) return false;
         
         const diasSemAtividade = differenceInMonths(hoje, new Date(ultimoOrcamento.created_at));
-        return diasSemAtividade > 3 && ultimoOrcamento.status !== 'pago';
+        return diasSemAtividade > 3 && STATUS_NEGOCIO_PERDIDO.includes(ultimoOrcamento.status as any);
       }).length || 0;
 
       // Receita total
       const receitaTotal = orcamentos?.filter(o => 
-        o.status === 'pago' && new Date(o.created_at) >= dataInicio
+        STATUS_COM_PAGAMENTO.includes(o.status as any) && new Date(o.created_at) >= dataInicio
       ).reduce((acc, o) => acc + (o.total_com_desconto || o.total_geral || 0), 0) || 0;
 
       const receitaAnterior = orcamentos?.filter(o => 
-        o.status === 'pago' && new Date(o.created_at) >= dataInicioAnterior && new Date(o.created_at) < dataInicio
+        STATUS_COM_PAGAMENTO.includes(o.status as any) && new Date(o.created_at) >= dataInicioAnterior && new Date(o.created_at) < dataInicio
       ).reduce((acc, o) => acc + (o.total_com_desconto || o.total_geral || 0), 0) || 0;
 
       // LTV - Valor médio por cliente
       const valorPorCliente: Record<string, number> = {};
-      orcamentos?.filter(o => o.status === 'pago').forEach(o => {
+      orcamentos?.filter(o => STATUS_COM_PAGAMENTO.includes(o.status as any)).forEach(o => {
         const key = o.cliente_telefone;
         valorPorCliente[key] = (valorPorCliente[key] || 0) + (o.total_com_desconto || o.total_geral || 0);
       });
@@ -221,12 +222,12 @@ export default function DashboardKPIs() {
       const churnRate = (clientesPerdidos / totalClientesInicio) * 100;
 
       // Ticket Médio
-      const orcamentosPagos = orcamentosNoPeriodo.filter(o => o.status === 'pago');
+      const orcamentosPagos = orcamentosNoPeriodo.filter(o => STATUS_COM_PAGAMENTO.includes(o.status as any));
       const ticketMedio = orcamentosPagos.length > 0
         ? orcamentosPagos.reduce((acc, o) => acc + (o.total_com_desconto || o.total_geral || 0), 0) / orcamentosPagos.length
         : 0;
 
-      const orcamentosPagosAnterior = orcamentosAnterior.filter(o => o.status === 'pago');
+      const orcamentosPagosAnterior = orcamentosAnterior.filter(o => STATUS_COM_PAGAMENTO.includes(o.status as any));
       const ticketMedioAnterior = orcamentosPagosAnterior.length > 0
         ? orcamentosPagosAnterior.reduce((acc, o) => acc + (o.total_com_desconto || o.total_geral || 0), 0) / orcamentosPagosAnterior.length
         : 0;
@@ -262,8 +263,8 @@ export default function DashboardKPIs() {
           return data >= inicioMes && data <= fimMes;
         }) || [];
 
-        const clientesMes = new Set(orcsMes.filter(o => o.status === 'pago').map(o => o.cliente_telefone)).size;
-        const receitaMes = orcsMes.filter(o => o.status === 'pago')
+        const clientesMes = new Set(orcsMes.filter(o => STATUS_COM_PAGAMENTO.includes(o.status as any)).map(o => o.cliente_telefone)).size;
+        const receitaMes = orcsMes.filter(o => STATUS_COM_PAGAMENTO.includes(o.status as any))
           .reduce((acc, o) => acc + (o.total_com_desconto || o.total_geral || 0), 0);
 
         const novosMes = contatos?.filter(c => {
@@ -276,12 +277,12 @@ export default function DashboardKPIs() {
         const clientesMesAnterior = new Set(
           orcamentos?.filter(o => {
             const data = new Date(o.created_at);
-            return data >= startOfMonth(mesAnterior) && data <= endOfMonth(mesAnterior) && o.status === 'pago';
+            return data >= startOfMonth(mesAnterior) && data <= endOfMonth(mesAnterior) && STATUS_COM_PAGAMENTO.includes(o.status as any);
           }).map(o => o.cliente_telefone)
         );
         
         const clientesPerdidosMes = [...clientesMesAnterior].filter(
-          tel => !orcsMes.some(o => o.cliente_telefone === tel && o.status === 'pago')
+          tel => !orcsMes.some(o => o.cliente_telefone === tel && STATUS_COM_PAGAMENTO.includes(o.status as any))
         ).length;
 
         evolucaoMensal.push({

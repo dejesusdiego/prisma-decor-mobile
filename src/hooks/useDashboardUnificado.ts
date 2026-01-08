@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { startOfWeek, endOfWeek, addDays, format } from 'date-fns';
+import { STATUS_COM_PAGAMENTO } from '@/lib/statusOrcamento';
 
 export interface MetricasUnificadas {
   // Financeiro
@@ -127,7 +128,7 @@ export function useDashboardUnificado() {
       const qtdOrcamentosSemResposta = (orcamentosSemResposta || []).length;
       
       const orcamentosTotal = orcamentosTodos?.length || 1;
-      const orcamentosPagos = orcamentosTodos?.filter(o => o.status === 'pago').length || 0;
+      const orcamentosPagos = orcamentosTodos?.filter(o => STATUS_COM_PAGAMENTO.includes(o.status as any)).length || 0;
       const taxaConversao = (orcamentosPagos / orcamentosTotal) * 100;
       
       const valorPipelineAtivo = (orcamentosSemResposta || [])
