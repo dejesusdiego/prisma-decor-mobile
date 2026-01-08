@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -30,6 +30,13 @@ export function DialogDuplicarOrcamento({
   isLoading,
 }: DialogDuplicarOrcamentoProps) {
   const [novoClienteNome, setNovoClienteNome] = useState(clienteNomeOriginal);
+
+  // Sincronizar estado quando o dialog abrir ou o cliente original mudar
+  useEffect(() => {
+    if (open) {
+      setNovoClienteNome(clienteNomeOriginal);
+    }
+  }, [open, clienteNomeOriginal]);
 
   const handleConfirmar = () => {
     onConfirmar(novoClienteNome);

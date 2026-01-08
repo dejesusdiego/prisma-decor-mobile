@@ -126,6 +126,10 @@ export async function gerarPdfOrcamento(orcamentoId: string): Promise<void> {
 
     if (cortinasError) throw cortinasError;
 
+    // Recalcular o total real a partir dos itens (evitar inconsistências)
+    const somaItens = (cortinas || []).reduce((acc: number, c: any) => acc + (c.preco_venda || 0), 0);
+    const totalReal = somaItens > 0 ? somaItens : orcamento.total_geral;
+
     // Buscar materiais para nome dos tecidos, forros e trilhos
     const { fetchMateriaisPaginados } = await import('@/lib/fetchMateriaisPaginados');
     const materiais = await fetchMateriaisPaginados(undefined, true);
@@ -385,12 +389,12 @@ export async function gerarPdfOrcamento(orcamentoId: string): Promise<void> {
     const temDesconto = orcamento.desconto_tipo && orcamento.desconto_valor && orcamento.desconto_valor > 0;
     
     if (temDesconto) {
-      // Calcular valor do desconto
+      // Calcular valor do desconto usando o total real dos itens
       const valorDesconto = orcamento.desconto_tipo === 'percentual'
-        ? (orcamento.total_geral * orcamento.desconto_valor) / 100
-        : Math.min(orcamento.desconto_valor, orcamento.total_geral);
+        ? (totalReal * orcamento.desconto_valor) / 100
+        : Math.min(orcamento.desconto_valor, totalReal);
       
-      const totalComDesconto = orcamento.total_com_desconto || (orcamento.total_geral - valorDesconto);
+      const totalComDesconto = orcamento.total_com_desconto || (totalReal - valorDesconto);
       
       // Box maior para mostrar subtotal, desconto e total
       const totalBoxWidth = 90;
@@ -405,10 +409,10 @@ export async function gerarPdfOrcamento(orcamentoId: string): Promise<void> {
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(120, 120, 120);
       doc.text('Subtotal:', totalBoxX + 3, yPos + 3);
-      doc.text(`R$ ${formatarValor(orcamento.total_geral)}`, totalBoxX + totalBoxWidth - 3, yPos + 3, { align: 'right' });
+      doc.text(`R$ ${formatarValor(totalReal)}`, totalBoxX + totalBoxWidth - 3, yPos + 3, { align: 'right' });
       
       // Linha de risco no subtotal
-      const subtotalTextWidth = doc.getTextWidth(`R$ ${formatarValor(orcamento.total_geral)}`);
+      const subtotalTextWidth = doc.getTextWidth(`R$ ${formatarValor(totalReal)}`);
       doc.setDrawColor(120, 120, 120);
       doc.setLineWidth(0.3);
       doc.line(totalBoxX + totalBoxWidth - 3 - subtotalTextWidth, yPos + 2, totalBoxX + totalBoxWidth - 3, yPos + 2);
@@ -444,7 +448,7 @@ export async function gerarPdfOrcamento(orcamentoId: string): Promise<void> {
       
       doc.setFontSize(14);
       doc.setTextColor(0, 102, 51); // Verde escuro para valor
-      doc.text(`R$ ${formatarValor(orcamento.total_geral)}`, totalBoxX + totalBoxWidth - 3, yPos + 4, { align: 'right' });
+      doc.text(`R$ ${formatarValor(totalReal)}`, totalBoxX + totalBoxWidth - 3, yPos + 4, { align: 'right' });
       
       yPos += 20;
     }

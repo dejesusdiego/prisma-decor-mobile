@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -36,6 +36,21 @@ export function MaterialSelector({
   const [filtroCor, setFiltroCor] = useState<string>('');
 
   const selectedMaterial = materiais.find((m) => m.id === value);
+
+  // Hash para detectar mudança significativa na lista de materiais
+  const materiaisHash = useMemo(() => 
+    materiais.map(m => m.id).sort().join(',').slice(0, 100), 
+    [materiais]
+  );
+
+  // Resetar filtros quando a lista de materiais mudar completamente
+  useEffect(() => {
+    if (!selectedMaterial && materiais.length > 0) {
+      setFiltroTipo('');
+      setFiltroLinha('');
+      setFiltroCor('');
+    }
+  }, [materiaisHash, selectedMaterial]);
 
   // Quando o material já está selecionado, preencher os filtros automaticamente
   useEffect(() => {

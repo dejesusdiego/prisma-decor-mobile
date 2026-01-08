@@ -149,10 +149,15 @@ export function EtapaResumo({
     setLoading(true);
     try {
       const markup = 1 + margemAtual / 100;
+      let somaPrecoVendaItems = 0;
+      let somaCustoItems = 0;
 
       for (const cortina of cortinas) {
         if (cortina.id) {
           const precoVendaItem = (cortina.custoTotal || 0) * markup;
+          somaPrecoVendaItems += precoVendaItem;
+          somaCustoItems += cortina.custoTotal || 0;
+          
           const { error } = await supabase
             .from('cortina_items')
             .update({
@@ -164,6 +169,10 @@ export function EtapaResumo({
         }
       }
 
+      // Calcular desconto com base na soma real dos itens
+      const { valorDesconto: descontoReal, totalComDesconto: totalComDescontoReal } = 
+        calcularDesconto(somaPrecoVendaItems, descontoTipo, descontoValor);
+
       const { error: orcError } = await supabase
         .from('orcamentos')
         .update({
@@ -172,11 +181,11 @@ export function EtapaResumo({
           subtotal_materiais: resumo.subtotalMateriais,
           subtotal_mao_obra_costura: resumo.subtotalMaoObraCostura,
           subtotal_instalacao: resumo.subtotalInstalacao,
-          custo_total: resumo.custoTotal,
-          total_geral: resumo.totalGeral,
+          custo_total: somaCustoItems,
+          total_geral: somaPrecoVendaItems,
           desconto_tipo: descontoTipo,
           desconto_valor: descontoValor,
-          total_com_desconto: totalComDesconto,
+          total_com_desconto: totalComDescontoReal,
           status,
         })
         .eq('id', orcamentoId);
@@ -223,10 +232,15 @@ export function EtapaResumo({
     setLoading(true);
     try {
       const markup = 1 + margemAtual / 100;
+      let somaPrecoVendaItems = 0;
+      let somaCustoItems = 0;
 
       for (const cortina of cortinas) {
         if (cortina.id) {
           const precoVendaItem = (cortina.custoTotal || 0) * markup;
+          somaPrecoVendaItems += precoVendaItem;
+          somaCustoItems += cortina.custoTotal || 0;
+          
           const { error } = await supabase
             .from('cortina_items')
             .update({
@@ -238,6 +252,10 @@ export function EtapaResumo({
         }
       }
 
+      // Calcular desconto com base na soma real dos itens
+      const { totalComDesconto: totalComDescontoReal } = 
+        calcularDesconto(somaPrecoVendaItems, descontoTipo, descontoValor);
+
       const { error: orcError } = await supabase
         .from('orcamentos')
         .update({
@@ -246,12 +264,12 @@ export function EtapaResumo({
           subtotal_materiais: resumo.subtotalMateriais,
           subtotal_mao_obra_costura: resumo.subtotalMaoObraCostura,
           subtotal_instalacao: resumo.subtotalInstalacao,
-          custo_total: resumo.custoTotal,
-          total_geral: resumo.totalGeral,
+          custo_total: somaCustoItems,
+          total_geral: somaPrecoVendaItems,
           validade_dias: novaValidade,
           desconto_tipo: descontoTipo,
           desconto_valor: descontoValor,
-          total_com_desconto: totalComDesconto,
+          total_com_desconto: totalComDescontoReal,
         })
         .eq('id', orcamentoId);
 

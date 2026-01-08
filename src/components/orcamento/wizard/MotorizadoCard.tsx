@@ -89,9 +89,10 @@ export function MotorizadoCard({
 
   // Validação para auto-save
   const isValid = !!motorizado.nomeIdentificacao && 
-                  !!motorizado.quantidade && 
                   motorizado.quantidade > 0 &&
-                  !!motorizado.precoUnitario && 
+                  !!motorizado.ambiente &&
+                  motorizado.precoUnitario !== undefined &&
+                  motorizado.precoUnitario !== null &&
                   motorizado.precoUnitario > 0;
 
   const salvarMotorizadoInterno = useCallback(async (showToast = true) => {
