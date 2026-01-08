@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { parseDateOnly, formatDateOnly, startOfToday } from '@/lib/dateOnly';
 import { 
   Plus, 
   Search, 
@@ -54,9 +53,9 @@ const formatCurrency = (value: number) => {
 };
 
 const getStatusBadge = (status: string, dataVencimento: string) => {
-  const hoje = new Date();
-  const vencimento = new Date(dataVencimento);
-  const isAtrasado = status === 'pendente' && vencimento < hoje;
+  const hoje = startOfToday();
+  const vencimento = parseDateOnly(dataVencimento);
+  const isAtrasado = status === 'pendente' && vencimento && vencimento < hoje;
   
   if (status === 'pago') {
     return <Badge className="bg-green-500/10 text-green-600 hover:bg-green-500/20"><CheckCircle className="h-3 w-3 mr-1" />Pago</Badge>;
@@ -130,9 +129,9 @@ export function ContasPagar({ onVisualizarOrcamento, onNavigate }: ContasPagarPr
     
     if (statusFilter === 'todos') return matchesSearch;
     if (statusFilter === 'atrasado') {
-      const hoje = new Date();
-      const vencimento = new Date(conta.data_vencimento);
-      return matchesSearch && conta.status === 'pendente' && vencimento < hoje;
+      const hoje = startOfToday();
+      const vencimento = parseDateOnly(conta.data_vencimento);
+      return matchesSearch && conta.status === 'pendente' && vencimento && vencimento < hoje;
     }
     return matchesSearch && conta.status === statusFilter;
   });
@@ -141,9 +140,9 @@ export function ContasPagar({ onVisualizarOrcamento, onNavigate }: ContasPagarPr
     pendente: filteredContas.filter(c => c.status === 'pendente').reduce((acc, c) => acc + Number(c.valor), 0),
     pago: filteredContas.filter(c => c.status === 'pago').reduce((acc, c) => acc + Number(c.valor), 0),
     atrasado: filteredContas.filter(c => {
-      const hoje = new Date();
-      const vencimento = new Date(c.data_vencimento);
-      return c.status === 'pendente' && vencimento < hoje;
+      const hoje = startOfToday();
+      const vencimento = parseDateOnly(c.data_vencimento);
+      return c.status === 'pendente' && vencimento && vencimento < hoje;
     }).reduce((acc, c) => acc + Number(c.valor), 0),
   };
 
@@ -397,7 +396,7 @@ export function ContasPagar({ onVisualizarOrcamento, onNavigate }: ContasPagarPr
                       ) : '-'}
                     </TableCell>
                     <TableCell>
-                      {format(new Date(conta.data_vencimento), 'dd/MM/yyyy', { locale: ptBR })}
+                      {formatDateOnly(conta.data_vencimento)}
                     </TableCell>
                     <TableCell className="font-medium">{formatCurrency(Number(conta.valor))}</TableCell>
                     <TableCell>{getStatusBadge(conta.status, conta.data_vencimento)}</TableCell>

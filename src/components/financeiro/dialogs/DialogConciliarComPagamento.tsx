@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { formatDateOnly } from '@/lib/dateOnly';
 import { CreditCard, Check, AlertCircle, ArrowRight, Banknote } from 'lucide-react';
 import {
   Dialog,
@@ -189,7 +190,7 @@ export function DialogConciliarComPagamento({
               <p className="font-medium truncate">{movimentacao.descricao}</p>
               <div className="flex justify-between items-center mt-2">
                 <span className="text-sm text-muted-foreground">
-                  {format(new Date(movimentacao.data_movimentacao), "dd/MM/yyyy", { locale: ptBR })}
+                  {formatDateOnly(movimentacao.data_movimentacao)}
                 </span>
                 <span className="text-lg font-bold text-destructive">
                   -{formatCurrency(valorMov)}
@@ -217,7 +218,7 @@ export function DialogConciliarComPagamento({
               )}
               <div className="flex justify-between items-center mt-2">
                 <span className="text-sm text-muted-foreground">
-                  Venc: {format(new Date(contaPagar.data_vencimento), "dd/MM/yyyy", { locale: ptBR })}
+                  Venc: {formatDateOnly(contaPagar.data_vencimento)}
                 </span>
                 <span className="text-lg font-bold">
                   {formatCurrency(valorConta)}

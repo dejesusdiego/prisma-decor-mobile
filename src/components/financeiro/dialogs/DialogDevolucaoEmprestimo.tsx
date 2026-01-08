@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { parseDateOnly, formatDateOnly } from '@/lib/dateOnly';
 import { CalendarIcon, Upload, X, RefreshCw } from 'lucide-react';
 import {
   Dialog,
@@ -269,7 +270,7 @@ export function DialogDevolucaoEmprestimo({
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Data:</span>
-                <span>{format(new Date(emprestimo.data_lancamento), 'dd/MM/yyyy', { locale: ptBR })}</span>
+                <span>{formatDateOnly(emprestimo.data_lancamento)}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Valor total:</span>
@@ -288,9 +289,9 @@ export function DialogDevolucaoEmprestimo({
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Vencimento:</span>
                     <Badge variant={
-                      new Date(emprestimo.contaReceber.data_vencimento) < new Date() ? 'destructive' : 'outline'
+                      parseDateOnly(emprestimo.contaReceber.data_vencimento)! < new Date() ? 'destructive' : 'outline'
                     }>
-                      {format(new Date(emprestimo.contaReceber.data_vencimento), 'dd/MM/yyyy')}
+                      {formatDateOnly(emprestimo.contaReceber.data_vencimento)}
                     </Badge>
                   </div>
                 </>
