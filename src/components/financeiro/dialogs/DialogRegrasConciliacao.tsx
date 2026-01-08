@@ -61,38 +61,39 @@ export function DialogRegrasConciliacao() {
   const [form, setForm] = useState<RegraForm>(initialForm);
   const [editingId, setEditingId] = useState<string | null>(null);
 
+  // Helper para buscar regras
+  const fetchRegras = async (orgId: string): Promise<any[]> => {
+    const table = supabase.from('regras_conciliacao') as any;
+    const result = await table
+      .select('*, categoria:categorias_financeiras(id, nome)')
+      .eq('organization_id', orgId)
+      .order('ordem', { ascending: true });
+    if (result.error) throw result.error;
+    return result.data || [];
+  };
+
   // Buscar regras
   const { data: regras = [], isLoading } = useQuery({
     queryKey: ['regras-conciliacao', organizationId],
-    queryFn: async (): Promise<any[]> => {
-      if (!organizationId) return [];
-      const { data, error } = await supabase
-        .from('regras_conciliacao')
-        .select('*, categoria:categorias_financeiras(id, nome)')
-        .eq('organization_id', organizationId)
-        .order('ordem', { ascending: true });
-      
-      if (error) throw error;
-      return data || [];
-    },
+    queryFn: () => fetchRegras(organizationId!),
     enabled: open && !!organizationId
   });
 
   // Buscar categorias
+  const fetchCategorias = async (orgId: string): Promise<any[]> => {
+    const table = supabase.from('categorias_financeiras') as any;
+    const result = await table
+      .select('*')
+      .eq('organization_id', orgId)
+      .eq('ativo', true)
+      .order('nome');
+    if (result.error) throw result.error;
+    return result.data || [];
+  };
+
   const { data: categorias = [] } = useQuery({
     queryKey: ['categorias-financeiras', organizationId],
-    queryFn: async () => {
-      if (!organizationId) return [];
-      const { data, error } = await supabase
-        .from('categorias_financeiras')
-        .select('*')
-        .eq('organization_id', organizationId)
-        .eq('ativo', true)
-        .order('nome');
-      
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => fetchCategorias(organizationId!),
     enabled: open && !!organizationId
   });
 
@@ -100,10 +101,10 @@ export function DialogRegrasConciliacao() {
   const saveMutation = useMutation({
     mutationFn: async (data: RegraForm) => {
       if (!organizationId) throw new Error('Organization ID required');
+      const table = supabase.from('regras_conciliacao') as any;
       
       if (editingId) {
-        const { error } = await supabase
-          .from('regras_conciliacao')
+        const { error } = await table
           .update({
             nome: data.nome,
             descricao_contem: data.descricao_contem,
@@ -149,8 +150,8 @@ export function DialogRegrasConciliacao() {
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       if (!organizationId) throw new Error('Organization ID required');
-      const { error } = await supabase
-        .from('regras_conciliacao')
+      const table = supabase.from('regras_conciliacao') as any;
+      const { error } = await table
         .delete()
         .eq('id', id)
         .eq('organization_id', organizationId);
@@ -167,8 +168,8 @@ export function DialogRegrasConciliacao() {
   const toggleAtivoMutation = useMutation({
     mutationFn: async ({ id, ativo }: { id: string; ativo: boolean }) => {
       if (!organizationId) throw new Error('Organization ID required');
-      const { error } = await supabase
-        .from('regras_conciliacao')
+      const table = supabase.from('regras_conciliacao') as any;
+      const { error } = await table
         .update({ ativo })
         .eq('id', id)
         .eq('organization_id', organizationId);

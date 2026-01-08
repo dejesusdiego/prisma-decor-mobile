@@ -52,37 +52,38 @@ export function DialogGerenciarPadroes() {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
 
+  // Helper para buscar padrões
+  const fetchPadroes = async (orgId: string): Promise<PadraoConciliacao[]> => {
+    const table = supabase.from('padroes_conciliacao') as any;
+    const result = await table
+      .select(`
+        id,
+        padrao_descricao,
+        tipo_conciliacao,
+        tipo_lancamento,
+        vezes_usado,
+        confianca,
+        ativo,
+        ultima_utilizacao,
+        categoria:categorias_financeiras(id, nome, tipo)
+      `)
+      .eq('organization_id', orgId)
+      .order('vezes_usado', { ascending: false });
+    if (result.error) throw result.error;
+    return result.data || [];
+  };
+
   const { data: padroes = [], isLoading } = useQuery({
     queryKey: ['padroes-conciliacao-gerenciar', organizationId],
-    queryFn: async (): Promise<PadraoConciliacao[]> => {
-      if (!organizationId) return [];
-      const { data, error } = await supabase
-        .from('padroes_conciliacao')
-        .select(`
-          id,
-          padrao_descricao,
-          tipo_conciliacao,
-          tipo_lancamento,
-          vezes_usado,
-          confianca,
-          ativo,
-          ultima_utilizacao,
-          categoria:categorias_financeiras(id, nome, tipo)
-        `)
-        .eq('organization_id', organizationId)
-        .order('vezes_usado', { ascending: false });
-
-      if (error) throw error;
-      return (data || []) as PadraoConciliacao[];
-    },
+    queryFn: () => fetchPadroes(organizationId!),
     enabled: open && !!user && !!organizationId
   });
 
   const toggleAtivoMutation = useMutation({
     mutationFn: async ({ id, ativo }: { id: string; ativo: boolean }) => {
       if (!organizationId) throw new Error('Organization ID required');
-      const { error } = await supabase
-        .from('padroes_conciliacao')
+      const table = supabase.from('padroes_conciliacao') as any;
+      const { error } = await table
         .update({ ativo: !ativo })
         .eq('id', id)
         .eq('organization_id', organizationId);
@@ -98,8 +99,8 @@ export function DialogGerenciarPadroes() {
   const deletarMutation = useMutation({
     mutationFn: async (id: string) => {
       if (!organizationId) throw new Error('Organization ID required');
-      const { error } = await supabase
-        .from('padroes_conciliacao')
+      const table = supabase.from('padroes_conciliacao') as any;
+      const { error } = await table
         .delete()
         .eq('id', id)
         .eq('organization_id', organizationId);

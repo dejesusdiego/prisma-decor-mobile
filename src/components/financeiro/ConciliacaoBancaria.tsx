@@ -129,42 +129,43 @@ export function ConciliacaoBancaria() {
     }
   }, [user?.id]);
 
+  // Helper para buscar extratos
+  const fetchExtratos = async (orgId: string): Promise<any[]> => {
+    const table = supabase.from('extratos_bancarios') as any;
+    const result = await table
+      .select('*')
+      .eq('organization_id', orgId)
+      .order('created_at', { ascending: false });
+    if (result.error) throw result.error;
+    return result.data || [];
+  };
+
   // Buscar extratos importados
   const { data: extratos = [] } = useQuery({
     queryKey: ['extratos-bancarios', organizationId],
-    queryFn: async (): Promise<any[]> => {
-      if (!organizationId) return [];
-      const { data, error } = await supabase
-        .from('extratos_bancarios')
-        .select('*')
-        .eq('organization_id', organizationId)
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      return data || [];
-    },
+    queryFn: () => fetchExtratos(organizationId!),
     enabled: !!organizationId
   });
+
+  // Helper para buscar movimentações
+  const fetchMovimentacoes = async (extratoId: string, orgId: string): Promise<any[]> => {
+    const table = supabase.from('movimentacoes_extrato') as any;
+    const result = await table
+      .select(`
+        *,
+        lancamento:lancamentos_financeiros(id, descricao, valor, data_lancamento)
+      `)
+      .eq('extrato_id', extratoId)
+      .eq('organization_id', orgId)
+      .order('data_movimentacao', { ascending: false });
+    if (result.error) throw result.error;
+    return result.data || [];
+  };
 
   // Buscar movimentações do extrato selecionado
   const { data: movimentacoes = [], isLoading: loadingMovimentacoes } = useQuery({
     queryKey: ['movimentacoes-extrato', extratoSelecionado, organizationId],
-    queryFn: async (): Promise<any[]> => {
-      if (!extratoSelecionado || !organizationId) return [];
-      
-      const { data, error } = await supabase
-        .from('movimentacoes_extrato')
-        .select(`
-          *,
-          lancamento:lancamentos_financeiros(id, descricao, valor, data_lancamento)
-        `)
-        .eq('extrato_id', extratoSelecionado)
-        .eq('organization_id', organizationId)
-        .order('data_movimentacao', { ascending: false });
-      
-      if (error) throw error;
-      return data || [];
-    },
+    queryFn: () => fetchMovimentacoes(extratoSelecionado!, organizationId!),
     enabled: !!extratoSelecionado && !!organizationId
   });
 
