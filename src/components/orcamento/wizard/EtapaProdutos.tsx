@@ -482,7 +482,7 @@ export function EtapaProdutos({
         return p.largura <= 0 || p.altura <= 0 || (!p.tecidoId && !p.forroId);
       }
       if (p.tipoProduto === 'persiana') {
-        return !p.tipoCortina || !p.ambiente || p.precoUnitario === undefined || p.precoUnitario === null;
+        return !p.tipoCortina || !p.ambiente || !p.precoUnitario || p.precoUnitario <= 0;
       }
       if (p.tipoProduto === 'outro') {
         if (p.descricao === 'Acessórios' || p.descricao === 'Papel') {
