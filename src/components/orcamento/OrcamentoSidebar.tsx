@@ -236,15 +236,18 @@ export function OrcamentoSidebar({ currentView, onNavigate }: OrcamentoSidebarPr
   }, [currentView]);
 
   // Buscar contagem de visitas não visualizadas e configurar realtime
+  const { organizationId } = useOrganizationContext();
+  
   useEffect(() => {
-    if (!isAdmin) return;
+    if (!isAdmin || !organizationId) return;
     
     const fetchVisitasNaoVistas = async () => {
       try {
         const { count, error } = await supabase
           .from('solicitacoes_visita')
           .select('*', { count: 'exact', head: true })
-          .eq('visualizada', false);
+          .eq('visualizada', false)
+          .eq('organization_id', organizationId);
         
         if (!error && count !== null) {
           setVisitasNaoVistas(count);
@@ -306,7 +309,7 @@ export function OrcamentoSidebar({ currentView, onNavigate }: OrcamentoSidebarPr
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [onNavigate, isAdmin]);
+  }, [onNavigate, isAdmin, organizationId]);
 
   const toggleTheme = () => {
     if (isDark) {
