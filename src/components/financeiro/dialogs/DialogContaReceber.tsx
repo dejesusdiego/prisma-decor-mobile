@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useOrganizationContext } from '@/contexts/OrganizationContext';
 import { addMonths, format } from 'date-fns';
 import { parseDateOnly } from '@/lib/dateOnly';
 import {
@@ -26,6 +27,7 @@ interface DialogContaReceberProps {
 export function DialogContaReceber({ open, onOpenChange, conta }: DialogContaReceberProps) {
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { organizationId } = useOrganizationContext();
   
   const { register, handleSubmit, reset, watch } = useForm({
     defaultValues: {
@@ -71,20 +73,21 @@ export function DialogContaReceber({ open, onOpenChange, conta }: DialogContaRec
 
       if (conta) {
         // Apenas atualizar dados básicos
-        const { error } = await supabase
-          .from('contas_receber')
+        const contasTable = supabase.from('contas_receber') as any;
+        const { error } = await contasTable
           .update({
             cliente_nome: data.cliente_nome,
             cliente_telefone: data.cliente_telefone || null,
             descricao: data.descricao,
             observacoes: data.observacoes || null,
           })
-          .eq('id', conta.id);
+          .eq('id', conta.id)
+          .eq('organization_id', organizationId);
         if (error) throw error;
       } else {
         // Criar conta a receber
-        const { data: novaConta, error: errorConta } = await supabase
-          .from('contas_receber')
+        const contasTable = supabase.from('contas_receber') as any;
+        const { data: novaConta, error: errorConta } = await contasTable
           .insert({
             cliente_nome: data.cliente_nome,
             cliente_telefone: data.cliente_telefone || null,
@@ -93,7 +96,8 @@ export function DialogContaReceber({ open, onOpenChange, conta }: DialogContaRec
             numero_parcelas: numParcelas,
             data_vencimento: data.data_vencimento,
             observacoes: data.observacoes || null,
-            created_by_user_id: user?.id
+            created_by_user_id: user?.id,
+            organization_id: organizationId
           })
           .select()
           .single();

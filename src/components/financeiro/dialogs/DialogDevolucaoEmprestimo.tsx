@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useOrganizationContext } from '@/contexts/OrganizationContext';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { parseDateOnly, formatDateOnly } from '@/lib/dateOnly';
@@ -70,6 +71,7 @@ export function DialogDevolucaoEmprestimo({
   emprestimo,
 }: DialogDevolucaoEmprestimoProps) {
   const queryClient = useQueryClient();
+  const { organizationId } = useOrganizationContext();
   const [arquivo, setArquivo] = useState<File | null>(null);
 
   const valorPendente = emprestimo?.contaReceber 
@@ -87,16 +89,19 @@ export function DialogDevolucaoEmprestimo({
   const dataDevolucao = watch('data_devolucao');
 
   const { data: formasPagamento = [] } = useQuery({
-    queryKey: ['formas-pagamento-ativas'],
+    queryKey: ['formas-pagamento-ativas', organizationId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('formas_pagamento')
+      if (!organizationId) return [];
+      const formasTable = supabase.from('formas_pagamento') as any;
+      const { data, error } = await formasTable
         .select('*')
+        .eq('organization_id', organizationId)
         .eq('ativo', true)
         .order('nome');
       if (error) throw error;
       return data;
     },
+    enabled: !!organizationId,
   });
 
   const mutation = useMutation({
@@ -155,8 +160,8 @@ export function DialogDevolucaoEmprestimo({
       }
 
       // 5. Criar lançamento de entrada (devolução)
-      const { data: lancamento, error: errLanc } = await supabase
-        .from('lancamentos_financeiros')
+      const lancTable = supabase.from('lancamentos_financeiros') as any;
+      const { data: lancamento, error: errLanc } = await lancTable
         .insert({
           tipo: 'entrada',
           descricao: `Devolução: ${emprestimo?.descricao}`,
@@ -165,6 +170,7 @@ export function DialogDevolucaoEmprestimo({
           forma_pagamento_id: data.forma_pagamento_id || null,
           parcela_receber_id: parcelaPendente?.id,
           created_by_user_id: userData.user.id,
+          organization_id: organizationId,
         })
         .select()
         .single();

@@ -140,7 +140,8 @@ export async function gerarContaReceberOrcamento(
   dataPrimeiraParcela: Date,
   userId: string,
   formaPagamentoId?: string,
-  observacoes?: string
+  observacoes?: string,
+  organizationId?: string
 ): Promise<{ success: boolean; contaId?: string; error?: string }> {
   try {
     const valorTotal = getValorEfetivo({
@@ -149,8 +150,8 @@ export async function gerarContaReceberOrcamento(
     });
 
     // Criar conta a receber
-    const { data: conta, error: contaError } = await supabase
-      .from('contas_receber')
+    const contasTable = supabase.from('contas_receber') as any;
+    const { data: conta, error: contaError } = await contasTable
       .insert({
         orcamento_id: orcamento.id,
         cliente_nome: orcamento.cliente_nome,
@@ -162,7 +163,8 @@ export async function gerarContaReceberOrcamento(
         data_vencimento: format(dataPrimeiraParcela, 'yyyy-MM-dd'),
         status: 'pendente',
         observacoes,
-        created_by_user_id: userId
+        created_by_user_id: userId,
+        organization_id: organizationId || null
       })
       .select()
       .single();
@@ -200,7 +202,8 @@ export async function gerarContasPagarOrcamento(
   orcamentoId: string,
   custos: { descricao: string; valor: number; categoriaId?: string; fornecedor?: string }[],
   dataVencimento: Date,
-  userId: string
+  userId: string,
+  organizationId?: string
 ): Promise<{ success: boolean; contasIds?: string[]; error?: string }> {
   try {
     const contasPagar = custos.map(custo => ({
@@ -211,17 +214,18 @@ export async function gerarContasPagarOrcamento(
       status: 'pendente',
       categoria_id: custo.categoriaId || null,
       fornecedor: custo.fornecedor || null,
-      created_by_user_id: userId
+      created_by_user_id: userId,
+      organization_id: organizationId || null
     }));
 
-    const { data, error } = await supabase
-      .from('contas_pagar')
+    const contasTable = supabase.from('contas_pagar') as any;
+    const { data, error } = await contasTable
       .insert(contasPagar)
       .select();
 
     if (error) throw error;
 
-    return { success: true, contasIds: data.map(c => c.id) };
+    return { success: true, contasIds: data.map((c: any) => c.id) };
   } catch (error: any) {
     console.error('Erro ao gerar contas a pagar:', error);
     return { success: false, error: error.message };
