@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 export interface InconsistenciaItem {
   id: string;
-  tipo: 'orcamento_sem_pedido' | 'orcamento_sem_conta' | 'pedido_sem_pagamento' | 'conta_orfa' | 'status_divergente' | 'comissao_sem_recebimento';
+  tipo: 'orcamento_sem_pedido' | 'orcamento_sem_conta' | 'pedido_sem_pagamento' | 'conta_orfa' | 'status_divergente' | 'comissao_sem_recebimento' | 'total_divergente';
   severidade: 'critica' | 'alta' | 'media';
   descricao: string;
   dados: Record<string, any>;
@@ -16,6 +16,7 @@ export interface AuditoriaResult {
   contasOrfas: InconsistenciaItem[];
   statusDivergente: InconsistenciaItem[];
   comissoesSemRecebimento: InconsistenciaItem[];
+  totaisDivergentes: InconsistenciaItem[];
   total: number;
   criticas: number;
   altas: number;
@@ -33,6 +34,7 @@ export function useAuditoriaConsistencia() {
         contasOrfas: [],
         statusDivergente: [],
         comissoesSemRecebimento: [],
+        totaisDivergentes: [],
         total: 0,
         criticas: 0,
         altas: 0,
@@ -242,6 +244,45 @@ export function useAuditoriaConsistencia() {
         }
       }
 
+      // 6. Orçamentos com total_geral divergente da soma dos itens
+      // (Nota: Com os triggers implementados, isso não deveria mais acontecer,
+      // mas mantemos a verificação para auditoria de dados antigos)
+      const { data: orcamentosComItens } = await supabase
+        .from('orcamentos')
+        .select('id, codigo, cliente_nome, total_geral, status');
+
+      if (orcamentosComItens) {
+        for (const orc of orcamentosComItens) {
+          const { data: itens } = await supabase
+            .from('cortina_items')
+            .select('preco_venda')
+            .eq('orcamento_id', orc.id);
+
+          if (itens && itens.length > 0) {
+            const somaItens = itens.reduce((acc, item) => acc + (item.preco_venda || 0), 0);
+            const diff = Math.abs((orc.total_geral || 0) - somaItens);
+            
+            // Só reporta se a diferença for significativa (> R$0,10)
+            if (diff > 0.10) {
+              inconsistencias.totaisDivergentes.push({
+                id: orc.id,
+                tipo: 'total_divergente',
+                severidade: diff > 100 ? 'alta' : 'media',
+                descricao: `Orçamento ${orc.codigo}: total_geral (${(orc.total_geral || 0).toFixed(2)}) ≠ soma itens (${somaItens.toFixed(2)})`,
+                dados: {
+                  codigo: orc.codigo,
+                  cliente: orc.cliente_nome,
+                  totalGeral: orc.total_geral,
+                  somaItens,
+                  diferenca: diff,
+                  status: orc.status
+                }
+              });
+            }
+          }
+        }
+      }
+
       // Calcular totais
       const todasInconsistencias = [
         ...inconsistencias.orcamentosSemPedido,
@@ -249,7 +290,8 @@ export function useAuditoriaConsistencia() {
         ...inconsistencias.pedidosSemPagamento,
         ...inconsistencias.contasOrfas,
         ...inconsistencias.statusDivergente,
-        ...inconsistencias.comissoesSemRecebimento
+        ...inconsistencias.comissoesSemRecebimento,
+        ...inconsistencias.totaisDivergentes
       ];
 
       inconsistencias.total = todasInconsistencias.length;
