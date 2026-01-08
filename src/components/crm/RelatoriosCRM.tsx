@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -12,7 +11,10 @@ import {
   XCircle,
   Trophy
 } from 'lucide-react';
-import { useOportunidades, useContatos } from '@/hooks/useCRMData';
+import { useContatos } from '@/hooks/useCRMData';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useOrganization } from '@/hooks/useOrganization';
 import { 
   BarChart, 
   Bar, 
@@ -23,8 +25,7 @@ import {
   ResponsiveContainer,
   PieChart,
   Pie,
-  Cell,
-  Legend
+  Cell
 } from 'recharts';
 
 const formatCurrency = (value: number) => {
@@ -48,20 +49,40 @@ const ORIGENS_LABELS: Record<string, string> = {
   null: 'Não informada'
 };
 
-const MOTIVOS_PERDA_LABELS: Record<string, string> = {
-  preco: 'Preço Alto',
-  concorrencia: 'Concorrência',
-  prazo: 'Prazo',
-  desistencia: 'Desistência do Cliente',
-  sem_resposta: 'Sem Resposta',
-  outro: 'Outro'
-};
+// Status de orçamentos que indicam "ganho" (venda fechada)
+const STATUS_GANHO = ['pago_40', 'pago_parcial', 'pago_60', 'pago', 'em_producao', 'instalado', 'finalizado'];
+// Status que indica "perda"
+const STATUS_PERDIDO = ['recusado'];
 
 export function RelatoriosCRM() {
-  const { data: oportunidades, isLoading: loadingOp } = useOportunidades();
+  const { organizationId } = useOrganization();
   const { data: contatos, isLoading: loadingContatos } = useContatos();
   
-  if (loadingOp || loadingContatos) {
+  // Buscar orçamentos em vez de oportunidades legadas
+  const { data: orcamentos, isLoading: loadingOrcamentos } = useQuery({
+    queryKey: ['orcamentos-relatorio-crm', organizationId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('orcamentos')
+        .select(`
+          id,
+          codigo,
+          status,
+          total_geral,
+          created_by_user_id,
+          contato_id,
+          observacoes,
+          contato:contatos(origem)
+        `)
+        .eq('organization_id', organizationId);
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!organizationId
+  });
+  
+  if (loadingOrcamentos || loadingContatos) {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-2">
@@ -75,24 +96,25 @@ export function RelatoriosCRM() {
     );
   }
 
-  // ========== CONVERSÃO POR ORIGEM ==========
+  // ========== CONVERSÃO POR ORIGEM (usando orçamentos) ==========
   const contatosPorOrigem = contatos?.reduce((acc, c) => {
     const origem = c.origem || 'null';
     acc[origem] = (acc[origem] || 0) + 1;
     return acc;
   }, {} as Record<string, number>) || {};
 
-  const oportunidadesGanhasPorOrigem = oportunidades
-    ?.filter(o => o.etapa === 'fechado_ganho' && o.contato)
+  // Orçamentos ganhos agrupados por origem do contato
+  const orcamentosGanhosPorOrigem = orcamentos
+    ?.filter(o => STATUS_GANHO.includes(o.status))
     .reduce((acc, o) => {
-      const origem = o.contato?.origem || 'null';
+      const origem = (o.contato as any)?.origem || 'null';
       acc[origem] = (acc[origem] || 0) + 1;
       return acc;
     }, {} as Record<string, number>) || {};
 
   const conversaoPorOrigem = Object.keys(contatosPorOrigem).map(origem => {
     const total = contatosPorOrigem[origem] || 0;
-    const convertidos = oportunidadesGanhasPorOrigem[origem] || 0;
+    const convertidos = orcamentosGanhosPorOrigem[origem] || 0;
     const taxa = total > 0 ? (convertidos / total) * 100 : 0;
     return {
       origem: ORIGENS_LABELS[origem] || origem,
@@ -102,29 +124,42 @@ export function RelatoriosCRM() {
     };
   }).sort((a, b) => b.taxa - a.taxa);
 
-  // ========== MOTIVOS DE PERDA ==========
-  const oportunidadesPerdidas = oportunidades?.filter(o => o.etapa === 'fechado_perdido') || [];
+  // ========== MOTIVOS DE PERDA (orçamentos recusados) ==========
+  const orcamentosPerdidos = orcamentos?.filter(o => STATUS_PERDIDO.includes(o.status)) || [];
   
-  const motivosPerdaContagem = oportunidadesPerdidas.reduce((acc, o) => {
-    const motivo = o.motivo_perda || 'outro';
+  // Extrair motivo das observações (formato: "Motivo: xxx" ou usar "Não informado")
+  const motivosPerdaContagem = orcamentosPerdidos.reduce((acc, o) => {
+    let motivo = 'Não informado';
+    if (o.observacoes) {
+      const match = o.observacoes.match(/motivo[:\s]+([^,.\n]+)/i);
+      if (match) {
+        motivo = match[1].trim();
+      } else if (o.observacoes.toLowerCase().includes('preço')) {
+        motivo = 'Preço Alto';
+      } else if (o.observacoes.toLowerCase().includes('concorr')) {
+        motivo = 'Concorrência';
+      } else if (o.observacoes.toLowerCase().includes('prazo')) {
+        motivo = 'Prazo';
+      } else if (o.observacoes.toLowerCase().includes('desist')) {
+        motivo = 'Desistência';
+      }
+    }
     acc[motivo] = (acc[motivo] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
 
   const motivosPerdaData = Object.entries(motivosPerdaContagem).map(([motivo, quantidade]) => ({
-    motivo: MOTIVOS_PERDA_LABELS[motivo] || motivo,
+    motivo,
     quantidade,
-    percentual: oportunidadesPerdidas.length > 0 
-      ? Math.round((quantidade / oportunidadesPerdidas.length) * 100) 
+    percentual: orcamentosPerdidos.length > 0 
+      ? Math.round((quantidade / orcamentosPerdidos.length) * 100) 
       : 0
   })).sort((a, b) => b.quantidade - a.quantidade);
 
-  const valorPerdido = oportunidadesPerdidas.reduce((sum, o) => sum + (o.valor_estimado || 0), 0);
+  const valorPerdido = orcamentosPerdidos.reduce((sum, o) => sum + (o.total_geral || 0), 0);
 
-  // ========== RANKING VENDEDORES (por usuário criador) ==========
-  const oportunidadesGanhas = oportunidades?.filter(o => o.etapa === 'fechado_ganho') || [];
-  
-  const vendedoresStats = oportunidades?.reduce((acc, o) => {
+  // ========== RANKING VENDEDORES (usando orçamentos) ==========
+  const vendedoresStats = orcamentos?.reduce((acc, o) => {
     const vendedor = o.created_by_user_id;
     if (!acc[vendedor]) {
       acc[vendedor] = { 
@@ -135,10 +170,10 @@ export function RelatoriosCRM() {
       };
     }
     acc[vendedor].total += 1;
-    acc[vendedor].valor += o.valor_estimado || 0;
-    if (o.etapa === 'fechado_ganho') {
+    acc[vendedor].valor += o.total_geral || 0;
+    if (STATUS_GANHO.includes(o.status)) {
       acc[vendedor].ganhas += 1;
-      acc[vendedor].valorGanho += o.valor_estimado || 0;
+      acc[vendedor].valorGanho += o.total_geral || 0;
     }
     return acc;
   }, {} as Record<string, { total: number; ganhas: number; valor: number; valorGanho: number }>) || {};
@@ -262,8 +297,8 @@ export function RelatoriosCRM() {
                     <XCircle className="h-6 w-6 text-red-500" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold">{oportunidadesPerdidas.length}</p>
-                    <p className="text-sm text-muted-foreground">Oportunidades Perdidas</p>
+                    <p className="text-2xl font-bold">{orcamentosPerdidos.length}</p>
+                    <p className="text-sm text-muted-foreground">Orçamentos Recusados</p>
                   </div>
                 </div>
               </CardContent>
@@ -350,14 +385,14 @@ export function RelatoriosCRM() {
                         <span className="font-medium">{item.motivo}</span>
                       </div>
                       <div className="flex items-center gap-4">
-                        <span className="text-muted-foreground">{item.quantidade} oportunidades</span>
+                        <span className="text-muted-foreground">{item.quantidade} orçamentos</span>
                         <Badge>{item.percentual}%</Badge>
                       </div>
                     </div>
                   ))}
                   {motivosPerdaData.length === 0 && (
                     <p className="text-muted-foreground text-center py-8">
-                      Nenhuma oportunidade perdida registrada
+                      Nenhum orçamento recusado registrado
                     </p>
                   )}
                 </div>
@@ -393,7 +428,7 @@ export function RelatoriosCRM() {
                     <div className="flex-1">
                       <p className="font-medium">{vendedor.nome}</p>
                       <p className="text-sm text-muted-foreground">
-                        {vendedor.ganhas} vendas fechadas de {vendedor.total} oportunidades
+                        {vendedor.ganhas} vendas fechadas de {vendedor.total} orçamentos
                       </p>
                     </div>
                     <div className="text-right">
