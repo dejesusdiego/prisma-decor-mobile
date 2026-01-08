@@ -1,8 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { parseDateOnly, formatDateOnly, startOfToday } from '@/lib/dateOnly';
 import { useNavigate } from 'react-router-dom';
 import { calcularStatusDinamico, isPagamentoCompleto } from '@/lib/calculosFinanceiros';
 import { 
@@ -113,23 +112,20 @@ export function ContasReceber({ onNavigate }: ContasReceberProps) {
       }
       
       // DEPOIS: Verificar atraso apenas para contas NÃO pagas
-      const hoje = new Date();
-      hoje.setHours(0, 0, 0, 0);
+      const hoje = startOfToday();
       
       const temParcelaAtrasada = conta.parcelas?.some((p: any) => {
         // Verificar tolerância na parcela também
         const parcelaPaga = p.status === 'pago';
         if (parcelaPaga) return false;
         
-        const vencParcela = new Date(p.data_vencimento);
-        vencParcela.setHours(0, 0, 0, 0);
-        return vencParcela < hoje;
+        const vencParcela = parseDateOnly(p.data_vencimento);
+        return vencParcela && vencParcela < hoje;
       });
       
       // Verificar se a conta principal está vencida
-      const vencimentoConta = new Date(conta.data_vencimento);
-      vencimentoConta.setHours(0, 0, 0, 0);
-      const contaVencida = vencimentoConta < hoje;
+      const vencimentoConta = parseDateOnly(conta.data_vencimento);
+      const contaVencida = vencimentoConta && vencimentoConta < hoje;
       
       if (temParcelaAtrasada || contaVencida) {
         return { ...conta, statusExibicao: 'atrasado' };
@@ -374,7 +370,7 @@ export function ContasReceber({ onNavigate }: ContasReceberProps) {
                             </TableCell>
                             <TableCell>{conta.descricao}</TableCell>
                             <TableCell>
-                              {format(new Date(conta.data_vencimento), 'dd/MM/yyyy', { locale: ptBR })}
+                              {formatDateOnly(conta.data_vencimento)}
                             </TableCell>
                             <TableCell className="font-medium">{formatCurrency(Number(conta.valor_total))}</TableCell>
                             <TableCell className="text-green-600">{formatCurrency(Number(conta.valor_pago))}</TableCell>
@@ -414,7 +410,7 @@ export function ContasReceber({ onNavigate }: ContasReceberProps) {
                                             Parcela {parcela.numero_parcela}
                                           </span>
                                           <span className="text-sm text-muted-foreground">
-                                            Venc: {format(new Date(parcela.data_vencimento), 'dd/MM/yyyy', { locale: ptBR })}
+                                            Venc: {formatDateOnly(parcela.data_vencimento)}
                                           </span>
                                           <span className="text-sm font-medium">
                                             {formatCurrency(Number(parcela.valor))}

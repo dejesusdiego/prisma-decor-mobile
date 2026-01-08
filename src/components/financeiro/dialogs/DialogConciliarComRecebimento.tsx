@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { formatDateOnly } from '@/lib/dateOnly';
 import { Receipt, User, FileText, Calendar, CheckCircle2, CreditCard, AlertTriangle } from 'lucide-react';
 import {
   Dialog,
@@ -251,7 +252,7 @@ export function DialogConciliarComRecebimento({
                 {formatCurrency(movimentacao.valor)}
               </p>
               <p className="text-xs text-muted-foreground">
-                {format(new Date(movimentacao.data_movimentacao), "dd/MM/yyyy")}
+                {formatDateOnly(movimentacao.data_movimentacao)}
               </p>
             </div>
             <div className="p-3 bg-muted/50 rounded-lg">
@@ -260,7 +261,7 @@ export function DialogConciliarComRecebimento({
                 {formatCurrency(parcela.valor)}
               </p>
               <p className="text-xs text-muted-foreground">
-                Venc: {format(new Date(parcela.data_vencimento), "dd/MM/yyyy")}
+                Venc: {formatDateOnly(parcela.data_vencimento)}
               </p>
             </div>
           </div>

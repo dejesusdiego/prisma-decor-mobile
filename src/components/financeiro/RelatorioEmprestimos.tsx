@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { format, differenceInDays, addDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { parseDateOnly, formatDateOnly, startOfToday } from '@/lib/dateOnly';
 import {
   RefreshCw,
   AlertTriangle,
@@ -133,19 +134,19 @@ export function RelatorioEmprestimos() {
 
   // Alertas de vencimento
   const alertas = (() => {
-    const hoje = new Date();
+    const hoje = startOfToday();
     const em7Dias = addDays(hoje, 7);
 
     const vencendoProximosDias = emprestimos.filter((emp) => {
       if (!emp.contaReceber || emp.contaReceber.status === 'pago') return false;
-      const venc = new Date(emp.contaReceber.data_vencimento);
-      return venc >= hoje && venc <= em7Dias;
+      const venc = parseDateOnly(emp.contaReceber.data_vencimento);
+      return venc && venc >= hoje && venc <= em7Dias;
     });
 
     const vencidos = emprestimos.filter((emp) => {
       if (!emp.contaReceber || emp.contaReceber.status === 'pago') return false;
-      const venc = new Date(emp.contaReceber.data_vencimento);
-      return venc < hoje;
+      const venc = parseDateOnly(emp.contaReceber.data_vencimento);
+      return venc && venc < hoje;
     });
 
     return {
@@ -209,14 +210,14 @@ export function RelatorioEmprestimos() {
     }
 
     const status = emp.contaReceber.status;
-    const venc = new Date(emp.contaReceber.data_vencimento);
-    const hoje = new Date();
-    const diasRestantes = differenceInDays(venc, hoje);
+    const venc = parseDateOnly(emp.contaReceber.data_vencimento);
+    const hoje = startOfToday();
+    const diasRestantes = venc ? differenceInDays(venc, hoje) : 0;
 
     if (status === 'pago') {
       return <Badge className="bg-green-500/10 text-green-600">Devolvido</Badge>;
     }
-    if (venc < hoje) {
+    if (venc && venc < hoje) {
       return (
         <Badge variant="destructive">
           Atrasado ({Math.abs(diasRestantes)} dias)
@@ -469,7 +470,7 @@ export function RelatorioEmprestimos() {
                   return (
                     <TableRow key={emp.id}>
                       <TableCell>
-                        {format(new Date(emp.data_lancamento), 'dd/MM/yyyy', { locale: ptBR })}
+                        {formatDateOnly(emp.data_lancamento)}
                       </TableCell>
                       <TableCell className="font-medium">{emp.descricao}</TableCell>
                       <TableCell className="text-violet-600">
@@ -483,7 +484,7 @@ export function RelatorioEmprestimos() {
                       </TableCell>
                       <TableCell>
                         {emp.contaReceber ? (
-                          format(new Date(emp.contaReceber.data_vencimento), 'dd/MM/yyyy')
+                          formatDateOnly(emp.contaReceber.data_vencimento)
                         ) : (
                           '-'
                         )}
