@@ -44,6 +44,7 @@ import {
 } from '@/hooks/useProducaoData';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { formatDateOnly } from '@/lib/dateOnly';
 import { cn } from '@/lib/utils';
 import { HelpTooltip } from '@/components/ui/HelpTooltip';
 import { ListaMateriaisPedido } from './ListaMateriaisPedido';
@@ -247,17 +248,14 @@ export function FichaPedido({ pedidoId, onVoltar, onAgendarInstalacao }: FichaPe
             <div className="flex justify-between">
               <span className="text-sm text-muted-foreground">Previsão:</span>
               <span className="font-medium">
-                {pedido.previsao_entrega 
-                  ? format(new Date(pedido.previsao_entrega), 'dd/MM/yyyy', { locale: ptBR })
-                  : '-'
-                }
+                {formatDateOnly(pedido.previsao_entrega)}
               </span>
             </div>
             {pedido.data_pronto && (
               <div className="flex justify-between">
                 <span className="text-sm text-muted-foreground">Pronto em:</span>
                 <span className="font-medium text-green-600">
-                  {format(new Date(pedido.data_pronto), 'dd/MM/yyyy', { locale: ptBR })}
+                  {formatDateOnly(pedido.data_pronto)}
                 </span>
               </div>
             )}

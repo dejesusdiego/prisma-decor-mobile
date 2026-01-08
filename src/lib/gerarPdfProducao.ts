@@ -3,6 +3,9 @@ import autoTable from 'jspdf-autotable';
 import { supabase } from '@/integrations/supabase/client';
 import logoPng from '@/assets/logo-prisma-pdf.png';
 import { STATUS_ITEM_LABELS, PRIORIDADE_LABELS } from '@/hooks/useProducaoData';
+import { parseDateOnly } from '@/lib/dateOnly';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 interface PedidoData {
   id: string;
@@ -51,7 +54,12 @@ function formatarTelefone(telefone: string): string {
 }
 
 function formatarData(dataStr: string): string {
-  return new Date(dataStr).toLocaleDateString('pt-BR');
+  // Usar parseDateOnly para campos DATE-only (evita bug de timezone)
+  const date = parseDateOnly(dataStr);
+  if (date) {
+    return format(date, 'dd/MM/yyyy', { locale: ptBR });
+  }
+  return '-';
 }
 
 // Gera QR Code simples como texto base64 (usando um serviço de QR code)
