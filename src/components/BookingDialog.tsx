@@ -15,6 +15,7 @@ import { z } from "zod";
 interface BookingDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  organizationSlug?: string;
 }
 type Step = "datetime" | "form" | "confirmation";
 const timeSlots = ["08:00 - 09:00", "10:00 - 11:00", "12:00 - 13:00", "14:00 - 15:00", "16:00 - 17:00", "18:00 - 19:00"];
@@ -51,7 +52,8 @@ const bookingFormSchema = z.object({
 });
 const BookingDialog = ({
   open,
-  onOpenChange
+  onOpenChange,
+  organizationSlug = 'prisma'
 }: BookingDialogProps) => {
   const {
     toast
@@ -139,6 +141,7 @@ const BookingDialog = ({
         mensagem: formData.message,
         data_agendada: selectedDate?.toISOString().split('T')[0] || '',
         horario_agendado: selectedTime || '',
+        organization_slug: organizationSlug,
       };
 
       console.log("Salvando solicitação de visita:", { ...leadData, email: '***' });
