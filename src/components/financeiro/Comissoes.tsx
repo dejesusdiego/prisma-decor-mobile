@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
+import { useOrganizationContext } from '@/contexts/OrganizationContext';
 import { ptBR } from 'date-fns/locale';
 import {
   Plus,
@@ -72,6 +73,7 @@ interface ComissoesProps {
 
 export function Comissoes({ onVisualizarOrcamento, onNavigate }: ComissoesProps) {
   const queryClient = useQueryClient();
+  const { organizationId } = useOrganizationContext();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('todos');
   const [vendedorFilter, setVendedorFilter] = useState<string>('todos');
@@ -85,7 +87,7 @@ export function Comissoes({ onVisualizarOrcamento, onNavigate }: ComissoesProps)
   const dataFim = endOfMonth(new Date());
 
   const { data: comissoes = [], isLoading } = useQuery({
-    queryKey: ['comissoes', periodo],
+    queryKey: ['comissoes', periodo, organizationId],
     queryFn: async () => {
       let query = supabase
         .from('comissoes')
@@ -93,6 +95,7 @@ export function Comissoes({ onVisualizarOrcamento, onNavigate }: ComissoesProps)
           *,
           orcamento:orcamentos(id, codigo, cliente_nome, total_geral)
         `)
+        .eq('organization_id', organizationId)
         .order('created_at', { ascending: false });
 
       if (periodo !== 'all') {
@@ -104,7 +107,8 @@ export function Comissoes({ onVisualizarOrcamento, onNavigate }: ComissoesProps)
       const { data, error } = await query;
       if (error) throw error;
       return data;
-    }
+    },
+    enabled: !!organizationId,
   });
 
   // Lista única de vendedores
@@ -115,7 +119,7 @@ export function Comissoes({ onVisualizarOrcamento, onNavigate }: ComissoesProps)
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from('comissoes').delete().eq('id', id);
+      const { error } = await supabase.from('comissoes').delete().eq('id', id).eq('organization_id', organizationId);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -132,7 +136,8 @@ export function Comissoes({ onVisualizarOrcamento, onNavigate }: ComissoesProps)
       const { error } = await supabase
         .from('comissoes')
         .update({ status: 'pago', data_pagamento: new Date().toISOString().split('T')[0] })
-        .eq('id', id);
+        .eq('id', id)
+        .eq('organization_id', organizationId);
       if (error) throw error;
     },
     onSuccess: () => {

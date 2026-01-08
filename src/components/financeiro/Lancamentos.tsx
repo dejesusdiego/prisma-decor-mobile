@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
+import { useOrganizationContext } from '@/contexts/OrganizationContext';
 import { formatDateOnly } from '@/lib/dateOnly';
 import { 
   Plus, 
@@ -71,6 +72,7 @@ interface LancamentosProps {
 
 export function Lancamentos({ onNavigate }: LancamentosProps = {}) {
   const queryClient = useQueryClient();
+  const { organizationId } = useOrganizationContext();
   const [searchTerm, setSearchTerm] = useState('');
   const [tipoFilter, setTipoFilter] = useState<TipoFilter>('todos');
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -79,7 +81,7 @@ export function Lancamentos({ onNavigate }: LancamentosProps = {}) {
   const [emprestimoParaDevolucao, setEmprestimoParaDevolucao] = useState<EmprestimoParaDevolucao | null>(null);
 
   const { data: lancamentos = [], isLoading } = useQuery({
-    queryKey: ['lancamentos'],
+    queryKey: ['lancamentos', organizationId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('lancamentos_financeiros')
@@ -88,16 +90,18 @@ export function Lancamentos({ onNavigate }: LancamentosProps = {}) {
           categoria:categorias_financeiras(nome, cor),
           forma_pagamento:formas_pagamento(nome)
         `)
+        .eq('organization_id', organizationId)
         .order('data_lancamento', { ascending: false });
       
       if (error) throw error;
       return data;
-    }
+    },
+    enabled: !!organizationId,
   });
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from('lancamentos_financeiros').delete().eq('id', id);
+      const { error } = await supabase.from('lancamentos_financeiros').delete().eq('id', id).eq('organization_id', organizationId);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -173,11 +177,12 @@ export function Lancamentos({ onNavigate }: LancamentosProps = {}) {
 
   // Query para buscar status de devolução dos empréstimos
   const { data: statusEmprestimos = {} } = useQuery({
-    queryKey: ['status-emprestimos'],
+    queryKey: ['status-emprestimos', organizationId],
     queryFn: async () => {
       const { data: contasReceber } = await supabase
         .from('contas_receber')
         .select('lancamento_origem_id, status, valor_total, valor_pago')
+        .eq('organization_id', organizationId)
         .not('lancamento_origem_id', 'is', null);
 
       const statusMap: Record<string, { status: string; valorPago: number; valorTotal: number }> = {};
@@ -190,6 +195,7 @@ export function Lancamentos({ onNavigate }: LancamentosProps = {}) {
       });
       return statusMap;
     },
+    enabled: !!organizationId,
   });
 
   const getEmprestimoStatusBadge = (lancamentoId: string) => {

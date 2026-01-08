@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { parseDateOnly, formatDateOnly, startOfToday } from '@/lib/dateOnly';
+import { useOrganizationContext } from '@/contexts/OrganizationContext';
 import { 
   Plus, 
   Search, 
@@ -68,6 +69,7 @@ const getStatusBadge = (status: string, dataVencimento: string) => {
 
 export function ContasPagar({ onVisualizarOrcamento, onNavigate }: ContasPagarProps) {
   const queryClient = useQueryClient();
+  const { organizationId } = useOrganizationContext();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('todos');
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -75,7 +77,7 @@ export function ContasPagar({ onVisualizarOrcamento, onNavigate }: ContasPagarPr
   const [gerandoRecorrentes, setGerandoRecorrentes] = useState(false);
 
   const { data: contas = [], isLoading } = useQuery({
-    queryKey: ['contas-pagar'],
+    queryKey: ['contas-pagar', organizationId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('contas_pagar')
@@ -85,16 +87,18 @@ export function ContasPagar({ onVisualizarOrcamento, onNavigate }: ContasPagarPr
           forma_pagamento:formas_pagamento(nome),
           orcamento:orcamentos(id, codigo, cliente_nome)
         `)
+        .eq('organization_id', organizationId)
         .order('data_vencimento', { ascending: true });
       
       if (error) throw error;
       return data;
-    }
+    },
+    enabled: !!organizationId,
   });
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from('contas_pagar').delete().eq('id', id);
+      const { error } = await supabase.from('contas_pagar').delete().eq('id', id).eq('organization_id', organizationId);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -111,7 +115,8 @@ export function ContasPagar({ onVisualizarOrcamento, onNavigate }: ContasPagarPr
       const { error } = await supabase
         .from('contas_pagar')
         .update({ status: 'pago', data_pagamento: new Date().toISOString().split('T')[0] })
-        .eq('id', id);
+        .eq('id', id)
+        .eq('organization_id', organizationId);
       if (error) throw error;
     },
     onSuccess: () => {

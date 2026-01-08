@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useOrganizationContext } from '@/contexts/OrganizationContext';
 import { 
   Plus, 
   Edit,
@@ -27,40 +28,45 @@ import { DialogFormaPagamento } from './dialogs/DialogFormaPagamento';
 
 export function CategoriasFormas() {
   const queryClient = useQueryClient();
+  const { organizationId } = useOrganizationContext();
   const [dialogCategoriaOpen, setDialogCategoriaOpen] = useState(false);
   const [dialogFormaOpen, setDialogFormaOpen] = useState(false);
   const [categoriaEditando, setCategoriaEditando] = useState<any>(null);
   const [formaEditando, setFormaEditando] = useState<any>(null);
 
   const { data: categorias = [], isLoading: loadingCategorias } = useQuery({
-    queryKey: ['categorias-financeiras'],
+    queryKey: ['categorias-financeiras', organizationId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('categorias_financeiras')
         .select('*')
+        .eq('organization_id', organizationId)
         .order('nome');
       
       if (error) throw error;
       return data;
-    }
+    },
+    enabled: !!organizationId,
   });
 
   const { data: formasPagamento = [], isLoading: loadingFormas } = useQuery({
-    queryKey: ['formas-pagamento'],
+    queryKey: ['formas-pagamento', organizationId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('formas_pagamento')
         .select('*')
+        .eq('organization_id', organizationId)
         .order('nome');
       
       if (error) throw error;
       return data;
-    }
+    },
+    enabled: !!organizationId,
   });
 
   const deleteCatMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from('categorias_financeiras').delete().eq('id', id);
+      const { error } = await supabase.from('categorias_financeiras').delete().eq('id', id).eq('organization_id', organizationId);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -72,7 +78,7 @@ export function CategoriasFormas() {
 
   const deleteFormaMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from('formas_pagamento').delete().eq('id', id);
+      const { error } = await supabase.from('formas_pagamento').delete().eq('id', id).eq('organization_id', organizationId);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -87,7 +93,8 @@ export function CategoriasFormas() {
       const { error } = await supabase
         .from('categorias_financeiras')
         .update({ ativo })
-        .eq('id', id);
+        .eq('id', id)
+        .eq('organization_id', organizationId);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -100,7 +107,8 @@ export function CategoriasFormas() {
       const { error } = await supabase
         .from('formas_pagamento')
         .update({ ativo })
-        .eq('id', id);
+        .eq('id', id)
+        .eq('organization_id', organizationId);
       if (error) throw error;
     },
     onSuccess: () => {
