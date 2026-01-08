@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useOrganization } from '@/hooks/useOrganization';
 import { useFinanceiroInvalidation } from '@/hooks/useFinanceiroInvalidation';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -42,6 +43,7 @@ interface DialogLancamentoProps {
 
 export function DialogLancamento({ open, onOpenChange, lancamento }: DialogLancamentoProps) {
   const { user } = useAuth();
+  const { organizationId } = useOrganization();
   const { invalidateAfterLancamento } = useFinanceiroInvalidation();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [datePickerOpen, setDatePickerOpen] = useState(false);
@@ -68,32 +70,37 @@ export function DialogLancamento({ open, onOpenChange, lancamento }: DialogLanca
   };
 
   const { data: categorias = [] } = useQuery({
-    queryKey: ['categorias-financeiras', tipoSelecionado],
+    queryKey: ['categorias-financeiras', tipoSelecionado, organizationId],
     queryFn: async () => {
+      if (!organizationId) return [];
       const tipoCategoria = getTipoCategoria(tipoSelecionado);
       const { data, error } = await supabase
         .from('categorias_financeiras')
         .select('*')
+        .eq('organization_id', organizationId)
         .eq('tipo', tipoCategoria)
         .eq('ativo', true)
         .order('nome');
       if (error) throw error;
       return data;
     },
-    enabled: !!tipoSelecionado
+    enabled: !!tipoSelecionado && !!organizationId
   });
 
   const { data: formasPagamento = [] } = useQuery({
-    queryKey: ['formas-pagamento-ativas'],
+    queryKey: ['formas-pagamento-ativas', organizationId],
     queryFn: async () => {
+      if (!organizationId) return [];
       const { data, error } = await supabase
         .from('formas_pagamento')
         .select('*')
+        .eq('organization_id', organizationId)
         .eq('ativo', true)
         .order('nome');
       if (error) throw error;
       return data;
-    }
+    },
+    enabled: !!organizationId
   });
 
   // Verificar se o tipo selecionado é empréstimo
@@ -137,6 +144,8 @@ export function DialogLancamento({ open, onOpenChange, lancamento }: DialogLanca
 
   const mutation = useMutation({
     mutationFn: async (data: any) => {
+      if (!organizationId) throw new Error('Organization ID required');
+      
       const payload = {
         descricao: data.descricao,
         tipo: data.tipo,
@@ -145,14 +154,16 @@ export function DialogLancamento({ open, onOpenChange, lancamento }: DialogLanca
         categoria_id: data.categoria_id || null,
         forma_pagamento_id: data.forma_pagamento_id || null,
         observacoes: data.observacoes || null,
-        created_by_user_id: user?.id
+        created_by_user_id: user?.id,
+        organization_id: organizationId
       };
 
       if (lancamento) {
         const { error } = await supabase
           .from('lancamentos_financeiros')
           .update(payload)
-          .eq('id', lancamento.id);
+          .eq('id', lancamento.id)
+          .eq('organization_id', organizationId);
         if (error) throw error;
       } else {
         const { error } = await supabase

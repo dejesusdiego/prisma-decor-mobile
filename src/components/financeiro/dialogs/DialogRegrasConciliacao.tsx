@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useOrganization } from '@/hooks/useOrganization';
 import { Settings2, Plus, Trash2, GripVertical, Ban, FileCheck } from 'lucide-react';
 import {
   Dialog,
@@ -54,6 +55,7 @@ const initialForm: RegraForm = {
 
 export function DialogRegrasConciliacao() {
   const { user } = useAuth();
+  const { organizationId } = useOrganization();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<RegraForm>(initialForm);
@@ -61,38 +63,44 @@ export function DialogRegrasConciliacao() {
 
   // Buscar regras
   const { data: regras = [], isLoading } = useQuery({
-    queryKey: ['regras-conciliacao'],
-    queryFn: async () => {
+    queryKey: ['regras-conciliacao', organizationId],
+    queryFn: async (): Promise<any[]> => {
+      if (!organizationId) return [];
       const { data, error } = await supabase
         .from('regras_conciliacao')
         .select('*, categoria:categorias_financeiras(id, nome)')
+        .eq('organization_id', organizationId)
         .order('ordem', { ascending: true });
       
       if (error) throw error;
-      return data;
+      return data || [];
     },
-    enabled: open
+    enabled: open && !!organizationId
   });
 
   // Buscar categorias
   const { data: categorias = [] } = useQuery({
-    queryKey: ['categorias-financeiras'],
+    queryKey: ['categorias-financeiras', organizationId],
     queryFn: async () => {
+      if (!organizationId) return [];
       const { data, error } = await supabase
         .from('categorias_financeiras')
         .select('*')
+        .eq('organization_id', organizationId)
         .eq('ativo', true)
         .order('nome');
       
       if (error) throw error;
       return data;
     },
-    enabled: open
+    enabled: open && !!organizationId
   });
 
   // Criar/atualizar regra
   const saveMutation = useMutation({
     mutationFn: async (data: RegraForm) => {
+      if (!organizationId) throw new Error('Organization ID required');
+      
       if (editingId) {
         const { error } = await supabase
           .from('regras_conciliacao')
@@ -103,7 +111,8 @@ export function DialogRegrasConciliacao() {
             categoria_id: data.acao === 'criar_lancamento' ? data.categoria_id : null,
             tipo_lancamento: data.acao === 'criar_lancamento' ? data.tipo_lancamento : null
           })
-          .eq('id', editingId);
+          .eq('id', editingId)
+          .eq('organization_id', organizationId);
         
         if (error) throw error;
       } else {
@@ -118,7 +127,8 @@ export function DialogRegrasConciliacao() {
             categoria_id: data.acao === 'criar_lancamento' ? data.categoria_id : null,
             tipo_lancamento: data.acao === 'criar_lancamento' ? data.tipo_lancamento : null,
             ordem: maxOrdem,
-            created_by_user_id: user?.id
+            created_by_user_id: user?.id,
+            organization_id: organizationId
           });
         
         if (error) throw error;
@@ -138,10 +148,12 @@ export function DialogRegrasConciliacao() {
   // Deletar regra
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
+      if (!organizationId) throw new Error('Organization ID required');
       const { error } = await supabase
         .from('regras_conciliacao')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .eq('organization_id', organizationId);
       
       if (error) throw error;
     },
@@ -154,10 +166,12 @@ export function DialogRegrasConciliacao() {
   // Toggle ativo
   const toggleAtivoMutation = useMutation({
     mutationFn: async ({ id, ativo }: { id: string; ativo: boolean }) => {
+      if (!organizationId) throw new Error('Organization ID required');
       const { error } = await supabase
         .from('regras_conciliacao')
         .update({ ativo })
-        .eq('id', id);
+        .eq('id', id)
+        .eq('organization_id', organizationId);
       
       if (error) throw error;
     },
@@ -169,6 +183,7 @@ export function DialogRegrasConciliacao() {
   // Adicionar regra sugerida
   const addSugeridaMutation = useMutation({
     mutationFn: async (sugestao: typeof REGRAS_SUGERIDAS[0]) => {
+      if (!organizationId) throw new Error('Organization ID required');
       const maxOrdem = regras.length > 0 ? Math.max(...regras.map(r => r.ordem)) + 1 : 0;
       
       const { error } = await supabase
@@ -178,7 +193,8 @@ export function DialogRegrasConciliacao() {
           descricao_contem: sugestao.descricao_contem,
           acao: sugestao.acao as 'ignorar' | 'criar_lancamento',
           ordem: maxOrdem,
-          created_by_user_id: user?.id
+          created_by_user_id: user?.id,
+          organization_id: organizationId
         });
       
       if (error) throw error;
