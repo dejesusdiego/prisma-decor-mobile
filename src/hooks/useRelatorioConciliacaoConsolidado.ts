@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { STATUS_CONCILIACAO_VALIDOS, STATUS_COM_PAGAMENTO, STATUS_TOTALMENTE_PAGO } from '@/lib/statusOrcamento';
+import { useOrganization } from '@/hooks/useOrganization';
 
 export interface OrcamentoConciliacaoResumo {
   id: string;
@@ -51,9 +52,19 @@ interface FiltrosRelatorio {
 }
 
 export function useRelatorioConciliacaoConsolidado(filtros?: FiltrosRelatorio) {
+  const { organizationId } = useOrganization();
+  
   return useQuery({
-    queryKey: ['relatorio-conciliacao-consolidado', filtros],
+    queryKey: ['relatorio-conciliacao-consolidado', filtros, organizationId],
     queryFn: async (): Promise<RelatorioConsolidado> => {
+      if (!organizationId) {
+        return {
+          orcamentos: [],
+          totais: { valorOrcamentos: 0, valorRecebido: 0, valorRecebidoConciliado: 0, custoTotal: 0, custosPagos: 0, custosConciliados: 0, margemMedia: 0 },
+          estatisticas: { totalOrcamentos: 0, completos: 0, parciais: 0, pendentes: 0, percentualGeral: 0 }
+        };
+      }
+      
       // Buscar orçamentos com contas a receber e pagar
       let query = supabase
         .from('orcamentos')
@@ -65,6 +76,7 @@ export function useRelatorioConciliacaoConsolidado(filtros?: FiltrosRelatorio) {
           ),
           contas_pagar(id, valor, status)
         `)
+        .eq('organization_id', organizationId)
         .order('created_at', { ascending: false })
         .limit(100);
 
