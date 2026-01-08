@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useOrganization } from '@/hooks/useOrganization';
@@ -345,16 +346,19 @@ export function useProducaoData() {
     instalacoesPendentes: instalacoes.filter(i => ['agendada', 'confirmada'].includes(i.status)).length,
   };
 
+  // Refetch memoizado para evitar re-subscribe desnecessário no realtime
+  const refetch = useCallback(() => {
+    refetchPedidos();
+    refetchInstalacoes();
+  }, [refetchPedidos, refetchInstalacoes]);
+
   return {
     pedidos,
     instalacoes,
     metricas,
     isLoading: isLoadingPedidos || isLoadingInstalacoes,
     error: errorPedidos,
-    refetch: () => {
-      refetchPedidos();
-      refetchInstalacoes();
-    },
+    refetch,
     fetchHistorico,
     atualizarStatusItem: atualizarStatusItemMutation.mutate,
     atualizarResponsavelItem: atualizarResponsavelItemMutation.mutate,

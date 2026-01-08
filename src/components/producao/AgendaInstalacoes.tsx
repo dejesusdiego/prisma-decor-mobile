@@ -28,6 +28,7 @@ import { TipBanner } from '@/components/ui/TipBanner';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { parseDateOnly, isSameDayDateOnly } from '@/lib/dateOnly';
 
 export function AgendaInstalacoes() {
   const { instalacoes, pedidos, isLoading, atualizarInstalacao } = useProducaoData();
@@ -58,7 +59,7 @@ export function AgendaInstalacoes() {
 
   // Instalações do dia selecionado
   const instalacoesDoDia = diaSelecionado 
-    ? instalacoesFiltradas.filter(i => isSameDay(new Date(i.data_agendada), diaSelecionado))
+    ? instalacoesFiltradas.filter(i => isSameDayDateOnly(i.data_agendada, diaSelecionado))
     : [];
 
   // Dias do mês com instalações
@@ -69,9 +70,9 @@ export function AgendaInstalacoes() {
     
     return dias.map(dia => ({
       date: dia,
-      count: instalacoesFiltradas.filter(i => isSameDay(new Date(i.data_agendada), dia)).length,
+      count: instalacoesFiltradas.filter(i => isSameDayDateOnly(i.data_agendada, dia)).length,
       hasUrgent: instalacoesFiltradas.some(i => 
-        isSameDay(new Date(i.data_agendada), dia) && 
+        isSameDayDateOnly(i.data_agendada, dia) && 
         ['agendada', 'confirmada'].includes(i.status)
       )
     }));

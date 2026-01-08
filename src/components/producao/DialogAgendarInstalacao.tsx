@@ -27,9 +27,10 @@ import { CalendarIcon, Package } from 'lucide-react';
 import { TruncatedText } from '@/components/ui/TruncatedText';
 import { useProducaoData, Pedido, TURNO_LABELS } from '@/hooks/useProducaoData';
 import { useAuth } from '@/hooks/useAuth';
-import { format } from 'date-fns';
+import { format, startOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface DialogAgendarInstalacaoProps {
   open: boolean;
@@ -84,20 +85,25 @@ export function DialogAgendarInstalacao({
 
     setIsSubmitting(true);
     try {
-      criarInstalacao({
-        pedido_id: pedidoId,
-        data_agendada: format(data, 'yyyy-MM-dd'),
-        turno,
-        instalador: instalador || null,
-        status: 'agendada',
-        endereco,
-        cidade: cidade || null,
-        observacoes: observacoes || null,
-        data_realizada: null,
-        created_by_user_id: user.id,
+      await new Promise<void>((resolve, reject) => {
+        criarInstalacao({
+          pedido_id: pedidoId,
+          data_agendada: format(data, 'yyyy-MM-dd'),
+          turno,
+          instalador: instalador || null,
+          status: 'agendada',
+          endereco,
+          cidade: cidade || null,
+          observacoes: observacoes || null,
+          data_realizada: null,
+          created_by_user_id: user.id,
+        }, {
+          onSuccess: () => resolve(),
+          onError: (error) => reject(error),
+        });
       });
       
-      // Reset form
+      // Reset form only on success
       setPedidoId('');
       setData(undefined);
       setTurno('manha');
@@ -106,6 +112,8 @@ export function DialogAgendarInstalacao({
       setCidade('');
       setObservacoes('');
       onOpenChange(false);
+    } catch (error: any) {
+      toast.error('Erro ao agendar instalação: ' + (error?.message || 'Tente novamente'));
     } finally {
       setIsSubmitting(false);
     }
@@ -179,7 +187,7 @@ export function DialogAgendarInstalacao({
                   mode="single"
                   selected={data}
                   onSelect={setData}
-                  disabled={(date) => date < new Date()}
+                  disabled={(date) => date < startOfDay(new Date())}
                   locale={ptBR}
                   initialFocus
                 />
