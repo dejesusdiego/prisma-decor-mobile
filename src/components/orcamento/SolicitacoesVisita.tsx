@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useOrganization } from "@/hooks/useOrganization";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -99,6 +100,7 @@ const statusConfig: Record<string, { label: string; color: string; icon: React.R
 
 export function SolicitacoesVisita({ onNavigate, onCreateOrcamento }: SolicitacoesVisitaProps) {
   const { user } = useAuth();
+  const { organizationId } = useOrganization();
   const [solicitacoes, setSolicitacoes] = useState<SolicitacaoVisita[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -456,6 +458,7 @@ _Prisma Interiores - Transformando ambientes_ ✨`;
             visualizada: true,
             visualizada_em: new Date().toISOString(),
             visualizada_por: user?.id,
+            organization_id: organizationId,
           })
           .select()
           .single();
