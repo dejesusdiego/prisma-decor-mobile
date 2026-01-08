@@ -2103,6 +2103,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_current_user_org_owner: { Args: never; Returns: boolean }
       recalcular_totais_orcamento: {
         Args: { p_orcamento_id: string }
         Returns: undefined
