@@ -29,6 +29,7 @@ import {
 import { useAtividades, useUpdateAtividade, Atividade } from '@/hooks/useCRMData';
 import { DialogAtividade } from './DialogAtividade';
 import { NotificacoesFollowUp } from './NotificacoesFollowUp';
+import { Pencil } from 'lucide-react';
 import { format, formatDistanceToNow, isToday, isPast } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -51,6 +52,7 @@ export function ListaAtividades() {
   const [tipoFilter, setTipoFilter] = useState<string>('todos');
   const [statusFilter, setStatusFilter] = useState<string>('pendentes');
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [atividadeParaEditar, setAtividadeParaEditar] = useState<Atividade | undefined>(undefined);
 
   const atividadesFiltradas = useMemo(() => {
     if (!atividades) return [];
@@ -110,7 +112,7 @@ export function ListaAtividades() {
           </TabsTrigger>
         </TabsList>
         {activeTab === 'lista' && (
-          <Button onClick={() => setDialogOpen(true)} size="sm">
+          <Button onClick={() => { setAtividadeParaEditar(undefined); setDialogOpen(true); }} size="sm">
             <Plus className="h-4 w-4 mr-2" />
             Nova Atividade
           </Button>
@@ -220,6 +222,18 @@ export function ListaAtividades() {
                           )}
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setAtividadeParaEditar(atividade);
+                              setDialogOpen(true);
+                            }}
+                          >
+                            <Pencil className="h-3 w-3" />
+                          </Button>
                           {atividade.concluida && (
                             <Badge variant="outline" className="text-emerald-600 border-emerald-600">
                               <CheckCircle2 className="h-3 w-3 mr-1" />
@@ -271,7 +285,11 @@ export function ListaAtividades() {
 
       <DialogAtividade 
         open={dialogOpen} 
-        onOpenChange={setDialogOpen}
+        onOpenChange={(open) => {
+          setDialogOpen(open);
+          if (!open) setAtividadeParaEditar(undefined);
+        }}
+        atividade={atividadeParaEditar}
       />
     </Tabs>
   );

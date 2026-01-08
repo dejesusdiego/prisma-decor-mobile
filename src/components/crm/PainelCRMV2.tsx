@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { useCRMMetrics, useAtividades } from '@/hooks/useCRMData';
 import { useDashboardUnificado } from '@/hooks/useDashboardUnificado';
+import { useOrganization } from '@/hooks/useOrganization';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow, format, isToday, isTomorrow, isPast } from 'date-fns';
@@ -49,18 +50,22 @@ interface PainelCRMV2Props {
 }
 
 export function PainelCRMV2({ onVerContato, onVerOrcamento }: PainelCRMV2Props) {
+  const { organizationId } = useOrganization();
   const { data: metrics, isLoading: loadingMetrics } = useCRMMetrics();
   const { data: atividadesRecentes, isLoading: loadingAtividades } = useAtividades();
   const { data: dashboardData, isLoading: loadingDashboard } = useDashboardUnificado();
   
   // Buscar ações urgentes
   const { data: acoesUrgentes, isLoading: loadingAcoes } = useQuery({
-    queryKey: ['acoes-urgentes-crm'],
+    queryKey: ['acoes-urgentes-crm', organizationId],
     queryFn: async () => {
+      if (!organizationId) return { orcamentos: [], atividades: [], visitas: [] };
+      
       // Orçamentos enviados há mais de 3 dias sem resposta
       const { data: orcamentosPendentes, error: e1 } = await supabase
         .from('orcamentos')
         .select('id, codigo, cliente_nome, cliente_telefone, status, total_com_desconto, total_geral, status_updated_at, contato_id')
+        .eq('organization_id', organizationId)
         .in('status', ['enviado', 'sem_resposta'])
         .order('status_updated_at', { ascending: true })
         .limit(10);
@@ -72,6 +77,7 @@ export function PainelCRMV2({ onVerContato, onVerOrcamento }: PainelCRMV2Props) 
       const { data: atividadesPendentes, error: e2 } = await supabase
         .from('atividades_crm')
         .select('id, titulo, tipo, data_atividade, contato_id, contato:contatos(nome)')
+        .eq('organization_id', organizationId)
         .eq('concluida', false)
         .lte('data_atividade', hoje + 'T23:59:59')
         .order('data_atividade', { ascending: true })
@@ -83,6 +89,7 @@ export function PainelCRMV2({ onVerContato, onVerOrcamento }: PainelCRMV2Props) 
       const { data: visitasPendentes, error: e3 } = await supabase
         .from('solicitacoes_visita')
         .select('id, nome, telefone, data_agendada, horario_agendado, status')
+        .eq('organization_id', organizationId)
         .eq('status', 'pendente')
         .order('data_agendada', { ascending: true })
         .limit(5);
@@ -94,16 +101,20 @@ export function PainelCRMV2({ onVerContato, onVerOrcamento }: PainelCRMV2Props) 
         atividades: atividadesPendentes || [],
         visitas: visitasPendentes || []
       };
-    }
+    },
+    enabled: !!organizationId
   });
 
   // Buscar resumo do pipeline
   const { data: resumoPipeline, isLoading: loadingPipeline } = useQuery({
-    queryKey: ['pipeline-resumo-crm'],
+    queryKey: ['pipeline-resumo-crm', organizationId],
     queryFn: async () => {
+      if (!organizationId) return { resumo: [], totalAtivo: 0, totalQtd: 0 };
+      
       const { data, error } = await supabase
         .from('orcamentos')
-        .select('status, total_com_desconto, total_geral');
+        .select('status, total_com_desconto, total_geral')
+        .eq('organization_id', organizationId);
       
       if (error) throw error;
       
@@ -123,7 +134,8 @@ export function PainelCRMV2({ onVerContato, onVerOrcamento }: PainelCRMV2Props) 
       const totalQtd = resumo.reduce((sum, s) => sum + s.quantidade, 0);
       
       return { resumo, totalAtivo, totalQtd };
-    }
+    },
+    enabled: !!organizationId
   });
 
   if (loadingMetrics) {

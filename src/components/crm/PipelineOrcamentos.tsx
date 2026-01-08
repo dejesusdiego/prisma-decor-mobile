@@ -51,6 +51,7 @@ import {
 } from '@/components/ui/popover';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useOrganization } from '@/hooks/useOrganization';
 import { format, formatDistanceToNow, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -122,6 +123,7 @@ interface PipelineOrcamentosProps {
 }
 
 export function PipelineOrcamentos({ onVerOrcamento, onVerContato }: PipelineOrcamentosProps) {
+  const { organizationId } = useOrganization();
   const [viewType, setViewType] = useState<ViewType>('kanban');
   const [draggedId, setDraggedId] = useState<string | null>(null);
   
@@ -132,8 +134,10 @@ export function PipelineOrcamentos({ onVerOrcamento, onVerContato }: PipelineOrc
 
   // Buscar orçamentos com contato vinculado
   const { data: orcamentos, isLoading, refetch } = useQuery({
-    queryKey: ['orcamentos-pipeline'],
+    queryKey: ['orcamentos-pipeline', organizationId],
     queryFn: async () => {
+      if (!organizationId) return [];
+      
       const { data, error } = await supabase
         .from('orcamentos')
         .select(`
@@ -151,11 +155,13 @@ export function PipelineOrcamentos({ onVerOrcamento, onVerContato }: PipelineOrc
           created_by_user_id,
           contato:contatos(id, nome, telefone, cidade)
         `)
+        .eq('organization_id', organizationId)
         .order('updated_at', { ascending: false });
       
       if (error) throw error;
       return data as OrcamentoPipeline[];
-    }
+    },
+    enabled: !!organizationId
   });
 
   // Extrair cidades únicas para filtro
