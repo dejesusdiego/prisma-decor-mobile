@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useOrganizationContext } from '@/contexts/OrganizationContext';
 import { differenceInDays, parseISO } from 'date-fns';
 
 export interface ResumoConciliacao {
@@ -18,17 +19,33 @@ export interface ResumoConciliacao {
 
 export function useResumoConciliacao() {
   const { user } = useAuth();
+  const { organizationId } = useOrganizationContext();
 
   return useQuery({
-    queryKey: ['resumo-conciliacao'],
+    queryKey: ['resumo-conciliacao', organizationId],
     queryFn: async (): Promise<ResumoConciliacao> => {
-      // Buscar última importação de extrato
+      if (!organizationId) {
+        return {
+          ultimaImportacao: null,
+          diasDesdeUltimaImportacao: 999,
+          extratoDesatualizado: true,
+          saldoExtratoImportado: 0,
+          saldoSistemaConciliado: 0,
+          diferencaSaldo: 0,
+          movimentacoesPendentes: 0,
+          valorPendenteTotal: 0,
+          movimentacoesCriticas: 0,
+          valorCriticoTotal: 0
+        };
+      }
+
+      // Buscar última importação de extrato (a tabela não tem organization_id, então filtramos por user)
       const { data: ultimoExtrato } = await supabase
         .from('extratos_bancarios')
-        .select('created_at, data_fim')
+        .select('id, created_at, data_fim')
         .order('created_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       // Buscar movimentações do extrato
       const { data: movimentacoes } = await supabase
@@ -85,7 +102,7 @@ export function useResumoConciliacao() {
         valorCriticoTotal
       };
     },
-    enabled: !!user,
+    enabled: !!user && !!organizationId,
     refetchInterval: 60000 // Atualizar a cada 1 minuto
   });
 }

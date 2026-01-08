@@ -107,18 +107,24 @@ export function useRelatorioConciliacaoConsolidado(filtros?: FiltrosRelatorio) {
 
       const { data: orcamentos } = await query;
 
-      // Buscar lançamentos para verificar conciliação
+      // Buscar lançamentos para verificar conciliação (filtrados por organization)
       const { data: lancamentos } = await supabase
         .from('lancamentos_financeiros')
-        .select('id, parcela_receber_id, conta_pagar_id');
+        .select('id, parcela_receber_id, conta_pagar_id')
+        .eq('organization_id', organizationId);
 
       const { data: movimentacoes } = await supabase
         .from('movimentacoes_extrato')
-        .select('lancamento_id')
+        .select('lancamento_id, extrato:extratos_bancarios!extrato_id(organization_id)')
         .eq('conciliado', true);
+      
+      // Filtrar movimentações pela organização
+      const movimentacoesFiltradas = (movimentacoes || []).filter(
+        m => (m.extrato as any)?.organization_id === organizationId
+      );
 
       const lancamentosConciliados = new Set(
-        (movimentacoes || []).map(m => m.lancamento_id)
+        movimentacoesFiltradas.map(m => m.lancamento_id)
       );
 
       // Mapear parcelas e contas a pagar que estão conciliadas

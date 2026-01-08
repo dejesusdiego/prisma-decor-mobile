@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useOrganizationContext } from '@/contexts/OrganizationContext';
 import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { 
@@ -78,6 +79,7 @@ interface OrcamentoComDesconto {
 
 export function RelatorioDescontos() {
   const [periodo, setPeriodo] = useState<Periodo>('3m');
+  const { organizationId } = useOrganizationContext();
   
   const meses = periodo === '1m' ? 1 : periodo === '3m' ? 3 : periodo === '6m' ? 6 : 12;
   const dataInicio = startOfMonth(subMonths(new Date(), meses - 1));
@@ -85,27 +87,39 @@ export function RelatorioDescontos() {
 
   // Buscar histórico de descontos
   const { data: historico = [], isLoading: isLoadingHistorico } = useQuery({
-    queryKey: ['historico-descontos', periodo],
+    queryKey: ['historico-descontos', periodo, organizationId],
     queryFn: async () => {
+      if (!organizationId) return [];
+      
       const { data, error } = await supabase
         .from('historico_descontos')
-        .select('*')
+        .select('*, orcamento:orcamentos!orcamento_id(organization_id)')
         .gte('created_at', format(dataInicio, 'yyyy-MM-dd'))
         .lte('created_at', format(dataFim, 'yyyy-MM-dd\'T\'23:59:59'))
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return data as HistoricoDesconto[];
-    }
+      
+      // Filtrar pelo organization_id do orçamento
+      const filtered = (data || []).filter(
+        h => (h.orcamento as any)?.organization_id === organizationId
+      );
+      
+      return filtered as HistoricoDesconto[];
+    },
+    enabled: !!organizationId
   });
 
   // Buscar orçamentos com desconto
   const { data: orcamentosComDesconto = [], isLoading: isLoadingOrcamentos } = useQuery({
-    queryKey: ['orcamentos-com-desconto', periodo],
+    queryKey: ['orcamentos-com-desconto', periodo, organizationId],
     queryFn: async () => {
+      if (!organizationId) return [];
+      
       const { data, error } = await supabase
         .from('orcamentos')
         .select('id, codigo, cliente_nome, total_geral, desconto_tipo, desconto_valor, total_com_desconto, created_at, status')
+        .eq('organization_id', organizationId)
         .gte('created_at', format(dataInicio, 'yyyy-MM-dd'))
         .lte('created_at', format(dataFim, 'yyyy-MM-dd\'T\'23:59:59'))
         .gt('desconto_valor', 0)
@@ -113,22 +127,27 @@ export function RelatorioDescontos() {
       
       if (error) throw error;
       return data as OrcamentoComDesconto[];
-    }
+    },
+    enabled: !!organizationId
   });
 
   // Buscar total de orçamentos no período para comparação
   const { data: totalOrcamentos = 0 } = useQuery({
-    queryKey: ['total-orcamentos-periodo', periodo],
+    queryKey: ['total-orcamentos-periodo', periodo, organizationId],
     queryFn: async () => {
+      if (!organizationId) return 0;
+      
       const { count, error } = await supabase
         .from('orcamentos')
         .select('*', { count: 'exact', head: true })
+        .eq('organization_id', organizationId)
         .gte('created_at', format(dataInicio, 'yyyy-MM-dd'))
         .lte('created_at', format(dataFim, 'yyyy-MM-dd\'T\'23:59:59'));
       
       if (error) throw error;
       return count || 0;
-    }
+    },
+    enabled: !!organizationId
   });
 
   const isLoading = isLoadingHistorico || isLoadingOrcamentos;
