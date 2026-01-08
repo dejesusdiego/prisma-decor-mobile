@@ -110,25 +110,26 @@ export function EtapaCliente({ dados, orcamentoId, onAvancar, onCancelar }: Etap
     }
   }, [formData.clienteTelefone]);
 
-  // Função para criar ou obter contato vinculado
+  // Função para criar ou obter contato vinculado (com proteção contra duplicatas)
   const obterOuCriarContato = async (): Promise<string | null> => {
     // Se já temos um contato vinculado encontrado pela busca, usar ele
     if (contatoVinculadoId) {
       return contatoVinculadoId;
     }
     
-    // Tentar buscar contato existente pelo telefone
+    // Tentar buscar contato existente pelo telefone E organization_id
     const { data: contatoExistente } = await supabase
       .from('contatos')
       .select('id')
       .eq('telefone', formData.clienteTelefone)
+      .eq('organization_id', organizationId)
       .maybeSingle();
     
     if (contatoExistente) {
       return contatoExistente.id;
     }
     
-    // Criar novo contato se não existe
+    // Criar novo contato se não existe (com tratamento de conflito)
     const { data: novoContato, error: erroContato } = await supabase
       .from('contatos')
       .insert({
@@ -145,8 +146,17 @@ export function EtapaCliente({ dados, orcamentoId, onAvancar, onCancelar }: Etap
       .single();
     
     if (erroContato) {
+      // Se erro de duplicata (23505), buscar o existente
+      if (erroContato.code === '23505') {
+        const { data: existente } = await supabase
+          .from('contatos')
+          .select('id')
+          .eq('telefone', formData.clienteTelefone)
+          .eq('organization_id', organizationId)
+          .single();
+        return existente?.id || null;
+      }
       console.error('Erro ao criar contato:', erroContato);
-      // Não lançar erro, apenas não vincular
       return null;
     }
     

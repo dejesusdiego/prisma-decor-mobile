@@ -517,6 +517,48 @@ export function EtapaProdutos({
         });
         return;
       }
+      
+      // Recarregar produtos do banco para garantir IDs atualizados
+      const { data: produtosAtualizados } = await supabase
+        .from('cortina_items')
+        .select('*')
+        .eq('orcamento_id', orcamentoId);
+      
+      if (produtosAtualizados && produtosAtualizados.length > 0) {
+        const produtosMapeados: Cortina[] = produtosAtualizados.map((item) => ({
+          id: item.id,
+          nomeIdentificacao: item.nome_identificacao,
+          largura: Number(item.largura),
+          altura: Number(item.altura),
+          barraCm: item.barra_cm || undefined,
+          barraForroCm: item.barra_forro_cm || undefined,
+          quantidade: item.quantidade,
+          tipoProduto: (item.tipo_produto as 'cortina' | 'persiana' | 'outro') || 'cortina',
+          tipoCortina: item.tipo_cortina as any,
+          tecidoId: item.tecido_id || undefined,
+          forroId: item.forro_id || undefined,
+          trilhoId: item.trilho_id || undefined,
+          materialPrincipalId: item.material_principal_id || undefined,
+          descricao: item.descricao || undefined,
+          fabrica: item.fabrica || undefined,
+          motorizada: item.motorizada || false,
+          ambiente: item.ambiente || undefined,
+          precoUnitario: item.preco_unitario || undefined,
+          valorInstalacao: item.custo_instalacao || undefined,
+          precisaInstalacao: item.precisa_instalacao,
+          pontosInstalacao: item.pontos_instalacao || undefined,
+          observacoesInternas: item.observacoes_internas || undefined,
+          custoTecido: item.custo_tecido || undefined,
+          custoForro: item.custo_forro || undefined,
+          custoTrilho: item.custo_trilho || undefined,
+          custoCostura: item.custo_costura || undefined,
+          custoInstalacao: item.custo_instalacao || undefined,
+          custoTotal: item.custo_total || undefined,
+          precoVenda: item.preco_venda || undefined,
+        }));
+        onAvancar(produtosMapeados);
+        return;
+      }
     }
 
     onAvancar(produtos);

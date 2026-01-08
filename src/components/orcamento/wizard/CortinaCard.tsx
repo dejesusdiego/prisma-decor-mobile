@@ -77,7 +77,9 @@ export function CortinaCard({
   // Validação para auto-save
   const isValid = !!(cortina.tecidoId || cortina.forroId) && 
                   !!cortina.tipoCortina && 
-                  !!cortina.ambiente;
+                  !!cortina.ambiente &&
+                  cortina.largura > 0 &&
+                  cortina.altura > 0;
 
   // Função de save sem toast para auto-save
   const salvarCortinaInterno = useCallback(async (showToast = true) => {
