@@ -8,6 +8,7 @@ import {
   StatusOrcamento 
 } from '@/lib/statusOrcamento';
 import { startOfMonth, endOfMonth, subMonths, differenceInDays } from 'date-fns';
+import { parseDateOnly, startOfToday } from '@/lib/dateOnly';
 
 // ============ INTERFACES ============
 
@@ -131,26 +132,32 @@ export function calcularMetricasFinanceiro(
   contasPagar: any[], 
   lancamentos: any[]
 ): MetricasFinanceiro {
-  const hoje = new Date();
+  const hoje = startOfToday();
   const inicioMes = startOfMonth(hoje);
   const fimMes = endOfMonth(hoje);
   
   // Contas a receber
   const crPendentes = contasReceber.filter(c => c.status === 'pendente');
-  const crVencidas = crPendentes.filter(c => new Date(c.data_vencimento) < hoje);
+  const crVencidas = crPendentes.filter(c => {
+    const dataVenc = parseDateOnly(c.data_vencimento);
+    return dataVenc && dataVenc < hoje;
+  });
   const totalCRPendente = crPendentes.reduce((sum, c) => sum + (c.valor_total - (c.valor_pago || 0)), 0);
   const totalCRVencido = crVencidas.reduce((sum, c) => sum + (c.valor_total - (c.valor_pago || 0)), 0);
   
   // Contas a pagar
   const cpPendentes = contasPagar.filter(c => c.status === 'pendente');
-  const cpVencidas = cpPendentes.filter(c => new Date(c.data_vencimento) < hoje);
+  const cpVencidas = cpPendentes.filter(c => {
+    const dataVenc = parseDateOnly(c.data_vencimento);
+    return dataVenc && dataVenc < hoje;
+  });
   const totalCPPendente = cpPendentes.reduce((sum, c) => sum + c.valor, 0);
   const totalCPVencido = cpVencidas.reduce((sum, c) => sum + c.valor, 0);
   
   // Lançamentos do mês
   const lancamentosMes = lancamentos.filter(l => {
-    const data = new Date(l.data_lancamento);
-    return data >= inicioMes && data <= fimMes;
+    const data = parseDateOnly(l.data_lancamento);
+    return data && data >= inicioMes && data <= fimMes;
   });
   
   const entradas = lancamentosMes.filter(l => l.tipo === 'entrada').reduce((sum, l) => sum + l.valor, 0);

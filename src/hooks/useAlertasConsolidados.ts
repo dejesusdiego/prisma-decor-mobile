@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { addDays, format, isAfter, isBefore, startOfDay } from 'date-fns';
+import { parseDateOnly } from '@/lib/dateOnly';
 
 interface Alerta {
   id: string;
@@ -61,7 +62,7 @@ export function useAlertasConsolidados() {
           titulo: c.descricao,
           descricao: `R$ ${c.valor.toFixed(2)} - ${c.fornecedor || 'Sem fornecedor'}`,
           prioridade: vencimentoHoje ? 'alta' : 'normal',
-          dataReferencia: new Date(c.data_vencimento),
+          dataReferencia: parseDateOnly(c.data_vencimento) || new Date(),
           referenciaId: c.id,
           referenciaTipo: 'conta_pagar'
         });

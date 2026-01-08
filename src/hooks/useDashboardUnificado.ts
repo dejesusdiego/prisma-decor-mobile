@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { startOfWeek, endOfWeek, addDays, format } from 'date-fns';
 import { STATUS_COM_PAGAMENTO } from '@/lib/statusOrcamento';
+import { parseDateOnly, formatDateOnly, startOfToday } from '@/lib/dateOnly';
 
 export interface MetricasUnificadas {
   // Financeiro
@@ -40,7 +41,7 @@ export function useDashboardUnificado() {
   return useQuery({
     queryKey: ['dashboard-unificado'],
     queryFn: async () => {
-      const hoje = new Date();
+      const hoje = startOfToday();
       const inicioSemana = startOfWeek(hoje, { weekStartsOn: 1 });
       const fimSemana = endOfWeek(hoje, { weekStartsOn: 1 });
       const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
@@ -156,7 +157,7 @@ export function useDashboardUnificado() {
         proximasAcoes.push({
           tipo: 'instalacao',
           titulo: `Instalação - ${inst.pedido?.orcamento?.cliente_nome || 'Cliente'}`,
-          descricao: `${format(new Date(inst.data_agendada), 'dd/MM')} - ${inst.turno === 'manha' ? 'Manhã' : 'Tarde'}`,
+          descricao: `${formatDateOnly(inst.data_agendada, 'dd/MM')} - ${inst.turno === 'manha' ? 'Manhã' : 'Tarde'}`,
           data: inst.data_agendada,
           prioridade: 'alta',
           referencia: { tipo: 'instalacao', id: inst.id }
@@ -188,11 +189,12 @@ export function useDashboardUnificado() {
       
       // Parcelas vencendo
       (parcelasPendentes || []).slice(0, 3).forEach((parc: any) => {
-        const isVencido = new Date(parc.data_vencimento) < hoje;
+        const dataVenc = parseDateOnly(parc.data_vencimento);
+        const isVencido = dataVenc ? dataVenc < hoje : false;
         proximasAcoes.push({
           tipo: 'parcela',
           titulo: `Parcela ${isVencido ? 'vencida' : 'a vencer'}`,
-          descricao: `R$ ${parc.valor.toFixed(0)} - ${format(new Date(parc.data_vencimento), 'dd/MM')}`,
+          descricao: `R$ ${parc.valor.toFixed(0)} - ${formatDateOnly(parc.data_vencimento, 'dd/MM')}`,
           data: parc.data_vencimento,
           prioridade: isVencido ? 'alta' : 'media',
           referencia: { tipo: 'parcela', id: parc.id }
