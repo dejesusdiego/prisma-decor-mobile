@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useOrganizationContext } from '@/contexts/OrganizationContext';
 import { format, subMonths, startOfMonth, endOfMonth, addMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { formatDateOnly } from '@/lib/dateOnly';
@@ -95,66 +96,81 @@ interface RelatoriosBIProps {
 
 export function RelatoriosBI({ onNavigate }: RelatoriosBIProps) {
   const [periodo, setPeriodo] = useState<Periodo>('6m');
+  const { organizationId } = useOrganizationContext();
   
   const meses = periodo === '3m' ? 3 : periodo === '6m' ? 6 : 12;
   const dataInicio = startOfMonth(subMonths(new Date(), meses - 1));
   const dataFim = endOfMonth(new Date());
 
   const { data: lancamentos = [] } = useQuery({
-    queryKey: ['lancamentos-relatorio', periodo],
+    queryKey: ['lancamentos-relatorio', periodo, organizationId],
     queryFn: async () => {
+      if (!organizationId) return [];
+      
       const { data, error } = await supabase
         .from('lancamentos_financeiros')
         .select(`
           *,
           categoria:categorias_financeiras(nome, cor, tipo)
         `)
+        .eq('organization_id', organizationId)
         .gte('data_lancamento', format(dataInicio, 'yyyy-MM-dd'))
         .lte('data_lancamento', format(dataFim, 'yyyy-MM-dd'))
         .order('data_lancamento', { ascending: true });
       
       if (error) throw error;
       return data;
-    }
+    },
+    enabled: !!organizationId
   });
 
   const { data: orcamentos = [] } = useQuery({
-    queryKey: ['orcamentos-relatorio', periodo],
+    queryKey: ['orcamentos-relatorio', periodo, organizationId],
     queryFn: async () => {
+      if (!organizationId) return [];
+      
       const { data, error } = await supabase
         .from('orcamentos')
         .select('*')
+        .eq('organization_id', organizationId)
         .gte('created_at', format(dataInicio, 'yyyy-MM-dd'))
         .lte('created_at', format(dataFim, 'yyyy-MM-dd'));
       
       if (error) throw error;
       return data;
-    }
+    },
+    enabled: !!organizationId
   });
 
   // Buscar contas recorrentes
   const { data: contasRecorrentes = [] } = useQuery({
-    queryKey: ['contas-recorrentes-relatorio'],
+    queryKey: ['contas-recorrentes-relatorio', organizationId],
     queryFn: async () => {
+      if (!organizationId) return [];
+      
       const { data, error } = await supabase
         .from('contas_pagar')
         .select(`
           *,
           categoria:categorias_financeiras(nome, cor)
         `)
+        .eq('organization_id', organizationId)
         .eq('recorrente', true)
         .not('frequencia_recorrencia', 'is', null)
         .order('descricao');
       
       if (error) throw error;
       return data;
-    }
+    },
+    enabled: !!organizationId
   });
 
   // Buscar histórico de contas geradas automaticamente
   const { data: contasGeradas = [] } = useQuery({
-    queryKey: ['contas-geradas-historico'],
+    queryKey: ['contas-geradas-historico', organizationId],
     queryFn: async () => {
+      if (!organizationId) return [];
+      
       const { data, error } = await supabase
         .from('contas_pagar')
         .select(`
@@ -162,13 +178,15 @@ export function RelatoriosBI({ onNavigate }: RelatoriosBIProps) {
           categoria:categorias_financeiras(nome, cor),
           conta_origem:contas_pagar!conta_origem_id(id, descricao)
         `)
+        .eq('organization_id', organizationId)
         .not('conta_origem_id', 'is', null)
         .order('created_at', { ascending: false })
         .limit(50);
       
       if (error) throw error;
       return data;
-    }
+    },
+    enabled: !!organizationId
   });
 
   // DRE Simplificado

@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useOrganizationContext } from '@/contexts/OrganizationContext';
 import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
@@ -99,6 +100,7 @@ interface RelatorioVendedoresProps {
 export function RelatorioVendedores({ onVisualizarOrcamento, onNavigate }: RelatorioVendedoresProps) {
   const [periodo, setPeriodo] = useState<Periodo>('6m');
   const [vendedorSelecionado, setVendedorSelecionado] = useState<string>('todos');
+  const { organizationId } = useOrganizationContext();
 
   const meses = periodo === '3m' ? 3 : periodo === '6m' ? 6 : periodo === '12m' ? 12 : 120;
   const dataInicio = startOfMonth(subMonths(new Date(), meses - 1));
@@ -106,14 +108,17 @@ export function RelatorioVendedores({ onVisualizarOrcamento, onNavigate }: Relat
 
   // Buscar comissões
   const { data: comissoes = [], isLoading: loadingComissoes } = useQuery({
-    queryKey: ['comissoes-relatorio', periodo],
+    queryKey: ['comissoes-relatorio', periodo, organizationId],
     queryFn: async () => {
+      if (!organizationId) return [];
+      
       let query = supabase
         .from('comissoes')
         .select(`
           *,
           orcamento:orcamentos(id, codigo, cliente_nome, total_geral, status, created_at)
         `)
+        .eq('organization_id', organizationId)
         .order('created_at', { ascending: false });
 
       if (periodo !== 'all') {
@@ -125,16 +130,20 @@ export function RelatorioVendedores({ onVisualizarOrcamento, onNavigate }: Relat
       const { data, error } = await query;
       if (error) throw error;
       return data;
-    }
+    },
+    enabled: !!organizationId
   });
 
   // Buscar orçamentos para calcular conversão
   const { data: orcamentos = [], isLoading: loadingOrcamentos } = useQuery({
-    queryKey: ['orcamentos-relatorio-vendedores', periodo],
+    queryKey: ['orcamentos-relatorio-vendedores', periodo, organizationId],
     queryFn: async () => {
+      if (!organizationId) return [];
+      
       let query = supabase
         .from('orcamentos')
         .select('id, codigo, cliente_nome, total_geral, total_com_desconto, custo_total, status, created_at')
+        .eq('organization_id', organizationId)
         .order('created_at', { ascending: false });
 
       if (periodo !== 'all') {
@@ -146,7 +155,8 @@ export function RelatorioVendedores({ onVisualizarOrcamento, onNavigate }: Relat
       const { data, error } = await query;
       if (error) throw error;
       return data;
-    }
+    },
+    enabled: !!organizationId
   });
 
   // Calcular estatísticas por vendedor
