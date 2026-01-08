@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Dialog,
@@ -64,7 +64,10 @@ export function DialogGerarCustos({
   const [categoriaSelecionada, setCategoriaSelecionada] = useState<string>('');
   
   // Gerar lista de custos baseado nos subtotais
-  const [custos, setCustos] = useState<CustoItem[]>(() => {
+  const [custos, setCustos] = useState<CustoItem[]>([]);
+
+  // Sincronizar custos quando o orçamento mudar
+  useEffect(() => {
     const items: CustoItem[] = [];
     
     if ((orcamento.subtotal_materiais || 0) > 0) {
@@ -97,8 +100,8 @@ export function DialogGerarCustos({
       });
     }
     
-    return items;
-  });
+    setCustos(items);
+  }, [orcamento.id, orcamento.codigo, orcamento.subtotal_materiais, orcamento.subtotal_mao_obra_costura, orcamento.subtotal_instalacao]);
 
   const { data: categorias } = useQuery({
     queryKey: ['categorias-despesa'],

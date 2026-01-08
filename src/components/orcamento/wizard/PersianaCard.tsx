@@ -69,8 +69,11 @@ export function PersianaCard({
   const isValid = !!persiana.nomeIdentificacao && 
                   !!persiana.tipoCortina && 
                   !!persiana.ambiente && 
+                  persiana.largura > 0 &&
+                  persiana.altura > 0 &&
                   persiana.precoUnitario !== undefined && 
-                  persiana.precoUnitario !== null;
+                  persiana.precoUnitario !== null &&
+                  persiana.precoUnitario > 0;
 
   const salvarPersianaInterno = useCallback(async (showToast = true) => {
     if (!isValid) {
