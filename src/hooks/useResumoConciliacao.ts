@@ -39,18 +39,20 @@ export function useResumoConciliacao() {
         };
       }
 
-      // Buscar última importação de extrato (a tabela não tem organization_id, então filtramos por user)
+      // Buscar última importação de extrato da organização
       const { data: ultimoExtrato } = await supabase
         .from('extratos_bancarios')
         .select('id, created_at, data_fim')
+        .eq('organization_id', organizationId)
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
 
-      // Buscar movimentações do extrato
+      // Buscar movimentações do extrato da organização
       const { data: movimentacoes } = await supabase
         .from('movimentacoes_extrato')
-        .select('id, valor, tipo, conciliado, ignorado');
+        .select('id, valor, tipo, conciliado, ignorado')
+        .eq('organization_id', organizationId);
 
       const todasMovimentacoes = movimentacoes || [];
 
