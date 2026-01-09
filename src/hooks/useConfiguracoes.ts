@@ -199,20 +199,35 @@ export function useConfiguracoes() {
 }
 
 // Função utilitária para buscar configurações de forma síncrona (usa cache)
-export function getConfiguracoesSync(): Configuracoes {
-  return cachedConfigs || DEFAULT_CONFIGS;
+// Nota: Esta função é usada para acesso rápido ao cache global, retorna configs default se não houver cache
+export function getConfiguracoesSync(organizationId?: string): Configuracoes {
+  if (organizationId && cachedConfigsMap.has(organizationId)) {
+    return cachedConfigsMap.get(organizationId)!;
+  }
+  // Retorna primeira organização em cache ou default
+  const firstCached = cachedConfigsMap.values().next().value;
+  return firstCached || DEFAULT_CONFIGS;
 }
 
 // Função assíncrona para buscar configurações (para uso em funções de cálculo)
-export async function fetchConfiguracoes(): Promise<Configuracoes> {
-  if (cachedConfigs && Date.now() - cacheTimestamp < CACHE_DURATION) {
-    return cachedConfigs;
+export async function fetchConfiguracoes(organizationId?: string): Promise<Configuracoes> {
+  // Se tiver cache válido para a organização, retornar
+  if (organizationId) {
+    const cached = cachedConfigsMap.get(organizationId);
+    const timestamp = cacheTimestampMap.get(organizationId) || 0;
+    if (cached && Date.now() - timestamp < CACHE_DURATION) {
+      return cached;
+    }
   }
 
   try {
-    const { data, error } = await supabase
-      .from('configuracoes_sistema')
-      .select('chave, valor');
+    let query = supabase.from('configuracoes_sistema').select('chave, valor');
+    
+    if (organizationId) {
+      query = query.eq('organization_id', organizationId);
+    }
+    
+    const { data, error } = await query;
 
     if (error) throw error;
 
@@ -249,8 +264,12 @@ export async function fetchConfiguracoes(): Promise<Configuracoes> {
       }
     }
 
-    cachedConfigs = configs;
-    cacheTimestamp = Date.now();
+    // Atualizar cache se tiver organizationId
+    if (organizationId) {
+      cachedConfigsMap.set(organizationId, configs);
+      cacheTimestampMap.set(organizationId, Date.now());
+    }
+    
     return configs;
   } catch (err) {
     console.error('Erro ao buscar configurações:', err);
