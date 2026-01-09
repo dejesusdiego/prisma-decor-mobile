@@ -714,6 +714,7 @@ export type Database = {
           data_inicio: string | null
           id: string
           nome_arquivo: string
+          organization_id: string | null
           status: string | null
         }
         Insert: {
@@ -725,6 +726,7 @@ export type Database = {
           data_inicio?: string | null
           id?: string
           nome_arquivo: string
+          organization_id?: string | null
           status?: string | null
         }
         Update: {
@@ -736,9 +738,18 @@ export type Database = {
           data_inicio?: string | null
           id?: string
           nome_arquivo?: string
+          organization_id?: string | null
           status?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "extratos_bancarios_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       formas_pagamento: {
         Row: {
@@ -1277,6 +1288,7 @@ export type Database = {
           ignorado: boolean | null
           lancamento_id: string | null
           numero_documento: string | null
+          organization_id: string | null
           regra_aplicada_id: string | null
           tipo: string | null
           valor: number
@@ -1291,6 +1303,7 @@ export type Database = {
           ignorado?: boolean | null
           lancamento_id?: string | null
           numero_documento?: string | null
+          organization_id?: string | null
           regra_aplicada_id?: string | null
           tipo?: string | null
           valor: number
@@ -1305,6 +1318,7 @@ export type Database = {
           ignorado?: boolean | null
           lancamento_id?: string | null
           numero_documento?: string | null
+          organization_id?: string | null
           regra_aplicada_id?: string | null
           tipo?: string | null
           valor?: number
@@ -1322,6 +1336,13 @@ export type Database = {
             columns: ["lancamento_id"]
             isOneToOne: false
             referencedRelation: "lancamentos_financeiros"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "movimentacoes_extrato_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
           {

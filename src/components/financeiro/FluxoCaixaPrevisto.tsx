@@ -25,6 +25,7 @@ import { cn } from '@/lib/utils';
 import { BreadcrumbsFinanceiro } from './BreadcrumbsFinanceiro';
 import { AlertaFluxoNegativo } from './AlertaFluxoNegativo';
 import { useHistoricoPagamentos } from '@/hooks/useHistoricoPagamentos';
+import { useOrganizationContext } from '@/contexts/OrganizationContext';
 import {
   AreaChart,
   Area,
@@ -73,33 +74,37 @@ const CENARIOS = {
 
 export function FluxoCaixaPrevisto({ onNavigate }: FluxoCaixaPrevistoProps) {
   const [cenarioSelecionado, setCenarioSelecionado] = useState<'realista' | 'otimista' | 'pessimista'>('realista');
+  const { organizationId } = useOrganizationContext();
 
   // Hook de histórico de pagamentos para análise inteligente
   const { metricas: metricasHistorico } = useHistoricoPagamentos();
 
-  // Buscar saldo atual (soma de todos os lançamentos)
+  // Buscar saldo atual (soma de todos os lançamentos da organização)
   const { data: saldoAtual = 0 } = useQuery({
-    queryKey: ['saldo-atual-caixa'],
+    queryKey: ['saldo-atual-caixa', organizationId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('lancamentos_financeiros')
-        .select('tipo, valor');
+        .select('tipo, valor')
+        .eq('organization_id', organizationId);
       
       if (error) throw error;
       
       return (data || []).reduce((acc, l) => {
         return acc + (l.tipo === 'entrada' ? Number(l.valor) : -Number(l.valor));
       }, 0);
-    }
+    },
+    enabled: !!organizationId
   });
 
-  // Buscar contas a pagar pendentes
+  // Buscar contas a pagar pendentes da organização
   const { data: contasPagar = [] } = useQuery({
-    queryKey: ['contas-pagar-previsao'],
+    queryKey: ['contas-pagar-previsao', organizationId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('contas_pagar')
         .select('*')
+        .eq('organization_id', organizationId)
         .in('status', ['pendente', 'atrasado'])
         .gte('data_vencimento', format(new Date(), 'yyyy-MM-dd'))
         .lte('data_vencimento', format(addMonths(new Date(), 3), 'yyyy-MM-dd'))
@@ -107,34 +112,38 @@ export function FluxoCaixaPrevisto({ onNavigate }: FluxoCaixaPrevistoProps) {
       
       if (error) throw error;
       return data;
-    }
+    },
+    enabled: !!organizationId
   });
 
-  // Buscar contas recorrentes
+  // Buscar contas recorrentes da organização
   const { data: contasRecorrentes = [] } = useQuery({
-    queryKey: ['contas-recorrentes-previsao'],
+    queryKey: ['contas-recorrentes-previsao', organizationId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('contas_pagar')
         .select('*')
+        .eq('organization_id', organizationId)
         .eq('recorrente', true)
         .not('frequencia_recorrencia', 'is', null);
       
       if (error) throw error;
       return data;
-    }
+    },
+    enabled: !!organizationId
   });
 
-  // Buscar parcelas a receber
+  // Buscar parcelas a receber da organização (via JOIN com contas_receber)
   const { data: parcelasReceber = [] } = useQuery({
-    queryKey: ['parcelas-receber-previsao'],
+    queryKey: ['parcelas-receber-previsao', organizationId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('parcelas_receber')
         .select(`
           *,
-          conta_receber:contas_receber(cliente_nome)
+          conta_receber:contas_receber!inner(cliente_nome, organization_id)
         `)
+        .eq('conta_receber.organization_id', organizationId)
         .eq('status', 'pendente')
         .gte('data_vencimento', format(new Date(), 'yyyy-MM-dd'))
         .lte('data_vencimento', format(addMonths(new Date(), 3), 'yyyy-MM-dd'))
@@ -142,7 +151,8 @@ export function FluxoCaixaPrevisto({ onNavigate }: FluxoCaixaPrevistoProps) {
       
       if (error) throw error;
       return data;
-    }
+    },
+    enabled: !!organizationId
   });
 
   // Calcular fluxo de caixa diário previsto com saldo inicial e cenários (próximos 30 dias)
