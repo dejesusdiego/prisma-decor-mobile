@@ -31,7 +31,8 @@ import {
   FileText,
   Truck,
   History,
-  FileDown
+  FileDown,
+  Zap
 } from 'lucide-react';
 import { gerarPdfProducao } from '@/lib/gerarPdfProducao';
 import { toast } from 'sonner';
@@ -321,6 +322,15 @@ export function FichaPedido({ pedidoId, onVoltar, onAgendarInstalacao }: FichaPe
                           <div>
                             <span className="text-muted-foreground">Ambiente:</span>
                             <p>{item.cortina_item.ambiente}</p>
+                          </div>
+                        )}
+                        {item.cortina_item?.motorizada && (
+                          <div>
+                            <span className="text-muted-foreground">Motorização:</span>
+                            <p className="flex items-center gap-1 text-yellow-600 dark:text-yellow-400 font-medium">
+                              <Zap className="h-3 w-3" />
+                              Motorizada
+                            </p>
                           </div>
                         )}
                         {item.responsavel && (

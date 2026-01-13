@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, ChevronDown, AlertTriangle, Ruler, Package, Scissors, Wrench, Landmark, FileText, Link2, CreditCard } from 'lucide-react';
+import { ArrowLeft, ChevronDown, AlertTriangle, Ruler, Package, Scissors, Wrench, Landmark, FileText, Link2, CreditCard, Zap } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import type { Cortina, Material, ServicoConfeccao, ServicoInstalacao } from '@/types/orcamento';
@@ -134,6 +134,8 @@ export function VisualizarOrcamento({ orcamentoId, onVoltar }: VisualizarOrcamen
             descricao: item.descricao || undefined,
             fabrica: item.fabrica || undefined,
             motorizada: item.motorizada || false,
+            motorId: item.motor_id || undefined,
+            custoMotor: item.custo_motor || undefined,
             precoUnitario: item.preco_unitario || undefined,
             valorInstalacao: item.tipo_produto === 'outro' ? item.custo_instalacao : undefined,
             precisaInstalacao: item.precisa_instalacao,
@@ -685,6 +687,37 @@ export function VisualizarOrcamento({ orcamentoId, onVoltar }: VisualizarOrcamen
                       <div className="bg-muted/30 p-3 rounded-lg border">
                         <p className="text-xs font-semibold text-muted-foreground">Trilho</p>
                         <p className="text-sm">-</p>
+                      </div>
+                    );
+                  })()}
+                  
+                  {/* Motor */}
+                  {(() => {
+                    if (!cortina.motorizada || !cortina.motorId) return null;
+                    const motor = obterMaterial(cortina.motorId);
+                    return motor ? (
+                      <div className="bg-yellow-50 dark:bg-yellow-900/30 p-3 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                        <p className="text-xs font-semibold text-yellow-700 dark:text-yellow-400 mb-1 flex items-center gap-1">
+                          <Zap className="h-3 w-3" />
+                          Motor/Sistema
+                        </p>
+                        <p className="text-sm font-medium mb-1">{motor.nome}</p>
+                        <div className="space-y-0.5">
+                          <p className="text-xs text-muted-foreground">
+                            Código: {motor.codigo_item || '-'}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Custo: {formatCurrency(cortina.custoMotor || motor.preco_custo)}
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="bg-yellow-50 dark:bg-yellow-900/30 p-3 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                        <p className="text-xs font-semibold text-yellow-700 dark:text-yellow-400 flex items-center gap-1">
+                          <Zap className="h-3 w-3" />
+                          Motorizada
+                        </p>
+                        <p className="text-sm">Sim (motor não identificado)</p>
                       </div>
                     );
                   })()}

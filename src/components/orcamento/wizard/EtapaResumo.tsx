@@ -10,7 +10,7 @@ import { toast } from '@/hooks/use-toast';
 import type { Cortina, DadosOrcamento, Material, ServicoConfeccao, ServicoInstalacao } from '@/types/orcamento';
 import { OPCOES_MARGEM } from '@/types/orcamento';
 import { calcularResumoOrcamento, calcularConsumoDetalhado, calcularResumoConsolidado } from '@/lib/calculosOrcamento';
-import { FileDown, Home, Save, ChevronDown, Ruler, Package, Scissors, Wrench } from 'lucide-react';
+import { FileDown, Home, Save, ChevronDown, Ruler, Package, Scissors, Wrench, Zap } from 'lucide-react';
 import { DialogValidade } from '../DialogValidade';
 import { gerarPdfOrcamento } from '@/lib/gerarPdfOrcamento';
 import { DescontoSection, calcularDesconto } from './DescontoSection';
@@ -447,7 +447,7 @@ export function EtapaResumo({
 
             {/* Instalação */}
             {cortina.precisaInstalacao && (cortina.custoInstalacao || 0) > 0 && (
-              <div className="flex justify-between items-start">
+              <div className="flex justify-between items-start border-b border-border/50 pb-2">
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <Wrench className="h-3 w-3 text-muted-foreground" />
@@ -458,6 +458,22 @@ export function EtapaResumo({
                   </p>
                 </div>
                 <span className="font-semibold text-right">{formatCurrency(cortina.custoInstalacao || 0)}</span>
+              </div>
+            )}
+
+            {/* Motor */}
+            {cortina.motorizada && cortina.motorId && (
+              <div className="flex justify-between items-start">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <Zap className="h-3 w-3 text-yellow-500" />
+                    <span className="font-medium">Motor/Sistema</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {obterMaterial(cortina.motorId)?.nome || 'Motor selecionado'}
+                  </p>
+                </div>
+                <span className="font-semibold text-right">{formatCurrency(cortina.custoMotor || 0)}</span>
               </div>
             )}
           </div>

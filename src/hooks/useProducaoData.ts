@@ -53,6 +53,7 @@ export interface ItemPedido {
     quantidade: number;
     ambiente: string | null;
     preco_venda: number | null;
+    motorizada: boolean | null;
   };
 }
 
@@ -175,7 +176,8 @@ export function useProducaoData() {
               altura,
               quantidade,
               ambiente,
-              preco_venda
+              preco_venda,
+              motorizada
             )
           ),
           instalacoes (*)
