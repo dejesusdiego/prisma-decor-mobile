@@ -1661,6 +1661,44 @@ export type Database = {
           },
         ]
       }
+      organization_usage: {
+        Row: {
+          id: string
+          mes_referencia: string
+          orcamentos_criados: number | null
+          organization_id: string
+          storage_usado_mb: number | null
+          updated_at: string | null
+          usuarios_ativos: number | null
+        }
+        Insert: {
+          id?: string
+          mes_referencia: string
+          orcamentos_criados?: number | null
+          organization_id: string
+          storage_usado_mb?: number | null
+          updated_at?: string | null
+          usuarios_ativos?: number | null
+        }
+        Update: {
+          id?: string
+          mes_referencia?: string
+          orcamentos_criados?: number | null
+          organization_id?: string
+          storage_usado_mb?: number | null
+          updated_at?: string | null
+          usuarios_ativos?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_usage_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organizations: {
         Row: {
           active: boolean | null
@@ -1895,6 +1933,66 @@ export type Database = {
           },
         ]
       }
+      plans: {
+        Row: {
+          ativo: boolean | null
+          codigo: string
+          created_at: string | null
+          descricao: string | null
+          destaque: boolean | null
+          features: Json | null
+          id: string
+          max_orcamentos_mes: number | null
+          max_storage_gb: number | null
+          max_usuarios: number
+          max_usuarios_expansivel: boolean | null
+          nome: string
+          ordem: number | null
+          preco_implementacao: number | null
+          preco_mensal: number
+          preco_usuario_adicional: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          codigo: string
+          created_at?: string | null
+          descricao?: string | null
+          destaque?: boolean | null
+          features?: Json | null
+          id?: string
+          max_orcamentos_mes?: number | null
+          max_storage_gb?: number | null
+          max_usuarios: number
+          max_usuarios_expansivel?: boolean | null
+          nome: string
+          ordem?: number | null
+          preco_implementacao?: number | null
+          preco_mensal: number
+          preco_usuario_adicional?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          codigo?: string
+          created_at?: string | null
+          descricao?: string | null
+          destaque?: boolean | null
+          features?: Json | null
+          id?: string
+          max_orcamentos_mes?: number | null
+          max_storage_gb?: number | null
+          max_usuarios?: number
+          max_usuarios_expansivel?: boolean | null
+          nome?: string
+          ordem?: number | null
+          preco_implementacao?: number | null
+          preco_mensal?: number
+          preco_usuario_adicional?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       regras_conciliacao: {
         Row: {
           acao: string
@@ -2126,6 +2224,146 @@ export type Database = {
           },
         ]
       }
+      subscription_payments: {
+        Row: {
+          comprovante_url: string | null
+          created_at: string | null
+          data_pagamento: string | null
+          data_vencimento: string
+          id: string
+          metodo_pagamento: string | null
+          observacoes: string | null
+          status: string | null
+          subscription_id: string
+          valor: number
+        }
+        Insert: {
+          comprovante_url?: string | null
+          created_at?: string | null
+          data_pagamento?: string | null
+          data_vencimento: string
+          id?: string
+          metodo_pagamento?: string | null
+          observacoes?: string | null
+          status?: string | null
+          subscription_id: string
+          valor: number
+        }
+        Update: {
+          comprovante_url?: string | null
+          created_at?: string | null
+          data_pagamento?: string | null
+          data_vencimento?: string
+          id?: string
+          metodo_pagamento?: string | null
+          observacoes?: string | null
+          status?: string | null
+          subscription_id?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_payments_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscriptions: {
+        Row: {
+          cancelled_at: string | null
+          created_at: string | null
+          current_period_end: string | null
+          current_period_start: string | null
+          custom_max_usuarios: number | null
+          custom_preco_mensal: number | null
+          id: string
+          organization_id: string
+          payment_method: string | null
+          plan_id: string
+          preco_usuario_adicional: number | null
+          status: string | null
+          stripe_subscription_id: string | null
+          trial_ends_at: string | null
+          updated_at: string | null
+          usuarios_adicionais: number | null
+        }
+        Insert: {
+          cancelled_at?: string | null
+          created_at?: string | null
+          current_period_end?: string | null
+          current_period_start?: string | null
+          custom_max_usuarios?: number | null
+          custom_preco_mensal?: number | null
+          id?: string
+          organization_id: string
+          payment_method?: string | null
+          plan_id: string
+          preco_usuario_adicional?: number | null
+          status?: string | null
+          stripe_subscription_id?: string | null
+          trial_ends_at?: string | null
+          updated_at?: string | null
+          usuarios_adicionais?: number | null
+        }
+        Update: {
+          cancelled_at?: string | null
+          created_at?: string | null
+          current_period_end?: string | null
+          current_period_start?: string | null
+          custom_max_usuarios?: number | null
+          custom_preco_mensal?: number | null
+          id?: string
+          organization_id?: string
+          payment_method?: string | null
+          plan_id?: string
+          preco_usuario_adicional?: number | null
+          status?: string | null
+          stripe_subscription_id?: string | null
+          trial_ends_at?: string | null
+          updated_at?: string | null
+          usuarios_adicionais?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      super_admins: {
+        Row: {
+          created_at: string | null
+          id: string
+          nome: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          nome?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          nome?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_onboarding: {
         Row: {
           completed_tours: string[] | null
@@ -2185,13 +2423,38 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      adicionar_usuarios_assinatura: {
+        Args: { p_org_id: string; p_quantidade: number }
+        Returns: undefined
+      }
       atualizar_contas_atrasadas: { Args: never; Returns: undefined }
+      calcular_preco_mensal_assinatura: {
+        Args: { p_org_id: string }
+        Returns: number
+      }
       calcular_previsao_entrega: {
         Args: { p_orcamento_id: string }
         Returns: string
       }
       gerar_codigo_orcamento: { Args: never; Returns: string }
       gerar_numero_pedido: { Args: never; Returns: string }
+      get_subscription_details: {
+        Args: { p_org_id: string }
+        Returns: {
+          current_period_end: string
+          plano_codigo: string
+          plano_nome: string
+          preco_base: number
+          preco_total_mensal: number
+          preco_usuario_adicional: number
+          status: string
+          trial_ends_at: string
+          usuarios_adicionais: number
+          usuarios_inclusos: number
+          usuarios_total: number
+          valor_usuarios_adicionais: number
+        }[]
+      }
       get_user_organization_id: { Args: never; Returns: string }
       get_user_organization_id_direct: { Args: never; Returns: string }
       has_role: {
@@ -2202,6 +2465,10 @@ export type Database = {
         Returns: boolean
       }
       is_current_user_org_owner: { Args: never; Returns: boolean }
+      org_has_feature: {
+        Args: { p_feature: string; p_org_id: string }
+        Returns: boolean
+      }
       recalcular_totais_orcamento: {
         Args: { p_orcamento_id: string }
         Returns: undefined
