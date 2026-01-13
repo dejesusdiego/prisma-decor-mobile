@@ -271,6 +271,7 @@ export type Database = {
           created_at: string
           created_by_user_id: string
           id: string
+          organization_id: string | null
           percentual_padrao: number
           updated_at: string
           vendedor_nome: string
@@ -281,6 +282,7 @@ export type Database = {
           created_at?: string
           created_by_user_id: string
           id?: string
+          organization_id?: string | null
           percentual_padrao?: number
           updated_at?: string
           vendedor_nome: string
@@ -291,12 +293,21 @@ export type Database = {
           created_at?: string
           created_by_user_id?: string
           id?: string
+          organization_id?: string | null
           percentual_padrao?: number
           updated_at?: string
           vendedor_nome?: string
           vendedor_user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "configuracoes_comissao_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       configuracoes_sistema: {
         Row: {
@@ -1217,7 +1228,6 @@ export type Database = {
         }
         Update: {
           aplicacao?: string | null
-          organization_id?: string | null
           area_min_fat?: number | null
           ativo?: boolean
           categoria?: string
@@ -1230,6 +1240,7 @@ export type Database = {
           linha?: string | null
           margem_tabela_percent?: number
           nome?: string
+          organization_id?: string | null
           perda_percent?: number | null
           potencia?: string | null
           preco_custo?: number
@@ -1238,7 +1249,15 @@ export type Database = {
           unidade?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "materiais_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       materiais_pedido: {
         Row: {
@@ -1704,6 +1723,7 @@ export type Database = {
           created_at: string
           created_by_user_id: string
           id: string
+          organization_id: string | null
           padrao_descricao: string
           tipo_conciliacao: string
           tipo_lancamento: string | null
@@ -1717,6 +1737,7 @@ export type Database = {
           created_at?: string
           created_by_user_id: string
           id?: string
+          organization_id?: string | null
           padrao_descricao: string
           tipo_conciliacao: string
           tipo_lancamento?: string | null
@@ -1730,6 +1751,7 @@ export type Database = {
           created_at?: string
           created_by_user_id?: string
           id?: string
+          organization_id?: string | null
           padrao_descricao?: string
           tipo_conciliacao?: string
           tipo_lancamento?: string | null
@@ -1742,6 +1764,13 @@ export type Database = {
             columns: ["categoria_id"]
             isOneToOne: false
             referencedRelation: "categorias_financeiras"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "padroes_conciliacao_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -1877,6 +1906,7 @@ export type Database = {
           id: string
           nome: string
           ordem: number | null
+          organization_id: string | null
           tipo_lancamento: string | null
           updated_at: string | null
         }
@@ -1890,6 +1920,7 @@ export type Database = {
           id?: string
           nome: string
           ordem?: number | null
+          organization_id?: string | null
           tipo_lancamento?: string | null
           updated_at?: string | null
         }
@@ -1903,6 +1934,7 @@ export type Database = {
           id?: string
           nome?: string
           ordem?: number | null
+          organization_id?: string | null
           tipo_lancamento?: string | null
           updated_at?: string | null
         }
@@ -1912,6 +1944,13 @@ export type Database = {
             columns: ["categoria_id"]
             isOneToOne: false
             referencedRelation: "categorias_financeiras"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "regras_conciliacao_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -1924,6 +1963,7 @@ export type Database = {
           id: string
           margem_tabela_percent: number
           nome_modelo: string
+          organization_id: string | null
           preco_custo: number
           preco_tabela: number
           unidade: string
@@ -1936,6 +1976,7 @@ export type Database = {
           id?: string
           margem_tabela_percent?: number
           nome_modelo: string
+          organization_id?: string | null
           preco_custo: number
           preco_tabela: number
           unidade?: string
@@ -1948,12 +1989,21 @@ export type Database = {
           id?: string
           margem_tabela_percent?: number
           nome_modelo?: string
+          organization_id?: string | null
           preco_custo?: number
           preco_tabela?: number
           unidade?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "servicos_confeccao_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       servicos_instalacao: {
         Row: {
@@ -1963,6 +2013,7 @@ export type Database = {
           id: string
           margem_tabela_percent: number
           nome: string
+          organization_id: string | null
           preco_custo_por_ponto: number
           preco_tabela_por_ponto: number
           updated_at: string
@@ -1974,6 +2025,7 @@ export type Database = {
           id?: string
           margem_tabela_percent?: number
           nome: string
+          organization_id?: string | null
           preco_custo_por_ponto: number
           preco_tabela_por_ponto: number
           updated_at?: string
@@ -1985,11 +2037,20 @@ export type Database = {
           id?: string
           margem_tabela_percent?: number
           nome?: string
+          organization_id?: string | null
           preco_custo_por_ponto?: number
           preco_tabela_por_ponto?: number
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "servicos_instalacao_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       solicitacoes_visita: {
         Row: {
@@ -2143,6 +2204,10 @@ export type Database = {
       is_current_user_org_owner: { Args: never; Returns: boolean }
       recalcular_totais_orcamento: {
         Args: { p_orcamento_id: string }
+        Returns: undefined
+      }
+      setup_new_organization: {
+        Args: { p_org_id: string; p_template_org_id?: string }
         Returns: undefined
       }
       truncate_materials_and_services: { Args: never; Returns: undefined }
