@@ -31,6 +31,10 @@ export interface Cortina {
   fabrica?: string;
   motorizada?: boolean;
   
+  // Motorização para cortinas
+  motorId?: string;
+  custoMotor?: number;
+  
   // Comum
   ambiente?: string;
   precoUnitario?: number; // Para persianas e "Outros"

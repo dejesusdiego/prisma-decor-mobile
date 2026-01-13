@@ -38,6 +38,7 @@ interface PedidoData {
       tecido_id: string | null;
       forro_id: string | null;
       trilho_id: string | null;
+      motor_id: string | null;
       barra_cm: number | null;
       observacoes_internas: string | null;
       motorizada: boolean | null;
@@ -97,6 +98,7 @@ export async function gerarPdfProducao(pedidoId: string): Promise<void> {
             tecido_id,
             forro_id,
             trilho_id,
+            motor_id,
             barra_cm,
             observacoes_internas,
             motorizada
@@ -118,6 +120,7 @@ export async function gerarPdfProducao(pedidoId: string): Promise<void> {
       if (item.cortina_item?.tecido_id) materialIds.add(item.cortina_item.tecido_id);
       if (item.cortina_item?.forro_id) materialIds.add(item.cortina_item.forro_id);
       if (item.cortina_item?.trilho_id) materialIds.add(item.cortina_item.trilho_id);
+      if (item.cortina_item?.motor_id) materialIds.add(item.cortina_item.motor_id);
     });
 
     const { data: materiais } = await supabase
@@ -268,12 +271,15 @@ export async function gerarPdfProducao(pedidoId: string): Promise<void> {
       const tecido = materiaisMap.get(cortina.tecido_id);
       const forro = materiaisMap.get(cortina.forro_id);
       const trilho = materiaisMap.get(cortina.trilho_id);
+      const motor = materiaisMap.get(cortina.motor_id);
 
       // Especificações técnicas
       let specs: string[] = [];
       specs.push(`${cortina.largura || 0}m × ${cortina.altura || 0}m`);
       if (cortina.barra_cm) specs.push(`Barra: ${cortina.barra_cm}cm`);
-      if (cortina.motorizada) specs.push('MOTORIZADA');
+      if (cortina.motorizada) {
+        specs.push(motor ? `Motor: ${motor.nome}` : 'MOTORIZADA');
+      }
       
       let materiais: string[] = [];
       if (tecido) materiais.push(`Tec: ${tecido.nome}${tecido.cor ? ` (${tecido.cor})` : ''}`);

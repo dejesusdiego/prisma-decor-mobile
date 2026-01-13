@@ -71,14 +71,14 @@ export function useDashboardUnificado() {
         .select('id, numero_pedido, status_producao, orcamento_id, orcamento:orcamentos(cliente_nome)')
         .eq('organization_id', organizationId);
       
-      // Buscar instalações da semana
-      const { data: instalacoes } = await supabase
-        .from('instalacoes')
+      // Buscar instalações da semana - usando cast para evitar TS2589
+      const instalacaoQuery = (supabase.from('instalacoes') as any)
         .select('id, data_agendada, turno, status, pedido_id, pedido:pedidos(numero_pedido, orcamento:orcamentos(cliente_nome))')
         .eq('organization_id', organizationId)
         .gte('data_agendada', format(inicioSemana, 'yyyy-MM-dd'))
         .lte('data_agendada', format(fimSemana, 'yyyy-MM-dd'))
         .in('status', ['agendada', 'confirmada']);
+      const { data: instalacoes } = await instalacaoQuery;
       
       // Buscar atividades pendentes
       const { data: atividadesPendentes } = await supabase

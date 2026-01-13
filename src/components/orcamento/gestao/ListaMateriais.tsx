@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, Search, Edit, Power, Trash2, Loader2, CheckSquare, Square, Edit3, Download } from 'lucide-react';
+import { Plus, Search, Edit, Power, Trash2, Loader2, CheckSquare, Square, Edit3, Download, Copy } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { DialogMaterial } from './DialogMaterial';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -43,6 +43,7 @@ export function ListaMateriais() {
   const [fornecedorFiltro, setFornecedorFiltro] = useState('todos');
   const [dialogAberto, setDialogAberto] = useState(false);
   const [materialEditando, setMaterialEditando] = useState<Material | null>(null);
+  const [materialDuplicando, setMaterialDuplicando] = useState<Material | null>(null);
   const [materialDeletando, setMaterialDeletando] = useState<Material | null>(null);
   const [itensSelecionados, setItensSelecionados] = useState<Set<string>>(new Set());
   const [acaoMassaDialog, setAcaoMassaDialog] = useState<'ativar' | 'desativar' | 'deletar' | null>(null);
@@ -199,9 +200,16 @@ export function ListaMateriais() {
   const handleDialogClose = (sucesso?: boolean) => {
     setDialogAberto(false);
     setMaterialEditando(null);
+    setMaterialDuplicando(null);
     if (sucesso) {
       carregarMateriais();
     }
+  };
+
+  const handleDuplicarMaterial = (material: Material) => {
+    setMaterialDuplicando(material);
+    setMaterialEditando(null);
+    setDialogAberto(true);
   };
 
   const handleToggleSelecao = (materialId: string) => {
@@ -589,18 +597,28 @@ export function ListaMateriais() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
+                      <div className="flex items-center justify-end gap-1">
                         <Button
                           size="sm"
                           variant="ghost"
                           onClick={() => handleEditarMaterial(material)}
+                          title="Editar"
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
                         <Button
                           size="sm"
                           variant="ghost"
+                          onClick={() => handleDuplicarMaterial(material)}
+                          title="Duplicar para nova variante"
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
                           onClick={() => handleToggleStatus(material)}
+                          title={material.ativo ? 'Desativar' : 'Ativar'}
                         >
                           <Power className="h-4 w-4" />
                         </Button>
@@ -608,6 +626,7 @@ export function ListaMateriais() {
                           size="sm"
                           variant="ghost"
                           onClick={() => setMaterialDeletando(material)}
+                          title="Excluir"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -624,6 +643,7 @@ export function ListaMateriais() {
       <DialogMaterial
         aberto={dialogAberto}
         material={materialEditando}
+        materialDuplicando={materialDuplicando}
         onClose={handleDialogClose}
       />
 

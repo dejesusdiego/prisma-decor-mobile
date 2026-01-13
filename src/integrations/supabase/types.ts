@@ -596,6 +596,7 @@ export type Database = {
           custo_costura: number | null
           custo_forro: number | null
           custo_instalacao: number | null
+          custo_motor: number | null
           custo_tecido: number | null
           custo_total: number | null
           custo_trilho: number | null
@@ -606,6 +607,7 @@ export type Database = {
           is_outro: boolean | null
           largura: number
           material_principal_id: string | null
+          motor_id: string | null
           motorizada: boolean | null
           nome_identificacao: string
           observacoes_internas: string | null
@@ -632,6 +634,7 @@ export type Database = {
           custo_costura?: number | null
           custo_forro?: number | null
           custo_instalacao?: number | null
+          custo_motor?: number | null
           custo_tecido?: number | null
           custo_total?: number | null
           custo_trilho?: number | null
@@ -642,6 +645,7 @@ export type Database = {
           is_outro?: boolean | null
           largura: number
           material_principal_id?: string | null
+          motor_id?: string | null
           motorizada?: boolean | null
           nome_identificacao: string
           observacoes_internas?: string | null
@@ -668,6 +672,7 @@ export type Database = {
           custo_costura?: number | null
           custo_forro?: number | null
           custo_instalacao?: number | null
+          custo_motor?: number | null
           custo_tecido?: number | null
           custo_total?: number | null
           custo_trilho?: number | null
@@ -678,6 +683,7 @@ export type Database = {
           is_outro?: boolean | null
           largura?: number
           material_principal_id?: string | null
+          motor_id?: string | null
           motorizada?: boolean | null
           nome_identificacao?: string
           observacoes_internas?: string | null
@@ -695,6 +701,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "cortina_items_motor_id_fkey"
+            columns: ["motor_id"]
+            isOneToOne: false
+            referencedRelation: "materiais"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "cortina_items_orcamento_id_fkey"
             columns: ["orcamento_id"]
@@ -714,6 +727,7 @@ export type Database = {
           data_inicio: string | null
           id: string
           nome_arquivo: string
+          organization_id: string | null
           status: string | null
         }
         Insert: {
@@ -725,6 +739,7 @@ export type Database = {
           data_inicio?: string | null
           id?: string
           nome_arquivo: string
+          organization_id?: string | null
           status?: string | null
         }
         Update: {
@@ -736,9 +751,18 @@ export type Database = {
           data_inicio?: string | null
           id?: string
           nome_arquivo?: string
+          organization_id?: string | null
           status?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "extratos_bancarios_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       formas_pagamento: {
         Row: {
@@ -1280,6 +1304,7 @@ export type Database = {
           ignorado: boolean | null
           lancamento_id: string | null
           numero_documento: string | null
+          organization_id: string | null
           regra_aplicada_id: string | null
           tipo: string | null
           valor: number
@@ -1294,6 +1319,7 @@ export type Database = {
           ignorado?: boolean | null
           lancamento_id?: string | null
           numero_documento?: string | null
+          organization_id?: string | null
           regra_aplicada_id?: string | null
           tipo?: string | null
           valor: number
@@ -1308,6 +1334,7 @@ export type Database = {
           ignorado?: boolean | null
           lancamento_id?: string | null
           numero_documento?: string | null
+          organization_id?: string | null
           regra_aplicada_id?: string | null
           tipo?: string | null
           valor?: number
@@ -1325,6 +1352,13 @@ export type Database = {
             columns: ["lancamento_id"]
             isOneToOne: false
             referencedRelation: "lancamentos_financeiros"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "movimentacoes_extrato_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
           {

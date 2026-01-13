@@ -90,12 +90,20 @@ export function MaterialSelector({
   ).sort();
 
   // Materiais filtrados progressivamente - ignorar filtros vazios/não aplicáveis
-  const materiaisFiltrados = materiais.filter((material) => {
+  const materiaisFiltradosBase = materiais.filter((material) => {
     const matchTipo = !filtroTipo || filtroTipo === '_todos' || material.tipo === filtroTipo;
     const matchLinha = !filtroLinha || filtroLinha === '_todos' || material.linha === filtroLinha;
     const matchCor = !filtroCor || filtroCor === '_todos' || material.cor === filtroCor;
     return matchTipo && matchLinha && matchCor;
   });
+
+  // Garantir que o material selecionado sempre apareça na lista, mesmo com filtros vazios
+  const materiaisFiltrados = useMemo(() => {
+    if (selectedMaterial && !materiaisFiltradosBase.find(m => m.id === selectedMaterial.id)) {
+      return [selectedMaterial, ...materiaisFiltradosBase];
+    }
+    return materiaisFiltradosBase;
+  }, [materiaisFiltradosBase, selectedMaterial]);
 
   // Ao mudar tipo, resetar linha e cor
   const handleTipoChange = (tipo: string) => {

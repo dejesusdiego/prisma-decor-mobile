@@ -182,13 +182,14 @@ export function DialogRegistrarRecebimento({ open, onOpenChange, parcela }: Dial
 
         if (vendedorId) {
           // Buscar configuração de comissão do vendedor - filtrado por organização
-          const { data: configComissao } = await supabase
-            .from('configuracoes_comissao')
+          // Usando cast para evitar TS2589
+          const configQuery = (supabase.from('configuracoes_comissao') as any)
             .select('vendedor_nome, percentual_padrao')
             .eq('organization_id', organizationId)
             .eq('vendedor_user_id', vendedorId)
             .eq('ativo', true)
             .maybeSingle();
+          const { data: configComissao } = await configQuery;
           
           if (configComissao) {
             vendedorNome = configComissao.vendedor_nome;

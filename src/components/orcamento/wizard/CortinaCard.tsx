@@ -16,6 +16,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Zap } from 'lucide-react';
 import { Copy, Trash2, ChevronDown, ChevronUp, X, Scissors, Loader2, Check, RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -37,6 +38,7 @@ interface CortinaCardProps {
     tecidos: Material[];
     forros: Material[];
     trilhos: Material[];
+    motorizados: Material[];
   };
   loadingMateriais: boolean;
   servicosConfeccao: ServicoConfeccao[];
@@ -56,9 +58,15 @@ export function CortinaCard({
   onDuplicate,
 }: CortinaCardProps) {
   // Usar materiais diretamente das props
-  const { tecidos, forros, trilhos } = materiais;
+  const { tecidos, forros, trilhos, motorizados } = materiais;
   
   const [servicosAdicionaisOpen, setServicosAdicionaisOpen] = useState(false);
+  const [motorizacaoOpen, setMotorizacaoOpen] = useState(cortina.motorizada || false);
+  
+  // Estado para motor selecionado
+  const selectedMotor = cortina.motorId 
+    ? motorizados.find(m => m.id === cortina.motorId) 
+    : null;
   
   const {
     saving, setSaving,
@@ -179,7 +187,10 @@ export function CortinaCard({
 
       // Substituir custo de costura pelo total calculado
       custos.custoCostura = custoCosturaTotal;
-      custos.custoTotal = custos.custoTecido + custos.custoForro + custos.custoTrilho + custoCosturaTotal + custos.custoInstalacao;
+      
+      // Adicionar custo do motor se motorizada
+      const custoMotor = cortina.motorizada && cortina.custoMotor ? cortina.custoMotor : 0;
+      custos.custoTotal = custos.custoTecido + custos.custoForro + custos.custoTrilho + custoCosturaTotal + custos.custoInstalacao + custoMotor;
 
       // Usar valores diretamente - conversão única, sem arredondamentos desnecessários
       const barraCmValue = cortina.barraCm ?? 0;
@@ -212,6 +223,9 @@ export function CortinaCard({
         custo_total: custos.custoTotal,
         preco_venda: 0,
         servicos_adicionais_ids: cortina.servicosAdicionaisIds || [],
+        motorizada: cortina.motorizada || false,
+        motor_id: cortina.motorId || null,
+        custo_motor: cortina.custoMotor || 0,
       };
 
       let result;
@@ -277,6 +291,13 @@ export function CortinaCard({
 
   const handleChange = (field: keyof Cortina, value: any) => {
     const novosDados = { ...cortina, [field]: value };
+    setHasChanges(true);
+    onUpdate(novosDados);
+  };
+
+  // Atualização atômica para múltiplos campos de uma vez (evita race conditions)
+  const handleMultiChange = (changes: Partial<Cortina>) => {
+    const novosDados = { ...cortina, ...changes };
     setHasChanges(true);
     onUpdate(novosDados);
   };
@@ -534,6 +555,65 @@ export function CortinaCard({
           />
         </div>
 
+        {/* Motorização */}
+        <div className="space-y-4 border-t pt-4">
+          <div className="flex items-center justify-between">
+            <Label htmlFor={`motorizada-${cortina.id}`} className="flex items-center gap-2">
+              <Zap className="h-4 w-4" />
+              Cortina Motorizada?
+            </Label>
+            <Switch
+              id={`motorizada-${cortina.id}`}
+              checked={cortina.motorizada || false}
+              onCheckedChange={(checked) => {
+                setMotorizacaoOpen(checked);
+                if (checked) {
+                  handleChange('motorizada', true);
+                } else {
+                  // Atualização atômica: limpar motorizada + motorId + custoMotor de uma vez
+                  handleMultiChange({ motorizada: false, motorId: undefined, custoMotor: 0 });
+                }
+              }}
+            />
+          </div>
+
+          {cortina.motorizada && (
+            <Collapsible open={motorizacaoOpen} onOpenChange={setMotorizacaoOpen}>
+              <CollapsibleContent className="space-y-4 pt-2 border-l-2 border-primary/30 pl-4">
+                <h4 className="font-medium text-sm flex items-center gap-2">
+                  <Zap className="h-4 w-4 text-primary" />
+                  Selecionar Motor/Sistema
+                </h4>
+                <MaterialSelector
+                  categoria="motorizado"
+                  materiais={motorizados}
+                  value={cortina.motorId}
+                  onSelect={(motorId) => {
+                    if (motorId) {
+                      const motor = motorizados.find(m => m.id === motorId);
+                      if (motor) {
+                        // Atualização atômica: motorId + custoMotor juntos
+                        handleMultiChange({ motorId, custoMotor: motor.preco_custo });
+                      }
+                    } else {
+                      // Atualização atômica: limpar motorId + custoMotor juntos
+                      handleMultiChange({ motorId: undefined, custoMotor: 0 });
+                    }
+                  }}
+                  placeholder="Selecionar Motor/Sistema"
+                  optional={false}
+                  loading={loadingMateriais}
+                />
+                {selectedMotor && (
+                  <p className="text-sm text-muted-foreground">
+                    Custo do motor: R$ {selectedMotor.preco_custo.toFixed(2)}
+                  </p>
+                )}
+              </CollapsibleContent>
+            </Collapsible>
+          )}
+        </div>
+
         {/* Serviços adicionais */}
         <Collapsible open={servicosAdicionaisOpen} onOpenChange={setServicosAdicionaisOpen}>
           <CollapsibleTrigger asChild>
@@ -627,6 +707,11 @@ export function CortinaCard({
             <p className="text-sm">Forro: R$ {(cortina.custoForro || 0).toFixed(2)}</p>
             <p className="text-sm">Trilho: R$ {(cortina.custoTrilho || 0).toFixed(2)}</p>
             <p className="text-sm">Costura: R$ {(cortina.custoCostura || 0).toFixed(2)}</p>
+            {cortina.motorizada && (cortina.custoMotor || 0) > 0 && (
+              <p className="text-sm flex items-center gap-1">
+                <Zap className="h-3 w-3" /> Motor: R$ {(cortina.custoMotor || 0).toFixed(2)}
+              </p>
+            )}
             <p className="text-sm">Instalação: R$ {(cortina.custoInstalacao || 0).toFixed(2)}</p>
             <p className="text-sm font-semibold border-t pt-1">Total: R$ {cortina.custoTotal.toFixed(2)}</p>
           </div>
