@@ -30,10 +30,11 @@ interface Material {
 interface DialogMaterialProps {
   aberto: boolean;
   material: Material | null;
+  materialDuplicando?: Material | null;
   onClose: (sucesso?: boolean) => void;
 }
 
-export function DialogMaterial({ aberto, material, onClose }: DialogMaterialProps) {
+export function DialogMaterial({ aberto, material, materialDuplicando, onClose }: DialogMaterialProps) {
   const [salvando, setSalvando] = useState(false);
   const [formData, setFormData] = useState({
     codigo_item: '',
@@ -53,26 +54,34 @@ export function DialogMaterial({ aberto, material, onClose }: DialogMaterialProp
   });
 
   useEffect(() => {
-    if (material) {
-      const margemPercent = material.preco_tabela > 0 && material.preco_custo > 0
-        ? ((material.preco_tabela / material.preco_custo - 1) * 100).toFixed(1)
+    // Priorizar duplicação sobre edição
+    const materialOrigem = materialDuplicando || material;
+    const isDuplicando = !!materialDuplicando;
+
+    if (materialOrigem) {
+      const margemPercent = materialOrigem.preco_tabela > 0 && materialOrigem.preco_custo > 0
+        ? ((materialOrigem.preco_tabela / materialOrigem.preco_custo - 1) * 100).toFixed(1)
         : '61.5';
 
       setFormData({
-        codigo_item: material.codigo_item || '',
-        nome: material.nome,
-        categoria: material.categoria,
-        unidade: material.unidade,
-        largura_metro: material.largura_metro?.toString() || '',
-        preco_custo: material.preco_custo.toString(),
+        codigo_item: isDuplicando 
+          ? `${materialOrigem.codigo_item || ''}-COPIA` 
+          : materialOrigem.codigo_item || '',
+        nome: isDuplicando 
+          ? `${materialOrigem.nome} (Cópia)` 
+          : materialOrigem.nome,
+        categoria: materialOrigem.categoria,
+        unidade: materialOrigem.unidade,
+        largura_metro: materialOrigem.largura_metro?.toString() || '',
+        preco_custo: materialOrigem.preco_custo.toString(),
         margem_percent: margemPercent,
-        fornecedor: material.fornecedor || '',
-        linha: material.linha || '',
-        cor: material.cor || '',
-        tipo: material.tipo || '',
-        aplicacao: material.aplicacao || '',
-        potencia: material.potencia || '',
-        area_min_fat: material.area_min_fat?.toString() || '',
+        fornecedor: materialOrigem.fornecedor || '',
+        linha: materialOrigem.linha || '',
+        cor: isDuplicando ? '' : (materialOrigem.cor || ''), // Limpar cor para edição manual
+        tipo: materialOrigem.tipo || '',
+        aplicacao: materialOrigem.aplicacao || '',
+        potencia: materialOrigem.potencia || '',
+        area_min_fat: materialOrigem.area_min_fat?.toString() || '',
       });
     } else {
       setFormData({
@@ -92,7 +101,7 @@ export function DialogMaterial({ aberto, material, onClose }: DialogMaterialProp
         area_min_fat: '',
       });
     }
-  }, [material, aberto]);
+  }, [material, materialDuplicando, aberto]);
 
   const calcularPrecoTabela = () => {
     const custo = parseFloat(formData.preco_custo);
@@ -126,7 +135,8 @@ export function DialogMaterial({ aberto, material, onClose }: DialogMaterialProp
         area_min_fat: formData.area_min_fat ? parseFloat(formData.area_min_fat) : null,
       };
 
-      if (material) {
+      // Se está duplicando OU criando novo, sempre INSERT
+      if (material && !materialDuplicando) {
         const { error } = await supabase
           .from('materiais')
           .update(materialData)
@@ -146,8 +156,10 @@ export function DialogMaterial({ aberto, material, onClose }: DialogMaterialProp
         if (error) throw error;
 
         toast({
-          title: 'Material criado',
-          description: 'O novo material foi criado com sucesso',
+          title: materialDuplicando ? 'Material duplicado' : 'Material criado',
+          description: materialDuplicando 
+            ? 'A nova variante foi criada com sucesso. Não esqueça de ajustar o código e a cor!'
+            : 'O novo material foi criado com sucesso',
         });
       }
 
@@ -168,11 +180,19 @@ export function DialogMaterial({ aberto, material, onClose }: DialogMaterialProp
     <Dialog open={aberto} onOpenChange={() => onClose()}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>{material ? 'Editar Material' : 'Novo Material'}</DialogTitle>
+          <DialogTitle>
+            {materialDuplicando 
+              ? 'Duplicar Material' 
+              : material 
+                ? 'Editar Material' 
+                : 'Novo Material'}
+          </DialogTitle>
           <DialogDescription>
-            {material
-              ? 'Edite as informações do material'
-              : 'Preencha os dados do novo material'}
+            {materialDuplicando
+              ? 'Altere o código e a cor para a nova variante'
+              : material
+                ? 'Edite as informações do material'
+                : 'Preencha os dados do novo material'}
           </DialogDescription>
         </DialogHeader>
 
@@ -374,7 +394,11 @@ export function DialogMaterial({ aberto, material, onClose }: DialogMaterialProp
             </Button>
             <Button type="submit" disabled={salvando}>
               {salvando && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {material ? 'Atualizar' : 'Criar'} Material
+              {materialDuplicando 
+                ? 'Duplicar Material' 
+                : material 
+                  ? 'Atualizar Material' 
+                  : 'Criar Material'}
             </Button>
           </DialogFooter>
         </form>
