@@ -1,0 +1,2 @@
+id;orcamento_id;vendedor_nome;vendedor_user_id;percentual;valor_base;valor_comissao;status;data_pagamento;observacoes;created_at;updated_at;created_by_user_id;organization_id
+ebde057e-e523-4765-9292-33684ad4032c;9809802f-2760-4d0c-a75d-fa29f0716b50;Vendedor Padrão;;5;3399.7956;169.98978;pendente;;Parcela 1;2026-01-09 17:45:12.423069+00;2026-01-09 17:45:12.423069+00;c6105b6e-0416-437b-9e18-70dbe8db0a87;11111111-1111-1111-1111-111111111111
