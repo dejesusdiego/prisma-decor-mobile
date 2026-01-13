@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import { useOrganizationContext } from '@/contexts/OrganizationContext';
 
 interface ServicoConfeccao {
   id: string;
@@ -25,6 +26,7 @@ interface DialogServicoConfeccaoProps {
 }
 
 export function DialogServicoConfeccao({ aberto, servico, onClose }: DialogServicoConfeccaoProps) {
+  const { organizationId } = useOrganizationContext();
   const [salvando, setSalvando] = useState(false);
   const [formData, setFormData] = useState({
     codigo_item: '',
@@ -89,7 +91,10 @@ export function DialogServicoConfeccao({ aberto, servico, onClose }: DialogServi
         if (error) throw error;
         toast({ title: 'Serviço atualizado', description: 'O serviço foi atualizado com sucesso' });
       } else {
-        const { error } = await supabase.from('servicos_confeccao').insert(servicoData);
+        const { error } = await supabase.from('servicos_confeccao').insert({
+          ...servicoData,
+          organization_id: organizationId,
+        });
         if (error) throw error;
         toast({ title: 'Serviço criado', description: 'O novo serviço foi criado com sucesso' });
       }

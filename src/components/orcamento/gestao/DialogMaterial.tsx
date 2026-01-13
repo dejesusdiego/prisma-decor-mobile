@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import { useOrganizationContext } from '@/contexts/OrganizationContext';
 
 interface Material {
   id: string;
@@ -34,6 +35,7 @@ interface DialogMaterialProps {
 }
 
 export function DialogMaterial({ aberto, material, onClose }: DialogMaterialProps) {
+  const { organizationId } = useOrganizationContext();
   const [salvando, setSalvando] = useState(false);
   const [formData, setFormData] = useState({
     codigo_item: '',
@@ -141,7 +143,10 @@ export function DialogMaterial({ aberto, material, onClose }: DialogMaterialProp
       } else {
         const { error } = await supabase
           .from('materiais')
-          .insert(materialData);
+          .insert({
+            ...materialData,
+            organization_id: organizationId,
+          });
 
         if (error) throw error;
 

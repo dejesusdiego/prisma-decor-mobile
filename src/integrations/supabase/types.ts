@@ -1159,6 +1159,7 @@ export type Database = {
           linha: string | null
           margem_tabela_percent: number
           nome: string
+          organization_id: string | null
           perda_percent: number | null
           potencia: string | null
           preco_custo: number
@@ -1181,6 +1182,7 @@ export type Database = {
           linha?: string | null
           margem_tabela_percent?: number
           nome: string
+          organization_id?: string | null
           perda_percent?: number | null
           potencia?: string | null
           preco_custo: number
@@ -1191,6 +1193,7 @@ export type Database = {
         }
         Update: {
           aplicacao?: string | null
+          organization_id?: string | null
           area_min_fat?: number | null
           ativo?: boolean
           categoria?: string
