@@ -99,6 +99,7 @@ function SortableProductItem({
               tecidos: materiais.tecido,
               forros: materiais.forro,
               trilhos: materiais.trilho,
+              motorizados: materiais.motorizado,
             }}
             loadingMateriais={loadingMateriais}
             servicosConfeccao={servicosConfeccao}
@@ -223,6 +224,8 @@ export function EtapaProdutos({
           descricao: item.descricao || undefined,
           fabrica: item.fabrica || undefined,
           motorizada: item.motorizada || false,
+          motorId: item.motor_id || undefined,
+          custoMotor: item.custo_motor || undefined,
           ambiente: item.ambiente || undefined,
           precoUnitario: item.preco_unitario || undefined,
           valorInstalacao: item.custo_instalacao || undefined,
