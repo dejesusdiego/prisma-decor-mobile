@@ -6,6 +6,44 @@
 
 ---
 
+## 🛠️ BACKUP VIA SUPABASE CLI (Recomendado)
+
+### Pré-requisitos
+```bash
+npm install -g supabase
+supabase login
+```
+
+### Exportar do Projeto ORIGEM (emmogpqoqfmwtipxwcit)
+```bash
+# 1. Vincular ao projeto origem
+supabase link --project-ref emmogpqoqfmwtipxwcit
+
+# 2. Exportar schema completo (estrutura)
+supabase db dump --schema public -f docs/backup/SCHEMA_COMPLETO.sql
+
+# 3. Exportar todos os dados
+supabase db dump --data-only -f docs/backup/DATA_COMPLETO.sql
+
+# 4. Exportar apenas RLS policies (opcional)
+supabase db dump --role-only -f docs/backup/RLS_POLICIES.sql
+```
+
+### Importar no Projeto DESTINO (tjwpqrlfhngibuwqodcn)
+```bash
+# 1. Vincular ao novo projeto
+supabase link --project-ref tjwpqrlfhngibuwqodcn
+
+# 2. Importar via psql (senha será solicitada)
+psql "postgresql://postgres:[SUA_SENHA]@db.tjwpqrlfhngibuwqodcn.supabase.co:5432/postgres" -f docs/backup/SCHEMA_COMPLETO.sql
+psql "postgresql://postgres:[SUA_SENHA]@db.tjwpqrlfhngibuwqodcn.supabase.co:5432/postgres" -f docs/backup/DATA_COMPLETO.sql
+```
+
+### Alternativa: Via Dashboard
+Acesse Settings → Database → Connection string para obter a string de conexão.
+
+---
+
 ## 📋 ORDEM DE EXECUÇÃO
 
 Acesse o **SQL Editor** do novo projeto Supabase:
