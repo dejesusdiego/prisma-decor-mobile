@@ -347,9 +347,8 @@ export function EtapaProdutos({
   };
 
   const atualizarProduto = (index: number, produto: Cortina) => {
-    const novosProdutos = [...produtos];
-    novosProdutos[index] = produto;
-    setProdutos(novosProdutos);
+    // Usar functional update para evitar race conditions com atualizações rápidas
+    setProdutos(prev => prev.map((p, i) => i === index ? produto : p));
   };
 
   const sensors = useSensors(

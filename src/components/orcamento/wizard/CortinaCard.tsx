@@ -295,6 +295,13 @@ export function CortinaCard({
     onUpdate(novosDados);
   };
 
+  // Atualização atômica para múltiplos campos de uma vez (evita race conditions)
+  const handleMultiChange = (changes: Partial<Cortina>) => {
+    const novosDados = { ...cortina, ...changes };
+    setHasChanges(true);
+    onUpdate(novosDados);
+  };
+
   const toggleServicoAdicional = (servicoId: string) => {
     const atuais = cortina.servicosAdicionaisIds || [];
     if (atuais.includes(servicoId)) {
@@ -559,12 +566,12 @@ export function CortinaCard({
               id={`motorizada-${cortina.id}`}
               checked={cortina.motorizada || false}
               onCheckedChange={(checked) => {
-                handleChange('motorizada', checked);
                 setMotorizacaoOpen(checked);
-                if (!checked) {
-                  // Limpar dados de motorização se desativar
-                  handleChange('motorId', undefined);
-                  handleChange('custoMotor', 0);
+                if (checked) {
+                  handleChange('motorizada', true);
+                } else {
+                  // Atualização atômica: limpar motorizada + motorId + custoMotor de uma vez
+                  handleMultiChange({ motorizada: false, motorId: undefined, custoMotor: 0 });
                 }
               }}
             />
@@ -585,12 +592,12 @@ export function CortinaCard({
                     if (motorId) {
                       const motor = motorizados.find(m => m.id === motorId);
                       if (motor) {
-                        handleChange('motorId', motorId);
-                        handleChange('custoMotor', motor.preco_custo);
+                        // Atualização atômica: motorId + custoMotor juntos
+                        handleMultiChange({ motorId, custoMotor: motor.preco_custo });
                       }
                     } else {
-                      handleChange('motorId', undefined);
-                      handleChange('custoMotor', 0);
+                      // Atualização atômica: limpar motorId + custoMotor juntos
+                      handleMultiChange({ motorId: undefined, custoMotor: 0 });
                     }
                   }}
                   placeholder="Selecionar Motor/Sistema"
