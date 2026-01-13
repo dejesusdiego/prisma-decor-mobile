@@ -61,6 +61,14 @@ function formatarValor(valor: number): string {
   });
 }
 
+// Função para remover dimensões (largura x altura) do texto
+function stripDimensoes(texto: string): string {
+  // Remove padrões como: " - 2.26m x 2.81m", " - 2,26 x 2,81", " - 2.26 × 2.81"
+  return texto
+    .replace(/\s*-\s*\d+[,.]?\d*\s*m?\s*[x×]\s*\d+[,.]?\d*\s*m?\s*/gi, '')
+    .trim();
+}
+
 // Função auxiliar para formatar telefone
 function formatarTelefone(telefone: string): string {
   const numeros = telefone.replace(/\D/g, '');
@@ -137,6 +145,27 @@ export async function gerarPdfOrcamento(orcamentoId: string): Promise<void> {
     // Criar PDF
     const doc = new jsPDF();
     let yPos = 0;
+    
+    // ============================================================
+    // LAYOUT ENGINE - Controle de paginação
+    // ============================================================
+    const pageHeight = doc.internal.pageSize.getHeight(); // ~297mm para A4
+    const footerTopY = pageHeight - 22; // Linha do rodapé começa aqui (~275)
+    const contentBottomY = footerTopY - 8; // Limite seguro para conteúdo (~267)
+    const topStartYNewPage = 20;
+    
+    // Helper para garantir espaço antes de adicionar conteúdo
+    const ensureSpace = (requiredMm: number) => {
+      if (yPos + requiredMm > contentBottomY) {
+        doc.addPage();
+        yPos = topStartYNewPage;
+      }
+    };
+    
+    // Helper para calcular altura real de texto
+    const getLineHeight = () => {
+      return (doc.getFontSize() * doc.getLineHeightFactor()) / doc.internal.scaleFactor;
+    };
 
     // Configurações da organização (com fallbacks para Prisma)
     const orgName = org?.name || 'PRISMA';
@@ -320,15 +349,15 @@ export async function gerarPdfOrcamento(orcamentoId: string): Promise<void> {
 
     // Preparar dados da tabela
     const tableData = cortinas.map((cortina: any) => {
-      // Nome do item é o nome_identificacao - SEM dimensões conforme solicitado
-      let descricao = cortina.nome_identificacao || 'Item';
+      // Nome do item - remover dimensões que podem estar embutidas
+      let descricao = stripDimensoes(cortina.nome_identificacao || '').trim() || 'Item';
       
-      // Adicionar ambiente
-      if (cortina.ambiente) {
+      // Adicionar ambiente (evitar duplicação)
+      if (cortina.ambiente && !descricao.toLowerCase().includes(cortina.ambiente.toLowerCase())) {
         descricao += ` - ${cortina.ambiente}`;
       }
 
-      const quantidade = cortina.quantidade || 1; // Protege contra divisão por zero
+      const quantidade = cortina.quantidade || 1;
       const precoUnitario = (cortina.preco_venda || 0) / quantidade;
       const total = cortina.preco_venda || 0;
 
@@ -365,7 +394,7 @@ export async function gerarPdfOrcamento(orcamentoId: string): Promise<void> {
         2: { cellWidth: 32, halign: 'right' },
         3: { cellWidth: 32, halign: 'right' },
       },
-      margin: { left: cardX, right: cardX },
+      margin: { left: cardX, right: cardX, bottom: pageHeight - contentBottomY + 5 },
       styles: {
         lineColor: [220, 220, 220],
         lineWidth: 0.1,
@@ -382,6 +411,9 @@ export async function gerarPdfOrcamento(orcamentoId: string): Promise<void> {
     // ============================================================
     
     const temDesconto = orcamento.desconto_tipo && orcamento.desconto_valor && orcamento.desconto_valor > 0;
+    
+    // Garantir espaço para o box de total (máximo 45mm)
+    ensureSpace(45);
     
     if (temDesconto) {
       // Calcular valor do desconto usando o total real dos itens
@@ -454,6 +486,9 @@ export async function gerarPdfOrcamento(orcamentoId: string): Promise<void> {
     // 7. FORMAS DE PAGAMENTO (MAIS PROFISSIONAL)
     // ============================================================
     
+    // Garantir espaço para formas de pagamento (~35mm)
+    ensureSpace(35);
+    
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(34, 34, 34);
@@ -489,15 +524,20 @@ export async function gerarPdfOrcamento(orcamentoId: string): Promise<void> {
     // 8. OBSERVAÇÕES (com controle de espaço para não sobrepor rodapé)
     // ============================================================
     
-    // O rodapé começa em Y = 275, então precisamos de margem de segurança
-    const limiteSeguro = 260;
-    const pageWidth = 210;
+    // Calcular altura total necessária para a seção de observações
+    doc.setFontSize(9);
+    const obsText = orcamento.observacoes || '';
+    const obsLines = obsText ? doc.splitTextToSize(obsText, cardWidth - 6) : [];
+    const lineHeight = getLineHeight();
     
-    // Verificar se há espaço para a seção de observações
-    if (yPos + 40 > limiteSeguro) {
-      doc.addPage();
-      yPos = 20;
-    }
+    // Altura: título (12) + linha (2) + espaço (8) + observações do cliente + bullets (3 linhas * 4mm)
+    const obsClienteHeight = obsLines.length > 0 ? (obsLines.length * lineHeight) + 8 : 0;
+    const bulletsHeight = 20; // 3 bullets * ~6mm + margem
+    const headerHeight = 22; // título + linha + espaço
+    const totalObsHeight = headerHeight + obsClienteHeight + bulletsHeight;
+    
+    // Garantir espaço para toda a seção de observações
+    ensureSpace(totalObsHeight);
     
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
@@ -513,31 +553,18 @@ export async function gerarPdfOrcamento(orcamentoId: string): Promise<void> {
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(80, 80, 80);
     
-    if (orcamento.observacoes) {
-      const obsLines = doc.splitTextToSize(orcamento.observacoes, cardWidth - 6);
-      // Verificar se as observações cabem
-      const obsHeight = obsLines.length * 4 + 5;
-      if (yPos + obsHeight > limiteSeguro) {
-        doc.addPage();
-        yPos = 20;
-      }
+    if (obsLines.length > 0) {
       doc.text(obsLines, cardX, yPos);
-      yPos += obsHeight;
-    }
-    
-    // Verificar espaço para os bullet points (aproximadamente 15mm)
-    if (yPos + 15 > limiteSeguro) {
-      doc.addPage();
-      yPos = 20;
+      yPos += (obsLines.length * lineHeight) + 5;
     }
     
     doc.setTextColor(100, 100, 100);
     doc.text('• Valor inclui instalação.', cardX, yPos);
     
-    yPos += 4;
+    yPos += 5;
     doc.text('• Prazo de entrega estimado: 15 a 25 dias úteis após confirmação do pedido.', cardX, yPos);
     
-    yPos += 4;
+    yPos += 5;
     doc.text('• Valores sujeitos a alteração em caso de mudanças de projeto ou medidas.', cardX, yPos);
 
     // ============================================================
