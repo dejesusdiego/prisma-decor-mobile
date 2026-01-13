@@ -320,14 +320,8 @@ export async function gerarPdfOrcamento(orcamentoId: string): Promise<void> {
 
     // Preparar dados da tabela
     const tableData = cortinas.map((cortina: any) => {
-      // Nome do item é o nome_identificacao
+      // Nome do item é o nome_identificacao - SEM dimensões conforme solicitado
       let descricao = cortina.nome_identificacao || 'Item';
-      
-      // Adicionar tamanho (exceto para itens "outro" sem dimensões)
-      const tipoProduto = cortina.tipo_produto || 'cortina';
-      if (tipoProduto !== 'outro' && (cortina.largura > 0 || cortina.altura > 0)) {
-        descricao += ` - ${cortina.largura}m x ${cortina.altura}m`;
-      }
       
       // Adicionar ambiente
       if (cortina.ambiente) {
@@ -492,8 +486,18 @@ export async function gerarPdfOrcamento(orcamentoId: string): Promise<void> {
     yPos += 15;
     
     // ============================================================
-    // 8. OBSERVAÇÕES
+    // 8. OBSERVAÇÕES (com controle de espaço para não sobrepor rodapé)
     // ============================================================
+    
+    // O rodapé começa em Y = 275, então precisamos de margem de segurança
+    const limiteSeguro = 260;
+    const pageWidth = 210;
+    
+    // Verificar se há espaço para a seção de observações
+    if (yPos + 40 > limiteSeguro) {
+      doc.addPage();
+      yPos = 20;
+    }
     
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
@@ -511,8 +515,20 @@ export async function gerarPdfOrcamento(orcamentoId: string): Promise<void> {
     
     if (orcamento.observacoes) {
       const obsLines = doc.splitTextToSize(orcamento.observacoes, cardWidth - 6);
+      // Verificar se as observações cabem
+      const obsHeight = obsLines.length * 4 + 5;
+      if (yPos + obsHeight > limiteSeguro) {
+        doc.addPage();
+        yPos = 20;
+      }
       doc.text(obsLines, cardX, yPos);
-      yPos += obsLines.length * 4 + 5;
+      yPos += obsHeight;
+    }
+    
+    // Verificar espaço para os bullet points (aproximadamente 15mm)
+    if (yPos + 15 > limiteSeguro) {
+      doc.addPage();
+      yPos = 20;
     }
     
     doc.setTextColor(100, 100, 100);
