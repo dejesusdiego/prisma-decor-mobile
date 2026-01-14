@@ -28,11 +28,14 @@ export function useUserRole(): UseUserRoleResult {
           .from('user_roles')
           .select('role')
           .eq('user_id', user.id)
-          .single();
+          .limit(1)
+          .maybeSingle();
 
         if (error) {
           console.error('Erro ao buscar role do usuário:', error);
           setRole('user'); // Default to user if no role found
+        } else if (!data) {
+          setRole('user');
         } else {
           setRole(data.role as AppRole);
         }

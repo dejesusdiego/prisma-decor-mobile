@@ -1,9 +1,6 @@
-project_id = "emmogpqoqfmwtipxwcit"
+project_id = "tjwpqrlfhngibuwqodcn"
 
 [functions.send-lead-to-monday]
-verify_jwt = false
-
-[functions.seed-materials]
 verify_jwt = false
 
 [functions.save-visit-request]
