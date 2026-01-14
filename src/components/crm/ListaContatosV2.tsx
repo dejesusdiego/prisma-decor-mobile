@@ -76,6 +76,7 @@ import { HelpTooltip } from '@/components/ui/HelpTooltip';
 import { TipBanner } from '@/components/ui/TipBanner';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useNavigate } from 'react-router-dom';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 const formatCurrency = (value: number | null) => {
   if (!value) return 'R$ 0';
@@ -417,18 +418,29 @@ export function ListaContatosV2({ onVerContato }: ListaContatosProps) {
 
               {/* Tabela */}
               {contatosFiltrados.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  <User className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Nenhum contato encontrado</p>
-                  {temFiltrosAtivos && (
-                    <Button 
-                      variant="link" 
-                      onClick={limparFiltros}
-                      className="mt-2"
-                    >
-                      Limpar filtros
-                    </Button>
-                  )}
+                <div className="py-12">
+                  <EmptyState
+                    variant="contatos"
+                    title={temFiltrosAtivos ? 'Nenhum contato encontrado' : 'Nenhum contato'}
+                    description={
+                      temFiltrosAtivos
+                        ? 'Tente ajustar os filtros de busca, tipo ou temperatura para ver mais resultados.'
+                        : 'Adicione contatos através do CRM para começar a gerenciar seus clientes e oportunidades.'
+                    }
+                    action={
+                      temFiltrosAtivos
+                        ? {
+                            label: 'Limpar Filtros',
+                            onClick: limparFiltros,
+                            variant: 'outline'
+                          }
+                        : {
+                            label: 'Adicionar Contato',
+                            onClick: () => setDialogOpen(true),
+                            variant: 'default'
+                          }
+                    }
+                  />
                 </div>
               ) : (
                 <div className="rounded-md border overflow-x-auto">

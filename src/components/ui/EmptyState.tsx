@@ -68,23 +68,23 @@ const VARIANT_CONFIG: Record<EmptyStateVariant, { icon: LucideIcon; title: strin
   },
   orcamentos: {
     icon: ClipboardList,
-    title: 'Nenhum orçamento',
-    description: 'Comece criando seu primeiro orçamento.'
+    title: 'Nenhum orçamento encontrado',
+    description: 'Comece criando seu primeiro orçamento clicando em "Novo Orçamento" na sidebar.'
   },
   contatos: {
     icon: Users,
-    title: 'Nenhum contato',
-    description: 'Adicione contatos para começar a gerenciar seus clientes.'
+    title: 'Nenhum contato encontrado',
+    description: 'Adicione contatos através do CRM para começar a gerenciar seus clientes e oportunidades.'
   },
   pedidos: {
     icon: Package,
-    title: 'Nenhum pedido',
-    description: 'Os pedidos aparecerão aqui quando orçamentos forem aprovados.'
+    title: 'Nenhum pedido em produção',
+    description: 'Os pedidos aparecerão aqui quando orçamentos forem aprovados e convertidos em pedidos de produção.'
   },
   financeiro: {
     icon: DollarSign,
-    title: 'Sem movimentações',
-    description: 'Nenhuma movimentação financeira no período.'
+    title: 'Sem movimentações financeiras',
+    description: 'Nenhuma movimentação financeira encontrada no período selecionado. Tente ajustar os filtros ou importar um extrato bancário.'
   },
   calendario: {
     icon: Calendar,

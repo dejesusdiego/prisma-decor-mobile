@@ -45,6 +45,7 @@ import { NotificationCenter } from '@/components/NotificationCenter';
 import { CalendarioGeral } from '@/components/calendario/CalendarioGeral';
 import { OrgSettingsForm } from '@/components/settings/OrgSettingsForm';
 import { ThemeSelector } from '@/components/settings/ThemeSelector';
+import { Breadcrumbs, type BreadcrumbItem } from '@/components/ui/Breadcrumbs';
 
 interface ClienteDataFromVisita {
   nome: string;
@@ -227,6 +228,105 @@ export default function GerarOrcamento() {
     }
   };
 
+  const getBreadcrumbs = (): BreadcrumbItem[] => {
+    const breadcrumbs: BreadcrumbItem[] = [];
+    
+    // Sempre começar com Dashboard se não estiver nele
+    if (view !== 'dashboard' && view !== 'home') {
+      breadcrumbs.push({
+        label: 'Dashboard',
+        onClick: () => setView('dashboard')
+      });
+    }
+
+    // Adicionar breadcrumbs baseado na view
+    switch (view) {
+      case 'novoOrcamento':
+        breadcrumbs.push({
+          label: orcamentoEditandoId ? 'Editar Orçamento' : 'Novo Orçamento'
+        });
+        break;
+      case 'listaOrcamentos':
+        breadcrumbs.push({ label: 'Meus Orçamentos' });
+        break;
+      case 'visualizarOrcamento':
+        breadcrumbs.push(
+          { label: 'Meus Orçamentos', onClick: () => setView('listaOrcamentos') },
+          { label: 'Visualizar Orçamento' }
+        );
+        break;
+      case 'gestaoMateriais':
+        breadcrumbs.push({ label: 'Gestão de Materiais' });
+        break;
+      case 'configOrganizacao':
+        breadcrumbs.push({ label: 'Configurações da Empresa' });
+        break;
+      case 'ajustesSistema':
+        breadcrumbs.push({ label: 'Ajustes do Sistema' });
+        break;
+      case 'solicitacoesVisita':
+        breadcrumbs.push({ label: 'Solicitações de Visita' });
+        break;
+      case 'calendarioGeral':
+        breadcrumbs.push({ label: 'Calendário Geral' });
+        break;
+      case 'finDashboard':
+      case 'finConciliacao':
+      case 'finContasPagar':
+      case 'finContasReceber':
+      case 'finLancamentos':
+      case 'finRelatorios':
+      case 'finVendedores':
+      case 'finKPIs':
+      case 'finFluxoPrevisto':
+      case 'finRentabilidade':
+      case 'finMargemReal':
+      case 'finComissoes':
+      case 'finConsolidado':
+        breadcrumbs.push(
+          { label: 'Financeiro', onClick: () => setView('finDashboard') }
+        );
+        if (view !== 'finDashboard') {
+          breadcrumbs.push({ label: getPageTitle() });
+        }
+        break;
+      case 'crmPainel':
+      case 'crmContatos':
+      case 'crmDetalheContato':
+      case 'crmPipeline':
+      case 'crmRelatorios':
+      case 'crmAtividades':
+        breadcrumbs.push(
+          { label: 'CRM', onClick: () => setView('crmPainel') }
+        );
+        if (view !== 'crmPainel') {
+          breadcrumbs.push({ label: getPageTitle() });
+        }
+        break;
+      case 'prodDashboard':
+      case 'prodKanban':
+      case 'prodLista':
+      case 'prodFicha':
+      case 'prodAgenda':
+      case 'prodRelatorio':
+        breadcrumbs.push(
+          { label: 'Produção', onClick: () => setView('prodDashboard') }
+        );
+        if (view !== 'prodDashboard') {
+          breadcrumbs.push({ label: getPageTitle() });
+        }
+        break;
+      case 'categoriasFormas':
+        breadcrumbs.push(
+          { label: 'Financeiro', onClick: () => setView('finDashboard') },
+          { label: 'Categorias e Formas de Pagamento' }
+        );
+        break;
+    }
+    
+    return breadcrumbs;
+  };
+
   return (
     <div className="min-h-screen bg-background flex w-full">
       <OrcamentoSidebar currentView={view} onNavigate={handleNavigate} />
@@ -252,6 +352,12 @@ export default function GerarOrcamento() {
         {/* Main content */}
         <main className="flex-1 overflow-y-auto p-6">
           <div className="max-w-7xl mx-auto">
+            {/* Breadcrumbs */}
+            {view !== 'dashboard' && view !== 'home' && getBreadcrumbs().length > 0 && (
+              <div className="mb-4">
+                <Breadcrumbs items={getBreadcrumbs()} />
+              </div>
+            )}
             {view === 'home' && (
               <DashboardExecutivo onNavigate={(v, params) => {
                 if (params?.id && v === 'visualizar') {

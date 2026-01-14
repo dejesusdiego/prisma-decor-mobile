@@ -353,10 +353,11 @@ export function OrcamentoSidebar({ currentView, onNavigate }: OrcamentoSidebarPr
         className={cn(
           "w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 relative",
           "hover:bg-accent/50",
-          isActive && !isLocked && "bg-primary text-primary-foreground hover:bg-primary/90",
-          !isActive && !isLocked && "text-muted-foreground hover:text-foreground",
+          isActive && !isLocked && "bg-primary text-primary-foreground hover:bg-primary/90 border-l-4 border-l-primary-foreground",
+          !isActive && !isLocked && "text-muted-foreground hover:text-foreground hover:bg-accent/30",
           isLocked && "text-muted-foreground/50 cursor-not-allowed hover:bg-transparent"
         )}
+        aria-current={isActive ? "page" : undefined}
       >
         <div className="relative">
           {isLocked ? (

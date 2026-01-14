@@ -25,6 +25,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useOrganizationContext } from '@/contexts/OrganizationContext';
 import { toast } from '@/hooks/use-toast';
 import { LoadingTableRows, LoadingSection } from '@/components/ui/LoadingState';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { DialogValidade } from './DialogValidade';
 import { DialogDuplicarOrcamento } from './dialogs/DialogDuplicarOrcamento';
 import { gerarPdfOrcamento } from '@/lib/gerarPdfOrcamento';
@@ -514,7 +515,7 @@ const carregarOrcamentos = async () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>Meus Orçamentos</CardTitle>
+          <CardTitle className="text-2xl">Meus Orçamentos</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Filtros */}
@@ -565,8 +566,32 @@ const carregarOrcamentos = async () => {
               </Table>
             </div>
           ) : orcamentosFiltrados.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              Nenhum orçamento encontrado
+            <div className="py-8">
+              <EmptyState
+                variant="orcamentos"
+                title={filtroNome || filtroStatus !== 'todos' ? 'Nenhum orçamento encontrado' : 'Nenhum orçamento'}
+                description={
+                  filtroNome || filtroStatus !== 'todos'
+                    ? 'Tente ajustar os filtros de busca ou status para ver mais resultados.'
+                    : 'Comece criando seu primeiro orçamento clicando em "Novo Orçamento" na sidebar.'
+                }
+                action={
+                  filtroNome || filtroStatus !== 'todos'
+                    ? {
+                        label: 'Limpar Filtros',
+                        onClick: () => {
+                          setFiltroNome('');
+                          setFiltroStatus('todos');
+                        },
+                        variant: 'outline'
+                      }
+                    : {
+                        label: 'Novo Orçamento',
+                        onClick: () => onVoltar(),
+                        variant: 'default'
+                      }
+                }
+              />
             </div>
           ) : (
             <div className="rounded-md border">
