@@ -59,25 +59,6 @@ export interface Theme {
     primary: string; // Cor para preview
     accent: string;
   };
-  // Personalidade única do tema
-  personality: {
-    // Gradientes únicos
-    cardGradient?: string; // Gradiente para cards
-    buttonGradient?: string; // Gradiente para botões primários
-    headerGradient?: string; // Gradiente para headers
-    // Sombras temáticas
-    cardShadow?: string; // Sombra para cards
-    buttonShadow?: string; // Sombra para botões
-    // Bordas especiais
-    borderStyle?: 'rounded' | 'rounded-lg' | 'rounded-xl' | 'sharp'; // Estilo de borda
-    borderWidth?: 'thin' | 'medium' | 'thick'; // Espessura da borda
-    // Efeitos especiais
-    glowEffect?: boolean; // Efeito de brilho
-    glassEffect?: boolean; // Efeito glassmorphism
-    // Animações
-    hoverScale?: boolean; // Escala no hover
-    smoothTransitions?: boolean; // Transições suaves
-  };
 }
 
 /**
@@ -154,19 +135,6 @@ const defaultTheme: Theme = {
     chart3: '43 74% 55%',
     chart4: '280 65% 65%',
     chart5: '12 76% 65%',
-  },
-  personality: {
-    cardGradient: 'linear-gradient(135deg, hsl(0 0% 100%) 0%, hsl(0 0% 98%) 100%)',
-    buttonGradient: 'linear-gradient(135deg, hsl(43 74% 52%) 0%, hsl(43 74% 42%) 100%)',
-    headerGradient: 'linear-gradient(135deg, hsl(0 0% 10%) 0%, hsl(0 0% 23%) 100%)',
-    cardShadow: '0 4px 20px hsl(43 74% 52% / 0.15), 0 2px 8px hsl(0 0% 0% / 0.1)',
-    buttonShadow: '0 4px 12px hsl(43 74% 52% / 0.4)',
-    borderStyle: 'rounded-lg',
-    borderWidth: 'medium',
-    glowEffect: true,
-    glassEffect: false,
-    hoverScale: true,
-    smoothTransitions: true,
   },
 };
 
@@ -245,19 +213,6 @@ const blueTheme: Theme = {
     chart4: '280 65% 65%',
     chart5: '12 76% 65%',
   },
-  personality: {
-    cardGradient: 'linear-gradient(135deg, hsl(217 91% 60% / 0.05) 0%, hsl(217 91% 60% / 0.02) 100%)',
-    buttonGradient: 'linear-gradient(135deg, hsl(217 91% 60%) 0%, hsl(217 91% 50%) 100%)',
-    headerGradient: 'linear-gradient(135deg, hsl(217 91% 60%) 0%, hsl(217 91% 40%) 100%)',
-    cardShadow: '0 4px 16px hsl(217 91% 60% / 0.12), 0 2px 6px hsl(217 91% 60% / 0.08)',
-    buttonShadow: '0 4px 14px hsl(217 91% 60% / 0.35)',
-    borderStyle: 'rounded-lg',
-    borderWidth: 'medium',
-    glowEffect: false,
-    glassEffect: false,
-    hoverScale: true,
-    smoothTransitions: true,
-  },
 };
 
 /**
@@ -335,19 +290,6 @@ const greenTheme: Theme = {
     chart4: '280 65% 65%',
     chart5: '12 76% 65%',
   },
-  personality: {
-    cardGradient: 'linear-gradient(135deg, hsl(142 76% 36% / 0.08) 0%, hsl(142 76% 36% / 0.03) 100%)',
-    buttonGradient: 'linear-gradient(135deg, hsl(142 76% 36%) 0%, hsl(142 70% 49%) 100%)',
-    headerGradient: 'linear-gradient(135deg, hsl(142 76% 36%) 0%, hsl(142 60% 30%) 100%)',
-    cardShadow: '0 4px 18px hsl(142 76% 36% / 0.15), 0 2px 8px hsl(142 76% 36% / 0.1)',
-    buttonShadow: '0 4px 16px hsl(142 70% 49% / 0.4)',
-    borderStyle: 'rounded-xl',
-    borderWidth: 'medium',
-    glowEffect: false,
-    glassEffect: true,
-    hoverScale: true,
-    smoothTransitions: true,
-  },
 };
 
 /**
@@ -392,19 +334,6 @@ const purpleTheme: Theme = {
     chart3: '142 76% 36%',
     chart4: '43 74% 52%',
     chart5: '12 76% 61%',
-  },
-  personality: {
-    cardGradient: 'linear-gradient(135deg, hsl(280 65% 60% / 0.1) 0%, hsl(280 65% 60% / 0.05) 100%)',
-    buttonGradient: 'linear-gradient(135deg, hsl(280 65% 60%) 0%, hsl(280 65% 70%) 100%)',
-    headerGradient: 'linear-gradient(135deg, hsl(280 65% 60%) 0%, hsl(280 50% 50%) 100%)',
-    cardShadow: '0 6px 24px hsl(280 65% 60% / 0.2), 0 2px 8px hsl(280 65% 60% / 0.15)',
-    buttonShadow: '0 6px 20px hsl(280 65% 70% / 0.45)',
-    borderStyle: 'rounded-xl',
-    borderWidth: 'medium',
-    glowEffect: true,
-    glassEffect: false,
-    hoverScale: true,
-    smoothTransitions: true,
   },
   dark: {
     primary: '280 65% 70%',
@@ -483,19 +412,6 @@ const redTheme: Theme = {
     chart4: '280 65% 60%',
     chart5: '43 74% 52%',
   },
-  personality: {
-    cardGradient: 'linear-gradient(135deg, hsl(0 84% 60% / 0.08) 0%, hsl(0 84% 60% / 0.03) 100%)',
-    buttonGradient: 'linear-gradient(135deg, hsl(0 72% 51%) 0%, hsl(0 84% 60%) 100%)',
-    headerGradient: 'linear-gradient(135deg, hsl(0 72% 51%) 0%, hsl(0 60% 45%) 100%)',
-    cardShadow: '0 5px 20px hsl(0 84% 60% / 0.18), 0 2px 8px hsl(0 84% 60% / 0.12)',
-    buttonShadow: '0 5px 18px hsl(0 84% 60% / 0.5)',
-    borderStyle: 'rounded-lg',
-    borderWidth: 'thick',
-    glowEffect: false,
-    glassEffect: false,
-    hoverScale: true,
-    smoothTransitions: true,
-  },
   dark: {
     primary: '0 84% 60%',
     primaryForeground: '0 0% 98%',
@@ -572,19 +488,6 @@ const orangeTheme: Theme = {
     chart3: '142 76% 36%',
     chart4: '280 65% 60%',
     chart5: '43 74% 52%',
-  },
-  personality: {
-    cardGradient: 'linear-gradient(135deg, hsl(24 95% 53% / 0.1) 0%, hsl(24 95% 58% / 0.05) 100%)',
-    buttonGradient: 'linear-gradient(135deg, hsl(24 95% 53%) 0%, hsl(24 95% 58%) 100%)',
-    headerGradient: 'linear-gradient(135deg, hsl(24 95% 53%) 0%, hsl(24 85% 48%) 100%)',
-    cardShadow: '0 4px 18px hsl(24 95% 58% / 0.16), 0 2px 8px hsl(24 95% 58% / 0.1)',
-    buttonShadow: '0 4px 16px hsl(24 95% 58% / 0.42)',
-    borderStyle: 'rounded-xl',
-    borderWidth: 'medium',
-    glowEffect: false,
-    glassEffect: false,
-    hoverScale: true,
-    smoothTransitions: true,
   },
   dark: {
     primary: '24 95% 58%',
@@ -663,19 +566,6 @@ const tealTheme: Theme = {
     chart4: '280 65% 60%',
     chart5: '43 74% 52%',
   },
-  personality: {
-    cardGradient: 'linear-gradient(135deg, hsl(173 80% 40% / 0.09) 0%, hsl(173 80% 45% / 0.04) 100%)',
-    buttonGradient: 'linear-gradient(135deg, hsl(173 80% 40%) 0%, hsl(173 80% 45%) 100%)',
-    headerGradient: 'linear-gradient(135deg, hsl(173 80% 40%) 0%, hsl(173 70% 35%) 100%)',
-    cardShadow: '0 4px 16px hsl(173 80% 45% / 0.14), 0 2px 6px hsl(173 80% 45% / 0.09)',
-    buttonShadow: '0 4px 14px hsl(173 80% 45% / 0.38)',
-    borderStyle: 'rounded-lg',
-    borderWidth: 'thin',
-    glowEffect: false,
-    glassEffect: true,
-    hoverScale: true,
-    smoothTransitions: true,
-  },
   dark: {
     primary: '173 80% 45%',
     primaryForeground: '0 0% 98%',
@@ -753,19 +643,6 @@ const indigoTheme: Theme = {
     chart4: '280 65% 60%',
     chart5: '43 74% 52%',
   },
-  personality: {
-    cardGradient: 'linear-gradient(135deg, hsl(239 84% 67% / 0.08) 0%, hsl(239 84% 72% / 0.04) 100%)',
-    buttonGradient: 'linear-gradient(135deg, hsl(239 84% 67%) 0%, hsl(239 84% 72%) 100%)',
-    headerGradient: 'linear-gradient(135deg, hsl(239 84% 67%) 0%, hsl(239 70% 60%) 100%)',
-    cardShadow: '0 5px 20px hsl(239 84% 72% / 0.17), 0 2px 8px hsl(239 84% 72% / 0.11)',
-    buttonShadow: '0 5px 18px hsl(239 84% 72% / 0.44)',
-    borderStyle: 'rounded-lg',
-    borderWidth: 'medium',
-    glowEffect: true,
-    glassEffect: false,
-    hoverScale: true,
-    smoothTransitions: true,
-  },
   dark: {
     primary: '239 84% 72%',
     primaryForeground: '0 0% 98%',
@@ -827,58 +704,12 @@ export function getTheme(name: ThemeName): Theme {
 export function applyTheme(theme: Theme, isDark: boolean = false): void {
   const colors = isDark ? theme.dark : theme.light;
   const root = document.documentElement;
-  const personality = theme.personality;
   
-  // Aplicar todas as variáveis CSS de cores
+  // Aplicar todas as variáveis CSS
   Object.entries(colors).forEach(([key, value]) => {
     const cssVar = `--${key.replace(/([A-Z])/g, '-$1').toLowerCase()}`;
     root.style.setProperty(cssVar, value);
   });
-  
-  // Aplicar personalidade do tema (gradientes, sombras, etc)
-  if (personality) {
-    if (personality.cardGradient) {
-      root.style.setProperty('--theme-card-gradient', personality.cardGradient);
-    }
-    if (personality.buttonGradient) {
-      root.style.setProperty('--theme-button-gradient', personality.buttonGradient);
-    }
-    if (personality.headerGradient) {
-      root.style.setProperty('--theme-header-gradient', personality.headerGradient);
-    }
-    if (personality.cardShadow) {
-      root.style.setProperty('--theme-card-shadow', personality.cardShadow);
-    }
-    if (personality.buttonShadow) {
-      root.style.setProperty('--theme-button-shadow', personality.buttonShadow);
-    }
-    if (personality.borderStyle) {
-      root.setAttribute('data-border-style', personality.borderStyle);
-    }
-    if (personality.borderWidth) {
-      root.setAttribute('data-border-width', personality.borderWidth);
-    }
-    if (personality.glowEffect) {
-      root.setAttribute('data-glow-effect', 'true');
-    } else {
-      root.removeAttribute('data-glow-effect');
-    }
-    if (personality.glassEffect) {
-      root.setAttribute('data-glass-effect', 'true');
-    } else {
-      root.removeAttribute('data-glass-effect');
-    }
-    if (personality.hoverScale) {
-      root.setAttribute('data-hover-scale', 'true');
-    } else {
-      root.removeAttribute('data-hover-scale');
-    }
-    if (personality.smoothTransitions) {
-      root.setAttribute('data-smooth-transitions', 'true');
-    } else {
-      root.removeAttribute('data-smooth-transitions');
-    }
-  }
   
   // Aplicar classe dark se necessário
   if (isDark) {
