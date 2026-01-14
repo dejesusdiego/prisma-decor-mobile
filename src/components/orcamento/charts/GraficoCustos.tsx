@@ -23,6 +23,7 @@ export function GraficoCustos({ dados }: GraficoCustosProps) {
   };
 
   const total = dados.reduce((sum, item) => sum + item.valor, 0);
+  const hasData = total > 0 && dados.some(d => d.valor > 0);
 
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
@@ -70,39 +71,51 @@ export function GraficoCustos({ dados }: GraficoCustosProps) {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="h-[250px] w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={dados}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                label={renderCustomLabel}
-                outerRadius={90}
-                innerRadius={40}
-                dataKey="valor"
-                paddingAngle={2}
-              >
-                {dados.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.cor} />
-                ))}
-              </Pie>
-              <Tooltip content={<CustomTooltip />} />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-        <div className="flex flex-wrap justify-center gap-4 mt-2">
-          {dados.map((item, index) => (
-            <div key={index} className="flex items-center gap-2">
-              <div 
-                className="w-3 h-3 rounded-full" 
-                style={{ backgroundColor: item.cor }}
-              />
-              <span className="text-sm text-muted-foreground">{item.nome}</span>
+        {!hasData ? (
+          <div className="h-[250px] flex items-center justify-center">
+            <div className="text-center text-muted-foreground">
+              <PieChartIcon className="h-12 w-12 mx-auto mb-2 opacity-50" />
+              <p className="text-sm">Sem dados de custos no período</p>
+              <p className="text-xs mt-1">Os custos aparecerão aqui quando houver orçamentos com valores registrados</p>
             </div>
-          ))}
-        </div>
+          </div>
+        ) : (
+          <>
+            <div className="h-[250px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={dados.filter(d => d.valor > 0)}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={renderCustomLabel}
+                    outerRadius={90}
+                    innerRadius={40}
+                    dataKey="valor"
+                    paddingAngle={2}
+                  >
+                    {dados.filter(d => d.valor > 0).map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.cor} />
+                    ))}
+                  </Pie>
+                  <Tooltip content={<CustomTooltip />} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="flex flex-wrap justify-center gap-4 mt-2">
+              {dados.filter(d => d.valor > 0).map((item, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <div 
+                    className="w-3 h-3 rounded-full" 
+                    style={{ backgroundColor: item.cor }}
+                  />
+                  <span className="text-sm text-muted-foreground">{item.nome}</span>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </CardContent>
     </Card>
   );

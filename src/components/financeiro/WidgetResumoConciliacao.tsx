@@ -49,9 +49,14 @@ export function WidgetResumoConciliacao({ onNavigate }: WidgetResumoConciliacaoP
     ? 'text-amber-500' 
     : 'text-emerald-500';
 
-  const progressoPercent = resumo.movimentacoesPendentes > 0
-    ? Math.round(((resumo.saldoSistemaConciliado / Math.max(resumo.saldoExtratoImportado, 1)) * 100))
-    : 100;
+  // Calcular progresso: se não há extrato importado, progresso é 0
+  // Se há extrato mas não há movimentações pendentes, progresso é 100%
+  // Caso contrário, calcular baseado no saldo conciliado vs saldo do extrato
+  const progressoPercent = !resumo.ultimaImportacao || resumo.saldoExtratoImportado === 0
+    ? 0
+    : resumo.movimentacoesPendentes === 0
+    ? 100
+    : Math.min(100, Math.round(((resumo.saldoSistemaConciliado / Math.max(resumo.saldoExtratoImportado, 1)) * 100)));
 
   return (
     <Card className={cn(

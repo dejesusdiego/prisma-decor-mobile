@@ -44,7 +44,9 @@ export function DistribuicaoCidades({ dados }: DistribuicaoCidadesProps) {
     return null;
   };
 
-  const dadosFormatados = dados.map(d => ({
+  // Filtrar apenas cidades válidas e formatar
+  const dadosValidos = dados.filter(d => d.cidade && d.cidade !== 'Não informada' && d.cidade !== 'Não inform...');
+  const dadosFormatados = dadosValidos.map(d => ({
     ...d,
     cidadeAbrev: d.cidade.length > 12 ? d.cidade.substring(0, 10) + '...' : d.cidade,
   }));
@@ -58,15 +60,19 @@ export function DistribuicaoCidades({ dados }: DistribuicaoCidadesProps) {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {dados.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            Sem dados de cidades ainda
+        {dados.length === 0 || dados.every(d => !d.cidade || d.cidade === 'Não informada' || d.cidade === 'Não inform...') ? (
+          <div className="h-[250px] flex items-center justify-center">
+            <div className="text-center text-muted-foreground">
+              <MapPin className="h-12 w-12 mx-auto mb-2 opacity-50" />
+              <p className="text-sm">Sem dados de cidades ainda</p>
+              <p className="text-xs mt-1">As cidades aparecerão aqui quando os orçamentos tiverem cidade informada</p>
+            </div>
           </div>
         ) : (
           <div className="h-[250px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
-                data={dadosFormatados}
+                data={dadosFormatados.length > 0 ? dadosFormatados : []}
                 layout="vertical"
                 margin={{ top: 5, right: 30, left: 0, bottom: 5 }}
               >
