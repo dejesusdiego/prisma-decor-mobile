@@ -358,8 +358,7 @@ export function DashboardContent({
                 // Toast será mostrado pelo hook useOnboarding se necessário
               }}
             >
-              <div className="lg:col-span-2">
-                <Card>
+              <Card className="lg:col-span-2">
                 <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle className="text-base flex items-center gap-2">
                     <Clock className="h-4 w-4 text-muted-foreground" />
