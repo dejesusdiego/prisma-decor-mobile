@@ -60,7 +60,7 @@ export function WidgetResumoConciliacao({ onNavigate }: WidgetResumoConciliacaoP
 
   return (
     <Card className={cn(
-      "h-[320px] flex flex-col",
+      "min-h-[320px] flex flex-col",
       resumo.extratoDesatualizado && "border-amber-500/50 bg-amber-50/30 dark:bg-amber-950/20"
     )}>
       <CardHeader className="flex flex-row items-center justify-between pb-2 shrink-0">

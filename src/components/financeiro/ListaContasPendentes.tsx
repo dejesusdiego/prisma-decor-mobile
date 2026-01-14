@@ -67,9 +67,11 @@ function ContaItem({ conta }: { conta: ContaPendente }) {
           <ArrowUpCircle className="h-5 w-5 text-emerald-500 shrink-0 mt-0.5" />
         )}
         <div className="flex-1 min-w-0">
-          <p className="font-medium text-sm truncate">{conta.descricao}</p>
+          <p className="font-medium text-sm break-words line-clamp-2" title={conta.descricao}>
+            {conta.descricao}
+          </p>
           {conta.clienteOuFornecedor && (
-            <p className="text-xs text-muted-foreground truncate">
+            <p className="text-xs text-muted-foreground break-words line-clamp-1" title={conta.clienteOuFornecedor}>
               {conta.clienteOuFornecedor}
             </p>
           )}
@@ -112,8 +114,8 @@ export function ListaContasPendentes({ contasPagar, contasReceber, isLoading }: 
   const totalAtrasadosReceber = contasReceber.filter(c => c.status === 'atrasado').length;
 
   return (
-    <Card>
-      <CardHeader className="pb-2">
+    <Card className="min-h-[320px] flex flex-col">
+      <CardHeader className="pb-2 shrink-0">
         <CardTitle className="text-base flex items-center gap-2">
           <Calendar className="h-4 w-4" />
           Contas Pendentes
@@ -125,7 +127,7 @@ export function ListaContasPendentes({ contasPagar, contasReceber, isLoading }: 
           )}
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-1">
         <Tabs defaultValue="pagar">
           <TabsList className="w-full mb-4">
             <TabsTrigger value="pagar" className="flex-1 gap-1 text-xs sm:text-sm">

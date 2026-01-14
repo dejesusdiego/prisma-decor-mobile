@@ -28,7 +28,7 @@ function getDataLabel(data: Date): string {
 
 function LancamentoItem({ lancamento }: { lancamento: LancamentoRecente }) {
   return (
-    <div className="flex items-center justify-between py-3 border-b last:border-0">
+    <div className="flex items-start justify-between py-3 border-b last:border-0 gap-2">
       <div className="flex items-start gap-3 flex-1 min-w-0">
         {lancamento.tipo === 'entrada' ? (
           <div className="h-8 w-8 rounded-full bg-emerald-100 dark:bg-emerald-950 flex items-center justify-center shrink-0">
@@ -40,24 +40,26 @@ function LancamentoItem({ lancamento }: { lancamento: LancamentoRecente }) {
           </div>
         )}
         <div className="flex-1 min-w-0">
-          <p className="font-medium text-sm truncate">{lancamento.descricao}</p>
-          <div className="flex items-center gap-2 mt-0.5">
-            <span className="text-xs text-muted-foreground">
+          <p className="font-medium text-sm break-words line-clamp-2" title={lancamento.descricao}>
+            {lancamento.descricao}
+          </p>
+          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+            <span className="text-xs text-muted-foreground shrink-0">
               {getDataLabel(lancamento.data)}
             </span>
             {lancamento.categoria && (
               <>
-                <span className="text-muted-foreground">•</span>
+                <span className="text-muted-foreground shrink-0">•</span>
                 <Badge 
                   variant="outline" 
-                  className="text-xs px-1.5 py-0 shrink-0 whitespace-nowrap max-w-[100px] truncate"
+                  className="text-xs px-1.5 py-0 shrink-0 whitespace-nowrap"
                   style={{ 
                     borderColor: lancamento.categoriaCor,
                     color: lancamento.categoriaCor,
                   }}
                   title={lancamento.categoria}
                 >
-                  {lancamento.categoria}
+                  {lancamento.categoria.length > 12 ? lancamento.categoria.substring(0, 10) + '...' : lancamento.categoria}
                 </Badge>
               </>
             )}
@@ -95,8 +97,8 @@ export function ListaLancamentosRecentes({ lancamentos, isLoading }: ListaLancam
   }
 
   return (
-    <Card>
-      <CardHeader className="pb-2">
+    <Card className="min-h-[320px] flex flex-col">
+      <CardHeader className="pb-2 shrink-0">
         <CardTitle className="text-base flex items-center gap-2">
           <Clock className="h-4 w-4" />
           Lançamentos Recentes
@@ -105,7 +107,7 @@ export function ListaLancamentosRecentes({ lancamentos, isLoading }: ListaLancam
           </Badge>
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-1">
         <ScrollArea className="h-[320px] pr-4">
           {lancamentos.length === 0 ? (
             <div className="h-full flex items-center justify-center text-muted-foreground">

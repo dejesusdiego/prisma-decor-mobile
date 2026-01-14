@@ -95,6 +95,7 @@ export function WidgetPendenciasFinanceiras({ onNavigate }: WidgetPendenciasFina
 
   return (
     <Card className={cn(
+      "min-h-[320px] flex flex-col",
       pendencias.totalPendencias > 5 && "border-amber-300 bg-amber-50/50 dark:border-amber-700 dark:bg-amber-950/20"
     )}>
       <CardHeader className="pb-3">
@@ -111,7 +112,7 @@ export function WidgetPendenciasFinanceiras({ onNavigate }: WidgetPendenciasFina
           </Badge>
         </div>
       </CardHeader>
-      <CardContent className="space-y-2">
+      <CardContent className="space-y-2 flex-1">
         {items.map((item, index) => (
           <button
             key={index}
@@ -122,11 +123,11 @@ export function WidgetPendenciasFinanceiras({ onNavigate }: WidgetPendenciasFina
               "hover:opacity-80"
             )}
           >
-            <div className="flex items-center gap-3">
-              <item.icon className={cn("h-4 w-4", item.color)} />
-              <div>
-                <p className="text-sm font-medium">{item.label}</p>
-                <p className="text-xs text-muted-foreground">
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+              <item.icon className={cn("h-4 w-4 shrink-0", item.color)} />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium break-words">{item.label}</p>
+                <p className="text-xs text-muted-foreground whitespace-nowrap">
                   {item.count} item(s) • {formatCurrency(item.value)}
                 </p>
               </div>
@@ -140,11 +141,11 @@ export function WidgetPendenciasFinanceiras({ onNavigate }: WidgetPendenciasFina
             onClick={() => onNavigate?.('finConciliacao')}
             className="w-full flex items-center justify-between p-3 rounded-lg bg-blue-100 dark:bg-blue-900/30 hover:opacity-80 transition-colors text-left"
           >
-            <div className="flex items-center gap-3">
-              <AlertTriangle className="h-4 w-4 text-blue-600" />
-              <div>
-                <p className="text-sm font-medium">Orçamentos sem Conciliação</p>
-                <p className="text-xs text-muted-foreground">
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+              <AlertTriangle className="h-4 w-4 text-blue-600 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium break-words">Orçamentos sem Conciliação</p>
+                <p className="text-xs text-muted-foreground whitespace-nowrap">
                   {pendencias.orcamentosSemConciliacao} orçamento(s) aguardando
                 </p>
               </div>

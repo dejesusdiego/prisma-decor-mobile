@@ -93,15 +93,17 @@ function AlertaItem({ alerta, onDismiss, onAction }: {
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
-            <p className="font-medium text-sm flex items-center gap-2">
+            <p className="font-medium text-sm flex items-start gap-2">
               {isParcela ? (
-                <ArrowUpCircle className="h-4 w-4 text-emerald-500 shrink-0" />
+                <ArrowUpCircle className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
               ) : (
-                <ArrowDownCircle className="h-4 w-4 text-red-500 shrink-0" />
+                <ArrowDownCircle className="h-4 w-4 text-red-500 shrink-0 mt-0.5" />
               )}
-              <TruncatedText text={alerta.titulo} maxWidth="180px" className="xl:max-w-[220px]" />
+              <span className="break-words line-clamp-2" title={alerta.titulo}>
+                {alerta.titulo}
+              </span>
             </p>
-            <p className="text-xs text-muted-foreground mt-0.5 truncate">
+            <p className="text-xs text-muted-foreground mt-0.5 break-words line-clamp-1" title={alerta.descricao}>
               {alerta.descricao}
             </p>
           </div>
@@ -347,9 +349,10 @@ export function AlertasVencimento() {
 
   return (
     <Card className={cn(
+      "min-h-[320px] flex flex-col",
       totalAlta > 0 && "border-red-300 dark:border-red-800"
     )}>
-      <CardHeader className="pb-3">
+      <CardHeader className="pb-3 shrink-0">
         <CardTitle className="text-base flex items-center gap-2">
           <Bell className={cn(
             "h-4 w-4",
@@ -375,7 +378,7 @@ export function AlertasVencimento() {
           </div>
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-1">
         <ScrollArea className="h-[320px] pr-2">
           <div className="space-y-2">
             {alertasOrdenados.map((alerta) => (
