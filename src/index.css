@@ -47,6 +47,13 @@ All colors MUST be HSL.
 
     --radius: 0.75rem;
     
+    /* Theme personality variables (set by applyTheme) */
+    --theme-card-gradient: none;
+    --theme-button-gradient: none;
+    --theme-header-gradient: none;
+    --theme-card-shadow: 0 2px 4px hsl(0 0% 0% / 0.05);
+    --theme-button-shadow: 0 2px 4px hsl(0 0% 0% / 0.1);
+    
     /* Chart colors */
     --chart-1: 221 83% 53%;
     --chart-2: 142 76% 36%;
@@ -264,6 +271,92 @@ div[style*="Edit with Lovable"],
 
 .saving-pulse {
   animation: savingPulse 1s ease-in-out infinite;
+}
+
+/* ========================================
+   Theme Personality Effects
+   ======================================== */
+
+/* Card gradients */
+.card-with-gradient {
+  background: var(--theme-card-gradient, hsl(var(--card)));
+}
+
+/* Button gradients */
+.btn-primary-gradient {
+  background: var(--theme-button-gradient, hsl(var(--primary)));
+  box-shadow: var(--theme-button-shadow, 0 2px 4px hsl(0 0% 0% / 0.1));
+  transition: all 0.3s ease;
+}
+
+.btn-primary-gradient:hover:not(:disabled) {
+  filter: brightness(1.05);
+  transform: translateY(-1px);
+  box-shadow: var(--theme-button-shadow, 0 2px 4px hsl(0 0% 0% / 0.1)), 0 4px 12px hsl(0 0% 0% / 0.15);
+}
+
+.btn-primary-gradient:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* Glow effect */
+[data-glow-effect="true"] .card-with-glow {
+  transition: box-shadow 0.3s ease;
+}
+
+[data-glow-effect="true"] .card-with-glow:hover {
+  box-shadow: var(--theme-card-shadow, 0 2px 4px hsl(0 0% 0% / 0.05)), 0 0 20px hsl(var(--primary) / 0.2);
+}
+
+/* Glass effect */
+[data-glass-effect="true"] .card-with-glass {
+  background: hsl(var(--card) / 0.8);
+  backdrop-filter: blur(10px);
+  border: 1px solid hsl(var(--border) / 0.5);
+}
+
+/* Hover scale */
+.hover-scale {
+  transition: transform 0.2s ease;
+}
+
+[data-hover-scale="true"] .hover-scale:hover {
+  transform: scale(1.02);
+}
+
+/* Smooth transitions */
+[data-smooth-transitions="true"] * {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Border styles */
+[data-border-style="rounded"] {
+  --radius: 0.5rem;
+}
+
+[data-border-style="rounded-lg"] {
+  --radius: 0.75rem;
+}
+
+[data-border-style="rounded-xl"] {
+  --radius: 1rem;
+}
+
+[data-border-style="sharp"] {
+  --radius: 0;
+}
+
+/* Border widths */
+[data-border-width="thin"] {
+  --border-width: 1px;
+}
+
+[data-border-width="medium"] {
+  --border-width: 2px;
+}
+
+[data-border-width="thick"] {
+  --border-width: 3px;
 }
 
 /* Success Flash */
