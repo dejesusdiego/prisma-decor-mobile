@@ -528,19 +528,6 @@ const redTheme: Theme = {
     chart4: '280 65% 65%',
     chart5: '43 74% 55%',
   },
-  personality: {
-    cardGradient: 'linear-gradient(135deg, hsl(0 84% 60% / 0.08) 0%, hsl(0 84% 60% / 0.03) 100%)',
-    buttonGradient: 'linear-gradient(135deg, hsl(0 72% 51%) 0%, hsl(0 84% 60%) 100%)',
-    headerGradient: 'linear-gradient(135deg, hsl(0 72% 51%) 0%, hsl(0 60% 45%) 100%)',
-    cardShadow: '0 5px 20px hsl(0 84% 60% / 0.18), 0 2px 8px hsl(0 84% 60% / 0.12)',
-    buttonShadow: '0 5px 18px hsl(0 84% 60% / 0.5)',
-    borderStyle: 'rounded-lg',
-    borderWidth: 'thick',
-    glowEffect: false,
-    glassEffect: false,
-    hoverScale: true,
-    smoothTransitions: true,
-  },
 };
 
 /**
@@ -630,19 +617,6 @@ const orangeTheme: Theme = {
     chart3: '142 70% 45%',
     chart4: '280 65% 65%',
     chart5: '43 74% 55%',
-  },
-  personality: {
-    cardGradient: 'linear-gradient(135deg, hsl(24 95% 53% / 0.1) 0%, hsl(24 95% 58% / 0.05) 100%)',
-    buttonGradient: 'linear-gradient(135deg, hsl(24 95% 53%) 0%, hsl(24 95% 58%) 100%)',
-    headerGradient: 'linear-gradient(135deg, hsl(24 95% 53%) 0%, hsl(24 85% 48%) 100%)',
-    cardShadow: '0 4px 18px hsl(24 95% 58% / 0.16), 0 2px 8px hsl(24 95% 58% / 0.1)',
-    buttonShadow: '0 4px 16px hsl(24 95% 58% / 0.42)',
-    borderStyle: 'rounded-xl',
-    borderWidth: 'medium',
-    glowEffect: false,
-    glassEffect: false,
-    hoverScale: true,
-    smoothTransitions: true,
   },
 };
 
@@ -734,19 +708,6 @@ const tealTheme: Theme = {
     chart4: '280 65% 65%',
     chart5: '43 74% 55%',
   },
-  personality: {
-    cardGradient: 'linear-gradient(135deg, hsl(173 80% 40% / 0.09) 0%, hsl(173 80% 45% / 0.04) 100%)',
-    buttonGradient: 'linear-gradient(135deg, hsl(173 80% 40%) 0%, hsl(173 80% 45%) 100%)',
-    headerGradient: 'linear-gradient(135deg, hsl(173 80% 40%) 0%, hsl(173 70% 35%) 100%)',
-    cardShadow: '0 4px 16px hsl(173 80% 45% / 0.14), 0 2px 6px hsl(173 80% 45% / 0.09)',
-    buttonShadow: '0 4px 14px hsl(173 80% 45% / 0.38)',
-    borderStyle: 'rounded-lg',
-    borderWidth: 'thin',
-    glowEffect: false,
-    glassEffect: true,
-    hoverScale: true,
-    smoothTransitions: true,
-  },
 };
 
 /**
@@ -836,19 +797,6 @@ const indigoTheme: Theme = {
     chart3: '142 70% 45%',
     chart4: '280 65% 65%',
     chart5: '43 74% 55%',
-  },
-  personality: {
-    cardGradient: 'linear-gradient(135deg, hsl(239 84% 67% / 0.08) 0%, hsl(239 84% 72% / 0.04) 100%)',
-    buttonGradient: 'linear-gradient(135deg, hsl(239 84% 67%) 0%, hsl(239 84% 72%) 100%)',
-    headerGradient: 'linear-gradient(135deg, hsl(239 84% 67%) 0%, hsl(239 70% 60%) 100%)',
-    cardShadow: '0 5px 20px hsl(239 84% 72% / 0.17), 0 2px 8px hsl(239 84% 72% / 0.11)',
-    buttonShadow: '0 5px 18px hsl(239 84% 72% / 0.44)',
-    borderStyle: 'rounded-lg',
-    borderWidth: 'medium',
-    glowEffect: true,
-    glassEffect: false,
-    hoverScale: true,
-    smoothTransitions: true,
   },
 };
 
