@@ -194,13 +194,6 @@ const carregarOrcamentos = async () => {
     }
   };
 
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const alterarStatus = async (orcamentoId: string, novoStatus: StatusOrcamento) => {
     const orcamento = orcamentos.find(o => o.id === orcamentoId);
     if (!orcamento) return;
@@ -452,7 +445,7 @@ const carregarOrcamentos = async () => {
           <Button 
             variant="outline" 
             size="sm"
-            onClick={() => {
+            onClick={async () => {
               const colunas = [
                 { campo: 'codigo', titulo: 'Código' },
                 { campo: 'cliente_nome', titulo: 'Cliente' },

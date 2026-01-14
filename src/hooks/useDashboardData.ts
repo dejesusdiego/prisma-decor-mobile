@@ -191,7 +191,10 @@ export function useDashboardData(periodo: PeriodoFiltro = '30d'): DashboardData 
   const [error, setError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
-    if (!organizationId) return;
+    if (!organizationId) {
+      setIsLoading(false);
+      return;
+    }
     
     setIsLoading(true);
     setError(null);
@@ -516,11 +519,13 @@ export function useDashboardData(periodo: PeriodoFiltro = '30d'): DashboardData 
     } finally {
       setIsLoading(false);
     }
-  }, [periodo]);
+  }, [periodo, organizationId]);
 
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    if (organizationId) {
+      loadData();
+    }
+  }, [loadData, organizationId]);
 
   return {
     stats,

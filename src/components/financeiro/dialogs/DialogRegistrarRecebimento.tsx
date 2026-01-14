@@ -274,7 +274,7 @@ export function DialogRegistrarRecebimento({ open, onOpenChange, parcela }: Dial
         }
       }
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       // Invalidação cruzada usando hook centralizado
       invalidateAfterRecebimento();
       invalidateComissoes();
@@ -295,7 +295,7 @@ export function DialogRegistrarRecebimento({ open, onOpenChange, parcela }: Dial
     mutation.mutate(data);
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 10 * 1024 * 1024) { // 10MB
