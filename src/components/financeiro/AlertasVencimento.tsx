@@ -90,16 +90,16 @@ function AlertaItem({ alerta, onDismiss, onAction }: {
         )}
       </div>
       
-      <div className="flex-1 min-w-0">
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 overflow-hidden">
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <div className="flex-1 min-w-0 overflow-hidden">
             <p className="font-medium text-sm flex items-start gap-2">
               {isParcela ? (
                 <ArrowUpCircle className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
               ) : (
                 <ArrowDownCircle className="h-4 w-4 text-red-500 shrink-0 mt-0.5" />
               )}
-              <span className="break-words line-clamp-2" title={alerta.titulo}>
+              <span className="break-words line-clamp-2 flex-1" title={alerta.titulo}>
                 {alerta.titulo}
               </span>
             </p>
@@ -120,9 +120,9 @@ function AlertaItem({ alerta, onDismiss, onAction }: {
           )}
         </div>
         
-        <div className="flex items-center justify-between gap-2 mt-2">
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className={cn("text-xs", config.badge)}>
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Badge variant="outline" className={cn("text-xs shrink-0", config.badge)}>
               {alerta.diasAtraso !== undefined && alerta.diasAtraso > 0 
                 ? `${alerta.diasAtraso}d atraso`
                 : alerta.diasAtraso === 0
