@@ -22,14 +22,14 @@ export function MetaVendas({ meta, realizado }: MetaVendasProps) {
   const atingiu = realizado >= meta;
 
   return (
-    <Card className="border-0 shadow-sm">
-      <CardHeader className="pb-2">
+    <Card className="border-0 shadow-sm h-full flex flex-col">
+      <CardHeader className="pb-2 shrink-0">
         <CardTitle className="text-lg font-semibold flex items-center gap-2">
           <Target className="h-5 w-5 text-muted-foreground" />
           Meta do Mês
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 flex-1">
         <div className="space-y-2">
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Progresso</span>

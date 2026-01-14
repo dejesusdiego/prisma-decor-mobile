@@ -38,15 +38,15 @@ export function AlertasOrcamentos({ alertas, isLoading, onVisualizarOrcamento }:
 
   if (alertas.length === 0) {
     return (
-      <Card>
+      <Card className="h-full">
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
             <AlertCircle className="h-4 w-4 text-muted-foreground" />
             Alertas de Orçamentos
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground text-center py-4">
+        <CardContent className="flex items-center justify-center min-h-[200px]">
+          <p className="text-sm text-muted-foreground text-center">
             Nenhum alerta no momento
           </p>
         </CardContent>
@@ -84,8 +84,8 @@ export function AlertasOrcamentos({ alertas, isLoading, onVisualizarOrcamento }:
   };
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
+    <Card className="h-full flex flex-col">
+      <CardHeader className="pb-3 shrink-0">
         <CardTitle className="text-base flex items-center gap-2">
           <AlertCircle className="h-4 w-4 text-destructive" />
           Alertas de Orçamentos
@@ -94,7 +94,7 @@ export function AlertasOrcamentos({ alertas, isLoading, onVisualizarOrcamento }:
           </span>
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-2">
+      <CardContent className="space-y-2 flex-1 overflow-y-auto">
         {alertas.slice(0, 5).map((alerta) => {
           const config = getAlertConfig(alerta.tipo);
           const Icon = config.icon;

@@ -207,7 +207,7 @@ export function useDashboardData(periodo: PeriodoFiltro = '30d'): DashboardData 
       // Otimização: selecionar apenas campos necessários e limitar a 1000 registros
       const { data: orcamentos, error: orcError } = await supabase
         .from('orcamentos')
-        .select('id, codigo, status, total_geral, total_com_desconto, custo_total, subtotal_materiais, subtotal_mao_obra_costura, subtotal_instalacao, cidade, created_at, cliente_telefone, status_updated_at')
+        .select('id, codigo, status, total_geral, total_com_desconto, custo_total, subtotal_materiais, subtotal_mao_obra_costura, subtotal_instalacao, cidade, created_at, updated_at, cliente_nome, cliente_telefone, status_updated_at, validade_dias')
         .eq('organization_id', organizationId)
         .gte('created_at', inicio.toISOString())
         .lte('created_at', fim.toISOString())

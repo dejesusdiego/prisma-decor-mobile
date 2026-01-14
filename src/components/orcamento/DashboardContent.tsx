@@ -324,20 +324,24 @@ export function DashboardContent({
         {isLoading ? (
           <>
             <ChartSkeleton />
-            <TableSkeleton rows={4} />
+            <ChartSkeleton />
             <div className="lg:col-span-2">
               <TableSkeleton rows={5} />
             </div>
           </>
         ) : (
           <>
-            <MetaVendas meta={metaVendas.meta} realizado={metaVendas.realizado} />
+            <div className="lg:col-span-1">
+              <MetaVendas meta={metaVendas.meta} realizado={metaVendas.realizado} />
+            </div>
             
-            <AlertasOrcamentos 
-              alertas={alertas} 
-              isLoading={isLoading}
-              onVisualizarOrcamento={onVisualizarOrcamento}
-            />
+            <div className="lg:col-span-1">
+              <AlertasOrcamentos 
+                alertas={alertas} 
+                isLoading={isLoading}
+                onVisualizarOrcamento={onVisualizarOrcamento}
+              />
+            </div>
 
             <OnboardingStep
               active={isDashboardTourActive && currentStep === 3}
@@ -354,7 +358,8 @@ export function DashboardContent({
                 // Toast será mostrado pelo hook useOnboarding se necessário
               }}
             >
-              <Card className="lg:col-span-2">
+              <div className="lg:col-span-2">
+                <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle className="text-base flex items-center gap-2">
                     <Clock className="h-4 w-4 text-muted-foreground" />
