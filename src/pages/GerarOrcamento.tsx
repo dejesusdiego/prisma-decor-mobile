@@ -44,6 +44,7 @@ import { RelatorioProducao } from '@/components/producao/RelatorioProducao';
 import { NotificationCenter } from '@/components/NotificationCenter';
 import { CalendarioGeral } from '@/components/calendario/CalendarioGeral';
 import { OrgSettingsForm } from '@/components/settings/OrgSettingsForm';
+import { ThemeSelector } from '@/components/settings/ThemeSelector';
 
 interface ClienteDataFromVisita {
   nome: string;
@@ -181,6 +182,11 @@ export default function GerarOrcamento() {
     setView('prodLista');
   };
 
+  const handleVerContaReceber = (contaId: string) => {
+    // Navegar para a tela de contas a receber
+    setView('finContasReceber');
+  };
+
   const getPageTitle = () => {
     switch (view) {
       case 'home': return '';
@@ -280,6 +286,7 @@ export default function GerarOrcamento() {
                 onEditar={handleEditarOrcamento}
                 onVisualizar={handleVisualizarOrcamento}
                 onVerFinanceiro={isAdmin ? () => setView('finRentabilidade') : undefined}
+                onVerContaReceber={isAdmin ? handleVerContaReceber : undefined}
               />
             )}
 
@@ -359,8 +366,20 @@ export default function GerarOrcamento() {
             {view === 'categoriasFormas' && <CategoriasFormas />}
             
             {view === 'configOrganizacao' && (
-              <div className="container max-w-4xl">
-                <OrgSettingsForm />
+              <div className="container max-w-4xl py-8">
+                <div className="mb-8">
+                  <div className="flex items-center gap-3 mb-2">
+                    <h1 className="text-2xl font-bold">Configurações da Empresa</h1>
+                  </div>
+                  <p className="text-muted-foreground">
+                    Personalize a identidade visual e informações comerciais da sua empresa.
+                    Estas configurações serão aplicadas nos PDFs de orçamentos e na interface do sistema.
+                  </p>
+                </div>
+                <div className="space-y-6">
+                  <ThemeSelector />
+                  <OrgSettingsForm />
+                </div>
               </div>
             )}
 

@@ -37,12 +37,15 @@ interface MargemOrcamento {
   codigo: string;
   cliente_nome: string;
   data: string;
+  status: string;
   valor_orcamento: number;
-  margem_projetada: number;
+  custo_projetado: number;
+  markup_projetado: number;
   valor_recebido: number;
   custo_real: number;
-  margem_real: number;
+  markup_real: number;
   diferenca: number;
+  conciliado: boolean;
 }
 
 export function RelatorioMargemReal({ onBack }: RelatorioMargemRealProps) {
@@ -56,12 +59,12 @@ export function RelatorioMargemReal({ onBack }: RelatorioMargemRealProps) {
         return { itens: [], resumo: { mediaProjetada: 0, mediaRealizada: 0, diferenca: 0 } };
       }
       
-      // Buscar orçamentos com status de pagamento
+      // Buscar orçamentos finalizados (100% concluídos) ou com pagamento
       const { data: orcamentos } = await supabase
         .from('orcamentos')
-        .select('id, codigo, cliente_nome, created_at, total_com_desconto, total_geral, custo_total, margem_percent')
+        .select('id, codigo, cliente_nome, created_at, status, total_com_desconto, total_geral, custo_total, margem_percent')
         .eq('organization_id', organizationId)
-        .in('status', ['pago', 'pago_parcial', 'pago_40', 'instalado', 'concluido'])
+        .in('status', ['finalizado', 'concluido', 'pago', 'instalado'])
         .order('created_at', { ascending: false });
 
       if (!orcamentos || orcamentos.length === 0) {
@@ -71,68 +74,89 @@ export function RelatorioMargemReal({ onBack }: RelatorioMargemRealProps) {
       // Buscar valores recebidos por orçamento
       const { data: contasReceber } = await supabase
         .from('contas_receber')
-        .select('orcamento_id, valor_pago')
+        .select('orcamento_id, valor_pago, valor_total, status')
         .eq('organization_id', organizationId)
         .in('orcamento_id', orcamentos.map(o => o.id));
 
-      // Buscar custos pagos por orçamento
+      // Buscar custos pagos por orçamento (apenas os já pagos para custo real)
       const { data: contasPagar } = await supabase
         .from('contas_pagar')
-        .select('orcamento_id, valor')
+        .select('orcamento_id, valor, status')
         .eq('organization_id', organizationId)
-        .in('orcamento_id', orcamentos.map(o => o.id))
-        .eq('status', 'pago');
+        .in('orcamento_id', orcamentos.map(o => o.id));
 
-      // Mapear valores
-      const recebidoPorOrc = new Map<string, number>();
+      // Mapear valores recebidos
+      const recebidoPorOrc = new Map<string, { pago: number; total: number; quitado: boolean }>();
       (contasReceber || []).forEach(cr => {
         if (cr.orcamento_id) {
-          recebidoPorOrc.set(cr.orcamento_id, 
-            (recebidoPorOrc.get(cr.orcamento_id) || 0) + cr.valor_pago);
+          const atual = recebidoPorOrc.get(cr.orcamento_id) || { pago: 0, total: 0, quitado: false };
+          atual.pago += cr.valor_pago || 0;
+          atual.total += cr.valor_total || 0;
+          atual.quitado = cr.status === 'pago';
+          recebidoPorOrc.set(cr.orcamento_id, atual);
         }
       });
 
-      const custoPorOrc = new Map<string, number>();
+      // Mapear custos pagos
+      const custoPorOrc = new Map<string, { pago: number; total: number; conciliado: boolean }>();
       (contasPagar || []).forEach(cp => {
         if (cp.orcamento_id) {
-          custoPorOrc.set(cp.orcamento_id, 
-            (custoPorOrc.get(cp.orcamento_id) || 0) + cp.valor);
+          const atual = custoPorOrc.get(cp.orcamento_id) || { pago: 0, total: 0, conciliado: true };
+          atual.total += cp.valor || 0;
+          if (cp.status === 'pago') {
+            atual.pago += cp.valor || 0;
+          } else {
+            atual.conciliado = false;
+          }
+          custoPorOrc.set(cp.orcamento_id, atual);
         }
       });
 
-      // Calcular margem real de cada orçamento
+      // Calcular MARKUP real de cada orçamento
+      // Markup = (Receita - Custo) / Custo * 100
       const itens: MargemOrcamento[] = orcamentos.map(orc => {
         const valorOrcamento = orc.total_com_desconto || orc.total_geral || 0;
-        const margemProjetada = orc.margem_percent || 0;
-        const valorRecebido = recebidoPorOrc.get(orc.id) || 0;
-        const custoReal = custoPorOrc.get(orc.id) || orc.custo_total || 0;
+        const custoProjetado = orc.custo_total || 0;
+        const markupProjetado = orc.margem_percent || 0;
         
-        let margemReal = 0;
-        if (valorRecebido > 0) {
-          margemReal = ((valorRecebido - custoReal) / valorRecebido) * 100;
+        const receita = recebidoPorOrc.get(orc.id);
+        const custos = custoPorOrc.get(orc.id);
+        
+        const valorRecebido = receita?.pago || 0;
+        // Se não tem contas a pagar vinculadas, usa o custo projetado
+        const custoReal = custos?.pago || custoProjetado;
+        const conciliado = (receita?.quitado || false) && (custos?.conciliado !== false);
+        
+        // Calcular markup real: (receita - custo) / custo * 100
+        let markupReal = 0;
+        if (custoReal > 0 && valorRecebido > 0) {
+          markupReal = ((valorRecebido - custoReal) / custoReal) * 100;
         }
         
-        const diferenca = margemReal - margemProjetada;
+        const diferenca = markupReal - markupProjetado;
 
         return {
           id: orc.id,
           codigo: orc.codigo,
           cliente_nome: orc.cliente_nome,
           data: orc.created_at,
+          status: orc.status,
           valor_orcamento: valorOrcamento,
-          margem_projetada: margemProjetada,
+          custo_projetado: custoProjetado,
+          markup_projetado: markupProjetado,
           valor_recebido: valorRecebido,
           custo_real: custoReal,
-          margem_real: margemReal,
-          diferenca
+          markup_real: markupReal,
+          diferenca,
+          conciliado
         };
       });
 
-      // Calcular médias
-      const itensComMargem = itens.filter(i => i.valor_recebido > 0);
-      const somaProjetada = itensComMargem.reduce((s, i) => s + i.margem_projetada, 0);
-      const somaRealizada = itensComMargem.reduce((s, i) => s + i.margem_real, 0);
-      const count = itensComMargem.length || 1;
+      // Calcular médias (apenas de orçamentos conciliados/finalizados)
+      const itensFinalizados = itens.filter(i => i.conciliado && i.valor_recebido > 0);
+      const somaProjetada = itensFinalizados.reduce((s, i) => s + i.markup_projetado, 0);
+      const somaRealizada = itensFinalizados.reduce((s, i) => s + i.markup_real, 0);
+      const count = itensFinalizados.length || 1;
 
       return {
         itens,
@@ -151,17 +175,20 @@ export function RelatorioMargemReal({ onBack }: RelatorioMargemRealProps) {
   );
 
   const exportarCSV = () => {
-    const headers = ['Código', 'Cliente', 'Data', 'Valor Orçamento', 'Margem Projetada', 'Valor Recebido', 'Custo Real', 'Margem Real', 'Diferença'];
+    const headers = ['Código', 'Cliente', 'Status', 'Data', 'Valor Orçamento', 'Custo Projetado', 'Markup Projetado', 'Valor Recebido', 'Custo Real', 'Markup Real', 'Diferença', 'Conciliado'];
     const rows = itensFiltrados.map(item => [
       item.codigo,
       item.cliente_nome,
+      item.status,
       format(new Date(item.data), 'dd/MM/yyyy'),
       item.valor_orcamento.toFixed(2),
-      item.margem_projetada.toFixed(2),
+      item.custo_projetado.toFixed(2),
+      item.markup_projetado.toFixed(2),
       item.valor_recebido.toFixed(2),
       item.custo_real.toFixed(2),
-      item.margem_real.toFixed(2),
-      item.diferenca.toFixed(2)
+      item.markup_real.toFixed(2),
+      item.diferenca.toFixed(2),
+      item.conciliado ? 'Sim' : 'Não'
     ]);
     
     const csv = [headers.join(';'), ...rows.map(r => r.join(';'))].join('\n');
@@ -201,10 +228,10 @@ export function RelatorioMargemReal({ onBack }: RelatorioMargemRealProps) {
           <div>
             <h1 className="text-2xl font-bold flex items-center gap-2">
               <Percent className="h-6 w-6 text-primary" />
-              Relatório de Margem Real
+              Markup Real vs Projetado
             </h1>
             <p className="text-muted-foreground">
-              Comparativo entre margem projetada e realizada por orçamento
+              Comparativo de rentabilidade após conciliação completa
             </p>
           </div>
         </div>
@@ -219,10 +246,11 @@ export function RelatorioMargemReal({ onBack }: RelatorioMargemRealProps) {
         <Card className="border-l-4 border-l-amber-500">
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-sm text-muted-foreground">Margem Projetada Média</span>
+              <span className="text-sm text-muted-foreground">Markup Projetado Médio</span>
               <Target className="h-4 w-4 text-amber-500" />
             </div>
             <p className="text-2xl font-bold">{(resumo?.mediaProjetada || 0).toFixed(1)}%</p>
+            <p className="text-xs text-muted-foreground mt-1">Sobre o custo</p>
           </CardContent>
         </Card>
 
@@ -232,10 +260,11 @@ export function RelatorioMargemReal({ onBack }: RelatorioMargemRealProps) {
         )}>
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-sm text-muted-foreground">Margem Realizada Média</span>
+              <span className="text-sm text-muted-foreground">Markup Realizado Médio</span>
               <Percent className={cn("h-4 w-4", diferencaPositiva ? "text-emerald-500" : "text-red-500")} />
             </div>
             <p className="text-2xl font-bold">{(resumo?.mediaRealizada || 0).toFixed(1)}%</p>
+            <p className="text-xs text-muted-foreground mt-1">Pedidos finalizados</p>
           </CardContent>
         </Card>
 
@@ -258,6 +287,7 @@ export function RelatorioMargemReal({ onBack }: RelatorioMargemRealProps) {
             )}>
               {diferencaPositiva ? '+' : ''}{(resumo?.diferenca || 0).toFixed(1)}%
             </p>
+            <p className="text-xs text-muted-foreground mt-1">Markup real vs projetado</p>
           </CardContent>
         </Card>
       </div>
@@ -285,11 +315,11 @@ export function RelatorioMargemReal({ onBack }: RelatorioMargemRealProps) {
                 <TableRow>
                   <TableHead>Código</TableHead>
                   <TableHead>Cliente</TableHead>
-                  <TableHead className="text-right">Valor</TableHead>
-                  <TableHead className="text-right">Margem Proj.</TableHead>
+                  <TableHead className="text-center">Status</TableHead>
                   <TableHead className="text-right">Recebido</TableHead>
                   <TableHead className="text-right">Custo Real</TableHead>
-                  <TableHead className="text-right">Margem Real</TableHead>
+                  <TableHead className="text-right">Markup Proj.</TableHead>
+                  <TableHead className="text-right">Markup Real</TableHead>
                   <TableHead className="text-right">Diferença</TableHead>
                 </TableRow>
               </TableHeader>
@@ -297,23 +327,27 @@ export function RelatorioMargemReal({ onBack }: RelatorioMargemRealProps) {
                 {itensFiltrados.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                      Nenhum orçamento encontrado
+                      Nenhum orçamento finalizado encontrado
                     </TableCell>
                   </TableRow>
                 ) : (
                   itensFiltrados.map(item => (
-                    <TableRow key={item.id}>
+                    <TableRow key={item.id} className={cn(!item.conciliado && "opacity-60")}>
                       <TableCell className="font-medium">{item.codigo}</TableCell>
                       <TableCell>{item.cliente_nome}</TableCell>
-                      <TableCell className="text-right">{formatCurrency(item.valor_orcamento)}</TableCell>
-                      <TableCell className="text-right">{item.margem_projetada.toFixed(1)}%</TableCell>
+                      <TableCell className="text-center">
+                        <Badge variant={item.conciliado ? "default" : "secondary"} className="text-xs">
+                          {item.conciliado ? '✓ Conciliado' : 'Pendente'}
+                        </Badge>
+                      </TableCell>
                       <TableCell className="text-right">{formatCurrency(item.valor_recebido)}</TableCell>
                       <TableCell className="text-right">{formatCurrency(item.custo_real)}</TableCell>
+                      <TableCell className="text-right">{item.markup_projetado.toFixed(1)}%</TableCell>
                       <TableCell className="text-right">
-                        {item.valor_recebido > 0 ? `${item.margem_real.toFixed(1)}%` : '-'}
+                        {item.conciliado && item.valor_recebido > 0 ? `${item.markup_real.toFixed(1)}%` : '-'}
                       </TableCell>
                       <TableCell className="text-right">
-                        {item.valor_recebido > 0 ? (
+                        {item.conciliado && item.valor_recebido > 0 ? (
                           <Badge variant={item.diferenca >= 0 ? "default" : "destructive"} className="gap-1">
                             {item.diferenca >= 0 ? (
                               <TrendingUp className="h-3 w-3" />
@@ -332,6 +366,10 @@ export function RelatorioMargemReal({ onBack }: RelatorioMargemRealProps) {
               </TableBody>
             </Table>
           </div>
+          
+          <p className="text-xs text-muted-foreground mt-2">
+            * Markup calculado como (Receita - Custo) / Custo × 100. Apenas pedidos com custos e receitas 100% conciliados são considerados nas médias.
+          </p>
         </CardContent>
       </Card>
     </div>

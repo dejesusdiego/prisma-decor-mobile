@@ -213,7 +213,8 @@ export function DashboardUnificado({ onNavigate }: DashboardUnificadoProps) {
       setFunil(funilData);
 
     } catch (error) {
-      console.error('Erro ao carregar stats:', error);
+      const { showHandledError } = await import('@/lib/errorHandler');
+      showHandledError(error, 'Erro ao carregar estatísticas');
     } finally {
       setLoading(false);
     }

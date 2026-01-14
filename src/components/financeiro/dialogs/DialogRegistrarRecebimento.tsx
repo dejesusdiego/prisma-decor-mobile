@@ -138,7 +138,8 @@ export function DialogRegistrarRecebimento({ open, onOpenChange, parcela }: Dial
         const TOLERANCIA_PERCENTUAL = 99.5;
 
         if ((percentualPago >= 100 || percentualPago >= TOLERANCIA_PERCENTUAL) && percentualAnterior < TOLERANCIA_PERCENTUAL) {
-          toast.success(`🎉 Orçamento ${codigoOrcamento} TOTALMENTE PAGO!`, {
+          const { showSuccess } = await import('@/lib/toastMessages');
+          showSuccess(`🎉 Orçamento ${codigoOrcamento} TOTALMENTE PAGO!`, {
             description: `${clienteNome} - ${formatCurrency(valorTotalOrcamento)}`,
             duration: 8000,
           });
@@ -280,12 +281,13 @@ export function DialogRegistrarRecebimento({ open, onOpenChange, parcela }: Dial
       queryClient.invalidateQueries({ queryKey: ['orcamentos'] });
       queryClient.invalidateQueries({ queryKey: ['atividades-crm'] });
       queryClient.invalidateQueries({ queryKey: ['jornada-cliente'] });
-      toast.success('Recebimento registrado com sucesso');
+      const { ToastMessages } = await import('@/lib/toastMessages');
+      ToastMessages.financeiro.recebimentoRegistrado();
       onOpenChange(false);
     },
-    onError: (error) => {
-      console.error(error);
-      toast.error('Erro ao registrar recebimento');
+    onError: async (error) => {
+      const { showHandledError } = await import('@/lib/errorHandler');
+      showHandledError(error, 'Erro ao registrar recebimento');
     }
   });
 
@@ -297,7 +299,10 @@ export function DialogRegistrarRecebimento({ open, onOpenChange, parcela }: Dial
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 10 * 1024 * 1024) { // 10MB
-        toast.error('Arquivo muito grande. Máximo 10MB');
+        const { showError } = await import('@/lib/toastMessages');
+        showError('Arquivo muito grande', {
+          description: 'Máximo 10MB',
+        });
         return;
       }
       setArquivo(file);

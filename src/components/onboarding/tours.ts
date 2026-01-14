@@ -9,33 +9,27 @@ export type TourId = 'dashboard' | 'wizard' | 'crm';
 
 export const DASHBOARD_TOUR: TourStep[] = [
   {
-    id: 'sidebar',
-    title: 'Menu de Navegação',
-    description: 'Use o menu lateral para acessar todos os módulos: Dashboard, Orçamentos, CRM, Produção e Financeiro.',
-    position: 'right',
-  },
-  {
     id: 'novo-orcamento',
     title: 'Criar Novo Orçamento',
-    description: 'Clique aqui para iniciar um novo orçamento. O sistema guiará você pelo processo em 3 etapas simples.',
+    description: 'Clique aqui para iniciar um novo orçamento. O sistema guiará você pelo processo em 3 etapas simples: cliente, produtos e resumo.',
     position: 'bottom',
   },
   {
     id: 'stats-cards',
     title: 'Métricas Principais',
-    description: 'Acompanhe suas métricas em tempo real: total de orçamentos, valor total, taxa de conversão e mais.',
+    description: 'Acompanhe suas métricas em tempo real: total de orçamentos, valor total, taxa de conversão, valores a receber e tempo médio de conversão.',
     position: 'bottom',
   },
   {
     id: 'filtro-periodo',
     title: 'Filtro de Período',
-    description: 'Filtre os dados por período: últimos 7 dias, 30 dias, 90 dias ou todo o histórico.',
+    description: 'Filtre os dados por período: últimos 7 dias, 30 dias, 90 dias, 12 meses ou todo o histórico. Use o botão de refresh para atualizar os dados.',
     position: 'bottom',
   },
   {
     id: 'orcamentos-recentes',
     title: 'Orçamentos Recentes',
-    description: 'Veja seus orçamentos mais recentes. Clique em qualquer um para ver detalhes ou editar.',
+    description: 'Veja seus orçamentos mais recentes. Clique em qualquer um para ver detalhes completos, editar ou gerar PDF. Use "Ver todos" para acessar a lista completa.',
     position: 'top',
   },
 ];

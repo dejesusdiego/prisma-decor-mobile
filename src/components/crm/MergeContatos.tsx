@@ -146,14 +146,15 @@ export function MergeContatos() {
         await supabase.from('contatos').delete().eq('id', id).eq('organization_id', organizationId);
       }
 
-      toast.success(`${secondaryIds.length} contato(s) mesclado(s) com sucesso!`);
+      const { ToastMessages } = await import('@/lib/toastMessages');
+      ToastMessages.contato.mesclado();
       setSelectedGroup(null);
       setSelectedPrimary(null);
       setConfirmDialogOpen(false);
       refetch();
     } catch (error) {
-      console.error('Erro ao mesclar contatos:', error);
-      toast.error('Erro ao mesclar contatos');
+      const { showHandledError } = await import('@/lib/errorHandler');
+      showHandledError(error, 'Erro ao mesclar contatos');
     } finally {
       setMerging(false);
     }

@@ -347,7 +347,8 @@ export default function DashboardKPIs() {
         distribuicaoClientes
       });
     } catch (error) {
-      console.error('Erro ao carregar KPIs:', error);
+      const { showHandledError } = await import('@/lib/errorHandler');
+      showHandledError(error, 'Erro ao carregar KPIs');
     } finally {
       setLoading(false);
     }

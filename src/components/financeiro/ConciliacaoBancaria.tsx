@@ -286,8 +286,9 @@ export function ConciliacaoBancaria() {
       setExtratoParaRevisao({ id: data.extrato.id, nome: arquivoPrevia?.name || 'Extrato' });
       setRevisaoOpen(true);
     },
-    onError: (error: Error) => {
-      toast.error('Erro ao importar: ' + error.message);
+    onError: async (error: Error) => {
+      const { showHandledError } = await import('@/lib/errorHandler');
+      showHandledError(error, 'Erro ao importar extrato bancário');
     },
   });
 

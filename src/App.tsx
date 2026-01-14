@@ -8,6 +8,7 @@ import { OrganizationProvider } from "@/contexts/OrganizationContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AdminRoute } from "@/components/AdminRoute";
 import { OnboardingProvider } from "@/components/onboarding/OnboardingProvider";
+import { ThemeInitializer } from "@/components/ThemeInitializer";
 import Index from "./pages/Index";
 import OurProducts from "./pages/OurProducts";
 import Auth from "./pages/Auth";
@@ -37,7 +38,8 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <OrganizationProvider>
-            <OnboardingProvider>
+            <ThemeInitializer>
+              <OnboardingProvider>
               <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/nossos-produtos" element={<OurProducts />} />
@@ -70,7 +72,8 @@ const App = () => (
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
               </Routes>
-            </OnboardingProvider>
+              </OnboardingProvider>
+            </ThemeInitializer>
           </OrganizationProvider>
         </AuthProvider>
       </BrowserRouter>

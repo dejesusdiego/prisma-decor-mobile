@@ -78,8 +78,16 @@ export function OnboardingStep({
   const isLastStep = stepNumber === totalSteps;
 
   const handleNext = () => {
-    if (isLastStep && onComplete) {
-      onComplete();
+    if (isLastStep) {
+      if (onComplete) {
+        // Pequeno delay para garantir que a animação seja visível
+        setTimeout(() => {
+          onComplete();
+        }, 100);
+      } else {
+        // Se não tem onComplete mas é último step, apenas avança
+        onNext();
+      }
     } else {
       onNext();
     }
@@ -92,7 +100,13 @@ export function OnboardingStep({
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         className="fixed inset-0 bg-black/50 z-[9998]"
-        onClick={onSkip}
+        onClick={(e) => {
+          // Só fecha se clicar diretamente no overlay, não no tooltip
+          if (e.target === e.currentTarget) {
+            onSkip();
+          }
+        }}
+        style={{ pointerEvents: 'auto' }}
       />
     </AnimatePresence>,
     document.body
@@ -101,37 +115,86 @@ export function OnboardingStep({
   const tooltip = active && mounted ? createPortal(
     <AnimatePresence>
       <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
+        initial={{ opacity: 0, scale: 0.95, y: position === 'top' ? 10 : position === 'bottom' ? -10 : 0 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95 }}
-        style={tooltipStyle}
-        className="bg-card border rounded-lg shadow-xl p-4 w-[300px]"
+        style={{ ...tooltipStyle, pointerEvents: 'auto' }}
+        className="bg-card border-2 border-primary/20 rounded-lg shadow-xl p-4 w-[320px] max-w-[90vw] z-[9999]"
+        onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-xs text-muted-foreground font-medium">
-            Passo {stepNumber} de {totalSteps}
-          </span>
-          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onSkip}>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-primary bg-primary/10 px-2 py-1 rounded">
+              Passo {stepNumber} de {totalSteps}
+            </span>
+            {/* Barra de progresso */}
+            <div className="h-1.5 w-24 bg-muted rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-primary transition-all duration-300"
+                style={{ width: `${(stepNumber / totalSteps) * 100}%` }}
+              />
+            </div>
+          </div>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-6 w-6" 
+            onClick={(e) => {
+              e.stopPropagation();
+              onSkip();
+            }}
+          >
             <X className="h-4 w-4" />
           </Button>
         </div>
 
-        <h4 className="font-semibold mb-1">{title}</h4>
-        <p className="text-sm text-muted-foreground mb-4">{description}</p>
+        <h4 className="font-semibold text-lg mb-2">{title}</h4>
+        <p className="text-sm text-muted-foreground mb-4 leading-relaxed">{description}</p>
 
-        <div className="flex items-center justify-between">
-          <Button variant="ghost" size="sm" onClick={onSkip}>
+        <div className="flex items-center justify-between gap-2">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={(e) => {
+              e.stopPropagation();
+              onSkip();
+            }} 
+            className="text-xs"
+          >
             Pular tour
           </Button>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
             {onPrev && stepNumber > 1 && (
-              <Button variant="outline" size="sm" onClick={onPrev}>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onPrev();
+                }}
+              >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
             )}
-            <Button size="sm" onClick={handleNext}>
-              {isLastStep ? 'Concluir' : 'Próximo'}
-              {!isLastStep && <ChevronRight className="h-4 w-4 ml-1" />}
+            <Button 
+              size="sm" 
+              onClick={(e) => {
+                e.stopPropagation();
+                handleNext();
+              }} 
+              className="min-w-[100px]"
+            >
+              {isLastStep ? (
+                <>
+                  <span>Concluir</span>
+                  <span className="ml-1">✓</span>
+                </>
+              ) : (
+                <>
+                  <span>Próximo</span>
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </>
+              )}
             </Button>
           </div>
         </div>
@@ -145,8 +208,8 @@ export function OnboardingStep({
       <div
         ref={targetRef}
         className={cn(
-          'relative',
-          active && 'z-[9999] relative rounded ring-4 ring-primary ring-offset-2 ring-offset-background'
+          'relative transition-all duration-300',
+          active && 'z-[9999] relative rounded-lg ring-4 ring-primary ring-offset-4 ring-offset-background shadow-2xl'
         )}
       >
         {children}

@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useOrganization } from '@/hooks/useOrganization';
 import { addDays, format } from 'date-fns';
 import {
   Dialog,
@@ -72,6 +73,7 @@ export function DialogGerarContasPagar({
 }: DialogGerarContasPagarProps) {
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { organizationId } = useOrganization();
   
   const [contasParaGerar, setContasParaGerar] = useState<ContaItem[]>([]);
 
@@ -146,7 +148,7 @@ export function DialogGerarContasPagar({
 
   const mutation = useMutation({
     mutationFn: async () => {
-      if (!orcamento || !user) throw new Error('Dados inválidos');
+      if (!orcamento || !user || !organizationId) throw new Error('Dados inválidos');
       
       const contasSelecionadas = contasParaGerar.filter(c => c.selecionada);
       
@@ -164,7 +166,8 @@ export function DialogGerarContasPagar({
         status: 'pendente',
         created_by_user_id: user.id,
         recorrente: false,
-        orcamento_id: orcamento.id
+        orcamento_id: orcamento.id,
+        organization_id: organizationId
       }));
 
       const { error } = await supabase

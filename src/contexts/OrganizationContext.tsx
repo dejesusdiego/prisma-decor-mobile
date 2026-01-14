@@ -16,29 +16,22 @@ const OrganizationContext = createContext<OrganizationContextType | undefined>(u
 export function OrganizationProvider({ children }: { children: ReactNode }) {
   const orgData = useOrganization();
   
-  // Apply dynamic branding based on organization
-  // GUARDRAIL: Only apply custom colors that are NOT the default black theme
-  // This prevents white-label colors from breaking the base Prisma theme
+  // Apply theme based on organization
   useEffect(() => {
-    const color = orgData.organization?.primary_color;
+    if (!orgData.organization) return;
     
-    // List of "default/black" colors that should NOT override the theme
-    const defaultColors = ['#111111', '#000000', '#1a1a1a', '#0a0a0a', null, undefined, ''];
-    const isDefaultColor = !color || defaultColors.includes(color.toLowerCase());
-    
-    if (!isDefaultColor) {
-      // Only apply non-default colors (e.g., for white-label clients)
-      const hsl = hexToHSL(color);
-      if (hsl) {
-        document.documentElement.style.setProperty('--primary', hsl);
-      }
-    }
-    
-    // Cleanup: remove override when unmounting or when color becomes default
-    return () => {
-      document.documentElement.style.removeProperty('--primary');
-    };
-  }, [orgData.organization?.primary_color]);
+    // Importar e aplicar tema
+    import('@/lib/themes').then(({ getTheme, applyTheme }) => {
+      const themeName = (orgData.organization?.theme_name as any) || 'default';
+      const theme = getTheme(themeName);
+      
+      // Detectar dark mode
+      const isDark = document.documentElement.classList.contains('dark') || 
+                     localStorage.getItem('darkMode') === 'true';
+      
+      applyTheme(theme, isDark);
+    });
+  }, [orgData.organization?.theme_name]);
 
   return (
     <OrganizationContext.Provider value={orgData}>

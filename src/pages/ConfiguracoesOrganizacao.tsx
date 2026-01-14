@@ -1,5 +1,6 @@
 import { Building2 } from 'lucide-react';
 import { OrgSettingsForm } from '@/components/settings/OrgSettingsForm';
+import { ThemeSelector } from '@/components/settings/ThemeSelector';
 
 export default function ConfiguracoesOrganizacao() {
   return (
@@ -15,7 +16,10 @@ export default function ConfiguracoesOrganizacao() {
         </p>
       </div>
 
-      <OrgSettingsForm />
+      <div className="space-y-6">
+        <ThemeSelector />
+        <OrgSettingsForm />
+      </div>
     </div>
   );
 }

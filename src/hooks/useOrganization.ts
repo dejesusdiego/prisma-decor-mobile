@@ -8,6 +8,7 @@ export interface Organization {
   slug: string;
   logo_url: string | null;
   primary_color: string | null;
+  theme_name: string | null;
   tagline: string | null;
   email: string | null;
   phone: string | null;

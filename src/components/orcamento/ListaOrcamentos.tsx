@@ -24,6 +24,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useOrganizationContext } from '@/contexts/OrganizationContext';
 import { toast } from '@/hooks/use-toast';
+import { LoadingTableRows, LoadingSection } from '@/components/ui/LoadingState';
 import { DialogValidade } from './DialogValidade';
 import { DialogDuplicarOrcamento } from './dialogs/DialogDuplicarOrcamento';
 import { gerarPdfOrcamento } from '@/lib/gerarPdfOrcamento';
@@ -66,12 +67,13 @@ interface ListaOrcamentosProps {
   onEditar: (orcamentoId: string) => void;
   onVisualizar: (orcamentoId: string) => void;
   onVerFinanceiro?: () => void;
+  onVerContaReceber?: (contaId: string) => void;
 }
 
 // Status que devem abrir o dialog de condições de pagamento
 const STATUS_PAGAMENTO: StatusOrcamento[] = ['pago_40', 'pago_parcial', 'pago_60', 'pago'];
 
-export function ListaOrcamentos({ onVoltar, onEditar, onVisualizar, onVerFinanceiro }: ListaOrcamentosProps) {
+export function ListaOrcamentos({ onVoltar, onEditar, onVisualizar, onVerFinanceiro, onVerContaReceber }: ListaOrcamentosProps) {
   const { user } = useAuth();
   const { organizationId } = useOrganizationContext();
   const [orcamentos, setOrcamentos] = useState<Orcamento[]>([]);
@@ -106,13 +108,20 @@ const carregarOrcamentos = async () => {
     setLoading(true);
     try {
       // Buscar orçamentos com filtro de organization_id
+      // Otimização: selecionar apenas campos necessários e limitar a 500 registros
       const { data: orcamentosData, error: orcError } = await supabase
         .from('orcamentos')
-        .select('*')
+        .select('id, codigo, cliente_nome, cliente_telefone, endereco, cidade, status, total_geral, total_com_desconto, created_at, updated_at, validade_dias, custo_total, margem_percent')
         .eq('organization_id', organizationId)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(500); // Limitar a 500 orçamentos para melhor performance
 
-      if (orcError) throw orcError;
+      if (orcError) {
+        const { showHandledError } = await import('@/lib/errorHandler');
+        showHandledError(orcError, 'Erro ao carregar orçamentos');
+        setLoading(false);
+        return;
+      }
 
       // Buscar contas a receber vinculadas
       const orcamentoIds = (orcamentosData || []).map(o => o.id);
@@ -143,7 +152,12 @@ const carregarOrcamentos = async () => {
           .eq('organization_id', organizationId)
           .in('orcamento_id', orcamentoIds);
 
-        if (contasError) throw contasError;
+        if (contasError) {
+          const { showHandledError } = await import('@/lib/errorHandler');
+          showHandledError(contasError, 'Erro ao carregar contas a receber');
+          setLoading(false);
+          return;
+        }
         contasData = data;
       }
 
@@ -173,10 +187,13 @@ const carregarOrcamentos = async () => {
 
       setOrcamentos(orcamentosComContas);
     } catch (error) {
-      console.error('Erro ao carregar orçamentos:', error);
-      toast({
-        title: 'Erro',
-        description: 'Não foi possível carregar os orçamentos',
+      const { showHandledError } = await import('@/lib/errorHandler');
+      showHandledError(error, 'Erro ao carregar orçamentos');
+    } finally {
+      setLoading(false);
+    }
+  };
+
         variant: 'destructive',
       });
     } finally {
@@ -191,10 +208,9 @@ const carregarOrcamentos = async () => {
     // Validar se orçamento tem valor antes de permitir mudança de status (exceto para cancelado/recusado)
     if (novoStatus !== 'rascunho' && novoStatus !== 'cancelado' && novoStatus !== 'recusado') {
       if (!orcamento.total_geral || orcamento.total_geral <= 0) {
-        toast({
-          title: 'Não é possível alterar o status',
+        const { showWarning } = await import('@/lib/toastMessages');
+        showWarning('Não é possível alterar o status', {
           description: 'O orçamento precisa ter pelo menos um item com valor válido antes de mudar o status.',
-          variant: 'destructive',
         });
         return;
       }
@@ -228,17 +244,13 @@ const carregarOrcamentos = async () => {
         )
       );
 
-      toast({
-        title: 'Status atualizado',
+      const { showSuccess } = await import('@/lib/toastMessages');
+      showSuccess('Status atualizado', {
         description: `Status alterado para "${getStatusLabel(novoStatus)}"`,
       });
     } catch (error) {
-      console.error('Erro ao alterar status:', error);
-      toast({
-        title: 'Erro',
-        description: 'Não foi possível alterar o status',
-        variant: 'destructive',
-      });
+      const { showHandledError } = await import('@/lib/errorHandler');
+      showHandledError(error, 'Não foi possível alterar o status');
     }
   };
 
@@ -297,40 +309,67 @@ const carregarOrcamentos = async () => {
   };
 
   const excluirOrcamento = async (orcamentoId: string, codigo: string) => {
-    if (!confirm(`Tem certeza que deseja excluir o orçamento ${codigo}?`)) {
+    if (!confirm(`Tem certeza que deseja excluir o orçamento ${codigo}?\n\nEsta ação não pode ser desfeita e excluirá:\n- Itens do orçamento\n- Histórico de descontos\n- Contas a receber vinculadas\n- Contas a pagar vinculadas\n- Pedidos de produção vinculados`)) {
       return;
     }
 
     try {
-      // cortina_items não tem organization_id, mas está vinculada ao orçamento
-      const { error: cortinasError } = await supabase
-        .from('cortina_items')
-        .delete()
-        .eq('orcamento_id', orcamentoId);
+      // As seguintes tabelas serão deletadas automaticamente via ON DELETE CASCADE:
+      // - cortina_items (via orcamentos)
+      // - parcelas_receber (via contas_receber)
+      // - contas_receber (via orcamentos) 
+      // - contas_pagar (via orcamentos)
+      // - oportunidades (via orcamentos)
+      // - atividades_crm (via orcamentos)
+      // - historico_descontos (via orcamentos)
+      // - comissoes (via orcamentos)
+      // - log_alteracoes_status (via orcamentos)
+      // - pedidos (via orcamentos)
+      
+      // Não precisamos deletar nada manualmente - o CASCADE faz tudo automaticamente
 
-      if (cortinasError) throw cortinasError;
+      // 6. Verificar se o orçamento existe e pertence à organização antes de deletar
+      const { data: orcamentoCheck, error: checkError } = await supabase
+        .from('orcamentos')
+        .select('id, codigo, organization_id')
+        .eq('id', orcamentoId)
+        .single();
 
+      if (checkError || !orcamentoCheck) {
+        throw new Error('Orçamento não encontrado');
+      }
+
+      // Verificar se pertence à organização (validação adicional)
+      if (orcamentoCheck.organization_id !== organizationId) {
+        throw new Error('Você não tem permissão para excluir este orçamento');
+      }
+
+      // 7. Deletar o orçamento (pedidos têm ON DELETE CASCADE, então serão deletados automaticamente)
+      // Não usar .eq('organization_id') aqui - a política RLS já faz essa verificação
       const { error: orcError } = await supabase
         .from('orcamentos')
         .delete()
-        .eq('id', orcamentoId)
-        .eq('organization_id', organizationId);
+        .eq('id', orcamentoId);
 
-      if (orcError) throw orcError;
+      if (orcError) {
+        console.error('Erro ao deletar orçamento:', orcError);
+        
+        // Verificar se é erro de RLS
+        if (orcError.code === '42501' || orcError.message?.includes('permission') || orcError.message?.includes('policy')) {
+          throw new Error('Você não tem permissão para excluir este orçamento. Verifique se você é admin ou o criador do orçamento.');
+        }
+        
+        throw orcError;
+      }
 
-      toast({
-        title: 'Sucesso',
-        description: 'Orçamento excluído com sucesso',
-      });
+      const { ToastMessages } = await import('@/lib/toastMessages');
+      ToastMessages.orcamento.excluido();
 
       carregarOrcamentos();
-    } catch (error) {
-      console.error('Erro ao excluir orçamento:', error);
-      toast({
-        title: 'Erro',
-        description: 'Não foi possível excluir o orçamento',
-        variant: 'destructive',
-      });
+    } catch (error: any) {
+      // Usar o sistema centralizado de tratamento de erros
+      const { showHandledError } = await import('@/lib/errorHandler');
+      showHandledError(error, 'Não foi possível excluir o orçamento');
     }
   };
 
@@ -343,17 +382,12 @@ const carregarOrcamentos = async () => {
       try {
         setLoading(true);
         await gerarPdfOrcamento(orcamentoId);
-        toast({
-          title: 'Sucesso',
-          description: 'PDF gerado com sucesso',
-        });
+        const { showSuccess } = await import('@/lib/toastMessages');
+        showSuccess('PDF gerado com sucesso');
       } catch (error) {
         console.error('Erro ao gerar PDF:', error);
-        toast({
-          title: 'Erro',
-          description: 'Não foi possível gerar o PDF',
-          variant: 'destructive',
-        });
+        const { showError } = await import('@/lib/toastMessages');
+        showError('Não foi possível gerar o PDF');
       } finally {
         setLoading(false);
       }
@@ -378,10 +412,8 @@ const carregarOrcamentos = async () => {
 
       await gerarPdfOrcamento(orcamentoSelecionadoId);
 
-      toast({
-        title: 'Sucesso',
-        description: 'PDF gerado com sucesso',
-      });
+      const { showSuccess } = await import('@/lib/toastMessages');
+      showSuccess('PDF gerado com sucesso');
 
       carregarOrcamentos();
     } catch (error) {
@@ -447,7 +479,10 @@ const carregarOrcamentos = async () => {
               }));
               const csv = gerarCSV(dados, colunas);
               downloadCSV(csv, `orcamentos-${format(new Date(), 'yyyy-MM-dd')}.csv`);
-              toast({ title: 'CSV exportado', description: `${dados.length} orçamentos exportados.` });
+              const { showSuccess } = await import('@/lib/toastMessages');
+              showSuccess('CSV exportado', {
+                description: `${dados.length} orçamento(s) exportado(s).`,
+              });
             }}
           >
             <Download className="mr-2 h-4 w-4" />
@@ -517,8 +552,24 @@ const carregarOrcamentos = async () => {
 
           {/* Tabela */}
           {loading ? (
-            <div className="flex justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Código</TableHead>
+                    <TableHead>Cliente</TableHead>
+                    <TableHead>Endereço</TableHead>
+                    <TableHead>Data</TableHead>
+                    <TableHead>Total</TableHead>
+                    <TableHead>Pagamento</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  <LoadingTableRows rows={5} cols={8} />
+                </TableBody>
+              </Table>
             </div>
           ) : orcamentosFiltrados.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
@@ -557,28 +608,29 @@ const carregarOrcamentos = async () => {
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 {conta ? (
-                                  <a
-                                    href={`/gerarorcamento?financeiro=contas-receber&conta=${conta.id}`}
-                                    onClick={(e) => e.stopPropagation()}
-                                  >
-                                    <Badge
-                                      variant={
-                                        conta.status === 'pago' ? 'default' :
-                                        conta.status === 'parcial' ? 'secondary' :
-                                        conta.status === 'atrasado' ? 'destructive' : 'outline'
+                                  <Badge
+                                    variant={
+                                      conta.status === 'pago' ? 'default' :
+                                      conta.status === 'parcial' ? 'secondary' :
+                                      conta.status === 'atrasado' ? 'destructive' : 'outline'
+                                    }
+                                    className="cursor-pointer flex items-center gap-1 hover:opacity-80"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (onVerContaReceber) {
+                                        onVerContaReceber(conta.id);
                                       }
-                                      className="cursor-pointer flex items-center gap-1 hover:opacity-80"
-                                    >
-                                      {conta.status === 'pago' ? (
-                                        <CheckCircle2 className="h-3 w-3" />
-                                      ) : conta.status === 'atrasado' ? (
-                                        <AlertCircle className="h-3 w-3" />
-                                      ) : (
-                                        <Clock className="h-3 w-3" />
-                                      )}
-                                      {conta.parcelas_pagas}/{conta.numero_parcelas}
-                                    </Badge>
-                                  </a>
+                                    }}
+                                  >
+                                    {conta.status === 'pago' ? (
+                                      <CheckCircle2 className="h-3 w-3" />
+                                    ) : conta.status === 'atrasado' ? (
+                                      <AlertCircle className="h-3 w-3" />
+                                    ) : (
+                                      <Clock className="h-3 w-3" />
+                                    )}
+                                    {conta.parcelas_pagas}/{conta.numero_parcelas}
+                                  </Badge>
                                 ) : (
                                   <span className="text-muted-foreground text-xs">—</span>
                                 )}
@@ -589,7 +641,7 @@ const carregarOrcamentos = async () => {
                                     <p><strong>Status:</strong> {conta.status === 'pago' ? 'Quitado' : conta.status === 'parcial' ? 'Parcial' : conta.status === 'atrasado' ? 'Atrasado' : 'Pendente'}</p>
                                     <p><strong>Parcelas:</strong> {conta.parcelas_pagas} de {conta.numero_parcelas} pagas</p>
                                     <p><strong>Pago:</strong> R$ {conta.valor_pago.toFixed(2)} de R$ {conta.valor_total.toFixed(2)}</p>
-                                    <p className="text-primary font-medium">Clique para ver detalhes</p>
+                                    {onVerContaReceber && <p className="text-primary font-medium">Clique para ver detalhes</p>}
                                   </div>
                                 ) : (
                                   <p className="text-xs">Sem conta a receber vinculada</p>

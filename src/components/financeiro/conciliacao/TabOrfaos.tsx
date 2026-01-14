@@ -350,8 +350,9 @@ export function TabOrfaos({ dataInicio }: TabOrfaosProps) {
       setMotivoIgnorar('Taxa bancária');
       setMotivoOutro('');
     },
-    onError: (error: Error) => {
-      toast.error('Erro: ' + error.message);
+    onError: async (error: Error) => {
+      const { showHandledError } = await import('@/lib/errorHandler');
+      showHandledError(error, 'Erro ao ignorar lançamento');
     }
   });
 
@@ -1078,7 +1079,8 @@ export function TabOrfaos({ dataInicio }: TabOrfaosProps) {
                     setDialogAutoOpen(false);
                     setSugestoesAuto([]);
                   } catch (error: any) {
-                    toast.error('Erro ao processar: ' + error.message);
+                    const { showHandledError } = await import('@/lib/errorHandler');
+                    showHandledError(error, 'Erro ao processar conciliação automática');
                   } finally {
                     setProcessandoAuto(false);
                   }

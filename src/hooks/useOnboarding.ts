@@ -124,6 +124,10 @@ export function useOnboarding(userId?: string) {
   }, []);
 
   const completeTour = useCallback((tourId: TourId) => {
+    // Atualizar estado imediatamente para fechar o tour
+    setActiveTour(null);
+    setCurrentStep(0);
+    
     const newState = {
       ...state,
       completedTours: [...new Set([...state.completedTours, tourId])],
@@ -132,8 +136,20 @@ export function useOnboarding(userId?: string) {
     setState(newState);
     saveLocalState(newState);
     saveToDatabase(newState);
-    setActiveTour(null);
-    setCurrentStep(0);
+    
+    // Feedback visual (será importado dinamicamente para evitar dependência circular)
+    if (typeof window !== 'undefined') {
+      setTimeout(() => {
+        import('sonner').then(({ toast }) => {
+          toast.success('Tour concluído! 🎉', {
+            description: 'Você agora conhece as principais funcionalidades do sistema.',
+            duration: 3000,
+          });
+        }).catch(() => {
+          // Ignorar erro se sonner não estiver disponível
+        });
+      }, 200);
+    }
   }, [state, saveToDatabase]);
 
   const skipTour = useCallback(() => {

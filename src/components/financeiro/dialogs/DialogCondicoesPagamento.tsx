@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useOrganization } from '@/hooks/useOrganization';
 import { addMonths, format } from 'date-fns';
 import { parseDateOnly } from '@/lib/dateOnly';
 import {
@@ -52,6 +53,7 @@ export function DialogCondicoesPagamento({
 }: DialogCondicoesPagamentoProps) {
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { organizationId } = useOrganization();
   
   const { register, handleSubmit, watch, setValue, reset } = useForm({
     defaultValues: {
@@ -80,7 +82,7 @@ export function DialogCondicoesPagamento({
 
   const mutation = useMutation({
     mutationFn: async (data: any) => {
-      if (!orcamento || !user) throw new Error('Dados inválidos');
+      if (!orcamento || !user || !organizationId) throw new Error('Dados inválidos');
 
       // 1. Atualizar status do orçamento
       const { error: errorOrc } = await supabase
@@ -114,7 +116,8 @@ export function DialogCondicoesPagamento({
           numero_parcelas: numParcelas,
           data_vencimento: data.data_primeira_parcela,
           status: 'pendente',
-          created_by_user_id: user.id
+          created_by_user_id: user.id,
+          organization_id: organizationId
         })
         .select()
         .single();

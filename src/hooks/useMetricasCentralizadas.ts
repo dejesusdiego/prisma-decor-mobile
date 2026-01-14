@@ -349,12 +349,20 @@ export function useMetricasCentralizadas() {
   
   return useQuery({
     queryKey: ['metricas-centralizadas', organizationId],
+    staleTime: 5 * 60 * 1000, // Cache por 5 minutos (dados mudam pouco)
+    gcTime: 30 * 60 * 1000, // Manter em cache por 30 minutos
     queryFn: async (): Promise<MetricasCentralizadas> => {
       if (!organizationId) throw new Error('Organization ID required');
       
       // Buscar todos os dados em paralelo - usando funções separadas para evitar erro TS2589
-      const fetchData = async <T>(table: string, filters?: Record<string, unknown>): Promise<T[]> => {
-        let query = supabase.from(table as any).select('*');
+      // Otimização: selecionar apenas campos necessários ao invés de '*'
+      const fetchData = async <T>(
+        table: string, 
+        filters?: Record<string, unknown>,
+        fields?: string[]
+      ): Promise<T[]> => {
+        const selectFields = fields || '*'; // Fallback para '*' se não especificado
+        let query = supabase.from(table as any).select(Array.isArray(selectFields) ? selectFields.join(',') : selectFields);
         if (filters) {
           Object.entries(filters).forEach(([key, value]) => {
             query = query.eq(key, value) as typeof query;
@@ -364,6 +372,7 @@ export function useMetricasCentralizadas() {
         return (data || []) as T[];
       };
 
+      // Otimização: selecionar apenas campos necessários para cálculos de métricas
       const [
         orcamentosArr,
         contatosArr,
@@ -372,16 +381,16 @@ export function useMetricasCentralizadas() {
         pedidosArr,
         atividadesArr
       ] = await Promise.all([
-        fetchData('orcamentos', { organization_id: organizationId }),
-        fetchData('contatos', { organization_id: organizationId }),
-        fetchData('contas_receber', { organization_id: organizationId }),
-        fetchData('lancamentos_financeiros', { organization_id: organizationId, ignorado: false }),
-        fetchData('pedidos', { organization_id: organizationId }),
-        fetchData('atividades_crm', { organization_id: organizationId }),
+        fetchData('orcamentos', { organization_id: organizationId }, ['id', 'status', 'total_geral', 'total_com_desconto', 'custo_total', 'created_at', 'cliente_telefone']),
+        fetchData('contatos', { organization_id: organizationId }, ['id', 'tipo', 'created_at', 'telefone']),
+        fetchData('contas_receber', { organization_id: organizationId }, ['id', 'valor_total', 'valor_pago', 'status', 'created_at']),
+        fetchData('lancamentos_financeiros', { organization_id: organizationId, ignorado: false }, ['id', 'valor', 'tipo', 'data_lancamento']),
+        fetchData('pedidos', { organization_id: organizationId }, ['id', 'status_producao', 'created_at', 'data_entrada']),
+        fetchData('atividades_crm', { organization_id: organizationId }, ['id', 'tipo', 'concluida', 'data_atividade', 'created_at']),
       ]);
 
-      const contasPagarArr = await fetchData('contas_pagar', { organization_id: organizationId });
-      const instalacoesArr = await fetchData('instalacoes', { organization_id: organizationId });
+      const contasPagarArr = await fetchData('contas_pagar', { organization_id: organizationId }, ['id', 'valor_total', 'valor_pago', 'status', 'created_at']);
+      const instalacoesArr = await fetchData('instalacoes', { organization_id: organizationId }, ['id', 'status', 'data_agendada', 'data_conclusao']);
 
       return {
         orcamentos: calcularMetricasOrcamentos(orcamentosArr),

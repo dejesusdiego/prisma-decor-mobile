@@ -354,8 +354,9 @@ export function RelatorioLancamentosOrfaos() {
       setOrcamentoSelecionado(null);
       setDialogOrcamentoOpen(false);
     },
-    onError: (error: Error) => {
-      toast.error('Erro: ' + error.message);
+    onError: async (error: Error) => {
+      const { showHandledError } = await import('@/lib/errorHandler');
+      showHandledError(error, 'Erro ao vincular lançamento');
     }
   });
 
@@ -774,7 +775,8 @@ export function RelatorioLancamentosOrfaos() {
                     setDialogAutoOpen(false);
                     setSugestoesAuto([]);
                   } catch (error: any) {
-                    toast.error('Erro ao processar: ' + error.message);
+                    const { showHandledError } = await import('@/lib/errorHandler');
+                    showHandledError(error, 'Erro ao processar conciliação automática');
                   } finally {
                     setProcessandoAuto(false);
                   }

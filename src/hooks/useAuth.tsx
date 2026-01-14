@@ -47,7 +47,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     
     if (error) {
-      toast.error(error.message);
+      // Para auth, manter mensagem simples
+      toast.error(error.message || 'Erro ao fazer login');
       throw error;
     }
     

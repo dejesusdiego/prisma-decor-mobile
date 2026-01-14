@@ -150,13 +150,24 @@ export function useProducaoData() {
   }, []);
 
   // Buscar todos os pedidos com dados do orçamento (filtrado por organização)
+  // Otimização: selecionar apenas campos necessários e adicionar cache
   const { data: pedidos = [], isLoading: isLoadingPedidos, error: errorPedidos, refetch: refetchPedidos } = useQuery({
     queryKey: ['pedidos', organizationId],
+    staleTime: 2 * 60 * 1000, // Cache por 2 minutos (dados mudam com frequência)
+    gcTime: 10 * 60 * 1000, // Manter em cache por 10 minutos
     queryFn: async () => {
       const { data, error } = await supabase
         .from('pedidos')
         .select(`
-          *,
+          id,
+          numero_pedido,
+          status_producao,
+          prioridade,
+          data_entrada,
+          data_prevista,
+          observacoes,
+          orcamento_id,
+          created_at,
           orcamento:orcamentos (
             codigo,
             cliente_nome,
@@ -167,7 +178,9 @@ export function useProducaoData() {
             total_geral
           ),
           itens_pedido (
-            *,
+            id,
+            status_item,
+            observacoes,
             cortina_item:cortina_items (
               nome_identificacao,
               tipo_cortina,
@@ -180,10 +193,17 @@ export function useProducaoData() {
               motorizada
             )
           ),
-          instalacoes (*)
+          instalacoes (
+            id,
+            status,
+            data_agendada,
+            data_conclusao,
+            observacoes
+          )
         `)
         .eq('organization_id', organizationId)
-        .order('data_entrada', { ascending: false });
+        .order('data_entrada', { ascending: false })
+        .limit(200); // Limitar a 200 pedidos para melhor performance
 
       if (error) throw error;
       return data as Pedido[];
@@ -195,14 +215,24 @@ export function useProducaoData() {
   refetchPedidosRef.current = refetchPedidos;
 
   // Buscar instalações (filtradas via join com pedidos da organização)
+  // Otimização: selecionar apenas campos necessários e adicionar cache
   const { data: instalacoes = [], isLoading: isLoadingInstalacoes, refetch: refetchInstalacoes } = useQuery({
     queryKey: ['instalacoes', organizationId],
+    staleTime: 2 * 60 * 1000, // Cache por 2 minutos
+    gcTime: 10 * 60 * 1000, // Manter em cache por 10 minutos
     queryFn: async () => {
       const { data, error } = await supabase
         .from('instalacoes')
         .select(`
-          *,
+          id,
+          status,
+          data_agendada,
+          data_conclusao,
+          observacoes,
+          pedido_id,
+          created_at,
           pedido:pedidos!inner (
+            id,
             numero_pedido,
             organization_id,
             orcamento:orcamentos (

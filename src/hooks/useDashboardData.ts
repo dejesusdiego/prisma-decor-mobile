@@ -201,23 +201,27 @@ export function useDashboardData(periodo: PeriodoFiltro = '30d'): DashboardData 
       const { inicio: inicioAnterior, fim: fimAnterior } = getPreviousDateRange(periodo);
 
       // Buscar orçamentos do período atual
+      // Otimização: selecionar apenas campos necessários e limitar a 1000 registros
       const { data: orcamentos, error: orcError } = await supabase
         .from('orcamentos')
-        .select('*')
+        .select('id, codigo, status, total_geral, total_com_desconto, custo_total, created_at, cliente_telefone')
         .eq('organization_id', organizationId)
         .gte('created_at', inicio.toISOString())
         .lte('created_at', fim.toISOString())
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(1000); // Limitar a 1000 para melhor performance
 
       if (orcError) throw orcError;
 
       // Buscar orçamentos do período anterior para comparação
+      // Otimização: selecionar apenas campos necessários
       const { data: orcamentosAnteriores } = await supabase
         .from('orcamentos')
-        .select('*')
+        .select('id, status, total_geral, total_com_desconto, created_at')
         .eq('organization_id', organizationId)
         .gte('created_at', inicioAnterior.toISOString())
-        .lte('created_at', fimAnterior.toISOString());
+        .lte('created_at', fimAnterior.toISOString())
+        .limit(1000); // Limitar a 1000 para melhor performance
 
       // Buscar itens de cortina para ranking de produtos
       const orcamentoIds = (orcamentos || []).map(o => o.id);

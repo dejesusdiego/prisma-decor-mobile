@@ -78,17 +78,28 @@ export function ContasPagar({ onVisualizarOrcamento, onNavigate }: ContasPagarPr
 
   const { data: contas = [], isLoading } = useQuery({
     queryKey: ['contas-pagar', organizationId],
+    staleTime: 2 * 60 * 1000, // Cache por 2 minutos
+    gcTime: 10 * 60 * 1000, // Manter em cache por 10 minutos
     queryFn: async () => {
       const { data, error } = await supabase
         .from('contas_pagar')
         .select(`
-          *,
+          id,
+          descricao,
+          valor_total,
+          valor_pago,
+          data_vencimento,
+          status,
+          observacoes,
+          orcamento_id,
+          created_at,
           categoria:categorias_financeiras(nome, cor),
           forma_pagamento:formas_pagamento(nome),
           orcamento:orcamentos(id, codigo, cliente_nome)
         `)
         .eq('organization_id', organizationId)
-        .order('data_vencimento', { ascending: true });
+        .order('data_vencimento', { ascending: true })
+        .limit(500); // Limitar a 500 contas para melhor performance
       
       if (error) throw error;
       return data;
@@ -101,12 +112,14 @@ export function ContasPagar({ onVisualizarOrcamento, onNavigate }: ContasPagarPr
       const { error } = await supabase.from('contas_pagar').delete().eq('id', id).eq('organization_id', organizationId);
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ['contas-pagar'] });
-      toast.success('Conta excluída com sucesso');
+      const { showSuccess } = await import('@/lib/toastMessages');
+      showSuccess('Conta excluída com sucesso');
     },
-    onError: () => {
-      toast.error('Erro ao excluir conta');
+    onError: async () => {
+      const { showError } = await import('@/lib/toastMessages');
+      showError('Erro ao excluir conta');
     }
   });
 
@@ -119,12 +132,14 @@ export function ContasPagar({ onVisualizarOrcamento, onNavigate }: ContasPagarPr
         .eq('organization_id', organizationId);
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ['contas-pagar'] });
-      toast.success('Conta baixada com sucesso');
+      const { showSuccess } = await import('@/lib/toastMessages');
+      showSuccess('Conta baixada com sucesso');
     },
-    onError: () => {
-      toast.error('Erro ao baixar conta');
+    onError: async () => {
+      const { showError } = await import('@/lib/toastMessages');
+      showError('Erro ao baixar conta');
     }
   });
 
@@ -174,7 +189,8 @@ export function ContasPagar({ onVisualizarOrcamento, onNavigate }: ContasPagarPr
       
       if (data?.success) {
         queryClient.invalidateQueries({ queryKey: ['contas-pagar'] });
-        toast.success(
+        const { showSuccess } = await import('@/lib/toastMessages');
+        showSuccess(
           `Geração concluída: ${data.resumo.contas_geradas} conta(s) criada(s)`,
           {
             description: `${data.resumo.contas_ignoradas} já existiam ou não precisavam ser geradas`
@@ -185,7 +201,8 @@ export function ContasPagar({ onVisualizarOrcamento, onNavigate }: ContasPagarPr
       }
     } catch (error) {
       console.error('Erro ao gerar recorrentes:', error);
-      toast.error('Erro ao gerar contas recorrentes');
+      const { showError } = await import('@/lib/toastMessages');
+      showError('Erro ao gerar contas recorrentes');
     } finally {
       setGerandoRecorrentes(false);
     }

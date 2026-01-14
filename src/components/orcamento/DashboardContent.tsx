@@ -110,11 +110,11 @@ export function DashboardContent({
         </div>
         <div className="flex items-center gap-2">
           <OnboardingStep
-            active={isDashboardTourActive && currentStep === 3}
-            stepNumber={4}
+            active={isDashboardTourActive && currentStep === 2}
+            stepNumber={3}
             totalSteps={tourSteps.length}
-            title={tourSteps[3]?.title || ''}
-            description={tourSteps[3]?.description || ''}
+            title={tourSteps[2]?.title || ''}
+            description={tourSteps[2]?.description || ''}
             position="bottom"
             onNext={nextStep}
             onPrev={prevStep}
@@ -139,14 +139,13 @@ export function DashboardContent({
             <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
           </Button>
           <OnboardingStep
-            active={isDashboardTourActive && currentStep === 1}
-            stepNumber={2}
+            active={isDashboardTourActive && currentStep === 0}
+            stepNumber={1}
             totalSteps={tourSteps.length}
-            title={tourSteps[1]?.title || ''}
-            description={tourSteps[1]?.description || ''}
+            title={tourSteps[0]?.title || ''}
+            description={tourSteps[0]?.description || ''}
             position="bottom"
             onNext={nextStep}
-            onPrev={prevStep}
             onSkip={skipTour}
           >
             <Button onClick={onNovoOrcamento}>
@@ -159,11 +158,11 @@ export function DashboardContent({
 
       {/* Stats Cards com Tendências */}
       <OnboardingStep
-        active={isDashboardTourActive && currentStep === 2}
-        stepNumber={3}
+        active={isDashboardTourActive && currentStep === 1}
+        stepNumber={2}
         totalSteps={tourSteps.length}
-        title={tourSteps[2]?.title || ''}
-        description={tourSteps[2]?.description || ''}
+        title={tourSteps[1]?.title || ''}
+        description={tourSteps[1]?.description || ''}
         position="bottom"
         onNext={nextStep}
         onPrev={prevStep}
@@ -341,16 +340,19 @@ export function DashboardContent({
             />
 
             <OnboardingStep
-              active={isDashboardTourActive && currentStep === 4}
-              stepNumber={5}
+              active={isDashboardTourActive && currentStep === 3}
+              stepNumber={4}
               totalSteps={tourSteps.length}
-              title={tourSteps[4]?.title || ''}
-              description={tourSteps[4]?.description || ''}
+              title={tourSteps[3]?.title || ''}
+              description={tourSteps[3]?.description || ''}
               position="top"
               onNext={nextStep}
               onPrev={prevStep}
               onSkip={skipTour}
-              onComplete={() => completeTour('dashboard')}
+              onComplete={() => {
+                completeTour('dashboard');
+                // Toast será mostrado pelo hook useOnboarding se necessário
+              }}
             >
               <Card className="lg:col-span-2">
                 <CardHeader className="flex flex-row items-center justify-between">

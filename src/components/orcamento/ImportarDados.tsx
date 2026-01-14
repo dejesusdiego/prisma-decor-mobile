@@ -394,27 +394,22 @@ export function ImportarDados({ onVoltar }: ImportarDadosProps) {
         [categoria]: { ...prev[categoria], status: 'success', file: null }
       }));
 
-      toast({
-        title: `${config.label} importados`,
-        description: `${data?.length || 0} materiais importados/atualizados`,
-      });
+      const { ToastMessages } = await import('@/lib/toastMessages');
+      ToastMessages.materiais.importados(data?.length || 0);
     } catch (error) {
-      console.error(`Erro ao importar ${config.label}:`, error);
+      const { showHandledError } = await import('@/lib/errorHandler');
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
       
       setCategories(prev => ({
         ...prev,
         [categoria]: { 
           ...prev[categoria], 
           status: 'error', 
-          error: error instanceof Error ? error.message : 'Erro desconhecido' 
+          error: errorMessage
         }
       }));
 
-      toast({
-        title: `Erro ao importar ${config.label}`,
-        description: error instanceof Error ? error.message : 'Erro desconhecido',
-        variant: 'destructive',
-      });
+      showHandledError(error, `Erro ao importar ${config.label}`);
     }
   };
 

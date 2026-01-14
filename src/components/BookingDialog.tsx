@@ -173,12 +173,8 @@ const BookingDialog = ({
       
       setStep("confirmation");
     } catch (error) {
-      console.error("Erro ao salvar solicitação:", error);
-      toast({
-        title: "Erro",
-        description: "Erro ao agendar visita. Tente novamente ou entre em contato pelo WhatsApp.",
-        variant: "destructive"
-      });
+      const { showHandledError } = await import('@/lib/errorHandler');
+      showHandledError(error, 'Erro ao agendar visita');
     } finally {
       setIsSubmitting(false);
     }

@@ -166,9 +166,9 @@ export function DialogRegistrarPagamentoRapido({
       queryClient.invalidateQueries({ queryKey: ['orcamentos'] });
       onOpenChange(false);
     },
-    onError: (error) => {
-      console.error('Erro ao registrar pagamento:', error);
-      toast.error('Erro ao registrar pagamento');
+    onError: async (error) => {
+      const { showHandledError } = await import('@/lib/errorHandler');
+      showHandledError(error, 'Erro ao registrar pagamento');
     }
   });
 
