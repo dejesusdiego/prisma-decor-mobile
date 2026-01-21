@@ -345,14 +345,19 @@ export function calcularMetricasProducao(pedidos: any[], instalacoes: any[]): Me
 // ============ HOOK PRINCIPAL ============
 
 export function useMetricasCentralizadas() {
-  const { organizationId } = useOrganizationContext();
+  const { organizationId, isLoading: isOrgLoading } = useOrganizationContext();
   
   return useQuery({
     queryKey: ['metricas-centralizadas', organizationId],
     staleTime: 5 * 60 * 1000, // Cache por 5 minutos (dados mudam pouco)
     gcTime: 30 * 60 * 1000, // Manter em cache por 30 minutos
     queryFn: async (): Promise<MetricasCentralizadas> => {
-      if (!organizationId) throw new Error('Organization ID required');
+      if (!organizationId) {
+        console.warn('[MetricasCentralizadas] Organization ID não disponível');
+        throw new Error('Organization ID required');
+      }
+      
+      console.log('[MetricasCentralizadas] Carregando métricas para organization:', organizationId);
       
       // Buscar todos os dados em paralelo - usando funções separadas para evitar erro TS2589
       // Otimização: selecionar apenas campos necessários ao invés de '*'
@@ -390,7 +395,7 @@ export function useMetricasCentralizadas() {
       ]);
 
       const contasPagarArr = await fetchData('contas_pagar', { organization_id: organizationId }, ['id', 'valor_total', 'valor_pago', 'status', 'created_at']);
-      const instalacoesArr = await fetchData('instalacoes', { organization_id: organizationId }, ['id', 'status', 'data_agendada', 'data_conclusao']);
+      const instalacoesArr = await fetchData('instalacoes', { organization_id: organizationId }, ['id', 'status', 'data_agendada', 'data_realizada']);
 
       return {
         orcamentos: calcularMetricasOrcamentos(orcamentosArr),
@@ -409,7 +414,7 @@ export function useMetricasCentralizadas() {
         },
       };
     },
-    enabled: !!organizationId,
+    enabled: !isOrgLoading && !!organizationId, // Aguardar organização carregar
     staleTime: 1000 * 60 * 2, // 2 minutos
     refetchInterval: 1000 * 60 * 5, // 5 minutos
   });

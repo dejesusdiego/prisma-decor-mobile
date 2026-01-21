@@ -2,7 +2,11 @@ import { useState, useEffect } from "react";
 import { MessageCircle } from "lucide-react";
 import { analytics } from "@/lib/analytics";
 
-const WhatsAppButton = () => {
+interface WhatsAppButtonProps {
+  phone?: string;
+}
+
+const WhatsAppButton = ({ phone = "5547992624706" }: WhatsAppButtonProps) => {
   const [isVisible, setIsVisible] = useState(false);
   const [isFooterVisible, setIsFooterVisible] = useState(false);
 
@@ -44,7 +48,7 @@ const WhatsAppButton = () => {
 
   const handleWhatsAppClick = () => {
     analytics.clickWhatsApp('floating_button');
-    const phoneNumber = "5547992624706";
+    const phoneNumber = phone.replace(/\D/g, '');
     const message = encodeURIComponent("Olá! Gostaria de saber mais sobre cortinas e persianas.");
     window.open(`https://wa.me/${phoneNumber}?text=${message}`, "_blank");
   };

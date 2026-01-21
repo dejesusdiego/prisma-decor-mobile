@@ -47,14 +47,41 @@ export function useOnboarding(userId?: string) {
 
     const fetchOnboardingState = async () => {
       try {
+        // Verificar localStorage primeiro (fallback rápido)
+        const localState = getStoredState();
+        if (localState.lastSeen) {
+          // Se tem lastSeen no localStorage, não mostrar welcome
+          setState(localState);
+          setShowWelcome(false);
+          setIsLoading(false);
+          // Continuar para sincronizar com banco em background
+        }
+
         const { data, error } = await supabase
           .from('user_onboarding')
-          .select('*')
+          .select('id, completed_tours, skipped, first_seen_at, last_seen_at')
           .eq('user_id', userId)
           .maybeSingle();
 
         if (error) {
           console.error('Erro ao buscar onboarding:', error);
+          // Se erro de schema (coluna não existe), usar apenas localStorage
+          if (error.code === 'PGRST204' || error.message?.includes('completed_tours')) {
+            console.warn('Tabela user_onboarding não está configurada corretamente. Usando apenas localStorage.');
+            if (localState.lastSeen) {
+              setShowWelcome(false);
+            } else {
+              setShowWelcome(true);
+            }
+            setIsLoading(false);
+            return;
+          }
+          // Se outro erro, usar localStorage como fallback
+          if (localState.lastSeen) {
+            setShowWelcome(false);
+          } else {
+            setShowWelcome(true);
+          }
           setIsLoading(false);
           return;
         }
@@ -64,22 +91,52 @@ export function useOnboarding(userId?: string) {
           const dbState: OnboardingState = {
             completedTours: (data.completed_tours || []) as TourId[],
             skipped: data.skipped || false,
-            lastSeen: data.first_seen_at,
+            lastSeen: data.last_seen_at || data.first_seen_at,
           };
           setState(dbState);
           saveLocalState(dbState);
           setShowWelcome(false);
         } else {
-          // Primeira vez do usuário - mostrar welcome e criar registro
-          setShowWelcome(true);
-          await supabase.from('user_onboarding').insert({
-            user_id: userId,
-            completed_tours: [],
-            skipped: false,
-          });
+          // Verificar localStorage novamente antes de mostrar welcome
+          if (localState.lastSeen) {
+            // Tem no localStorage mas não no banco - sincronizar
+            setState(localState);
+            setShowWelcome(false);
+            // Criar registro no banco em background
+            try {
+              const { error: insertError } = await supabase.from('user_onboarding').insert({
+                user_id: userId,
+                completed_tours: localState.completedTours,
+                skipped: localState.skipped,
+                last_seen_at: localState.lastSeen,
+              });
+              if (insertError) {
+                // Se erro de schema, ignorar silenciosamente (tabela não configurada)
+                if (insertError.code !== 'PGRST204' && !insertError.message?.includes('completed_tours')) {
+                  console.error('Erro ao sincronizar onboarding:', insertError);
+                }
+              }
+            } catch (e) {
+              // Ignorar erros de schema silenciosamente
+              const error = e as { code?: string; message?: string };
+              if (error.code !== 'PGRST204' && !error.message?.includes('completed_tours')) {
+                console.error('Erro ao sincronizar onboarding:', e);
+              }
+            }
+          } else {
+            // Primeira vez do usuário - mostrar welcome
+            setShowWelcome(true);
+          }
         }
       } catch (e) {
         console.error('Erro ao processar onboarding:', e);
+        // Em caso de erro, verificar localStorage
+        const localState = getStoredState();
+        if (localState.lastSeen) {
+          setShowWelcome(false);
+        } else {
+          setShowWelcome(true);
+        }
       } finally {
         setIsLoading(false);
       }
@@ -166,16 +223,65 @@ export function useOnboarding(userId?: string) {
     setShowWelcome(false);
   }, [state, saveToDatabase]);
 
-  const dismissWelcome = useCallback(() => {
+  const dismissWelcome = useCallback(async () => {
+    const now = new Date().toISOString();
     const newState = {
       ...state,
-      lastSeen: new Date().toISOString(),
+      lastSeen: now,
     };
+    
+    // Atualizar estado e localStorage IMEDIATAMENTE
     setState(newState);
     saveLocalState(newState);
-    saveToDatabase(newState);
     setShowWelcome(false);
-  }, [state, saveToDatabase]);
+    
+    // Garantir que o registro existe no banco quando o welcome é fechado
+    if (userId) {
+      try {
+        // Verificar se já existe registro
+        const { data: existing, error: checkError } = await supabase
+          .from('user_onboarding')
+          .select('id')
+          .eq('user_id', userId)
+          .maybeSingle();
+        
+        if (checkError) {
+          console.error('Erro ao verificar registro:', checkError);
+        }
+        
+        if (existing) {
+          // Atualizar registro existente
+          const { error: updateError } = await supabase
+            .from('user_onboarding')
+            .update({
+              last_seen_at: now,
+            })
+            .eq('user_id', userId);
+          
+          if (updateError) {
+            console.error('Erro ao atualizar onboarding:', updateError);
+          }
+        } else {
+          // Criar registro se não existir (usuário fechou sem pular/iniciar)
+          const { error: insertError } = await supabase.from('user_onboarding').insert({
+            user_id: userId,
+            completed_tours: [],
+            skipped: false,
+            last_seen_at: now,
+          });
+          
+          if (insertError) {
+            // Se erro de schema, ignorar silenciosamente (tabela não configurada)
+            if (insertError.code !== 'PGRST204' && !insertError.message?.includes('completed_tours')) {
+              console.error('Erro ao criar registro onboarding:', insertError);
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Erro ao salvar onboarding ao fechar welcome:', e);
+      }
+    }
+  }, [state, userId]);
 
   const resetOnboarding = useCallback(async () => {
     const newState: OnboardingState = {

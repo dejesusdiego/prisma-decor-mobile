@@ -159,6 +159,7 @@ export function DialogPagamentoRapidoOrcamento({
       if (lancError) throw lancError;
 
       // 2. Se tem parcela, atualizar
+      // O trigger SQL vai atualizar automaticamente o status de contas_receber
       if (parcelaPendente) {
         const { error: parcelaError } = await supabase
           .from('parcelas_receber')
@@ -170,20 +171,37 @@ export function DialogPagamentoRapidoOrcamento({
           .eq('id', parcelaPendente.id);
 
         if (parcelaError) throw parcelaError;
-      }
 
-      // 3. Atualizar conta a receber
-      if (contaReceber) {
-        const novoValorPago = (contaReceber.valor_pago || 0) + valor;
-        const { error: contaError } = await supabase
-          .from('contas_receber')
-          .update({
-            valor_pago: novoValorPago,
-            status: novoValorPago >= contaReceber.valor_total ? 'pago' : 'parcial'
-          })
-          .eq('id', contaReceber.id);
+        // Aguardar trigger executar e verificar se atualizou corretamente (fallback)
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        if (contaReceber) {
+          const { data: contaAtualizada } = await supabase
+            .from('contas_receber')
+            .select('valor_pago, valor_total, status')
+            .eq('id', contaReceber.id)
+            .single();
 
-        if (contaError) throw contaError;
+          if (contaAtualizada) {
+            // Verificar se precisa atualizar manualmente (fallback)
+            const valorEsperado = (contaReceber.valor_pago || 0) + valor;
+            const statusEsperado = valorEsperado >= contaReceber.valor_total ? 'pago' : 'parcial';
+            
+            if (Math.abs(Number(contaAtualizada.valor_pago) - valorEsperado) > 0.01 ||
+                contaAtualizada.status !== statusEsperado) {
+              console.warn('[DialogPagamentoRapidoOrcamento] Trigger não atualizou corretamente, atualizando manualmente');
+              const { error: contaError } = await supabase
+                .from('contas_receber')
+                .update({
+                  valor_pago: valorEsperado,
+                  status: statusEsperado
+                })
+                .eq('id', contaReceber.id);
+
+              if (contaError) throw contaError;
+            }
+          }
+        }
       }
 
       // 4. Se marcou conciliar com extrato

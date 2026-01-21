@@ -17,8 +17,13 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
   const orgData = useOrganization();
   
   // Apply theme based on organization
+  // O tema StudioOS será aplicado pelo hook useStudioOSTheme na rota /studioos
   useEffect(() => {
-    if (!orgData.organization) return;
+    // Verificar se estamos na LP do StudioOS (via pathname)
+    const isStudioOSPage = window.location.pathname === '/studioos';
+    
+    // Não aplicar tema da organização na LP do StudioOS
+    if (isStudioOSPage || !orgData.organization) return;
     
     // Importar e aplicar tema
     import('@/lib/themes').then(({ getTheme, applyTheme }) => {

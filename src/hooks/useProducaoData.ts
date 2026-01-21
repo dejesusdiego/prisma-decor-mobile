@@ -197,7 +197,7 @@ export function useProducaoData() {
             id,
             status,
             data_agendada,
-            data_conclusao,
+            data_realizada,
             observacoes
           )
         `)
@@ -227,7 +227,7 @@ export function useProducaoData() {
           id,
           status,
           data_agendada,
-          data_conclusao,
+          data_realizada,
           observacoes,
           pedido_id,
           created_at,

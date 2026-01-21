@@ -29,6 +29,9 @@ import { WidgetResumoConciliacao } from './WidgetResumoConciliacao';
 import { AlertasConciliacao } from './AlertasConciliacao';
 import { SeletorPeriodoGlobal } from './SeletorPeriodoGlobal';
 import { BreadcrumbsFinanceiro } from './BreadcrumbsFinanceiro';
+import { WidgetSaldoPeriodo } from './WidgetSaldoPeriodo';
+import { WidgetReceitasDespesas } from './WidgetReceitasDespesas';
+import { WidgetTopCategorias } from './WidgetTopCategorias';
 import { usePeriodoFinanceiro, PeriodoFinanceiro } from '@/contexts/FinanceiroContext';
 import { format, subMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -305,8 +308,9 @@ export function DashboardFinanceiro({ onNavigate }: DashboardFinanceiroProps) {
         </Card>
       </div>
 
-      {/* Alertas e Listas */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+      {/* Alertas e Listas - 8 Cards Nivelados */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        {/* Linha 1: Cards Principais */}
         {/* Widget de Conciliação */}
         <WidgetResumoConciliacao onNavigate={handleNavigate} />
 
@@ -321,6 +325,30 @@ export function DashboardFinanceiro({ onNavigate }: DashboardFinanceiroProps) {
           contasPagar={contasPagarPendentes}
           contasReceber={contasReceberPendentes}
           isLoading={isLoading}
+        />
+
+        {/* Linha 2: Novos Cards */}
+        {/* Saldo do Período */}
+        <WidgetSaldoPeriodo 
+          saldoAtual={resumo.saldo}
+          dataInicio={dateRange.inicio}
+          dataFim={dateRange.fim}
+          onNavigate={handleNavigate}
+        />
+
+        {/* Receitas vs Despesas */}
+        <WidgetReceitasDespesas 
+          receitas={resumo.totalEntradas}
+          despesas={resumo.totalSaidas}
+          isLoading={isLoading}
+          onNavigate={handleNavigate}
+        />
+
+        {/* Top Categorias de Despesas */}
+        <WidgetTopCategorias 
+          categorias={despesasPorCategoria}
+          isLoading={isLoading}
+          onNavigate={handleNavigate}
         />
 
         {/* Lançamentos Recentes */}

@@ -40,7 +40,7 @@ function LancamentoItem({ lancamento }: { lancamento: LancamentoRecente }) {
           </div>
         )}
         <div className="flex-1 min-w-0">
-          <p className="font-medium text-sm break-words line-clamp-2" title={lancamento.descricao}>
+          <p className="font-medium text-sm break-words" title={lancamento.descricao}>
             {lancamento.descricao}
           </p>
           <div className="flex items-center gap-2 mt-0.5 flex-wrap">
@@ -52,14 +52,14 @@ function LancamentoItem({ lancamento }: { lancamento: LancamentoRecente }) {
                 <span className="text-muted-foreground shrink-0">•</span>
                 <Badge 
                   variant="outline" 
-                  className="text-xs px-1.5 py-0 shrink-0 whitespace-nowrap"
+                  className="text-xs px-1.5 py-0.5 shrink-0 max-w-[120px] sm:max-w-[150px] break-words whitespace-normal"
                   style={{ 
                     borderColor: lancamento.categoriaCor,
                     color: lancamento.categoriaCor,
                   }}
                   title={lancamento.categoria}
                 >
-                  {lancamento.categoria.length > 12 ? lancamento.categoria.substring(0, 10) + '...' : lancamento.categoria}
+                  {lancamento.categoria}
                 </Badge>
               </>
             )}
@@ -97,18 +97,18 @@ export function ListaLancamentosRecentes({ lancamentos, isLoading }: ListaLancam
   }
 
   return (
-    <Card className="min-h-[320px] flex flex-col">
+    <Card className="min-h-[280px] sm:min-h-[320px] lg:min-h-[360px] flex flex-col">
       <CardHeader className="pb-2 shrink-0">
-        <CardTitle className="text-base flex items-center gap-2">
-          <Clock className="h-4 w-4" />
-          Lançamentos Recentes
-          <Badge variant="secondary" className="ml-auto">
+        <CardTitle className="text-sm sm:text-base flex items-center gap-2">
+          <Clock className="h-4 w-4 shrink-0" />
+          <span className="flex-1 min-w-0">Lançamentos Recentes</span>
+          <Badge variant="secondary" className="ml-auto shrink-0">
             {lancamentos.length}
           </Badge>
         </CardTitle>
       </CardHeader>
-      <CardContent className="flex-1">
-        <ScrollArea className="h-[320px] pr-4">
+      <CardContent className="flex-1 flex flex-col min-h-0">
+        <ScrollArea className="min-h-[200px] max-h-[350px] sm:max-h-[400px] pr-4">
           {lancamentos.length === 0 ? (
             <div className="h-full flex items-center justify-center text-muted-foreground">
               Nenhum lançamento no período

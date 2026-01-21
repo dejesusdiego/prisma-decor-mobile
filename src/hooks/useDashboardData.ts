@@ -118,21 +118,23 @@ interface DashboardData {
 
 function getDateRange(periodo: PeriodoFiltro): { inicio: Date; fim: Date } {
   const hoje = new Date();
+  // Ajustar para fim do dia para incluir todos os registros do dia atual
+  const fim = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate(), 23, 59, 59, 999);
   
   switch (periodo) {
     case '7d':
-      return { inicio: subDays(hoje, 7), fim: hoje };
+      return { inicio: subDays(hoje, 7), fim };
     case '30d':
-      return { inicio: subDays(hoje, 30), fim: hoje };
+      return { inicio: subDays(hoje, 30), fim };
     case '90d':
-      return { inicio: subDays(hoje, 90), fim: hoje };
+      return { inicio: subDays(hoje, 90), fim };
     case '12m':
-      return { inicio: subDays(hoje, 365), fim: hoje };
+      return { inicio: subDays(hoje, 365), fim };
     case 'mes_atual':
       return { inicio: startOfMonth(hoje), fim: endOfMonth(hoje) };
     case 'all':
     default:
-      return { inicio: new Date(2020, 0, 1), fim: hoje };
+      return { inicio: new Date(2020, 0, 1), fim };
   }
 }
 
@@ -160,7 +162,7 @@ function calcularTendencia(atual: number, anterior: number): Tendencia {
 }
 
 export function useDashboardData(periodo: PeriodoFiltro = '30d'): DashboardData {
-  const { organizationId } = useOrganizationContext();
+  const { organizationId, isLoading: isOrgLoading } = useOrganizationContext();
   const [stats, setStats] = useState<Stats>({
     totalOrcamentos: 0,
     valorTotal: 0,
@@ -191,7 +193,15 @@ export function useDashboardData(periodo: PeriodoFiltro = '30d'): DashboardData 
   const [error, setError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
+    // Aguardar organização carregar
+    if (isOrgLoading) {
+      setIsLoading(true);
+      return;
+    }
+    
+    // Se não há organizationId após carregar, não há dados para mostrar
     if (!organizationId) {
+      console.warn('[Dashboard] Organization ID não disponível');
       setIsLoading(false);
       return;
     }
@@ -202,6 +212,13 @@ export function useDashboardData(periodo: PeriodoFiltro = '30d'): DashboardData 
     try {
       const { inicio, fim } = getDateRange(periodo);
       const { inicio: inicioAnterior, fim: fimAnterior } = getPreviousDateRange(periodo);
+
+      console.log('[Dashboard] Carregando dados:', {
+        organizationId,
+        periodo,
+        inicio: inicio.toISOString(),
+        fim: fim.toISOString()
+      });
 
       // Buscar orçamentos do período atual
       // Otimização: selecionar apenas campos necessários e limitar a 1000 registros
@@ -214,17 +231,27 @@ export function useDashboardData(periodo: PeriodoFiltro = '30d'): DashboardData 
         .order('created_at', { ascending: false })
         .limit(1000); // Limitar a 1000 para melhor performance
 
-      if (orcError) throw orcError;
+      if (orcError) {
+        console.error('[Dashboard] Erro ao buscar orçamentos:', orcError);
+        throw orcError;
+      }
+
+      console.log('[Dashboard] Orçamentos encontrados:', orcamentos?.length || 0);
 
       // Buscar orçamentos do período anterior para comparação
       // Otimização: selecionar apenas campos necessários
-      const { data: orcamentosAnteriores } = await supabase
+      const { data: orcamentosAnteriores, error: orcAntError } = await supabase
         .from('orcamentos')
         .select('id, status, total_geral, total_com_desconto, created_at')
         .eq('organization_id', organizationId)
         .gte('created_at', inicioAnterior.toISOString())
         .lte('created_at', fimAnterior.toISOString())
         .limit(1000); // Limitar a 1000 para melhor performance
+
+      if (orcAntError) {
+        console.error('[Dashboard] Erro ao buscar orçamentos anteriores:', orcAntError);
+        // Não lançar erro, apenas logar - período anterior pode não ter dados
+      }
 
       // Buscar itens de cortina para ranking de produtos
       const orcamentoIds = (orcamentos || []).map(o => o.id);
@@ -513,19 +540,30 @@ export function useDashboardData(periodo: PeriodoFiltro = '30d'): DashboardData 
       });
 
       setAlertas(alertasArr.slice(0, 10));
+
+      console.log('[Dashboard] Dados carregados com sucesso:', {
+        totalOrcamentos: allOrcamentos.length,
+        valorTotal,
+        valorRecebido,
+        valorAReceber
+      });
     } catch (err) {
-      console.error('Erro ao carregar dados do dashboard:', err);
-      setError('Erro ao carregar dados');
+      console.error('[Dashboard] Erro ao carregar dados:', err);
+      setError(err instanceof Error ? err.message : 'Erro ao carregar dados');
     } finally {
       setIsLoading(false);
     }
-  }, [periodo, organizationId]);
+  }, [periodo, organizationId, isOrgLoading]);
 
   useEffect(() => {
-    if (organizationId) {
+    // Aguardar organização carregar antes de buscar dados
+    if (!isOrgLoading && organizationId) {
       loadData();
+    } else if (!isOrgLoading && !organizationId) {
+      // Organização carregou mas não há ID (usuário sem organização)
+      setIsLoading(false);
     }
-  }, [loadData, organizationId]);
+  }, [loadData, organizationId, isOrgLoading]);
 
   return {
     stats,

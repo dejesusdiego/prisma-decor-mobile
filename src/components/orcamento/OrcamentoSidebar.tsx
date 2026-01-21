@@ -32,6 +32,7 @@ import {
   Package,
   RefreshCw,
   Building2,
+  Truck,
   Lock,
   Sparkles
 } from 'lucide-react';
@@ -57,6 +58,7 @@ export type View =
   | 'listaOrcamentos' 
   | 'visualizarOrcamento' 
   | 'gestaoMateriais' 
+  | 'gerenciarFornecedores'
   | 'ajustesSistema' 
   | 'configOrganizacao'
   | 'solicitacoesVisita'
@@ -153,6 +155,7 @@ const relatoriosBINavItems: NavItemConfig[] = [
 // Itens da seção ADMINISTRAÇÃO (disponível em todos)
 const administracaoNavItems: NavItemConfig[] = [
   { id: 'gestaoMateriais' as View, label: 'Gestão de Materiais', icon: Database },
+  { id: 'gerenciarFornecedores' as View, label: 'Fornecedores', icon: Truck },
   { id: 'categoriasFormas' as View, label: 'Categorias e Pagamentos', icon: Tags },
   { id: 'configOrganizacao' as View, label: 'Minha Empresa', icon: Building2 },
   { id: 'ajustesSistema' as View, label: 'Ajustes do Sistema', icon: Settings },
@@ -196,7 +199,7 @@ const getInitialCollapsed = (): boolean => {
 
 export function OrcamentoSidebar({ currentView, onNavigate }: OrcamentoSidebarProps) {
   const navigate = useNavigate();
-  const { isAdmin } = useUserRole();
+  const { isAdmin, isLoading: isLoadingRole } = useUserRole();
   const { resetOnboarding } = useOnboardingContext();
   const { organization, isLoading: isOrgLoading } = useOrganizationContext();
   const { hasFeature, features, getUpgradePlanFor } = useFeatureFlags();
@@ -204,6 +207,13 @@ export function OrcamentoSidebar({ currentView, onNavigate }: OrcamentoSidebarPr
   const { isDark, toggleDarkMode } = useTheme();
   const [visitasNaoVistas, setVisitasNaoVistas] = useState(0);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>(getInitialSections);
+  
+  // Debug: Log para verificar status de admin
+  useEffect(() => {
+    if (!isLoadingRole) {
+      console.log('[Sidebar] Status de admin:', { isAdmin, isLoadingRole });
+    }
+  }, [isAdmin, isLoadingRole]);
 
   const sections: SectionConfig[] = [
     { id: 'orcamentos', title: 'Orçamentos', icon: ClipboardList, items: orcamentosNavItems },
@@ -426,7 +436,20 @@ export function OrcamentoSidebar({ currentView, onNavigate }: OrcamentoSidebarPr
   };
 
   const renderSection = (section: SectionConfig) => {
-    if (section.adminOnly && !isAdmin) return null;
+    // Debug: Log para verificar acesso à produção
+    if (section.id === 'producao') {
+      console.log('[Produção] Verificando acesso:', {
+        sectionId: section.id,
+        adminOnly: section.adminOnly,
+        isAdmin,
+        isLoadingRole
+      });
+    }
+    
+    if (section.adminOnly && !isAdmin && !isLoadingRole) {
+      console.log(`[Sidebar] Seção ${section.id} bloqueada - usuário não é admin`);
+      return null;
+    }
     
     const filteredItems = section.items.filter(item => !item.adminOnly || isAdmin);
     if (filteredItems.length === 0) return null;
@@ -562,7 +585,7 @@ export function OrcamentoSidebar({ currentView, onNavigate }: OrcamentoSidebarPr
               )}
               <div className="flex flex-col min-w-0">
                 <span className="font-bold text-foreground truncate">
-                  {isOrgLoading ? 'Carregando...' : (organization?.name || 'Prisma')}
+                  {isOrgLoading ? 'Carregando...' : (organization?.name || 'StudioOS')}
                 </span>
                 <span className="text-xs text-muted-foreground truncate">
                   {organization?.tagline || 'Sistema de Orçamentos'}

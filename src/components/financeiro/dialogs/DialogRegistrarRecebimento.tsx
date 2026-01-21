@@ -76,6 +76,7 @@ export function DialogRegistrarRecebimento({ open, onOpenChange, parcela }: Dial
   const mutation = useMutation({
     mutationFn: async (data: any) => {
       // 1. Atualizar parcela
+      // O trigger SQL vai atualizar automaticamente o status de contas_receber
       const { error: errorParcela } = await supabase
         .from('parcelas_receber')
         .update({
@@ -87,7 +88,10 @@ export function DialogRegistrarRecebimento({ open, onOpenChange, parcela }: Dial
       
       if (errorParcela) throw errorParcela;
 
-      // 2. Buscar conta a receber com dados do orçamento, contato e vendedor
+      // 2. Buscar conta a receber ATUALIZADA (após o trigger) com dados do orçamento, contato e vendedor
+      // Aguardar um pouco para garantir que o trigger executou
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       const { data: conta, error: errorConta } = await supabase
         .from('contas_receber')
         .select('*, parcelas:parcelas_receber(*), orcamento:orcamentos(id, codigo, cliente_nome, total_geral, total_com_desconto, contato_id, vendedor_id)')
@@ -96,28 +100,31 @@ export function DialogRegistrarRecebimento({ open, onOpenChange, parcela }: Dial
       
       if (errorConta) throw errorConta;
 
-      // 3. Calcular novo valor pago
-      const novoValorPago = conta.parcelas
-        .filter((p: any) => p.status === 'pago' || p.id === parcela.id)
-        .reduce((acc: number, p: any) => acc + Number(p.valor), 0);
-
-      // 4. Atualizar conta a receber
-      const todasPagas = conta.parcelas.every(
-        (p: any) => p.status === 'pago' || p.id === parcela.id
-      );
-      
-      // Usar tolerância para considerar pago mesmo com pequenas diferenças (até R$ 5 ou 0.5%)
+      // 3. Verificar se o trigger atualizou corretamente (fallback manual se necessário)
+      const parcelasPagas = conta.parcelas.filter((p: any) => p.status === 'pago');
+      const novoValorPago = parcelasPagas.reduce((acc: number, p: any) => acc + Number(p.valor), 0);
+      const todasPagas = conta.parcelas.every((p: any) => p.status === 'pago');
       const considerarPago = todasPagas || isPagamentoCompleto(Number(conta.valor_total), novoValorPago);
 
-      const { error: errorUpdateConta } = await supabase
-        .from('contas_receber')
-        .update({
-          valor_pago: novoValorPago,
-          status: considerarPago ? 'pago' : 'parcial'
-        })
-        .eq('id', parcela.conta_receber_id);
-      
-      if (errorUpdateConta) throw errorUpdateConta;
+      // Atualizar manualmente apenas se o trigger não atualizou corretamente
+      // (verificar se valor_pago ou status estão diferentes do esperado)
+      const precisaAtualizar = 
+        Math.abs(Number(conta.valor_pago) - novoValorPago) > 0.01 || // Diferença maior que 1 centavo
+        (considerarPago && conta.status !== 'pago') ||
+        (!considerarPago && novoValorPago > 0 && conta.status === 'pendente');
+
+      if (precisaAtualizar) {
+        console.warn('[DialogRegistrarRecebimento] Trigger não atualizou corretamente, atualizando manualmente');
+        const { error: errorUpdateConta } = await supabase
+          .from('contas_receber')
+          .update({
+            valor_pago: novoValorPago,
+            status: considerarPago ? 'pago' : 'parcial'
+          })
+          .eq('id', parcela.conta_receber_id);
+        
+        if (errorUpdateConta) throw errorUpdateConta;
+      }
 
       // Calcular percentual pago para uso em toasts de marcos
       const valorTotalOrcamento = Number(conta.orcamento?.total_com_desconto ?? conta.orcamento?.total_geral ?? conta.valor_total) || 0;

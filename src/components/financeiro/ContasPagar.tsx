@@ -41,7 +41,6 @@ import { toast } from 'sonner';
 import { DialogContaPagar } from './dialogs/DialogContaPagar';
 import { HelpTooltip } from '@/components/ui/HelpTooltip';
 import { TipBanner } from '@/components/ui/TipBanner';
-import { BreadcrumbsFinanceiro } from './BreadcrumbsFinanceiro';
 
 interface ContasPagarProps {
   onVisualizarOrcamento?: (orcamentoId: string) => void;
@@ -69,7 +68,7 @@ const getStatusBadge = (status: string, dataVencimento: string) => {
 
 export function ContasPagar({ onVisualizarOrcamento, onNavigate }: ContasPagarProps) {
   const queryClient = useQueryClient();
-  const { organizationId } = useOrganizationContext();
+  const { organizationId, isLoading: isOrgLoading } = useOrganizationContext();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('todos');
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -81,30 +80,58 @@ export function ContasPagar({ onVisualizarOrcamento, onNavigate }: ContasPagarPr
     staleTime: 2 * 60 * 1000, // Cache por 2 minutos
     gcTime: 10 * 60 * 1000, // Manter em cache por 10 minutos
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('contas_pagar')
-        .select(`
-          id,
-          descricao,
-          valor_total,
-          valor_pago,
-          data_vencimento,
-          status,
-          observacoes,
-          orcamento_id,
-          created_at,
-          categoria:categorias_financeiras(nome, cor),
-          forma_pagamento:formas_pagamento(nome),
-          orcamento:orcamentos(id, codigo, cliente_nome)
-        `)
-        .eq('organization_id', organizationId)
-        .order('data_vencimento', { ascending: true })
-        .limit(500); // Limitar a 500 contas para melhor performance
+      if (!organizationId) {
+        console.warn('[ContasPagar] Organization ID não disponível');
+        return [];
+      }
+
+      console.log('[ContasPagar] Carregando contas a pagar para organization:', organizationId);
       
-      if (error) throw error;
-      return data;
+      try {
+        const { data, error } = await supabase
+          .from('contas_pagar')
+          .select(`
+            id,
+            descricao,
+            fornecedor,
+            valor,
+            data_vencimento,
+            data_pagamento,
+            status,
+            observacoes,
+            orcamento_id,
+            created_at,
+            recorrente,
+            frequencia_recorrencia,
+            categoria_id,
+            categoria:categorias_financeiras(nome, cor),
+            forma_pagamento_id,
+            forma_pagamento:formas_pagamento(nome),
+            orcamento:orcamentos(id, codigo, cliente_nome)
+          `)
+          .eq('organization_id', organizationId)
+          .order('data_vencimento', { ascending: true })
+          .limit(500); // Limitar a 500 contas para melhor performance
+        
+        if (error) {
+          console.error('[ContasPagar] Erro ao buscar contas:', error);
+          // Se for erro de RLS ou permissão, retornar array vazio ao invés de lançar erro
+          if (error.code === 'PGRST116' || error.message.includes('permission') || error.message.includes('policy')) {
+            console.warn('[ContasPagar] Erro de permissão/RLS, retornando array vazio');
+            return [];
+          }
+          throw error;
+        }
+
+        console.log('[ContasPagar] Contas encontradas:', data?.length || 0);
+        return data || [];
+      } catch (err) {
+        console.error('[ContasPagar] Erro inesperado:', err);
+        // Retornar array vazio ao invés de lançar erro para evitar loop infinito
+        return [];
+      }
     },
-    enabled: !!organizationId,
+    enabled: !isOrgLoading && !!organizationId, // Aguardar organização carregar
   });
 
   const deleteMutation = useMutation({
@@ -213,9 +240,6 @@ export function ContasPagar({ onVisualizarOrcamento, onNavigate }: ContasPagarPr
 
   return (
     <div className="space-y-6">
-      {/* Breadcrumb */}
-      <BreadcrumbsFinanceiro currentView="finContasPagar" onNavigate={onNavigate} />
-      
       {/* Header */}
       <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
         <div>
@@ -408,10 +432,10 @@ export function ContasPagar({ onVisualizarOrcamento, onNavigate }: ContasPagarPr
                     </TableCell>
                     <TableCell>{conta.fornecedor || '-'}</TableCell>
                     <TableCell>
-                      {conta.categoria ? (
+                      {conta.categoria && conta.categoria.nome ? (
                         <Badge 
                           variant="outline" 
-                          style={{ borderColor: conta.categoria.cor, color: conta.categoria.cor }}
+                          style={{ borderColor: conta.categoria.cor || undefined, color: conta.categoria.cor || undefined }}
                         >
                           {conta.categoria.nome}
                         </Badge>

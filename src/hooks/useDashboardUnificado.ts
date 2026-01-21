@@ -39,12 +39,17 @@ export interface ProximaAcao {
 }
 
 export function useDashboardUnificado() {
-  const { organizationId } = useOrganizationContext();
+  const { organizationId, isLoading: isOrgLoading } = useOrganizationContext();
   
   return useQuery({
     queryKey: ['dashboard-unificado', organizationId],
     queryFn: async () => {
-      if (!organizationId) throw new Error('Organization ID required');
+      if (!organizationId) {
+        console.warn('[DashboardUnificado] Organization ID não disponível');
+        throw new Error('Organization ID required');
+      }
+      
+      console.log('[DashboardUnificado] Carregando dados para organization:', organizationId);
       
       const hoje = startOfToday();
       const inicioSemana = startOfWeek(hoje, { weekStartsOn: 1 });
@@ -238,7 +243,7 @@ export function useDashboardUnificado() {
         proximasAcoes: proximasAcoes.slice(0, 10)
       };
     },
-    enabled: !!organizationId,
+    enabled: !isOrgLoading && !!organizationId, // Aguardar organização carregar
     refetchInterval: 60000 // Atualizar a cada minuto
   });
 }

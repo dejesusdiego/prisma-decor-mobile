@@ -138,21 +138,6 @@ export function DashboardContent({
           <Button variant="outline" size="icon" onClick={refetch} disabled={isLoading}>
             <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
           </Button>
-          <OnboardingStep
-            active={isDashboardTourActive && currentStep === 0}
-            stepNumber={1}
-            totalSteps={tourSteps.length}
-            title={tourSteps[0]?.title || ''}
-            description={tourSteps[0]?.description || ''}
-            position="bottom"
-            onNext={nextStep}
-            onSkip={skipTour}
-          >
-            <Button onClick={onNovoOrcamento}>
-              <Plus className="h-4 w-4 mr-2" />
-              Novo Orçamento
-            </Button>
-          </OnboardingStep>
         </div>
       </div>
 

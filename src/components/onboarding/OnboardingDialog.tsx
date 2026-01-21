@@ -30,7 +30,7 @@ export function OnboardingDialog({
             <Sparkles className="h-8 w-8 text-primary" />
           </div>
           <DialogTitle className="text-center text-2xl">
-            Bem-vindo ao Prisma ERP!
+            Bem-vindo ao StudioOS!
           </DialogTitle>
           <DialogDescription className="text-center text-base">
             Estamos felizes em ter você aqui. Preparamos um tour rápido para você conhecer as principais funcionalidades do sistema.

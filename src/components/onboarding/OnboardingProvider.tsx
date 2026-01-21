@@ -1,4 +1,5 @@
 import React, { createContext, useContext, ReactNode } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useOnboarding, TourId } from '@/hooks/useOnboarding';
 import { OnboardingDialog } from './OnboardingDialog';
 import { useAuth } from '@/hooks/useAuth';
@@ -34,15 +35,48 @@ interface OnboardingProviderProps {
   children: ReactNode;
 }
 
+// Rotas públicas onde o tour NÃO deve aparecer
+const PUBLIC_ROUTES = [
+  '/',
+  '/studioos',
+  '/auth',
+  '/documentacao',
+  '/nossos-produtos',
+];
+
+// Verifica se a rota atual é pública
+function isPublicRoute(pathname: string): boolean {
+  // Verifica rotas exatas
+  if (PUBLIC_ROUTES.includes(pathname)) {
+    return true;
+  }
+  
+  // Verifica rotas de landing pages organizacionais (/lp/:slug)
+  if (pathname.startsWith('/lp/')) {
+    return true;
+  }
+  
+  return false;
+}
+
 export function OnboardingProvider({ children }: OnboardingProviderProps) {
   const { user, loading: authLoading } = useAuth();
+  const location = useLocation();
   const onboarding = useOnboarding(user?.id);
 
-  // Só mostrar onboarding para usuários autenticados e quando não está carregando
+  // Verificar se a rota atual é pública
+  const isPublic = isPublicRoute(location.pathname);
+
+  // Só mostrar onboarding para:
+  // 1. Usuários autenticados
+  // 2. Quando não está carregando
+  // 3. Quando NÃO está em uma rota pública
+  // 4. Quando o welcome deve ser mostrado
   const shouldShowOnboarding = Boolean(
     user && 
     !authLoading && 
     !onboarding.isLoading && 
+    !isPublic && // NÃO mostrar em rotas públicas
     onboarding.showWelcome
   );
 

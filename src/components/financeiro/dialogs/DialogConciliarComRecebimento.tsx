@@ -165,24 +165,52 @@ export function DialogConciliarComRecebimento({
 
       if (movError) throw movError;
 
-      // 4. Atualizar valor_pago da conta_receber
-      const { data: contaAtual } = await supabase
-        .from('contas_receber')
-        .select('valor_pago, valor_total')
-        .eq('id', parcela.conta_receber.id)
-        .single();
-
-      if (contaAtual) {
-        const novoValorPago = (contaAtual.valor_pago || 0) + valorEfetivo;
-        const novoStatus = novoValorPago >= contaAtual.valor_total ? 'pago' : 'parcial';
-
-        await supabase
-          .from('contas_receber')
+      // 4. Atualizar parcela (se ainda não estiver paga)
+      // O trigger SQL vai atualizar automaticamente o status de contas_receber
+      if (parcela.status !== 'pago') {
+        const { error: parcelaError } = await supabase
+          .from('parcelas_receber')
           .update({
-            valor_pago: novoValorPago,
-            status: novoStatus
+            status: 'pago',
+            data_pagamento: dataPagamento
           })
-          .eq('id', parcela.conta_receber.id);
+          .eq('id', parcela.id);
+
+        if (parcelaError) throw parcelaError;
+
+        // Aguardar trigger executar e verificar se atualizou corretamente (fallback)
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        const { data: contaAtual } = await supabase
+          .from('contas_receber')
+          .select('valor_pago, valor_total, status')
+          .eq('id', parcela.conta_receber.id)
+          .single();
+
+        if (contaAtual) {
+          // Buscar todas as parcelas pagas para calcular valor correto
+          const { data: parcelasPagas } = await supabase
+            .from('parcelas_receber')
+            .select('valor')
+            .eq('conta_receber_id', parcela.conta_receber.id)
+            .eq('status', 'pago');
+
+          const valorEsperado = parcelasPagas?.reduce((acc, p) => acc + Number(p.valor), 0) || 0;
+          const statusEsperado = valorEsperado >= contaAtual.valor_total ? 'pago' : 'parcial';
+
+          // Verificar se precisa atualizar manualmente (fallback)
+          if (Math.abs(Number(contaAtual.valor_pago) - valorEsperado) > 0.01 ||
+              contaAtual.status !== statusEsperado) {
+            console.warn('[DialogConciliarComRecebimento] Trigger não atualizou corretamente, atualizando manualmente');
+            await supabase
+              .from('contas_receber')
+              .update({
+                valor_pago: valorEsperado,
+                status: statusEsperado
+              })
+              .eq('id', parcela.conta_receber.id);
+          }
+        }
       }
 
       return { lancamentoId: lancamento.id, isParcial };

@@ -33,10 +33,14 @@ export function useUserRole(): UseUserRoleResult {
 
         if (error) {
           console.error('Erro ao buscar role do usuário:', error);
+          console.error('User ID:', user.id);
           setRole('user'); // Default to user if no role found
         } else if (!data) {
+          console.warn('Nenhuma role encontrada para o usuário:', user.id);
+          console.warn('Usuário será tratado como "user" por padrão');
           setRole('user');
         } else {
+          console.log('Role encontrada:', data.role, 'para usuário:', user.id);
           setRole(data.role as AppRole);
         }
       } catch (error) {

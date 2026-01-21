@@ -17,33 +17,34 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 0 0% 98%;
-    --foreground: 0 0% 10%;
+    /* Light Mode - Estilo Notion/Linear */
+    --background: 0 0% 96%; /* #f5f5f5 */
+    --foreground: 222 47% 11%; /* slate-900 - #0a0a0a equivalente */
 
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 10%;
+    --card-foreground: 222 47% 11%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 10%;
+    --popover-foreground: 222 47% 11%;
 
-    --primary: 0 0% 10%;
-    --primary-foreground: 0 0% 98%;
+    --primary: 262 83% 58%; /* indigo-600 / violet-600 */
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 0 0% 23%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 215 16% 47%; /* slate-500 */
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 0 0% 96%;
-    --muted-foreground: 0 0% 45%;
+    --muted: 210 40% 96%; /* slate-100 */
+    --muted-foreground: 215 16% 47%; /* slate-500 */
 
-    --accent: 43 74% 52%;
-    --accent-foreground: 0 0% 10%;
+    --accent: 262 83% 58%; /* violet-600 */
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 90%;
-    --input: 0 0% 90%;
-    --ring: 43 74% 52%;
+    --border: 214 32% 91%; /* slate-200 */
+    --input: 214 32% 91%;
+    --ring: 262 83% 58%; /* violet-600 */
 
     --radius: 0.75rem;
     
@@ -95,36 +96,43 @@ All colors MUST be HSL.
     --sidebar-border: 220 13% 91%;
 
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Light Mode - Card Shadows (Notion/Linear style) */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
   }
 
   .dark {
-    --background: 0 0% 10%;
-    --foreground: 0 0% 98%;
+    /* Dark Mode - Premium */
+    --background: 222 47% 11%; /* slate-900 */
+    --foreground: 210 40% 98%; /* slate-50 */
 
-    --card: 0 0% 15%;
-    --card-foreground: 0 0% 98%;
+    --card: 222 47% 15%; /* slate-800 */
+    --card-foreground: 210 40% 98%;
 
-    --popover: 0 0% 15%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 222 47% 15%;
+    --popover-foreground: 210 40% 98%;
 
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 10%;
+    --primary: 262 83% 58%; /* violet-600 */
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 0 0% 23%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 215 28% 17%; /* slate-700 */
+    --secondary-foreground: 210 40% 98%;
 
-    --muted: 0 0% 20%;
-    --muted-foreground: 0 0% 65%;
+    --muted: 215 28% 17%;
+    --muted-foreground: 215 20% 65%;
 
-    --accent: 43 74% 52%;
-    --accent-foreground: 0 0% 10%;
+    --accent: 262 83% 58%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 23%;
-    --input: 0 0% 23%;
-    --ring: 43 74% 52%;
+    --border: 215 28% 17%;
+    --input: 215 28% 17%;
+    --ring: 262 83% 58%;
     
     /* Chart colors - dark mode */
     --chart-1: 221 83% 60%;

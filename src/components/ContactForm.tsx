@@ -3,10 +3,15 @@ import { Button } from "@/components/ui/button";
 import { MapPin, Phone, Mail } from "lucide-react";
 import BookingDialog from "./BookingDialog";
 import { analytics } from "@/lib/analytics";
-const ContactForm = () => {
+
+interface ContactFormProps {
+  organizationSlug?: string;
+}
+
+const ContactForm = ({ organizationSlug }: ContactFormProps) => {
   const [bookingOpen, setBookingOpen] = useState(false);
   return <section id="contato" className="py-20 bg-background">
-      <BookingDialog open={bookingOpen} onOpenChange={setBookingOpen} />
+      <BookingDialog open={bookingOpen} onOpenChange={setBookingOpen} organizationSlug={organizationSlug} />
       <div className="container mx-auto px-4">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">

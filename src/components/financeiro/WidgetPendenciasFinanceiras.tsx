@@ -95,19 +95,19 @@ export function WidgetPendenciasFinanceiras({ onNavigate }: WidgetPendenciasFina
 
   return (
     <Card className={cn(
-      "min-h-[320px] flex flex-col",
+      "min-h-[280px] sm:min-h-[320px] lg:min-h-[360px] flex flex-col",
       pendencias.totalPendencias > 5 && "border-amber-300 bg-amber-50/50 dark:border-amber-700 dark:bg-amber-950/20"
     )}>
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-base flex items-center gap-2">
+      <CardHeader className="pb-3 shrink-0">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <CardTitle className="text-sm sm:text-base flex items-center gap-2">
             <AlertTriangle className={cn(
-              "h-4 w-4",
+              "h-4 w-4 shrink-0",
               pendencias.totalPendencias > 5 ? "text-amber-600" : "text-muted-foreground"
             )} />
-            Pendências
+            <span className="flex-1 min-w-0">Pendências</span>
           </CardTitle>
-          <Badge variant={pendencias.totalPendencias > 5 ? "destructive" : "secondary"}>
+          <Badge variant={pendencias.totalPendencias > 5 ? "destructive" : "secondary"} className="shrink-0">
             {pendencias.totalPendencias} itens
           </Badge>
         </div>

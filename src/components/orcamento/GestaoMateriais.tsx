@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeft } from 'lucide-react';
 import { ListaMateriais } from './gestao/ListaMateriais';
+import { ListaMateriaisFornecedores } from './gestao/ListaMateriaisFornecedores';
 import { ListaServicosConfeccao } from './gestao/ListaServicosConfeccao';
 import { ListaServicosInstalacao } from './gestao/ListaServicosInstalacao';
 import { ImportarDados } from './ImportarDados';
@@ -30,8 +31,9 @@ export function GestaoMateriais({ onVoltar }: GestaoMateriaisProps) {
       </div>
 
       <Tabs value={abaAtiva} onValueChange={setAbaAtiva} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="materiais">Materiais</TabsTrigger>
+          <TabsTrigger value="fornecedores">Fornecedores</TabsTrigger>
           <TabsTrigger value="confeccao">Serviços de Confecção</TabsTrigger>
           <TabsTrigger value="instalacao">Serviços de Instalação</TabsTrigger>
           <TabsTrigger value="importar">Importar Dados</TabsTrigger>
@@ -39,6 +41,10 @@ export function GestaoMateriais({ onVoltar }: GestaoMateriaisProps) {
 
         <TabsContent value="materiais" className="mt-6">
           <ListaMateriais />
+        </TabsContent>
+
+        <TabsContent value="fornecedores" className="mt-6">
+          <ListaMateriaisFornecedores />
         </TabsContent>
 
         <TabsContent value="confeccao" className="mt-6">

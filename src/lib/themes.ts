@@ -3,7 +3,7 @@
  * Define temas de cores com suporte a light/dark mode
  */
 
-export type ThemeName = 'default' | 'blue' | 'green' | 'purple' | 'red' | 'orange' | 'teal' | 'indigo';
+export type ThemeName = 'default' | 'blue' | 'green' | 'purple' | 'red' | 'orange' | 'teal' | 'indigo' | 'studioos';
 
 export interface ThemeColors {
   // Cores principais
@@ -678,6 +678,86 @@ const indigoTheme: Theme = {
 };
 
 /**
+ * Tema StudioOS (Marketing Site)
+ * Tema fixo dark premium para a landing page do StudioOS
+ */
+const studioosTheme: Theme = {
+  name: 'studioos',
+  displayName: 'StudioOS Marketing',
+  description: 'Tema dark premium para landing page',
+  preview: {
+    primary: '#6366f1',
+    accent: '#8b5cf6',
+  },
+  light: {
+    // Light Mode - Estilo Notion/Linear
+    // Fundo base: #f5f5f5, Texto: slate-900, Cards: branco, Primary: indigo/violet
+    primary: '262 83% 58%', // violet-600 / indigo-600
+    primaryForeground: '0 0% 100%',
+    accent: '262 83% 58%', // violet-600
+    accentForeground: '0 0% 100%',
+    background: '0 0% 96%', // #f5f5f5
+    foreground: '222 47% 11%', // slate-900 / #0a0a0a
+    card: '0 0% 100%', // branco
+    cardForeground: '222 47% 11%', // slate-900
+    popover: '0 0% 100%',
+    popoverForeground: '222 47% 11%',
+    secondary: '215 16% 47%', // slate-500
+    secondaryForeground: '0 0% 100%',
+    muted: '210 40% 96%', // slate-100
+    mutedForeground: '215 16% 47%', // slate-500
+    border: '214 32% 91%', // slate-200
+    input: '214 32% 91%',
+    ring: '262 83% 58%', // violet-600
+    sidebarBackground: '0 0% 96%',
+    sidebarForeground: '222 47% 11%',
+    sidebarPrimary: '262 83% 58%',
+    sidebarPrimaryForeground: '0 0% 100%',
+    sidebarAccent: '210 40% 96%',
+    sidebarAccentForeground: '222 47% 11%',
+    sidebarBorder: '214 32% 91%',
+    sidebarRing: '262 83% 58%',
+    chart1: '262 83% 58%',
+    chart2: '280 65% 60%',
+    chart3: '142 76% 36%',
+    chart4: '43 74% 52%',
+    chart5: '12 76% 61%',
+  },
+  dark: {
+    primary: '239 84% 67%', // Indigo vibrante
+    primaryForeground: '0 0% 98%',
+    accent: '280 65% 70%', // Roxo complementar
+    accentForeground: '0 0% 98%',
+    background: '240 10% 4%', // Fundo muito escuro premium
+    foreground: '0 0% 98%',
+    card: '240 10% 8%', // Cards ligeiramente mais claros
+    cardForeground: '0 0% 98%',
+    popover: '240 10% 8%',
+    popoverForeground: '0 0% 98%',
+    secondary: '240 5% 26%',
+    secondaryForeground: '0 0% 98%',
+    muted: '240 4% 16%',
+    mutedForeground: '240 5% 65%',
+    border: '240 4% 16%',
+    input: '240 4% 16%',
+    ring: '239 84% 67%',
+    sidebarBackground: '240 10% 4%',
+    sidebarForeground: '240 5% 96%',
+    sidebarPrimary: '239 84% 67%',
+    sidebarPrimaryForeground: '0 0% 98%',
+    sidebarAccent: '240 4% 16%',
+    sidebarAccentForeground: '240 5% 96%',
+    sidebarBorder: '240 4% 16%',
+    sidebarRing: '239 84% 67%',
+    chart1: '239 84% 75%',
+    chart2: '280 65% 70%',
+    chart3: '142 70% 50%',
+    chart4: '43 74% 60%',
+    chart5: '12 76% 65%',
+  },
+};
+
+/**
  * Exporta todos os temas disponíveis
  */
 export const themes: Record<ThemeName, Theme> = {
@@ -689,6 +769,7 @@ export const themes: Record<ThemeName, Theme> = {
   orange: orangeTheme,
   teal: tealTheme,
   indigo: indigoTheme,
+  studioos: studioosTheme,
 };
 
 /**

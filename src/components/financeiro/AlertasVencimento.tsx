@@ -90,20 +90,20 @@ function AlertaItem({ alerta, onDismiss, onAction }: {
         )}
       </div>
       
-      <div className="flex-1 min-w-0 overflow-hidden">
+      <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2 mb-2">
-          <div className="flex-1 min-w-0 overflow-hidden">
+          <div className="flex-1 min-w-0">
             <p className="font-medium text-sm flex items-start gap-2">
               {isParcela ? (
                 <ArrowUpCircle className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
               ) : (
                 <ArrowDownCircle className="h-4 w-4 text-red-500 shrink-0 mt-0.5" />
               )}
-              <span className="break-words line-clamp-2 flex-1" title={alerta.titulo}>
+              <span className="break-words flex-1" title={alerta.titulo}>
                 {alerta.titulo}
               </span>
             </p>
-            <p className="text-xs text-muted-foreground mt-0.5 break-words line-clamp-1" title={alerta.descricao}>
+            <p className="text-xs text-muted-foreground mt-0.5 break-words" title={alerta.descricao}>
               {alerta.descricao}
             </p>
           </div>
@@ -349,37 +349,37 @@ export function AlertasVencimento() {
 
   return (
     <Card className={cn(
-      "min-h-[320px] flex flex-col",
+      "min-h-[280px] sm:min-h-[320px] lg:min-h-[360px] flex flex-col",
       totalAlta > 0 && "border-red-300 dark:border-red-800"
     )}>
       <CardHeader className="pb-3 shrink-0">
-        <CardTitle className="text-base flex items-center gap-2">
+        <CardTitle className="text-sm sm:text-base flex items-center gap-2 flex-wrap">
           <Bell className={cn(
-            "h-4 w-4",
+            "h-4 w-4 shrink-0",
             totalAlta > 0 ? "text-red-500" : totalMedia > 0 ? "text-amber-500" : "text-blue-500"
           )} />
-          Alertas de Vencimento
-          <div className="ml-auto flex items-center gap-1.5">
+          <span className="flex-1 min-w-0">Alertas de Vencimento</span>
+          <div className="flex items-center gap-1.5 flex-wrap">
             {totalAlta > 0 && (
-              <Badge variant="destructive" className="h-5 px-1.5 text-xs">
+              <Badge variant="destructive" className="h-5 px-1.5 text-xs shrink-0">
                 {totalAlta} urgente{totalAlta > 1 ? 's' : ''}
               </Badge>
             )}
             {totalMedia > 0 && (
-              <Badge className="h-5 px-1.5 text-xs bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300">
+              <Badge className="h-5 px-1.5 text-xs bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300 shrink-0">
                 {totalMedia} hoje
               </Badge>
             )}
             {totalBaixa > 0 && (
-              <Badge variant="secondary" className="h-5 px-1.5 text-xs">
+              <Badge variant="secondary" className="h-5 px-1.5 text-xs shrink-0">
                 {totalBaixa} em breve
               </Badge>
             )}
           </div>
         </CardTitle>
       </CardHeader>
-      <CardContent className="flex-1">
-        <ScrollArea className="h-[320px] pr-2">
+      <CardContent className="flex-1 flex flex-col min-h-0">
+        <ScrollArea className="min-h-[200px] max-h-[350px] sm:max-h-[400px] pr-2">
           <div className="space-y-2">
             {alertasOrdenados.map((alerta) => (
               <AlertaItem 

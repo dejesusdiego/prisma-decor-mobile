@@ -141,7 +141,7 @@ function getPlanDisplayName(plan: string): string {
 function handleUpgradeClick() {
   // Por enquanto, abre link para contato
   // Futuramente: modal com planos ou redirect para página de upgrade
-  window.open('https://wa.me/5511999999999?text=Olá! Gostaria de fazer upgrade do meu plano no Prisma ERP', '_blank');
+  window.open('https://wa.me/5511999999999?text=Olá! Gostaria de fazer upgrade do meu plano no StudioOS', '_blank');
 }
 
 /**

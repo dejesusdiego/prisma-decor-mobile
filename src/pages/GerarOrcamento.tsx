@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Button } from '@/components/ui/button';
 import { LogOut } from 'lucide-react';
+import { toast } from 'sonner';
 import { OrcamentoSidebar, type View } from '@/components/orcamento/OrcamentoSidebar';
 import { DashboardContent } from '@/components/orcamento/DashboardContent';
 import { DashboardExecutivo } from '@/components/orcamento/DashboardExecutivo';
@@ -12,6 +13,7 @@ import { ListaOrcamentos } from '@/components/orcamento/ListaOrcamentos';
 import { VisualizarOrcamento } from '@/components/orcamento/VisualizarOrcamento';
 import { GestaoMateriais } from '@/components/orcamento/GestaoMateriais';
 import { AjustesSistema } from '@/components/orcamento/AjustesSistema';
+import GerenciarFornecedores from '@/pages/GerenciarFornecedores';
 import { SolicitacoesVisita } from '@/components/orcamento/SolicitacoesVisita';
 import { DashboardFinanceiro } from '@/components/financeiro/DashboardFinanceiro';
 import { FluxoCaixaPrevisto } from '@/components/financeiro/FluxoCaixaPrevisto';
@@ -57,7 +59,8 @@ interface ClienteDataFromVisita {
 // Views restritas apenas para admins
 const ADMIN_ONLY_VIEWS: View[] = [
   'home',
-  'gestaoMateriais', 
+  'gestaoMateriais',
+  'gerenciarFornecedores',
   'ajustesSistema', 
   'configOrganizacao',
   'solicitacoesVisita',
@@ -160,7 +163,11 @@ export default function GerarOrcamento() {
 
   const handleNavigate = (newView: View) => {
     // Bloquear navegação para views restritas se não for admin
-    if (!isAdmin && ADMIN_ONLY_VIEWS.includes(newView)) {
+    if (!isLoadingRole && !isAdmin && ADMIN_ONLY_VIEWS.includes(newView)) {
+      toast.error('Acesso restrito', {
+        description: 'Você precisa ser administrador para acessar esta área. Entre em contato com o administrador do sistema.',
+        duration: 5000,
+      });
       return;
     }
     
@@ -195,6 +202,7 @@ export default function GerarOrcamento() {
       case 'listaOrcamentos': return 'Meus Orçamentos';
       case 'visualizarOrcamento': return 'Visualizar Orçamento';
       case 'gestaoMateriais': return 'Gestão de Materiais';
+      case 'gerenciarFornecedores': return 'Gerenciar Fornecedores';
       case 'configOrganizacao': return 'Configurações da Empresa';
       case 'ajustesSistema': return 'Ajustes do Sistema';
       case 'solicitacoesVisita': return 'Solicitações de Visita';
@@ -257,6 +265,9 @@ export default function GerarOrcamento() {
         break;
       case 'gestaoMateriais':
         breadcrumbs.push({ label: 'Gestão de Materiais' });
+        break;
+      case 'gerenciarFornecedores':
+        breadcrumbs.push({ label: 'Gerenciar Fornecedores' });
         break;
       case 'configOrganizacao':
         breadcrumbs.push({ label: 'Configurações da Empresa' });
@@ -352,8 +363,8 @@ export default function GerarOrcamento() {
         {/* Main content */}
         <main className="flex-1 overflow-y-auto p-6">
           <div className="max-w-7xl mx-auto">
-            {/* Breadcrumbs */}
-            {view !== 'dashboard' && view !== 'home' && getBreadcrumbs().length > 0 && (
+            {/* Breadcrumbs - não renderizar para views financeiras, pois cada componente financeiro tem seu próprio breadcrumb */}
+            {view !== 'dashboard' && view !== 'home' && !view.startsWith('fin') && getBreadcrumbs().length > 0 && (
               <div className="mb-4">
                 <Breadcrumbs items={getBreadcrumbs()} />
               </div>
@@ -405,6 +416,10 @@ export default function GerarOrcamento() {
 
             {view === 'gestaoMateriais' && (
               <GestaoMateriais onVoltar={handleVoltarDashboard} />
+            )}
+
+            {view === 'gerenciarFornecedores' && (
+              <GerenciarFornecedores />
             )}
 
             {view === 'ajustesSistema' && (
