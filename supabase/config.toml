@@ -17,6 +17,7 @@ verify_jwt = false
 
 [functions.generate-recurring-bills]
 [functions.calculate-mrr]
+[functions.update-feature-flag]
 verify_jwt = false
 
 [functions.check-production-delays]
