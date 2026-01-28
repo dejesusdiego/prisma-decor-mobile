@@ -4,9 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { 
-  Building2, 
-  Search, 
+import { OrganizationDetailModal } from './OrganizationDetailModal';
+import {
+  Building2,
+  Search,
   Filter,
   ChevronLeft,
   ChevronRight,
@@ -86,6 +87,8 @@ export function OrganizationsList() {
   const [totalCount, setTotalCount] = useState(0);
   const [sortField, setSortField] = useState<SortField>('created_at');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [selectedOrg, setSelectedOrg] = useState<Organization | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
   // Fetch organizations with pagination
   const fetchOrganizations = useCallback(async () => {
@@ -173,7 +176,13 @@ export function OrganizationsList() {
   const endItem = Math.min(currentPage * itemsPerPage, totalCount);
 
   const handleViewDetails = (org: Organization) => {
-    toast.info(`Detalhes de ${org.name} - Em desenvolvimento`);
+    setSelectedOrg(org);
+    setIsDetailModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsDetailModalOpen(false);
+    setSelectedOrg(null);
   };
 
   return (
@@ -403,6 +412,13 @@ export function OrganizationsList() {
           </Button>
         </div>
       </div>
+
+      {/* Organization Detail Modal */}
+      <OrganizationDetailModal
+        organization={selectedOrg}
+        isOpen={isDetailModalOpen}
+        onClose={handleCloseModal}
+      />
     </div>
   );
 }
