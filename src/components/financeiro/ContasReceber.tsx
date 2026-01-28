@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { parseDateOnly, formatDateOnly, startOfToday } from '@/lib/dateOnly';
 import { useNavigate } from 'react-router-dom';
-import { calcularStatusDinamico, isPagamentoCompleto } from '@/lib/calculosFinanceiros';
+import { calcularStatusDinamico } from '@/lib/calculosFinanceiros';
 import { useOrganizationContext } from '@/contexts/OrganizationContext';
 import { 
   Plus, 
@@ -104,22 +104,18 @@ export function ContasReceber({ onNavigate }: ContasReceberProps) {
   });
 
   // Calcular status dinâmico (atrasado) baseado na data de vencimento
-  // PRIORIDADE: Primeiro verifica se está pago (ou deveria estar pela tolerância)
+  // PRIORIDADE: SEMPRE respeitar o status do banco primeiro!
   const contasComStatusDinamico = useMemo(() => {
     return contas.map(conta => {
-      // PRIMEIRO: Verificar se está pago OU deveria estar pago pela tolerância
-      const deveriaSerpago = conta.status === 'pago' || 
-        isPagamentoCompleto(Number(conta.valor_total), Number(conta.valor_pago));
-      
-      if (deveriaSerpago) {
-        return { ...conta, statusExibicao: 'pago' };
+      // PRIORIDADE 1: Status final do banco (pago, cancelado) - SEMPRE respeitar
+      if (conta.status === 'pago' || conta.status === 'cancelado') {
+        return { ...conta, statusExibicao: conta.status };
       }
       
-      // DEPOIS: Verificar atraso apenas para contas NÃO pagas
+      // PRIORIDADE 2: Verificar se está atrasado (apenas para status não-finais)
       const hoje = startOfToday();
       
       const temParcelaAtrasada = conta.parcelas?.some((p: any) => {
-        // Verificar tolerância na parcela também
         const parcelaPaga = p.status === 'pago';
         if (parcelaPaga) return false;
         
@@ -131,10 +127,12 @@ export function ContasReceber({ onNavigate }: ContasReceberProps) {
       const vencimentoConta = parseDateOnly(conta.data_vencimento);
       const contaVencida = vencimentoConta && vencimentoConta < hoje;
       
-      if (temParcelaAtrasada || contaVencida) {
+      // Só marcar como atrasado se o status do banco permitir
+      if ((temParcelaAtrasada || contaVencida) && conta.status !== 'pago') {
         return { ...conta, statusExibicao: 'atrasado' };
       }
       
+      // PRIORIDADE 3: Usar status do banco
       return { ...conta, statusExibicao: conta.status };
     });
   }, [contas]);

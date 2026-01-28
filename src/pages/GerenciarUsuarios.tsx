@@ -9,7 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, UserPlus, Key, Loader2, RefreshCw } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ArrowLeft, UserPlus, Key, Loader2, RefreshCw, Trash2, RotateCcw, AlertTriangle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
@@ -18,6 +20,8 @@ interface UserData {
   email: string;
   role: 'admin' | 'user';
   created_at: string;
+  deleted_at?: string | null;
+  status?: 'active' | 'inactive';
 }
 
 export default function GerenciarUsuarios() {
@@ -39,6 +43,14 @@ export default function GerenciarUsuarios() {
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
   const [newPassword, setNewPassword] = useState('');
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+  
+  // Active tab state
+  const [activeTab, setActiveTab] = useState<'active' | 'inactive'>('active');
+  
+  // Delete/Restore dialog state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [restoreDialogOpen, setRestoreDialogOpen] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const fetchUsers = async () => {
     setIsLoadingUsers(true);
@@ -58,7 +70,13 @@ export default function GerenciarUsuarios() {
       if (error) throw error;
       if (data.error) throw new Error(data.error);
 
-      setUsers(data.users || []);
+      // Marcar status baseado no deleted_at
+      const usersWithStatus = (data.users || []).map((u: UserData) => ({
+        ...u,
+        status: u.deleted_at ? 'inactive' : 'active'
+      }));
+      
+      setUsers(usersWithStatus);
     } catch (error: any) {
       console.error('Erro ao carregar usuários:', error);
       toast.error(error.message || 'Erro ao carregar lista de usuários');
@@ -104,7 +122,6 @@ export default function GerenciarUsuarios() {
       setPassword('');
       setRole('user');
       
-      // Refresh user list
       fetchUsers();
     } catch (error: any) {
       console.error('Erro ao criar usuário:', error);
@@ -160,6 +177,139 @@ export default function GerenciarUsuarios() {
       setIsChangingPassword(false);
     }
   };
+
+  // Soft delete handlers
+  const handleOpenDeleteDialog = (userData: UserData) => {
+    setSelectedUser(userData);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleOpenRestoreDialog = (userData: UserData) => {
+    setSelectedUser(userData);
+    setRestoreDialogOpen(true);
+  };
+
+  const handleSoftDelete = async () => {
+    if (!selectedUser) return;
+    
+    setIsProcessing(true);
+    try {
+      const { error } = await (supabase.rpc as any)('soft_delete_user', {
+        p_user_id: selectedUser.id
+      });
+
+      if (error) throw error;
+
+      toast.success('Usuário desativado com sucesso!');
+      setDeleteDialogOpen(false);
+      setSelectedUser(null);
+      fetchUsers();
+    } catch (error: any) {
+      console.error('Erro ao desativar usuário:', error);
+      toast.error(error.message || 'Erro ao desativar usuário');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleRestore = async () => {
+    if (!selectedUser) return;
+    
+    setIsProcessing(true);
+    try {
+      const { error } = await (supabase.rpc as any)('restore_user', {
+        p_user_id: selectedUser.id
+      });
+
+      if (error) throw error;
+
+      toast.success('Usuário restaurado com sucesso!');
+      setRestoreDialogOpen(false);
+      setSelectedUser(null);
+      fetchUsers();
+    } catch (error: any) {
+      console.error('Erro ao restaurar usuário:', error);
+      toast.error(error.message || 'Erro ao restaurar usuário');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // Filter users by status
+  const activeUsers = users.filter(u => !u.deleted_at);
+  const inactiveUsers = users.filter(u => u.deleted_at);
+
+  const renderUserTable = (userList: UserData[], isInactive: boolean) => (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Email</TableHead>
+          <TableHead>Permissão</TableHead>
+          <TableHead>Criado em</TableHead>
+          <TableHead className="text-right">Ações</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {userList.map((userData) => (
+          <TableRow key={userData.id} className={isInactive ? 'opacity-60' : ''}>
+            <TableCell className="font-medium">
+              {userData.email}
+              {isInactive && (
+                <Badge variant="outline" className="ml-2 text-muted-foreground">
+                  Inativo
+                </Badge>
+              )}
+            </TableCell>
+            <TableCell>
+              <Badge variant={userData.role === 'admin' ? 'default' : 'secondary'}>
+                {userData.role === 'admin' ? 'Admin' : 'Usuário'}
+              </Badge>
+            </TableCell>
+            <TableCell className="text-muted-foreground">
+              {new Date(userData.created_at).toLocaleDateString('pt-BR')}
+            </TableCell>
+            <TableCell className="text-right">
+              <div className="flex justify-end gap-2">
+                {!isInactive && (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleOpenPasswordDialog(userData)}
+                    >
+                      <Key className="h-4 w-4 mr-2" />
+                      Senha
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-destructive hover:bg-destructive/10"
+                      onClick={() => handleOpenDeleteDialog(userData)}
+                      disabled={userData.id === user?.id}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Desativar
+                    </Button>
+                  </>
+                )}
+                {isInactive && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-green-600 hover:bg-green-50"
+                    onClick={() => handleOpenRestoreDialog(userData)}
+                  >
+                    <RotateCcw className="h-4 w-4 mr-2" />
+                    Restaurar
+                  </Button>
+                )}
+              </div>
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
 
   return (
     <div className="min-h-screen bg-background">
@@ -258,12 +408,12 @@ export default function GerenciarUsuarios() {
               </div>
 
               <div>
-                <h3 className="font-medium mb-2">Segurança</h3>
+                <h3 className="font-medium mb-2">Desativação de Usuários</h3>
                 <ul className="space-y-2 text-sm text-muted-foreground">
-                  <li>• Senhas devem ter no mínimo 6 caracteres</li>
-                  <li>• Usuários receberão email de confirmação</li>
-                  <li>• Cada usuário vê apenas seus próprios orçamentos</li>
-                  <li>• Apenas admins podem modificar tabelas de preços</li>
+                  <li>• Usuários desativados não podem fazer login</li>
+                  <li>• Orçamentos existentes são preservados</li>
+                  <li>• Usuários podem ser reativados posteriormente</li>
+                  <li>• Você não pode desativar seu próprio usuário</li>
                 </ul>
               </div>
 
@@ -276,14 +426,14 @@ export default function GerenciarUsuarios() {
           </Card>
         </div>
 
-        {/* Users List Section */}
+        {/* Users List Section with Tabs */}
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle>Usuários Existentes</CardTitle>
                 <CardDescription>
-                  Lista de todos os usuários do sistema
+                  Gerencie usuários ativos e inativos
                 </CardDescription>
               </div>
               <Button variant="outline" size="sm" onClick={fetchUsers} disabled={isLoadingUsers}>
@@ -293,52 +443,46 @@ export default function GerenciarUsuarios() {
             </div>
           </CardHeader>
           <CardContent>
-            {isLoadingUsers ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                <span className="ml-2 text-muted-foreground">Carregando usuários...</span>
-              </div>
-            ) : users.length === 0 ? (
-              <p className="text-center py-8 text-muted-foreground">
-                Nenhum usuário encontrado
-              </p>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Permissão</TableHead>
-                    <TableHead>Criado em</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {users.map((userData) => (
-                    <TableRow key={userData.id}>
-                      <TableCell className="font-medium">{userData.email}</TableCell>
-                      <TableCell>
-                        <Badge variant={userData.role === 'admin' ? 'default' : 'secondary'}>
-                          {userData.role === 'admin' ? 'Admin' : 'Usuário'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {new Date(userData.created_at).toLocaleDateString('pt-BR')}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleOpenPasswordDialog(userData)}
-                        >
-                          <Key className="h-4 w-4 mr-2" />
-                          Alterar Senha
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
+            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'active' | 'inactive')}>
+              <TabsList className="mb-4">
+                <TabsTrigger value="active">
+                  Ativos ({activeUsers.length})
+                </TabsTrigger>
+                <TabsTrigger value="inactive">
+                  Inativos ({inactiveUsers.length})
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="active">
+                {isLoadingUsers ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                    <span className="ml-2 text-muted-foreground">Carregando usuários...</span>
+                  </div>
+                ) : activeUsers.length === 0 ? (
+                  <p className="text-center py-8 text-muted-foreground">
+                    Nenhum usuário ativo encontrado
+                  </p>
+                ) : (
+                  renderUserTable(activeUsers, false)
+                )}
+              </TabsContent>
+              
+              <TabsContent value="inactive">
+                {isLoadingUsers ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                    <span className="ml-2 text-muted-foreground">Carregando usuários...</span>
+                  </div>
+                ) : inactiveUsers.length === 0 ? (
+                  <p className="text-center py-8 text-muted-foreground">
+                    Nenhum usuário inativo
+                  </p>
+                ) : (
+                  renderUserTable(inactiveUsers, true)
+                )}
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
       </main>
@@ -384,6 +528,92 @@ export default function GerenciarUsuarios() {
                 </>
               ) : (
                 'Salvar'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+              Desativar Usuário
+            </DialogTitle>
+            <DialogDescription>
+              Tem certeza que deseja desativar o usuário <strong>{selectedUser?.email}</strong>?
+              <br /><br />
+              O usuário não poderá mais fazer login, mas todos os seus orçamentos serão preservados.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteDialogOpen(false)}
+              disabled={isProcessing}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleSoftDelete}
+              disabled={isProcessing}
+            >
+              {isProcessing ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Desativando...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Desativar
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Restore Confirmation Dialog */}
+      <Dialog open={restoreDialogOpen} onOpenChange={setRestoreDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-green-600">
+              <RotateCcw className="h-5 w-5" />
+              Restaurar Usuário
+            </DialogTitle>
+            <DialogDescription>
+              Tem certeza que deseja restaurar o usuário <strong>{selectedUser?.email}</strong>?
+              <br /><br />
+              O usuário poderá fazer login novamente.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setRestoreDialogOpen(false)}
+              disabled={isProcessing}
+            >
+              Cancelar
+            </Button>
+            <Button
+              className="bg-green-600 hover:bg-green-700"
+              onClick={handleRestore}
+              disabled={isProcessing}
+            >
+              {isProcessing ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Restaurando...
+                </>
+              ) : (
+                <>
+                  <RotateCcw className="h-4 w-4 mr-2" />
+                  Restaurar
+                </>
               )}
             </Button>
           </DialogFooter>

@@ -3,10 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { 
-  FileText, 
-  DollarSign, 
-  Plus, 
+import {
+  FileText,
+  DollarSign,
   ArrowUpRight,
   RefreshCw,
   Target,
@@ -359,9 +358,7 @@ export function DashboardContent({
                     <div className="text-center py-8 text-muted-foreground">
                       <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
                       <p>Nenhum orçamento encontrado</p>
-                      <Button variant="outline" className="mt-4" onClick={onNovoOrcamento}>
-                        Criar primeiro orçamento
-                      </Button>
+                      <p className="text-sm mt-2">Use o botão "Novo Orçamento" na sidebar para criar um orçamento.</p>
                     </div>
                   ) : (
                     <div className="space-y-2">
