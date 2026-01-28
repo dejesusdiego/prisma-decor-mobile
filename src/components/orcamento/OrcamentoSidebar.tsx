@@ -90,7 +90,8 @@ export type View =
   | 'prodLista'
   | 'prodFicha'
   | 'prodAgenda'
-  | 'prodRelatorio';
+  | 'prodRelatorio'
+  | 'analytics';
 
 interface OrcamentoSidebarProps {
   currentView: View;
@@ -151,6 +152,11 @@ const relatoriosBINavItems: NavItemConfig[] = [
   { id: 'crmRelatorios' as View, label: 'Análise Comercial', icon: TrendingUp, requiredFeature: 'relatorios_bi' },
   { id: 'crmJornada' as View, label: 'Jornada de Clientes', icon: UserCircle, requiredFeature: 'relatorios_bi' },
   { id: 'prodRelatorio' as View, label: 'Análise Produção', icon: Factory, requiredFeature: 'relatorios_bi' },
+];
+
+// Itens da seção ANALYTICS (disponível em todos os planos)
+const analyticsNavItems: NavItemConfig[] = [
+  { id: 'analytics' as View, label: 'Dashboard Analytics', icon: BarChart3 },
 ];
 
 // Itens da seção ADMINISTRAÇÃO (disponível em todos)
@@ -221,6 +227,7 @@ export function OrcamentoSidebar({ currentView, onNavigate }: OrcamentoSidebarPr
     { id: 'crm', title: 'CRM', icon: Target, items: crmNavItems },
     { id: 'producao', title: 'Produção', icon: Factory, items: producaoNavItems, adminOnly: true },
     { id: 'financeiro', title: 'Financeiro', icon: Wallet, items: financeiroNavItems, adminOnly: true, requiredFeature: 'financeiro_completo' },
+    { id: 'analytics', title: 'Analytics', icon: BarChart3, items: analyticsNavItems, adminOnly: true },
     { id: 'relatoriosBI', title: 'Relatórios & BI', icon: BarChart3, items: relatoriosBINavItems, adminOnly: true, requiredFeature: 'relatorios_bi' },
     { id: 'administracao', title: 'Administração', icon: Wrench, items: administracaoNavItems, adminOnly: true },
   ];

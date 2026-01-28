@@ -48,6 +48,7 @@ import { CalendarioGeral } from '@/components/calendario/CalendarioGeral';
 import { OrgSettingsForm } from '@/components/settings/OrgSettingsForm';
 import { ThemeSelector } from '@/components/settings/ThemeSelector';
 import { Breadcrumbs, type BreadcrumbItem } from '@/components/ui/Breadcrumbs';
+import { AnalyticsDashboard } from '@/components/analytics/AnalyticsDashboard';
 
 interface ClienteDataFromVisita {
   nome: string;
@@ -61,7 +62,7 @@ const ADMIN_ONLY_VIEWS: View[] = [
   'home',
   'gestaoMateriais',
   'gerenciarFornecedores',
-  'ajustesSistema', 
+  'ajustesSistema',
   'configOrganizacao',
   'solicitacoesVisita',
   'calendarioGeral',
@@ -86,7 +87,8 @@ const ADMIN_ONLY_VIEWS: View[] = [
   'prodLista',
   'prodFicha',
   'prodAgenda',
-  'prodRelatorio'
+  'prodRelatorio',
+  'analytics'
 ];
 
 export default function GerarOrcamento() {
@@ -232,6 +234,7 @@ export default function GerarOrcamento() {
       case 'prodLista': return 'Pedidos em Produção';
       case 'prodFicha': return '';
       case 'prodAgenda': return 'Agenda de Instalações';
+      case 'analytics': return 'Analytics';
       default: return '';
     }
   };
@@ -332,6 +335,9 @@ export default function GerarOrcamento() {
           { label: 'Financeiro', onClick: () => setView('finDashboard') },
           { label: 'Categorias e Formas de Pagamento' }
         );
+        break;
+      case 'analytics':
+        breadcrumbs.push({ label: 'Analytics' });
         break;
     }
     
@@ -548,6 +554,9 @@ export default function GerarOrcamento() {
             )}
             {view === 'prodAgenda' && <AgendaInstalacoes />}
             {view === 'prodRelatorio' && <RelatorioProducao />}
+            
+            {/* Analytics */}
+            {view === 'analytics' && <AnalyticsDashboard />}
           </div>
         </main>
       </div>

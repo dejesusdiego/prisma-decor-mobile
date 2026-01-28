@@ -26,6 +26,7 @@ import LandingPageStudioOS from "./pages/studioos/LandingPageStudioOS";
 import SupplierPortal from "./pages/SupplierPortal";
 import CadastroFornecedor from "./pages/CadastroFornecedor";
 import LoginGateway from "./pages/LoginGateway";
+import Analytics from "./pages/Analytics";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -129,6 +130,11 @@ const AppContent = () => {
                   <ConfiguracoesOrganizacao />
                 </ProtectedRoute>
               } />
+              <Route path="/analytics" element={
+                <ProtectedRoute>
+                  <Analytics />
+                </ProtectedRoute>
+              } />
               <Route path="*" element={<LoginGateway />} />
             </Routes>
           </OnboardingProvider>
@@ -148,6 +154,11 @@ const AppContent = () => {
               <Route path="/configuracoes/organizacao" element={
                 <ProtectedRoute>
                   <ConfiguracoesOrganizacao />
+                </ProtectedRoute>
+              } />
+              <Route path="/analytics" element={
+                <ProtectedRoute>
+                  <Analytics />
                 </ProtectedRoute>
               } />
               <Route path="/" element={
@@ -313,13 +324,21 @@ const AppContent = () => {
               </AdminRoute>
             } 
           />
-          <Route 
-            path="/configuracoes/organizacao" 
+          <Route
+            path="/configuracoes/organizacao"
             element={
               <ProtectedRoute>
                 <ConfiguracoesOrganizacao />
               </ProtectedRoute>
-            } 
+            }
+          />
+          <Route
+            path="/analytics"
+            element={
+              <ProtectedRoute>
+                <Analytics />
+              </ProtectedRoute>
+            }
           />
           <Route path="/documentacao" element={<Documentacao />} />
           <Route path="/cadastro-fornecedor" element={<CadastroFornecedor />} />
