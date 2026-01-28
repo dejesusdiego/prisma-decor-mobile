@@ -10,6 +10,7 @@ import {
   getStatusChartColor,
 } from '@/lib/calculosStatus';
 import { addDays, subDays, startOfMonth, endOfMonth, format, differenceInDays } from 'date-fns';
+import { logger } from '@/lib/logger';
 
 export type PeriodoFiltro = '7d' | '30d' | '90d' | '12m' | 'mes_atual' | 'all';
 
@@ -213,7 +214,7 @@ export function useDashboardData(periodo: PeriodoFiltro = '30d'): DashboardData 
       const { inicio, fim } = getDateRange(periodo);
       const { inicio: inicioAnterior, fim: fimAnterior } = getPreviousDateRange(periodo);
 
-      console.log('[Dashboard] Carregando dados:', {
+      logger.debug('[Dashboard] Carregando dados:', {
         organizationId,
         periodo,
         inicio: inicio.toISOString(),
@@ -236,7 +237,7 @@ export function useDashboardData(periodo: PeriodoFiltro = '30d'): DashboardData 
         throw orcError;
       }
 
-      console.log('[Dashboard] Orçamentos encontrados:', orcamentos?.length || 0);
+      logger.debug('[Dashboard] Orçamentos encontrados:', orcamentos?.length || 0);
 
       // Buscar orçamentos do período anterior para comparação
       // Otimização: selecionar apenas campos necessários
@@ -541,14 +542,14 @@ export function useDashboardData(periodo: PeriodoFiltro = '30d'): DashboardData 
 
       setAlertas(alertasArr.slice(0, 10));
 
-      console.log('[Dashboard] Dados carregados com sucesso:', {
+      logger.debug('[Dashboard] Dados carregados com sucesso:', {
         totalOrcamentos: allOrcamentos.length,
         valorTotal,
         valorRecebido,
         valorAReceber
       });
     } catch (err) {
-      console.error('[Dashboard] Erro ao carregar dados:', err);
+      logger.error('[Dashboard] Erro ao carregar dados:', err);
       setError(err instanceof Error ? err.message : 'Erro ao carregar dados');
     } finally {
       setIsLoading(false);

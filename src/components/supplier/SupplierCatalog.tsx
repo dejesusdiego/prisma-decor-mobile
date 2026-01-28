@@ -8,7 +8,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Upload, Edit, Loader2, Search, X, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Upload, Edit, Loader2, Search, X, CheckCircle2, AlertCircle, Plus, Power, PowerOff, Download, ArrowUpDown } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useSupplierMaterials, useInvalidateSupplierMaterials } from '@/hooks/useSupplierMaterials';
 import { toast } from 'sonner';
 
 interface SupplierMaterial {
@@ -29,9 +31,13 @@ interface SupplierCatalogProps {
 }
 
 export function SupplierCatalog({ supplierId }: SupplierCatalogProps) {
-  const [materials, setMaterials] = useState<SupplierMaterial[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: materials = [], isLoading, refetch } = useSupplierMaterials(supplierId);
+  const invalidateMaterials = useInvalidateSupplierMaterials();
+  
   const [searchTerm, setSearchTerm] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<'name' | 'price' | 'updated'>('name');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingMaterial, setEditingMaterial] = useState<SupplierMaterial | null>(null);
   
@@ -51,31 +57,38 @@ export function SupplierCatalog({ supplierId }: SupplierCatalogProps) {
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
 
-  const fetchMaterials = async () => {
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('supplier_materials')
-        .select('*')
-        .eq('supplier_id', supplierId)
-        .order('name', { ascending: true });
-
-      if (error) throw error;
-
-      setMaterials(data || []);
-    } catch (error: any) {
-      console.error('Erro ao carregar materiais:', error);
-      toast.error(error.message || 'Erro ao carregar catálogo');
-    } finally {
-      setIsLoading(false);
-    }
+  const resetForm = () => {
+    setFormName('');
+    setFormSku('');
+    setFormDescription('');
+    setFormUnit('');
+    setFormPrice('');
+    setFormActive(true);
   };
 
-  useEffect(() => {
-    if (supplierId) {
-      fetchMaterials();
+  const handleNewMaterial = () => {
+    setEditingMaterial(null);
+    resetForm();
+    setEditDialogOpen(true);
+  };
+
+  const handleToggleActive = async (material: SupplierMaterial) => {
+    try {
+      const { error } = await supabase
+        .from('supplier_materials')
+        .update({ active: !material.active })
+        .eq('id', material.id);
+
+      if (error) throw error;
+      
+      toast.success(`Material ${!material.active ? 'ativado' : 'desativado'} com sucesso`);
+      invalidateMaterials(supplierId);
+      refetch();
+    } catch (error: any) {
+      console.error('Erro ao alterar status:', error);
+      toast.error(error.message || 'Erro ao alterar status');
     }
-  }, [supplierId]);
+  };
 
   const handleEditMaterial = (material: SupplierMaterial) => {
     setEditingMaterial(material);
@@ -137,8 +150,10 @@ export function SupplierCatalog({ supplierId }: SupplierCatalogProps) {
       }
 
       setEditDialogOpen(false);
+      resetForm();
       setEditingMaterial(null);
-      fetchMaterials();
+      invalidateMaterials(supplierId);
+      refetch();
     } catch (error: any) {
       console.error('Erro ao salvar material:', error);
       toast.error(error.message || 'Erro ao salvar material');
@@ -205,9 +220,11 @@ export function SupplierCatalog({ supplierId }: SupplierCatalogProps) {
             row.dados.name = value;
             if (!value) rowErrors.push('Nome é obrigatório');
           } else if (header === 'price' || header === 'preco' || header === 'preço') {
-            const price = parseFloat(value.replace(',', '.'));
-            row.dados.price = price;
-            if (isNaN(price) || price < 0) rowErrors.push('Preço inválido');
+            // Normalizar preço: remover espaços, substituir vírgula por ponto
+            const priceStr = value.replace(/\s/g, '').replace(',', '.');
+            const price = parseFloat(priceStr);
+            row.dados.price = isNaN(price) ? null : price;
+            if (isNaN(price) || price < 0) rowErrors.push('Preço inválido (deve ser um número positivo)');
           } else if (header === 'sku' || header === 'codigo' || header === 'código') {
             row.dados.sku = value || null;
           } else if (header === 'unit' || header === 'unidade') {
@@ -281,14 +298,18 @@ export function SupplierCatalog({ supplierId }: SupplierCatalogProps) {
         const dados: any = { supplier_id: supplierId };
 
         headers.forEach((header, idx) => {
-          const value = values[idx] || '';
+          const value = (values[idx] || '').trim(); // Remover espaços
           
           if (header === 'name' || header === 'nome') {
             dados.name = value;
           } else if (header === 'price' || header === 'preco' || header === 'preço') {
-            dados.price = parseFloat(value.replace(',', '.'));
+            // Normalizar preço: remover espaços, substituir vírgula por ponto
+            const priceStr = value.replace(/\s/g, '').replace(',', '.');
+            const price = parseFloat(priceStr);
+            dados.price = isNaN(price) ? null : price;
           } else if (header === 'sku' || header === 'codigo' || header === 'código') {
-            dados.sku = value || null;
+            // Normalizar SKU: string vazia vira null (evita duplicados)
+            dados.sku = value ? value : null;
           } else if (header === 'unit' || header === 'unidade') {
             dados.unit = value || null;
           } else if (header === 'description' || header === 'descricao' || header === 'descrição') {
@@ -299,13 +320,21 @@ export function SupplierCatalog({ supplierId }: SupplierCatalogProps) {
           }
         });
 
-        if (!dados.name || isNaN(dados.price) || dados.price < 0) {
-          errors.push({ linha: i + 1, erro: 'Dados inválidos' });
+        // Validação rigorosa de preço
+        if (!dados.name || dados.price === null || isNaN(dados.price) || dados.price < 0) {
+          errors.push({ 
+            linha: i + 1, 
+            erro: dados.name ? 'Preço inválido (deve ser um número positivo)' : 'Nome é obrigatório' 
+          });
           continue;
         }
 
-        // Upsert: por sku se existir, senão por name
-        const matchKey = dados.sku ? { supplier_id: supplierId, sku: dados.sku } : { supplier_id: supplierId, name: dados.name };
+        // Upsert: por sku se existir e não for vazio, senão por name
+        // Normalizar SKU vazio para null (evita duplicados com constraint UNIQUE NULLS NOT DISTINCT)
+        const skuNormalized = dados.sku && dados.sku.trim() !== '' ? dados.sku.trim() : null;
+        const matchKey = skuNormalized 
+          ? { supplier_id: supplierId, sku: skuNormalized } 
+          : { supplier_id: supplierId, name: dados.name };
         
         const { data: existing } = await supabase
           .from('supplier_materials')
@@ -319,8 +348,9 @@ export function SupplierCatalog({ supplierId }: SupplierCatalogProps) {
             .update({
               name: dados.name,
               price: dados.price,
-              unit: dados.unit,
-              description: dados.description,
+              unit: dados.unit || null,
+              description: dados.description || null,
+              sku: skuNormalized, // Usar SKU normalizado (null se vazio)
               active: dados.active !== undefined ? dados.active : true,
             })
             .eq('id', existing.id);
@@ -336,10 +366,10 @@ export function SupplierCatalog({ supplierId }: SupplierCatalogProps) {
             .insert({
               supplier_id: supplierId,
               name: dados.name,
-              sku: dados.sku,
+              sku: skuNormalized, // Usar SKU normalizado (null se vazio)
               price: dados.price,
-              unit: dados.unit,
-              description: dados.description,
+              unit: dados.unit || null,
+              description: dados.description || null,
               active: dados.active !== undefined ? dados.active : true,
             });
 
@@ -352,22 +382,30 @@ export function SupplierCatalog({ supplierId }: SupplierCatalogProps) {
       }
 
       // Atualizar registro de import
+      // Garantir que errors seja sempre um array válido (não pode ser undefined ou null)
+      const errorsArray = Array.isArray(errors) ? errors : [];
+      
       await supabase
         .from('supplier_material_imports')
         .update({
-          status: errors.length > 0 ? 'failed' : 'applied',
+          status: errorsArray.length > 0 ? 'failed' : 'applied',
           inserted,
           updated,
-          errors: errors,
+          errors: errorsArray, // Sempre array válido
         })
         .eq('id', importRecord.id);
 
-      toast.success(`Importação concluída! ${inserted} inseridos, ${updated} atualizados${errors.length > 0 ? `, ${errors.length} erros` : ''}`);
-      setImportDialogOpen(false);
+      const ignored = lines.length - 1 - inserted - updated - errorsArray.length;
+      setImportSummary({ inserted, updated, ignored });
+      
+      toast.success(`Importação concluída! ${inserted} inseridos, ${updated} atualizados${errorsArray.length > 0 ? `, ${errorsArray.length} erros` : ''}`);
+      
+      // Não fechar dialog imediatamente - mostrar resumo
       setCsvFile(null);
       setCsvPreview([]);
       setCsvErrors([]);
-      fetchMaterials();
+      invalidateMaterials(supplierId);
+      refetch();
     } catch (error: any) {
       console.error('Erro ao importar CSV:', error);
       toast.error(error.message || 'Erro ao importar CSV');
@@ -376,24 +414,57 @@ export function SupplierCatalog({ supplierId }: SupplierCatalogProps) {
     }
   };
 
-  const filteredMaterials = materials.filter(m =>
-    m.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (m.sku && m.sku.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  // Filtrar e ordenar materiais
+  const filteredMaterials = materials
+    .filter(m => {
+      const matchesSearch = 
+        m.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (m.sku && m.sku.toLowerCase().includes(searchTerm.toLowerCase()));
+      
+      const matchesCategory = categoryFilter === 'all' || m.unit === categoryFilter;
+      
+      return matchesSearch && matchesCategory;
+    })
+    .sort((a, b) => {
+      let comparison = 0;
+      
+      switch (sortBy) {
+        case 'name':
+          comparison = a.name.localeCompare(b.name);
+          break;
+        case 'price':
+          comparison = a.price - b.price;
+          break;
+        case 'updated':
+          comparison = new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime();
+          break;
+      }
+      
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
+
+  // Categorias únicas para filtro
+  const categories = Array.from(new Set(materials.map(m => m.unit).filter(Boolean))) as string[];
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-2xl font-bold">Catálogo de Materiais</h2>
           <p className="text-muted-foreground">
             Gerencie o catálogo de materiais do seu fornecedor
           </p>
         </div>
-        <Button onClick={() => setImportDialogOpen(true)}>
-          <Upload className="h-4 w-4 mr-2" />
-          Importar CSV
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => setImportDialogOpen(true)}>
+            <Upload className="h-4 w-4 mr-2" />
+            Importar CSV
+          </Button>
+          <Button onClick={handleNewMaterial}>
+            <Plus className="h-4 w-4 mr-2" />
+            Novo Material
+          </Button>
+        </div>
       </div>
 
       <Card>
@@ -410,6 +481,34 @@ export function SupplierCatalog({ supplierId }: SupplierCatalogProps) {
                   className="pl-8 w-64"
                 />
               </div>
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Categoria" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas as categorias</SelectItem>
+                  {categories.map(cat => (
+                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={`${sortBy}-${sortOrder}`} onValueChange={(value) => {
+                const [by, order] = value.split('-') as ['name' | 'price' | 'updated', 'asc' | 'desc'];
+                setSortBy(by);
+                setSortOrder(order);
+              }}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Ordenar por" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="name-asc">Nome (A-Z)</SelectItem>
+                  <SelectItem value="name-desc">Nome (Z-A)</SelectItem>
+                  <SelectItem value="price-asc">Preço (menor)</SelectItem>
+                  <SelectItem value="price-desc">Preço (maior)</SelectItem>
+                  <SelectItem value="updated-desc">Mais recente</SelectItem>
+                  <SelectItem value="updated-asc">Mais antigo</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </CardHeader>
@@ -450,13 +549,28 @@ export function SupplierCatalog({ supplierId }: SupplierCatalogProps) {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleEditMaterial(material)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleEditMaterial(material)}
+                          title="Editar"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleToggleActive(material)}
+                          title={material.active ? 'Desativar' : 'Ativar'}
+                        >
+                          {material.active ? (
+                            <PowerOff className="h-4 w-4 text-red-500" />
+                          ) : (
+                            <Power className="h-4 w-4 text-green-500" />
+                          )}
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -627,25 +741,30 @@ export function SupplierCatalog({ supplierId }: SupplierCatalogProps) {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setImportDialogOpen(false)}>
-              Cancelar
+            <Button variant="outline" onClick={() => {
+              setImportDialogOpen(false);
+              setImportSummary(null);
+            }}>
+              {importSummary ? 'Fechar' : 'Cancelar'}
             </Button>
-            <Button
-              onClick={handleApplyImport}
-              disabled={!csvFile || isImporting || csvPreview.length === 0}
-            >
-              {isImporting ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Importando...
-                </>
-              ) : (
-                <>
-                  <Upload className="h-4 w-4 mr-2" />
-                  Aplicar Importação
-                </>
-              )}
-            </Button>
+            {!importSummary && (
+              <Button
+                onClick={handleApplyImport}
+                disabled={!csvFile || isImporting || csvPreview.length === 0}
+              >
+                {isImporting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Importando...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-4 w-4 mr-2" />
+                    Aplicar Importação
+                  </>
+                )}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

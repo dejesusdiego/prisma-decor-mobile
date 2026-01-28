@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { logger } from '@/lib/logger';
 
 type AppRole = 'admin' | 'user';
 
@@ -32,19 +33,19 @@ export function useUserRole(): UseUserRoleResult {
           .maybeSingle();
 
         if (error) {
-          console.error('Erro ao buscar role do usuário:', error);
-          console.error('User ID:', user.id);
+          logger.error('Erro ao buscar role do usuário:', error);
+          logger.debug('User ID:', user.id);
           setRole('user'); // Default to user if no role found
         } else if (!data) {
-          console.warn('Nenhuma role encontrada para o usuário:', user.id);
-          console.warn('Usuário será tratado como "user" por padrão');
+          logger.warn('Nenhuma role encontrada para o usuário:', user.id);
+          logger.warn('Usuário será tratado como "user" por padrão');
           setRole('user');
         } else {
-          console.log('Role encontrada:', data.role, 'para usuário:', user.id);
+          logger.debug('Role encontrada:', data.role, 'para usuário:', user.id);
           setRole(data.role as AppRole);
         }
       } catch (error) {
-        console.error('Erro ao buscar role:', error);
+        logger.error('Erro ao buscar role:', error);
         setRole('user');
       } finally {
         setIsLoading(false);

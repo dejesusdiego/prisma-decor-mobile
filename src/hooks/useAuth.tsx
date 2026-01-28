@@ -3,6 +3,7 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { redirectAfterLogin as redirectAfterLoginUtil } from '@/lib/redirectAfterLogin';
 
 interface AuthContextType {
   user: User | null;
@@ -41,8 +42,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Usar função utilitária para redirect após login
+  const redirectAfterLogin = async (user: User) => {
+    await redirectAfterLoginUtil(user, navigate);
+  };
+
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
@@ -54,7 +60,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     
     toast.success('Login realizado com sucesso!');
-    navigate('/gerarorcamento');
+    
+    // Redirecionar baseado em role
+    if (data.user) {
+      await redirectAfterLogin(data.user);
+    }
   };
 
   const signUp = async (email: string, password: string) => {

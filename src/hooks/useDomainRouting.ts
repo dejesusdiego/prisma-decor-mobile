@@ -21,8 +21,10 @@ export interface DomainRoutingResult {
  * - seudominio.com → marketing (LP)
  * - app.seudominio.com → app (sistema)
  * - studioos.pro → marketing (StudioOS LP)
- * - panel.studioos.pro → admin
+ * - admin.studioos.pro → admin (canônico)
+ * - panel.studioos.pro → admin (redireciona para admin)
  * - fornecedores.studioos.pro → supplier
+ * - {slug}-app.studioos.pro → app (organização cliente)
  * 
  * ⚠️ MVP: Resolve no frontend
  * 📌 Scale: Migrar para Vercel Edge Middleware

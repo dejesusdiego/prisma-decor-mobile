@@ -17,11 +17,49 @@ export interface DomainInfo {
  * - seudominio.com → marketing
  * - app.seudominio.com → app (sistema)
  * - studioos.pro → marketing (StudioOS)
- * - panel.studioos.pro → admin
+ * - admin.studioos.pro → admin (canônico)
+ * - panel.studioos.pro → admin (redireciona para admin)
  * - fornecedores.studioos.pro → supplier
+ * - {slug}-app.studioos.pro → app (organização cliente)
  */
 export async function resolveDomain(hostname: string): Promise<DomainInfo | null> {
   try {
+    // Canonical redirect: panel.studioos.pro → admin.studioos.pro
+    if (hostname === 'panel.studioos.pro' || hostname.includes('panel.studioos.pro')) {
+      // Redirecionar para domínio canônico
+      if (typeof window !== 'undefined' && window.location.hostname === 'panel.studioos.pro') {
+        window.location.replace(window.location.href.replace('panel.studioos.pro', 'admin.studioos.pro'));
+        return null; // Retornar null enquanto redireciona
+      }
+      // Se já está resolvendo admin, tratar como admin
+      hostname = hostname.replace('panel.studioos.pro', 'admin.studioos.pro');
+    }
+
+    // Detectar {slug}-app.studioos.pro antes de consultar banco
+    const slugAppMatch = hostname.match(/^([a-z0-9-]+)-app\.studioos\.pro$/);
+    if (slugAppMatch) {
+      const orgSlug = slugAppMatch[1];
+      // Verificar se slug não é reservado
+      if (orgSlug !== 'studioos') {
+        // Buscar organização pelo slug
+        const { data: org, error: orgError } = await supabase
+          .from('organizations')
+          .select('id, slug')
+          .eq('slug', orgSlug)
+          .eq('active', true)
+          .maybeSingle();
+
+        if (!orgError && org) {
+          return {
+            hostname,
+            role: 'app',
+            organizationId: org.id,
+            organizationSlug: org.slug,
+          };
+        }
+      }
+    }
+
     const { data: domain, error } = await supabase
       .from('domains')
       .select(`
@@ -36,11 +74,16 @@ export async function resolveDomain(hostname: string): Promise<DomainInfo | null
 
     if (error) {
       console.error('Error resolving domain:', error);
+      // Se for studioos.pro e houver erro, usar fallback
+      if (hostname === 'studioos.pro' || hostname === 'www.studioos.pro') {
+        return resolveSubdomainFallback(hostname);
+      }
       return null;
     }
 
     if (!domain) {
       // Fallback: verificar se é subdomínio conhecido (desenvolvimento)
+      // IMPORTANTE: studioos.pro deve funcionar mesmo sem estar no banco (fallback)
       return resolveSubdomainFallback(hostname);
     }
 
@@ -50,6 +93,16 @@ export async function resolveDomain(hostname: string): Promise<DomainInfo | null
       ? domain.organizations[0] 
       : domain.organizations;
 
+    // Se for studioos.pro e não tiver organizationSlug, usar fallback
+    if (hostname === 'studioos.pro' && !org?.slug) {
+      return {
+        hostname: domain.hostname,
+        role: domain.role,
+        organizationId: domain.organization_id,
+        organizationSlug: 'studioos', // Fallback para slug reservado
+      };
+    }
+
     return {
       hostname: domain.hostname,
       role: domain.role,
@@ -58,6 +111,10 @@ export async function resolveDomain(hostname: string): Promise<DomainInfo | null
     };
   } catch (error) {
     console.error('Error in resolveDomain:', error);
+    // Se for studioos.pro e houver erro, usar fallback
+    if (hostname === 'studioos.pro' || hostname === 'www.studioos.pro') {
+      return resolveSubdomainFallback(hostname);
+    }
     return null;
   }
 }
@@ -69,7 +126,11 @@ export async function resolveDomain(hostname: string): Promise<DomainInfo | null
  */
 function resolveSubdomainFallback(hostname: string): DomainInfo | null {
   // Portal de fornecedores
-  if (hostname === 'fornecedores.studioos.pro' || hostname.includes('fornecedores.')) {
+  // Suporta tanto subdomínio (fornecedores.studioos.pro) quanto rota (/fornecedores) em preview/dev
+  const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
+  const isSupplierRoute = pathname === '/fornecedores' || pathname.startsWith('/fornecedores/');
+  
+  if (hostname === 'fornecedores.studioos.pro' || hostname.includes('fornecedores.') || isSupplierRoute) {
     return {
       hostname,
       role: 'supplier',
@@ -78,14 +139,29 @@ function resolveSubdomainFallback(hostname: string): DomainInfo | null {
     };
   }
 
-  // Admin (panel.studioos.pro)
-  if (hostname === 'panel.studioos.pro' || hostname.includes('panel.')) {
+  // Admin (admin.studioos.pro - canônico, ou panel.studioos.pro - redireciona)
+  if (hostname === 'admin.studioos.pro' || hostname === 'panel.studioos.pro' || hostname.includes('admin.') || hostname.includes('panel.')) {
     return {
-      hostname,
+      hostname: hostname.replace('panel.studioos.pro', 'admin.studioos.pro'),
       role: 'admin',
       organizationId: null,
       organizationSlug: null,
     };
+  }
+
+  // App organizacional ({slug}-app.studioos.pro)
+  const slugAppMatch = hostname.match(/^([a-z0-9-]+)-app\.studioos\.pro$/);
+  if (slugAppMatch) {
+    const orgSlug = slugAppMatch[1];
+    // Não permitir slug reservado
+    if (orgSlug !== 'studioos') {
+      return {
+        hostname,
+        role: 'app',
+        organizationId: null, // Será resolvido pelo login
+        organizationSlug: orgSlug,
+      };
+    }
   }
 
   // App (app.seudominio.com)
@@ -97,6 +173,16 @@ function resolveSubdomainFallback(hostname: string): DomainInfo | null {
       role: 'app',
       organizationId: null, // Será resolvido pelo login
       organizationSlug: null,
+    };
+  }
+
+  // Marketing StudioOS (studioos.pro) - deve retornar organizationSlug = 'studioos'
+  if (hostname === 'studioos.pro' || hostname === 'www.studioos.pro') {
+    return {
+      hostname,
+      role: 'marketing',
+      organizationId: null, // Será resolvido pelo banco se existir
+      organizationSlug: 'studioos', // Slug reservado da plataforma
     };
   }
 

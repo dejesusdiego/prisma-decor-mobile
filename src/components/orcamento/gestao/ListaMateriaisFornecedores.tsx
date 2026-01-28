@@ -49,7 +49,8 @@ export function ListaMateriaisFornecedores() {
           supplier_id,
           suppliers (
             id,
-            name
+            name,
+            status
           )
         `)
         .eq('organization_id', organizationId)
@@ -57,9 +58,10 @@ export function ListaMateriaisFornecedores() {
 
       if (error) throw error;
 
+      // Filtrar apenas fornecedores aprovados (status='approved')
       const suppliersList = (data || [])
         .map((item: any) => item.suppliers)
-        .filter((s: any) => s !== null)
+        .filter((s: any) => s !== null && s.status === 'approved')
         .map((s: any) => ({ id: s.id, name: s.name }));
 
       setSuppliers(suppliersList);
@@ -78,6 +80,7 @@ export function ListaMateriaisFornecedores() {
     try {
       const supplierIds = suppliers.map(s => s.id);
       
+      // RLS já filtra por suppliers.status='approved', mas adicionar filtro explícito por segurança
       const { data, error } = await supabase
         .from('supplier_materials')
         .select(`
@@ -89,12 +92,14 @@ export function ListaMateriaisFornecedores() {
           unit,
           price,
           active,
-          suppliers (
+          suppliers!inner (
             id,
-            name
+            name,
+            status
           )
         `)
         .eq('active', true)
+        .eq('suppliers.status', 'approved')  // Filtro explícito: apenas fornecedores aprovados
         .in('supplier_id', supplierIds)
         .order('name', { ascending: true });
 
@@ -182,10 +187,14 @@ export function ListaMateriaisFornecedores() {
             <div className="text-center py-12">
               <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <p className="text-muted-foreground">
-                Nenhum fornecedor vinculado à sua organização.
+                Nenhum fornecedor aprovado vinculado à sua organização.
               </p>
               <p className="text-sm text-muted-foreground mt-2">
                 Vá em Administração → Fornecedores para vincular fornecedores.
+                <br />
+                <span className="text-xs text-muted-foreground/80">
+                  Nota: Apenas fornecedores aprovados aparecem aqui. Fornecedores pendentes de aprovação não têm catálogo visível.
+                </span>
               </p>
             </div>
           ) : isLoading ? (
@@ -195,8 +204,16 @@ export function ListaMateriaisFornecedores() {
           ) : filteredMaterials.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <p>Nenhum material encontrado.</p>
-              {searchTerm && (
+              {searchTerm ? (
                 <p className="text-sm mt-2">Tente ajustar os filtros de busca.</p>
+              ) : (
+                <p className="text-sm mt-2">
+                  Os fornecedores vinculados ainda não têm materiais cadastrados ou estão aguardando aprovação.
+                  <br />
+                  <span className="text-xs text-muted-foreground/80">
+                    Catálogo disponível apenas após aprovação do fornecedor.
+                  </span>
+                </p>
               )}
             </div>
           ) : (

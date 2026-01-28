@@ -1,96 +1,97 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useOrganizationContext } from '@/contexts/OrganizationContext';
-import type { Material } from '@/types/orcamento';
 
-interface SupplierMaterial {
+export interface SupplierMaterial {
   id: string;
   supplier_id: string;
-  supplier_name: string;
   sku: string | null;
   name: string;
   description: string | null;
   unit: string | null;
   price: number;
   active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SupplierMaterialsStats {
+  total: number;
+  active: number;
+  inactive: number;
+  byCategory: Record<string, number>;
 }
 
 /**
- * Hook para buscar materiais de fornecedores e transformá-los em formato Material
- * para uso no MaterialSelector
+ * Hook para buscar materiais do fornecedor logado
  */
-export function useSupplierMaterials() {
-  const { organizationId } = useOrganizationContext();
+export function useSupplierMaterials(supplierId: string | null) {
+  return useQuery({
+    queryKey: ['supplier-materials', supplierId],
+    queryFn: async (): Promise<SupplierMaterial[]> => {
+      if (!supplierId) return [];
 
-  const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['supplier-materials', organizationId],
-    queryFn: async () => {
-      if (!organizationId) return [];
-
-      // Buscar fornecedores vinculados e ativos
-      const { data: suppliersData, error: suppliersError } = await supabase
-        .from('supplier_organizations')
-        .select('supplier_id')
-        .eq('organization_id', organizationId)
-        .eq('active', true);
-
-      if (suppliersError) throw suppliersError;
-      if (!suppliersData || suppliersData.length === 0) return [];
-
-      const supplierIds = suppliersData.map(s => s.supplier_id);
-
-      // Buscar materiais dos fornecedores
-      const { data: materialsData, error: materialsError } = await supabase
+      const { data, error } = await supabase
         .from('supplier_materials')
-        .select(`
-          id,
-          supplier_id,
-          sku,
-          name,
-          description,
-          unit,
-          price,
-          active,
-          suppliers (
-            id,
-            name
-          )
-        `)
-        .eq('active', true)
-        .in('supplier_id', supplierIds)
+        .select('*')
+        .eq('supplier_id', supplierId)
         .order('name', { ascending: true });
 
-      if (materialsError) throw materialsError;
-
-      // Transformar em formato Material compatível
-      const materials: (Material & { supplier_material_id?: string; supplier_id?: string; supplier_name?: string; price_snapshot?: number })[] = 
-        (materialsData || []).map((item: any) => ({
-          id: `supplier_${item.id}`, // Prefixo para identificar como supplier material
-          nome: item.name,
-          codigo_item: item.sku || '',
-          preco_custo: item.price,
-          preco_venda: item.price,
-          categoria: 'acessorio' as const, // Default, pode ser ajustado depois
-          ativo: item.active,
-          fornecedor: item.suppliers?.name || 'Fornecedor',
-          // Campos específicos de supplier
-          supplier_material_id: item.id,
-          supplier_id: item.supplier_id,
-          supplier_name: item.suppliers?.name,
-          price_snapshot: item.price, // Snapshot inicial
-        }));
-
-      return materials;
+      if (error) throw error;
+      return (data || []) as SupplierMaterial[];
     },
-    enabled: !!organizationId,
-    staleTime: 5 * 60 * 1000, // 5 minutos (materiais de fornecedor mudam menos)
-    gcTime: 15 * 60 * 1000,
+    enabled: !!supplierId,
+    staleTime: 2 * 60 * 1000, // Cache por 2 minutos
+    gcTime: 10 * 60 * 1000, // Manter em cache por 10 minutos
   });
+}
 
-  return {
-    materials: data || [],
-    loading: isLoading,
-    error: error as Error | null,
-    refetch,
+/**
+ * Hook para buscar estatísticas dos materiais do fornecedor
+ */
+export function useSupplierMaterialsStats(supplierId: string | null) {
+  return useQuery({
+    queryKey: ['supplier-materials-stats', supplierId],
+    queryFn: async (): Promise<SupplierMaterialsStats> => {
+      if (!supplierId) {
+        return { total: 0, active: 0, inactive: 0, byCategory: {} };
+      }
+
+      const { data, error } = await supabase
+        .from('supplier_materials')
+        .select('active, unit')
+        .eq('supplier_id', supplierId);
+
+      if (error) throw error;
+
+      const materials = (data || []) as SupplierMaterial[];
+      const total = materials.length;
+      const active = materials.filter(m => m.active).length;
+      const inactive = total - active;
+
+      // Agrupar por categoria (usando unit como proxy de categoria por enquanto)
+      // TODO: Adicionar campo category em supplier_materials se necessário
+      const byCategory: Record<string, number> = {};
+      materials.forEach(m => {
+        const category = m.unit || 'Outros';
+        byCategory[category] = (byCategory[category] || 0) + 1;
+      });
+
+      return { total, active, inactive, byCategory };
+    },
+    enabled: !!supplierId,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+  });
+}
+
+/**
+ * Hook para invalidar cache de materiais após mutações
+ */
+export function useInvalidateSupplierMaterials() {
+  const queryClient = useQueryClient();
+
+  return (supplierId: string | null) => {
+    queryClient.invalidateQueries({ queryKey: ['supplier-materials', supplierId] });
+    queryClient.invalidateQueries({ queryKey: ['supplier-materials-stats', supplierId] });
   };
 }

@@ -1,15 +1,24 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Navigate } from 'react-router-dom';
 import { LoadingPage } from '@/components/ui/LoadingState';
-import { supabase } from '@/integrations/supabase/client';
+import { redirectAfterLogin } from '@/lib/redirectAfterLogin';
 
-export default function Auth() {
+/**
+ * Gateway de Autenticação para app.studioos.pro
+ * 
+ * Funciona como porta de entrada:
+ * - Se não autenticado: mostra tela de login
+ * - Se autenticado: redireciona automaticamente para domínio correto baseado em role
+ * 
+ * Rotas canônicas: /login e /auth (ambas apontam para este componente)
+ */
+export default function LoginGateway() {
   const { user, loading, signIn, resetPassword } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -17,57 +26,34 @@ export default function Auth() {
   const [showResetDialog, setShowResetDialog] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
   const [isResetting, setIsResetting] = useState(false);
-  const [isCheckingSupplier, setIsCheckingSupplier] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
-  // Verificar se usuário é fornecedor após login
+  const navigate = useNavigate();
+
+  // Redirect automático se já autenticado
   useEffect(() => {
-    async function checkIfSupplier() {
-      if (!user || loading) return;
+    async function handleAutoRedirect() {
+      if (!user || loading || isRedirecting) return;
 
-      setIsCheckingSupplier(true);
+      setIsRedirecting(true);
       try {
-        const { data, error } = await supabase
-          .from('supplier_users')
-          .select('id')
-          .eq('user_id', user.id)
-          .eq('active', true)
-          .maybeSingle();
-
-        if (!error && data) {
-          // É fornecedor - redirecionar para portal
-          const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
-          const isSupplierDomain = hostname.includes('fornecedores') || hostname.includes('supplier');
-          
-          if (!isSupplierDomain) {
-            window.location.href = 'https://fornecedores.studioos.pro';
-          }
-        }
-      } catch (err) {
-        console.error('Error checking supplier:', err);
+        await redirectAfterLogin(user, navigate);
+      } catch (error) {
+        console.error('Error in auto redirect:', error);
       } finally {
-        setIsCheckingSupplier(false);
+        setIsRedirecting(false);
       }
     }
 
-    checkIfSupplier();
-  }, [user, loading]);
-
-  // Redirect if already logged in (e não for fornecedor)
-  if (!loading && user && !isCheckingSupplier) {
-    // Verificar se não está no domínio de fornecedor antes de redirecionar
-    const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
-    const isSupplierDomain = hostname.includes('fornecedores') || hostname.includes('supplier');
-    
-    if (!isSupplierDomain) {
-      return <Navigate to="/gerarorcamento" replace />;
-    }
-  }
+    handleAutoRedirect();
+  }, [user, loading, isRedirecting, navigate]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
       await signIn(email, password);
+      // redirectAfterLogin será chamado automaticamente pelo signIn
     } catch (error) {
       console.error('Login error:', error);
     } finally {
@@ -91,10 +77,20 @@ export default function Auth() {
     }
   };
 
-  if (loading || isCheckingSupplier) {
+  if (loading || isRedirecting) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <LoadingPage text={isCheckingSupplier ? "Verificando permissões..." : "Carregando..."} />
+        <LoadingPage text={isRedirecting ? "Redirecionando..." : "Carregando..."} />
+      </div>
+    );
+  }
+
+  // Se já está autenticado, o useEffect vai redirecionar
+  // Mas enquanto isso, mostrar loading
+  if (user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <LoadingPage text="Redirecionando..." />
       </div>
     );
   }

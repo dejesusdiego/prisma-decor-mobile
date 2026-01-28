@@ -13,13 +13,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { useTheme } from '@/hooks/useTheme';
 import { showSuccess, showError } from '@/lib/toastMessages';
 import { cn } from '@/lib/utils';
+import { logger } from '@/lib/logger';
 
 export function ThemeSelector() {
   const { organization, organizationId, isOwner, isLoading } = useOrganizationContext();
   const { isDark, toggleDarkMode } = useTheme();
   
   // Debug: verificar se componente está sendo renderizado
-  console.log('ThemeSelector renderizado', { isOwner, isLoading, organizationId, themeName: organization?.theme_name });
+  logger.debug('ThemeSelector renderizado', { isOwner, isLoading, organizationId, themeName: organization?.theme_name });
   const [selectedTheme, setSelectedTheme] = useState<ThemeName>(
     (organization?.theme_name as ThemeName) || 'default'
   );
@@ -112,7 +113,7 @@ export function ThemeSelector() {
     try {
       const { error } = await supabase
         .from('organizations')
-        .update({ theme_name: selectedTheme })
+        .update({ theme_name: selectedTheme } as { theme_name: ThemeName })
         .eq('id', organizationId);
 
       if (error) throw error;
@@ -124,7 +125,7 @@ export function ThemeSelector() {
         window.location.reload();
       }, 1000);
     } catch (error) {
-      console.error('Erro ao salvar tema:', error);
+      logger.error('Erro ao salvar tema:', error);
       showError('Não foi possível salvar o tema', {
         description: error instanceof Error ? error.message : 'Erro desconhecido',
       });

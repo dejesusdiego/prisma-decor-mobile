@@ -6,9 +6,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
 import { Loader2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { SupplierCatalog } from '@/components/supplier/SupplierCatalog';
+import { SupplierDashboard } from '@/pages/supplier/Dashboard';
+import { SupplierStatusBadge } from '@/components/supplier/SupplierStatusBadge';
+import { LayoutDashboard, Package, LogOut } from 'lucide-react';
+import { logError, getErrorMessage } from '@/lib/errorMessages';
+import { logger } from '@/lib/logger';
 
 interface SupplierInfo {
   id: string;
@@ -16,6 +23,7 @@ interface SupplierInfo {
   slug: string;
   email: string | null;
   phone: string | null;
+  status: 'pending' | 'approved' | 'rejected';
 }
 
 export default function SupplierPortal() {
@@ -23,6 +31,7 @@ export default function SupplierPortal() {
   const [supplierInfo, setSupplierInfo] = useState<SupplierInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'catalog'>('dashboard');
 
   // Login form state
   const [email, setEmail] = useState('');
@@ -51,7 +60,8 @@ export default function SupplierPortal() {
               name,
               slug,
               email,
-              phone
+              phone,
+              status
             )
           `)
           .eq('user_id', user.id)
@@ -61,15 +71,74 @@ export default function SupplierPortal() {
         if (error) throw error;
 
         if (data && data.suppliers) {
-          setSupplierInfo(data.suppliers as SupplierInfo);
+          const supplier = data.suppliers as SupplierInfo;
+          
+          // Permitir acesso mesmo com status='pending' (acesso limitado)
+          // Apenas bloquear se status='rejected'
+          if (supplier.status === 'rejected') {
+            // Fornecedor rejeitado - não permitir acesso
+            setSupplierInfo(supplier);
+            return;
+          }
+          
+          // Permitir acesso (pending ou approved)
+          setSupplierInfo(supplier);
         } else {
-          // Usuário não está vinculado a nenhum fornecedor
-          toast.error('Você não está vinculado a nenhum fornecedor');
-          await signOut();
+          // Usuário não está vinculado a nenhum fornecedor via supplier_users
+          // Verificar se existe supplier com mesmo email (pode ter sido cadastrado antes da migration)
+          logger.debug('[SupplierPortal] Buscando supplier por email:', user.email);
+          
+          const { data: pendingSupplier, error: supplierError } = await supabase
+            .from('suppliers')
+            .select('id, name, slug, email, phone, status')
+            .eq('email', user.email?.toLowerCase() || '')
+            .maybeSingle();
+
+          if (supplierError) {
+            console.error('[SupplierPortal] Erro ao buscar supplier:', supplierError);
+          }
+
+          logger.debug('[SupplierPortal] Supplier encontrado por email:', pendingSupplier);
+
+          if (pendingSupplier) {
+            // Existe supplier (pendente ou aprovado) - permitir acesso limitado
+            // Se for rejeitado, bloquear
+            if (pendingSupplier.status === 'rejected') {
+              setSupplierInfo({
+                id: pendingSupplier.id,
+                name: pendingSupplier.name || '',
+                slug: pendingSupplier.slug || '',
+                email: pendingSupplier.email,
+                phone: pendingSupplier.phone,
+                status: 'rejected'
+              });
+              return;
+            }
+            
+            // Permitir acesso (pending ou approved) mesmo sem vínculo supplier_users
+            // Isso cobre casos onde o fornecedor foi cadastrado antes da migration atualizar
+            logger.debug('[SupplierPortal] Definindo supplierInfo para:', pendingSupplier);
+            setSupplierInfo({
+              id: pendingSupplier.id,
+              name: pendingSupplier.name || '',
+              slug: pendingSupplier.slug || '',
+              email: pendingSupplier.email,
+              phone: pendingSupplier.phone,
+              status: pendingSupplier.status as 'pending' | 'approved' | 'rejected'
+            });
+            // Não fazer return aqui - deixar continuar para mostrar o painel
+          } else {
+            // Não tem vínculo nem supplier encontrado
+            logger.debug('[SupplierPortal] Nenhum supplier encontrado para o email:', user.email);
+            // Não fazer logout automático - apenas mostrar mensagem
+            toast.error('Você não está vinculado a nenhum fornecedor. Verifique se o cadastro foi concluído.');
+          }
         }
       } catch (error: any) {
-        console.error('Erro ao carregar informações do fornecedor:', error);
-        toast.error(error.message || 'Erro ao carregar informações do fornecedor');
+        logError(error, 'SupplierPortal - checkAuthAndLoadSupplier');
+        const { message, action } = getErrorMessage(error);
+        const fullMessage = action ? `${message}\n\nAção sugerida: ${action}` : message;
+        toast.error(fullMessage);
       } finally {
         setIsCheckingAuth(false);
         setIsLoading(false);
@@ -89,12 +158,29 @@ export default function SupplierPortal() {
 
     setIsLoggingIn(true);
     try {
-      await signIn(email, password);
-      // O signIn já mostra toast de sucesso e navega, mas no portal de fornecedores não queremos navegar
-      // O useEffect vai recarregar as informações do fornecedor
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim().toLowerCase(),
+        password,
+      });
+
+      if (error) {
+        // Usar sistema centralizado de tratamento de erros
+        logError(error, 'SupplierPortal - signIn');
+        
+        const { message, action } = getErrorMessage(error);
+        const fullMessage = action ? `${message}\n\nAção sugerida: ${action}` : message;
+        
+        toast.error(fullMessage);
+        throw error;
+      }
+
+      if (data.user) {
+        toast.success('Login realizado com sucesso!');
+        // O useEffect vai recarregar as informações do fornecedor automaticamente
+      }
     } catch (error: any) {
-      // Erro já foi tratado no signIn (toast mostrado)
       console.error('Erro ao fazer login:', error);
+      // Erro já foi tratado acima
     } finally {
       setIsLoggingIn(false);
     }
@@ -179,49 +265,174 @@ export default function SupplierPortal() {
     );
   }
 
-  // Dashboard do fornecedor (placeholder)
+  // Bloqueio: apenas fornecedor rejeitado
+  if (supplierInfo && supplierInfo.status === 'rejected') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-6">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl">Cadastro Rejeitado</CardTitle>
+            <CardDescription>
+              Seu cadastro foi rejeitado. Entre em contato para mais informações.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {supplierInfo.name && (
+              <div className="text-sm">
+                <p className="font-medium">Empresa:</p>
+                <p className="text-muted-foreground">{supplierInfo.name}</p>
+              </div>
+            )}
+            
+            <Button variant="outline" onClick={handleLogout} className="w-full">
+              Sair
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Loading: aguardar verificação de autenticação
+  if (isLoading || isCheckingAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
+          <p className="text-muted-foreground">Carregando informações do fornecedor...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Bloqueio: usuário logado mas sem supplierInfo (não encontrou fornecedor vinculado)
+  // Só mostrar se a verificação já terminou E não encontrou supplier
+  if (user && !isLoading && !isCheckingAuth && !supplierInfo) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-6">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl">Acesso Não Autorizado</CardTitle>
+            <CardDescription>
+              Você não está vinculado a nenhum fornecedor.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Se você já se cadastrou, aguarde alguns instantes e recarregue a página.
+                Se ainda não se cadastrou, acesse a página de cadastro.
+              </p>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={handleLogout} className="flex-1">
+                  Sair
+                </Button>
+                <Button asChild className="flex-1">
+                  <Link to="/cadastro-fornecedor">Cadastrar</Link>
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Dashboard do fornecedor (aprovado ou pendente)
+  // Se chegou aqui e tem supplierInfo, renderizar o painel
+  if (!supplierInfo) {
+    // Se ainda não tem supplierInfo mas está carregando, mostrar loading
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
+          <p className="text-muted-foreground">Carregando informações do fornecedor...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const isPending = supplierInfo.status === 'pending';
+  
   return (
-    <div className="min-h-screen bg-background">
-      <div className="border-b">
+    <div className="min-h-screen bg-background flex flex-col">
+      {/* Header Fixo */}
+      <header className="sticky top-0 z-50 bg-background border-b">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold">Portal de Fornecedores</h1>
-              {supplierInfo && (
-                <p className="text-muted-foreground mt-1">
-                  {supplierInfo.name}
+            <div className="flex items-center gap-4">
+              <div>
+                <h1 className="text-2xl font-bold">StudioOS</h1>
+                <p className="text-sm text-muted-foreground mt-0.5 flex items-center gap-2">
+                  Fornecedor: <span className="font-medium">{supplierInfo.name}</span>
+                  <SupplierStatusBadge status={supplierInfo.status} />
                 </p>
-              )}
+              </div>
             </div>
-            <Button variant="outline" onClick={handleLogout}>
+            <Button variant="outline" onClick={handleLogout} className="gap-2">
+              <LogOut className="h-4 w-4" />
               Sair
             </Button>
           </div>
         </div>
-      </div>
+      </header>
 
-      <div className="max-w-7xl mx-auto px-6 py-12">
-        <Tabs defaultValue="catalog" className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="catalog">Catálogo</TabsTrigger>
-            <TabsTrigger value="dashboard" disabled>Dashboard</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="catalog">
-            <SupplierCatalog supplierId={supplierInfo.id} />
-          </TabsContent>
-          
-          <TabsContent value="dashboard">
-            <Card>
-              <CardHeader>
-                <CardTitle>Dashboard</CardTitle>
-                <CardDescription>
-                  Em breve você poderá visualizar pedidos, estatísticas e muito mais.
-                </CardDescription>
-              </CardHeader>
-            </Card>
-          </TabsContent>
-        </Tabs>
+      {/* Banner de Status (se pendente) */}
+      {isPending && (
+        <div className="bg-amber-50 dark:bg-amber-950/20 border-b border-amber-200 dark:border-amber-800">
+          <div className="max-w-7xl mx-auto px-6 py-3">
+            <div className="flex items-center gap-3">
+              <div className="h-8 w-8 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                <span className="text-amber-600 dark:text-amber-400 text-sm">⏳</span>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-amber-900 dark:text-amber-100">
+                  Cadastro aguardando aprovação
+                </p>
+                <p className="text-xs text-amber-700 dark:text-amber-300">
+                  Você pode gerenciar seu catálogo, mas os materiais só estarão visíveis para clientes após aprovação.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Conteúdo Principal */}
+      <div className="flex flex-1">
+        {/* Sidebar */}
+        <aside className="w-64 border-r bg-muted/30">
+          <nav className="p-4 space-y-2">
+            <Button
+              variant={activeTab === 'dashboard' ? 'secondary' : 'ghost'}
+              className="w-full justify-start gap-2"
+              onClick={() => setActiveTab('dashboard')}
+            >
+              <LayoutDashboard className="h-4 w-4" />
+              Dashboard
+            </Button>
+            <Button
+              variant={activeTab === 'catalog' ? 'secondary' : 'ghost'}
+              className="w-full justify-start gap-2"
+              onClick={() => setActiveTab('catalog')}
+            >
+              <Package className="h-4 w-4" />
+              Catálogo
+            </Button>
+          </nav>
+        </aside>
+
+        {/* Área de Conteúdo */}
+        <main className="flex-1 overflow-y-auto">
+          <div className="max-w-7xl mx-auto px-6 py-8">
+            {activeTab === 'dashboard' && (
+              <SupplierDashboard supplierId={supplierInfo.id} supplierStatus={supplierInfo.status} />
+            )}
+            {activeTab === 'catalog' && (
+              <SupplierCatalog supplierId={supplierInfo.id} />
+            )}
+          </div>
+        </main>
       </div>
     </div>
   );

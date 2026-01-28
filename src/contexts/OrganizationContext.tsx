@@ -27,7 +27,7 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
     
     // Importar e aplicar tema
     import('@/lib/themes').then(({ getTheme, applyTheme }) => {
-      const themeName = (orgData.organization?.theme_name as any) || 'default';
+      const themeName = (orgData.organization?.theme_name as import('@/lib/themes').ThemeName) || 'default';
       const theme = getTheme(themeName);
       
       // Detectar dark mode

@@ -50,6 +50,7 @@ import { useOnboardingContext } from '@/components/onboarding/OnboardingProvider
 import { useOrganizationContext } from '@/contexts/OrganizationContext';
 import { useFeatureFlags, OrganizationFeatures } from '@/hooks/useFeatureFlags';
 import { useTheme } from '@/hooks/useTheme';
+import { logger } from '@/lib/logger';
 
 export type View = 
   | 'home'
@@ -180,7 +181,7 @@ const getInitialSections = (): Record<string, boolean> => {
       return JSON.parse(saved);
     }
   } catch (e) {
-    console.error('Error reading sidebar sections from localStorage:', e);
+    logger.error('Error reading sidebar sections from localStorage:', e);
   }
   return { orcamentos: true, crm: true, producao: true, financeiro: true, relatoriosBI: true, administracao: false };
 };
@@ -192,7 +193,7 @@ const getInitialCollapsed = (): boolean => {
       return JSON.parse(saved);
     }
   } catch (e) {
-    console.error('Error reading sidebar collapsed from localStorage:', e);
+    logger.error('Error reading sidebar collapsed from localStorage:', e);
   }
   return false;
 };
@@ -211,7 +212,7 @@ export function OrcamentoSidebar({ currentView, onNavigate }: OrcamentoSidebarPr
   // Debug: Log para verificar status de admin
   useEffect(() => {
     if (!isLoadingRole) {
-      console.log('[Sidebar] Status de admin:', { isAdmin, isLoadingRole });
+      logger.debug('[Sidebar] Status de admin:', { isAdmin, isLoadingRole });
     }
   }, [isAdmin, isLoadingRole]);
 
@@ -229,7 +230,7 @@ export function OrcamentoSidebar({ currentView, onNavigate }: OrcamentoSidebarPr
     try {
       localStorage.setItem(SIDEBAR_SECTIONS_KEY, JSON.stringify(openSections));
     } catch (e) {
-      console.error('Error saving sidebar sections to localStorage:', e);
+      logger.error('Error saving sidebar sections to localStorage:', e);
     }
   }, [openSections]);
 
@@ -238,7 +239,7 @@ export function OrcamentoSidebar({ currentView, onNavigate }: OrcamentoSidebarPr
     try {
       localStorage.setItem(SIDEBAR_COLLAPSED_KEY, JSON.stringify(collapsed));
     } catch (e) {
-      console.error('Error saving sidebar collapsed to localStorage:', e);
+      logger.error('Error saving sidebar collapsed to localStorage:', e);
     }
   }, [collapsed]);
 
@@ -270,7 +271,7 @@ export function OrcamentoSidebar({ currentView, onNavigate }: OrcamentoSidebarPr
           setVisitasNaoVistas(count);
         }
       } catch (error) {
-        console.error('Erro ao buscar visitas não vistas:', error);
+        logger.error('Erro ao buscar visitas não vistas:', error);
       }
     };
 
@@ -287,7 +288,7 @@ export function OrcamentoSidebar({ currentView, onNavigate }: OrcamentoSidebarPr
           table: 'solicitacoes_visita'
         },
         (payload) => {
-          console.log('Nova solicitação de visita recebida:', payload);
+          logger.debug('Nova solicitação de visita recebida:', payload);
           setVisitasNaoVistas(prev => prev + 1);
           
           const newVisit = payload.new as { nome: string; cidade: string; data_agendada: string };
@@ -438,7 +439,7 @@ export function OrcamentoSidebar({ currentView, onNavigate }: OrcamentoSidebarPr
   const renderSection = (section: SectionConfig) => {
     // Debug: Log para verificar acesso à produção
     if (section.id === 'producao') {
-      console.log('[Produção] Verificando acesso:', {
+      logger.debug('[Produção] Verificando acesso:', {
         sectionId: section.id,
         adminOnly: section.adminOnly,
         isAdmin,
@@ -447,7 +448,7 @@ export function OrcamentoSidebar({ currentView, onNavigate }: OrcamentoSidebarPr
     }
     
     if (section.adminOnly && !isAdmin && !isLoadingRole) {
-      console.log(`[Sidebar] Seção ${section.id} bloqueada - usuário não é admin`);
+      logger.debug(`[Sidebar] Seção ${section.id} bloqueada - usuário não é admin`);
       return null;
     }
     
