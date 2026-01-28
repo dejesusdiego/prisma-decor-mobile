@@ -1,6 +1,7 @@
 import { Building2 } from 'lucide-react';
 import { OrgSettingsForm } from '@/components/settings/OrgSettingsForm';
 import { ThemeSelector } from '@/components/settings/ThemeSelector';
+import { WhatsAppRotationSettings } from '@/components/settings/WhatsAppRotationSettings';
 
 export default function ConfiguracoesOrganizacao() {
   return (
@@ -19,6 +20,7 @@ export default function ConfiguracoesOrganizacao() {
       <div className="space-y-6">
         <ThemeSelector />
         <OrgSettingsForm />
+        <WhatsAppRotationSettings />
       </div>
     </div>
   );

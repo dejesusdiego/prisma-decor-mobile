@@ -1,14 +1,39 @@
 import { useState, useEffect } from "react";
 import { MessageCircle } from "lucide-react";
 import { analytics } from "@/lib/analytics";
+import { useNextVendedor } from "@/hooks/useWhatsAppRotation";
 
 interface WhatsAppButtonProps {
   phone?: string;
+  organizationId?: string;
+  enableRotation?: boolean;
 }
 
-const WhatsAppButton = ({ phone = "5547992624706" }: WhatsAppButtonProps) => {
+const WhatsAppButton = ({ 
+  phone = "5547992624706", 
+  organizationId,
+  enableRotation = false 
+}: WhatsAppButtonProps) => {
   const [isVisible, setIsVisible] = useState(false);
   const [isFooterVisible, setIsFooterVisible] = useState(false);
+  const [currentPhone, setCurrentPhone] = useState(phone);
+  const [vendedorName, setVendedorName] = useState("Ana");
+  
+  // Buscar próximo vendedor se rotação estiver habilitada
+  const { data: nextVendedor, isLoading } = useNextVendedor(
+    enableRotation && organizationId ? organizationId : null
+  );
+
+  // Atualizar telefone quando tiver vendedor do rodízio
+  useEffect(() => {
+    if (enableRotation && nextVendedor?.user_whatsapp) {
+      setCurrentPhone(nextVendedor.user_whatsapp);
+      setVendedorName(nextVendedor.user_name.split(' ')[0]); // Primeiro nome
+    } else {
+      setCurrentPhone(phone);
+      setVendedorName("Ana");
+    }
+  }, [enableRotation, nextVendedor, phone]);
 
   useEffect(() => {
     const toggleVisibility = () => {
@@ -48,10 +73,13 @@ const WhatsAppButton = ({ phone = "5547992624706" }: WhatsAppButtonProps) => {
 
   const handleWhatsAppClick = () => {
     analytics.clickWhatsApp('floating_button');
-    const phoneNumber = phone.replace(/\D/g, '');
-    const message = encodeURIComponent("Olá! Gostaria de saber mais sobre cortinas e persianas.");
+    const phoneNumber = currentPhone.replace(/\D/g, '');
+    const message = encodeURIComponent(`Olá! Gostaria de saber mais sobre cortinas e persianas.`);
     window.open(`https://wa.me/${phoneNumber}?text=${message}`, "_blank");
   };
+
+  // Se está carregando vendedor do rodízio, mostrar loading sutil
+  const displayName = isLoading ? "..." : vendedorName;
 
   return (
     <button
@@ -64,7 +92,7 @@ const WhatsAppButton = ({ phone = "5547992624706" }: WhatsAppButtonProps) => {
       {/* Avatar da atendente */}
       <div className="relative">
         <div className="w-10 h-10 rounded-full bg-whatsapp-foreground/20 flex items-center justify-center overflow-hidden border-2 border-whatsapp-foreground/30">
-          <span className="text-lg font-bold">A</span>
+          <span className="text-lg font-bold">{displayName.charAt(0)}</span>
         </div>
         {/* Status Online */}
         <span className="absolute bottom-0 right-0 flex h-3 w-3">
@@ -74,7 +102,7 @@ const WhatsAppButton = ({ phone = "5547992624706" }: WhatsAppButtonProps) => {
       </div>
       
       <div className="flex flex-col items-start">
-        <span className="text-base font-semibold leading-tight">Fale com a Ana</span>
+        <span className="text-base font-semibold leading-tight">Fale com a {displayName}</span>
         <span className="text-xs opacity-80">Responde em até 5 min</span>
       </div>
       

@@ -58,7 +58,10 @@ export default function LandingPageOrganizacao({ slug: slugProp }: LandingPageOr
       <LandingPageSocialProof organization={orgData} />
       <LandingPageFAQ organization={orgData} />
       <LandingPageContact organization={orgData} />
-      <WhatsAppButton phone={orgData.whatsapp || orgData.phone || ''} />
+      <WhatsAppButton
+        phone={orgData.whatsapp || orgData.phone || ''}
+        organizationId={orgData.id}
+      />
       <TrustBar />
       <LandingPageFooter organization={orgData} />
     </div>
