@@ -350,11 +350,8 @@ const AppContent = () => {
           <Route path="/cadastro-fornecedor" element={<CadastroFornecedor />} />
           <Route path="/fornecedores/cadastro" element={<CadastroFornecedor />} />
           <Route path="/fornecedores" element={<SupplierPortal />} />
-          <Route path="/admin-supremo" element={
-            <ProtectedRoute>
-              <AdminSupremo />
-            </ProtectedRoute>
-          } />
+          {/* NOTA: /admin-supremo só é acessível via admin.studioos.pro (domínio admin) */}
+          {/* Rotas de dev não devem expor funcionalidades de admin */}
           <Route path="/lp/:slug" element={<LandingPageOrganizacao />} />
           <Route path="/studioos" element={<LandingPageStudioOS />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
