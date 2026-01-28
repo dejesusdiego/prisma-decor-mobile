@@ -13,6 +13,39 @@
       ],
       "destination": "https://admin.studioos.pro/:path*",
       "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "panel.studioos.com.br"
+        }
+      ],
+      "destination": "https://admin.studioos.com.br/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.studioos.pro"
+        }
+      ],
+      "destination": "https://studioos.pro/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.studioos.com.br"
+        }
+      ],
+      "destination": "https://studioos.com.br/:path*",
+      "permanent": true
     }
   ],
   "rewrites": [
@@ -39,5 +72,8 @@
         }
       ]
     }
-  ]
+  ],
+  "github": {
+    "silent": true
+  }
 }

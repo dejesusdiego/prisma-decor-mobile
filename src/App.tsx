@@ -167,20 +167,40 @@ const AppContent = () => {
     }
   }
 
+  // ============================================================
+  // SUBDOMÍNIO DE LANDING PAGE: {slug}.studioos.com.br
+  // ============================================================
+  // Novo padrão Sprint 2: Landing pages de organizações via subdomínio
+  // Ex: prisma-decor.studioos.com.br → Landing page da Prisma
+  const currentHostname = typeof window !== 'undefined' ? window.location.hostname : '';
+  const studioosSubdomainMatch = currentHostname.match(/^([a-z0-9-]+)\.studioos\.(com\.br|pro)$/);
+  
+  if (studioosSubdomainMatch) {
+    const orgSlug = studioosSubdomainMatch[1];
+    const reservedSlugs = ['admin', 'panel', 'fornecedores', 'fornecedor', 'app', 'api', 'www', 'mail', 'ftp', 'studioos'];
+    
+    // Se não for slug reservado, renderizar landing page da organização
+    if (!reservedSlugs.includes(orgSlug)) {
+      return <LandingPageOrganizacao slug={orgSlug} />;
+    }
+  }
+
   // Marketing StudioOS (studioos.pro) - organização interna
-  // 
+  //
   // ⚠️ REGRA RESERVADA: slug 'studioos' é reservado para a plataforma
   // Nenhuma organização cliente pode usar este slug.
   // A organização interna StudioOS (type='internal') sempre usa slug='studioos'.
-  // 
+  //
   // Nota: StudioOS marketing tem organization_id (org interna), mas não é "cliente"
-  // 
+  //
   // ⚠️ IMPORTANTE: Verificar StudioOS ANTES de verificar outros marketing
   // para evitar que studioos.pro renderize LandingPageOrganizacao
-  const currentHostname = typeof window !== 'undefined' ? window.location.hostname : '';
-  const isStudioOSDomain = currentHostname === 'studioos.pro' || currentHostname === 'www.studioos.pro';
+  const isStudioOSDomain = currentHostname === 'studioos.pro' ||
+                           currentHostname === 'www.studioos.pro' ||
+                           currentHostname === 'studioos.com.br' ||
+                           currentHostname === 'www.studioos.com.br';
   
-  // Se for studioos.pro, SEMPRE renderizar LandingPageStudioOS (mesmo se domainInfo for null)
+  // Se for studioos.pro ou studioos.com.br, SEMPRE renderizar LandingPageStudioOS
   if (isStudioOSDomain) {
     return <LandingPageStudioOS />;
   }
@@ -238,18 +258,19 @@ const AppContent = () => {
   }
 
   // Fallback: rotas padrão (APENAS para desenvolvimento/teste)
-  // 
+  //
   // ⚠️ AMBIENTE: Estas rotas são permitidas apenas em:
   // - local: desenvolvimento local (localhost)
   // - preview: preview deployments (Vercel)
   // - staging: ambiente de staging
-  // 
+  //
   // ❌ Em produção, estas rotas NÃO devem ser acessadas.
   // Em produção, apenas subdomínios devem ser usados:
-  // - studioos.pro → LP StudioOS
-  // - admin.studioos.pro → Admin (canônico)
-  // - fornecedores.studioos.pro → Fornecedores
-  // - {slug}-app.studioos.pro → App Organização
+  // - studioos.pro / studioos.com.br → LP StudioOS
+  // - admin.studioos.pro / admin.studioos.com.br → Admin (canônico)
+  // - fornecedores.studioos.pro / fornecedores.studioos.com.br → Fornecedores
+  // - {slug}-app.studioos.pro / {slug}-app.studioos.com.br → App Organização
+  // - {slug}.studioos.com.br / {slug}.studioos.pro → LP Organização (NOVO)
   // - cliente.com.br → LP Cliente
   // - app.cliente.com.br → Sistema Cliente
   const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
