@@ -3,11 +3,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { logger } from '@/lib/logger';
 
-type AppRole = 'admin' | 'user';
+type AppRole = 'admin' | 'user' | 'super_admin';
 
 interface UseUserRoleResult {
   role: AppRole | null;
   isAdmin: boolean;
+  isSuperAdmin: boolean;
   isLoading: boolean;
 }
 
@@ -57,7 +58,8 @@ export function useUserRole(): UseUserRoleResult {
 
   return {
     role,
-    isAdmin: role === 'admin',
+    isAdmin: role === 'admin' || role === 'super_admin',
+    isSuperAdmin: role === 'super_admin',
     isLoading,
   };
 }

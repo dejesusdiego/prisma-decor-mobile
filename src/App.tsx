@@ -27,6 +27,7 @@ import SupplierPortal from "./pages/SupplierPortal";
 import CadastroFornecedor from "./pages/CadastroFornecedor";
 import LoginGateway from "./pages/LoginGateway";
 import Analytics from "./pages/Analytics";
+import AdminSupremo from "./pages/AdminSupremo";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -82,6 +83,11 @@ const AppContent = () => {
       <ThemeInitializer>
         <OnboardingProvider>
           <Routes>
+            <Route path="/admin-supremo" element={
+              <ProtectedRoute>
+                <AdminSupremo />
+              </ProtectedRoute>
+            } />
             <Route path="/gerenciarusuarios" element={
               <AdminRoute>
                 <GerenciarUsuarios />
@@ -344,6 +350,11 @@ const AppContent = () => {
           <Route path="/cadastro-fornecedor" element={<CadastroFornecedor />} />
           <Route path="/fornecedores/cadastro" element={<CadastroFornecedor />} />
           <Route path="/fornecedores" element={<SupplierPortal />} />
+          <Route path="/admin-supremo" element={
+            <ProtectedRoute>
+              <AdminSupremo />
+            </ProtectedRoute>
+          } />
           <Route path="/lp/:slug" element={<LandingPageOrganizacao />} />
           <Route path="/studioos" element={<LandingPageStudioOS />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
