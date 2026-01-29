@@ -5,8 +5,8 @@
  * Centraliza toda a lógica de roteamento multi-domínio.
  */
 
-import { useEffect, useState, Suspense, useMemo } from 'react';
-import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { useEffect, useState, Suspense, useMemo, useRef, lazy } from 'react';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import type { 
   DomainConfig, 
   DomainRoute, 
@@ -17,10 +17,22 @@ import type {
 import { resolveDomainByHostname } from '@/domains';
 import { useAuth } from '@/hooks/useAuth';
 import { useOrganizationContext } from '@/contexts/OrganizationContext';
-import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/lib/logger';
-import { RouteValidator } from './RouteValidator';
-import { RedirectHandler } from './RedirectHandler';
+import { ProtectedRoute } from '@/components/ProtectedRoute';
+import { AdminRoute } from '@/components/AdminRoute';
+
+// Lazy load das páginas principais
+const GerenciarUsuarios = lazy(() => import('@/pages/GerenciarUsuarios'));
+const GerarOrcamento = lazy(() => import('@/pages/GerarOrcamento'));
+const LoginGateway = lazy(() => import('@/pages/LoginGateway'));
+const LandingPageStudioOS = lazy(() => import('@/pages/studioos/LandingPageStudioOS'));
+const LandingPageOrganizacao = lazy(() => import('@/pages/LandingPageOrganizacao'));
+const SupplierPortal = lazy(() => import('@/pages/SupplierPortal'));
+const CadastroFornecedor = lazy(() => import('@/pages/CadastroFornecedor'));
+const AdminSupremo = lazy(() => import('@/pages/AdminSupremo'));
+const ConfiguracoesOrganizacao = lazy(() => import('@/pages/ConfiguracoesOrganizacao'));
+const Analytics = lazy(() => import('@/pages/Analytics'));
+const NotFound = lazy(() => import('@/pages/NotFound'));
 
 // Loading component
 function DomainRouterLoading() {
@@ -49,95 +61,33 @@ function DomainRouterError({ error, onRetry }: { error: string; onRetry: () => v
   );
 }
 
-// Componente para renderizar uma rota específica
-function DomainRouteComponent({ 
-  route, 
-  domain,
-  context 
+// Componente para renderizar uma rota protegida
+function ProtectedRouteWrapper({ 
+  children,
+  requireAdmin = false 
 }: { 
-  route: DomainRoute; 
-  domain: DomainConfig;
-  context: RoutingContext;
+  children: React.ReactNode;
+  requireAdmin?: boolean;
 }) {
-  const Component = route.component;
-  
-  return (
-    <RouteValidator route={route} context={context}>
-      <Suspense fallback={<DomainRouterLoading />}>
-        <Component />
-      </Suspense>
-    </RouteValidator>
-  );
+  if (requireAdmin) {
+    return <AdminRoute>{children}</AdminRoute>;
+  }
+  return <ProtectedRoute>{children}</ProtectedRoute>;
 }
 
 export function DomainRouter() {
   const location = useLocation();
-  const navigate = useNavigate();
-  const { user, session } = useAuth();
+  const { user } = useAuth();
   const orgContext = useOrganizationContext();
   
   const [isResolving, setIsResolving] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentDomain, setCurrentDomain] = useState<DomainConfig | null>(null);
-  const [userRoles, setUserRoles] = useState<string[]>([]);
-  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
-  const [isSupplier, setIsSupplier] = useState(false);
   
-  const hostname = window.location.hostname;
+  const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
+  const pathname = location.pathname;
   
-  // Safety brake para evitar loops infinitos
-  const validationCountRef = { current: 0 };
-  const MAX_VALIDATIONS = 10;
-  
-  // Buscar roles do usuário - com proteção contra loop
-  useEffect(() => {
-    // Incrementar contador de validações
-    validationCountRef.current++;
-    
-    // Safety brake: abortar se detectar loop
-    if (validationCountRef.current > MAX_VALIDATIONS) {
-      logger.error(`[DomainRouter] Loop detectado: ${validationCountRef.current} validações. Abortando.`);
-      setError('Erro de roteamento: muitas validações. Recarregue a página.');
-      return;
-    }
-    
-    async function fetchUserRoles() {
-      if (!user) {
-        setUserRoles([]);
-        setIsSuperAdmin(false);
-        setIsSupplier(false);
-        return;
-      }
-      
-      try {
-        // Verificar user_roles
-        const { data: roleData } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', user.id);
-        
-        const roles = roleData?.map(r => r.role) || [];
-        setUserRoles(roles);
-        setIsSuperAdmin(roles.includes('super_admin'));
-        
-        // Verificar se é fornecedor
-        const { data: supplierData } = await supabase
-          .from('suppliers')
-          .select('id')
-          .eq('email', user.email)
-          .eq('status', 'approved')
-          .single();
-        
-        setIsSupplier(!!supplierData);
-      } catch (err) {
-        logger.error('Error fetching user roles:', err);
-      }
-    }
-    
-    fetchUserRoles();
-  }, [user]);
-  
-  // Resolver domínio
+  // Resolver domínio baseado no hostname
   useEffect(() => {
     setIsResolving(true);
     setError(null);
@@ -146,92 +96,164 @@ export function DomainRouter() {
       const domain = resolveDomainByHostname(hostname);
       
       if (!domain) {
-        setError(`Domínio não reconhecido: ${hostname}`);
-        setCurrentDomain(null);
+        // Fallback para localhost/dev
+        if (hostname === 'localhost' || hostname.includes('127.0.0.1')) {
+          logger.info(`[DomainRouter] Localhost detected, using fallback routing`);
+          setCurrentDomain(null); // Será tratado como fallback
+        } else {
+          setError(`Domínio não reconhecido: ${hostname}`);
+          setCurrentDomain(null);
+        }
       } else {
         setCurrentDomain(domain);
-        logger.info(`Domain resolved: ${domain.id} for ${hostname}`);
+        logger.info(`[DomainRouter] Domain resolved: ${domain.id} for ${hostname}`);
       }
     } catch (err) {
       setError('Erro ao resolver domínio');
-      logger.error('Domain resolution error:', err);
+      logger.error('[DomainRouter] Domain resolution error:', err);
     } finally {
       setIsResolving(false);
     }
   }, [hostname]);
-  
-  // Construir contexto de roteamento
-  const routingContext: RoutingContext = useMemo(() => {
-    const userContext: UserContext | null = user ? {
-      id: user.id,
-      email: user.email || '',
-      role: userRoles[0] || 'user',
-      roles: userRoles,
-      permissions: [], // TODO: Buscar permissões
-      isSuperAdmin,
-      isSupplier,
-      isAffiliate: false, // TODO
-      organizationId: orgContext?.organization?.id,
-      organizationRole: undefined, // TODO
-    } : null;
-    
-    const organizationCtx: OrganizationContext | null = orgContext?.organization ? {
-      id: orgContext.organization.id,
-      slug: orgContext.organization.slug || '',
-      name: orgContext.organization.name,
-      plan: orgContext.organization.plan || 'free',
-      isActive: orgContext.organization.is_active !== false,
-      settings: orgContext.organization.settings,
-    } : null;
-    
-    return {
-      currentDomain: currentDomain?.id || 'marketing',
-      hostname,
-      pathname: location.pathname,
-      user: userContext,
-      organization: organizationCtx,
-      searchParams: new URLSearchParams(location.search),
-    };
-  }, [user, userRoles, isSuperAdmin, isSupplier, orgContext, currentDomain, hostname, location]);
-  
-  // Handle retry
-  const handleRetry = () => {
-    window.location.reload();
-  };
-  
+
   // Loading state
   if (isResolving) {
     return <DomainRouterLoading />;
   }
   
   // Error state
-  if (error || !currentDomain) {
-    return <DomainRouterError error={error || 'Domínio não encontrado'} onRetry={handleRetry} />;
+  if (error) {
+    return <DomainRouterError error={error} onRetry={() => window.location.reload()} />;
   }
-  
-  // Build routes
+
+  // Extrair slug do hostname para landing pages
+  const getOrgSlug = () => {
+    if (hostname.includes('-app.')) {
+      return hostname.split('-app.')[0];
+    }
+    if (hostname.includes('.studioos.pro') && !hostname.startsWith('admin.') && !hostname.startsWith('fornecedores.') && !hostname.startsWith('app.')) {
+      return hostname.split('.')[0];
+    }
+    return orgContext?.organization?.slug || null;
+  };
+
+  const orgSlug = getOrgSlug();
+
+  // ============================================================================
+  // ROTEAMENTO POR DOMÍNIO
+  // ============================================================================
+
+  // 1. DOMÍNIO ADMIN (admin.studioos.pro)
+  if (currentDomain?.id === 'super-admin' || hostname.startsWith('admin.')) {
+    return (
+      <Suspense fallback={<DomainRouterLoading />}>
+        <Routes>
+          <Route path="/login" element={<LoginGateway />} />
+          <Route path="/admin-supremo" element={<AdminRoute><AdminSupremo /></AdminRoute>} />
+          <Route path="/admin-supremo/fornecedores" element={<AdminRoute><AdminSupremo /></AdminRoute>} />
+          <Route path="/admin-supremo/organizacoes" element={<AdminRoute><AdminSupremo /></AdminRoute>} />
+          <Route path="/admin-supremo/usuarios" element={<AdminRoute><AdminSupremo /></AdminRoute>} />
+          <Route path="/gerenciarusuarios" element={<AdminRoute><GerenciarUsuarios /></AdminRoute>} />
+          <Route path="/fornecedores" element={<AdminRoute><AdminSupremo /></AdminRoute>} />
+          <Route path="/organizacoes" element={<AdminRoute><AdminSupremo /></AdminRoute>} />
+          <Route path="/usuarios" element={<AdminRoute><GerenciarUsuarios /></AdminRoute>} />
+          <Route path="/" element={<AdminRoute><AdminSupremo /></AdminRoute>} />
+          <Route path="*" element={<AdminRoute><AdminSupremo /></AdminRoute>} />
+        </Routes>
+      </Suspense>
+    );
+  }
+
+  // 2. PORTAL DE FORNECEDORES (fornecedores.studioos.pro)
+  if (currentDomain?.id === 'supplier' || hostname.startsWith('fornecedores.')) {
+    return (
+      <Suspense fallback={<DomainRouterLoading />}>
+        <Routes>
+          <Route path="/login" element={<LoginGateway />} />
+          <Route path="/cadastro" element={<CadastroFornecedor />} />
+          <Route path="/" element={<ProtectedRoute><SupplierPortal /></ProtectedRoute>} />
+          <Route path="*" element={<ProtectedRoute><SupplierPortal /></ProtectedRoute>} />
+        </Routes>
+      </Suspense>
+    );
+  }
+
+  // 3. APP DO CLIENTE ({slug}-app.studioos.pro ou app.studioos.pro)
+  if (currentDomain?.id === 'app-tenant' || hostname.includes('-app.') || hostname === 'app.studioos.pro') {
+    return (
+      <Suspense fallback={<DomainRouterLoading />}>
+        <Routes>
+          <Route path="/login" element={<LoginGateway />} />
+          <Route path="/auth" element={<LoginGateway />} />
+          <Route path="/gerarorcamento" element={<ProtectedRoute><GerarOrcamento /></ProtectedRoute>} />
+          <Route path="/configuracoes/organizacao" element={<ProtectedRoute><ConfiguracoesOrganizacao /></ProtectedRoute>} />
+          <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+          <Route path="/" element={<ProtectedRoute><GerarOrcamento /></ProtectedRoute>} />
+          <Route path="*" element={<ProtectedRoute><GerarOrcamento /></ProtectedRoute>} />
+        </Routes>
+      </Suspense>
+    );
+  }
+
+  // 4. LANDING PAGE DA ORGANIZAÇÃO ({slug}.studioos.pro)
+  if (currentDomain?.id === 'landing-org' || (hostname.endsWith('.studioos.pro') && !hostname.startsWith('www.') && !hostname.startsWith('admin.') && !hostname.startsWith('fornecedores.') && !hostname.startsWith('app.') && !hostname.includes('-app.'))) {
+    return (
+      <Suspense fallback={<DomainRouterLoading />}>
+        <Routes>
+          <Route path="/" element={<LandingPageOrganizacao slug={orgSlug || undefined} />} />
+          <Route path="/login" element={<LoginGateway />} />
+          <Route path="*" element={<LandingPageOrganizacao slug={orgSlug || undefined} />} />
+        </Routes>
+      </Suspense>
+    );
+  }
+
+  // 5. MARKETING STUDIOOS (studioos.pro, www.studioos.pro)
+  if (currentDomain?.id === 'marketing' || hostname === 'studioos.pro' || hostname === 'www.studioos.pro') {
+    return (
+      <Suspense fallback={<DomainRouterLoading />}>
+        <Routes>
+          <Route path="/" element={<LandingPageStudioOS />} />
+          <Route path="/login" element={<LoginGateway />} />
+          <Route path="/auth" element={<LoginGateway />} />
+          <Route path="/cadastro-fornecedor" element={<CadastroFornecedor />} />
+          <Route path="/fornecedores/cadastro" element={<CadastroFornecedor />} />
+          <Route path="*" element={<LandingPageStudioOS />} />
+        </Routes>
+      </Suspense>
+    );
+  }
+
+  // 6. FALLBACK PARA DESENVOLVIMENTO/LOCALHOST
+  // Em dev, permite acesso a todas as rotas
   return (
-    <RedirectHandler rules={currentDomain.redirects} context={routingContext}>
+    <Suspense fallback={<DomainRouterLoading />}>
       <Routes>
-        {currentDomain.routes.map((route) => (
-          <Route
-            key={`${currentDomain.id}-${route.path}`}
-            path={route.path}
-            element={
-              <DomainRouteComponent 
-                route={route} 
-                domain={currentDomain}
-                context={routingContext}
-              />
-            }
-          />
-        ))}
-        {/* Fallback para rota padrão do domínio */}
-        <Route 
-          path="*" 
-          element={<Navigate to={currentDomain.defaultRoute} replace />} 
-        />
+        {/* Rotas públicas */}
+        <Route path="/" element={<LandingPageStudioOS />} />
+        <Route path="/login" element={<LoginGateway />} />
+        <Route path="/auth" element={<LoginGateway />} />
+        <Route path="/cadastro-fornecedor" element={<CadastroFornecedor />} />
+        <Route path="/fornecedores/cadastro" element={<CadastroFornecedor />} />
+        
+        {/* Rotas protegidas */}
+        <Route path="/gerarorcamento" element={<ProtectedRoute><GerarOrcamento /></ProtectedRoute>} />
+        <Route path="/configuracoes/organizacao" element={<ProtectedRoute><ConfiguracoesOrganizacao /></ProtectedRoute>} />
+        <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+        
+        {/* Rotas admin */}
+        <Route path="/admin-supremo" element={<AdminRoute><AdminSupremo /></AdminRoute>} />
+        <Route path="/gerenciarusuarios" element={<AdminRoute><GerenciarUsuarios /></AdminRoute>} />
+        
+        {/* Portal fornecedores */}
+        <Route path="/fornecedores" element={<ProtectedRoute><SupplierPortal /></ProtectedRoute>} />
+        
+        {/* Landing pages */}
+        <Route path="/lp/:slug" element={<LandingPageOrganizacao />} />
+        
+        {/* 404 */}
+        <Route path="*" element={<NotFound />} />
       </Routes>
-    </RedirectHandler>
+    </Suspense>
   );
 }
