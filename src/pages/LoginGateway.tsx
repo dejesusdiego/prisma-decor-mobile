@@ -46,15 +46,25 @@ export default function LoginGateway() {
   
   // Redirect state
   const [isRedirecting, setIsRedirecting] = useState(false);
+  const [redirectAttempted, setRedirectAttempted] = useState(false);
 
-  // Redirect automático se já autenticado
+  // Redirect automático se já autenticado - com proteção contra loop
   useEffect(() => {
     async function handleAutoRedirect() {
-      if (!user || authLoading || isRedirecting || domainLoading) return;
+      // Proteção contra loop: se já tentou redirecionar, não tenta de novo
+      if (!user || authLoading || isRedirecting || domainLoading || redirectAttempted) return;
 
       setIsRedirecting(true);
+      setRedirectAttempted(true); // Flag permanente para esta sessão de montagem
+      
       try {
-        await redirectAfterLogin(user, navigate);
+        const result = await redirectAfterLogin(user, navigate);
+        
+        // Se redirectAfterLogin não navegou (retornou undefined/false),
+        // significa que já está no lugar certo
+        if (!result) {
+          console.log('[LoginGateway] Already on correct domain, no redirect needed');
+        }
       } catch (error) {
         console.error('Error in auto redirect:', error);
         toast.error('Erro ao redirecionar. Tente recarregar a página.');
@@ -64,7 +74,7 @@ export default function LoginGateway() {
     }
 
     handleAutoRedirect();
-  }, [user, authLoading, isRedirecting, navigate, domainLoading]);
+  }, [user, authLoading, isRedirecting, navigate, domainLoading, redirectAttempted]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();

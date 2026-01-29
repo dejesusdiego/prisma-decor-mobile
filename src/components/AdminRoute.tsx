@@ -1,7 +1,8 @@
 import { ReactNode, useEffect, useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { LoadingPage } from '@/components/ui/LoadingState';
 
 interface AdminRouteProps {
   children: ReactNode;
@@ -11,6 +12,8 @@ export function AdminRoute({ children }: AdminRouteProps) {
   const { user, loading: authLoading } = useAuth();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [checkingRole, setCheckingRole] = useState(true);
+  const location = useLocation();
+  const hostname = window.location.hostname;
 
   useEffect(() => {
     async function checkAdminRole() {
@@ -65,7 +68,15 @@ export function AdminRoute({ children }: AdminRouteProps) {
   }
 
   if (!isAdmin) {
-    return <Navigate to="/gerarorcamento" replace />;
+    // Se está no domínio admin/panel, NÃO redireciona para /gerarorcamento
+    // pois essa rota pode não existir aqui - vai para a home do próprio domínio
+    if (hostname.includes('admin') || hostname.includes('panel')) {
+      console.log('[AdminRoute] Non-admin on admin domain, redirecting to home');
+      return <Navigate to="/" replace />;
+    }
+    
+    // Se está no app normal, redireciona para dashboard
+    return <Navigate to="/" replace />;
   }
 
   return <>{children}</>;
